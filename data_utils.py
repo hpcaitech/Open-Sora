@@ -1,8 +1,15 @@
-from typing import Dict, List, Tuple
+import os
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from datasets import Dataset as HFDataset
+from datasets import dataset_dict, load_from_disk
+from torch.utils.data import ConcatDataset, Dataset
+
+DatasetType = Union[Dataset, ConcatDataset, dataset_dict.Dataset]
+PathType = Union[str, os.PathLike]
 
 
 def video2col(video_4d: torch.Tensor, patch_size: int) -> torch.Tensor:
@@ -91,3 +98,38 @@ def make_batch(samples: List[dict], patch_size: int) -> dict:
         "text_latent_states": texts,
         "text_padding_mask": text_padding_mask,
     }
+
+
+def load_datasets(
+    dataset_paths: Union[PathType, List[PathType]], mode: str = "train"
+) -> Optional[DatasetType]:
+    """
+    Load pre-tokenized dataset.
+    Each instance of dataset is a dictionary with
+    `{'input_ids': List[int], 'labels': List[int], sequence: str}` format.
+    """
+    mode_map = {"train": "train", "dev": "validation", "test": "test"}
+    assert mode in tuple(
+        mode_map
+    ), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
+
+    if isinstance(dataset_paths, (str, os.PathLike)):
+        dataset_paths = [dataset_paths]
+
+    datasets = []  # `List[datasets.dataset_dict.Dataset]`
+    for ds_path in dataset_paths:
+        ds_path = os.path.abspath(ds_path)
+        assert os.path.exists(ds_path), f"Not existed file path {ds_path}"
+        ds_dict = load_from_disk(
+            dataset_path=ds_path, keep_in_memory=False
+        ).with_format("torch")
+        if isinstance(ds_dict, HFDataset):
+            datasets.append(ds_dict)
+        else:
+            if mode_map[mode] in ds_dict:
+                datasets.append(ds_dict[mode_map[mode]])
+    if len(datasets) == 0:
+        return None
+    if len(datasets) == 1:
+        return datasets.pop()
+    return ConcatDataset(datasets=datasets)
