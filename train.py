@@ -62,7 +62,10 @@ def collate_fn(batch, patch_size=2):
         video = video.unsqueeze(1)
         video = video.float() * 0.18215
         sample["video_latent_states"] = video
-    return make_batch(batch, patch_size)
+    batch = make_batch(batch, patch_size)
+    # hack diffuser, [B, S, C, P, P] -> [B, C, S, P, P]
+    batch["video_latent_states"] = batch["video_latent_states"].transpose(1, 2)
+    return batch
 
 
 def all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
@@ -90,9 +93,7 @@ def main(args):
         os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     # Setup model
-    model = DiT_models[args.model](input_size=224, num_classes=1000).to(
-        get_current_device()
-    )
+    model = DiT_models[args.model]().to(get_current_device())
     ema = deepcopy(model)
     requires_grad(ema, False)
     model.train()  # important! This enables embedding dropout for classifier-free guidance
@@ -179,7 +180,7 @@ if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2"
+        "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
     )
     parser.add_argument("--dataset", nargs="+", default=[])
     parser.add_argument("-e", "--epochs", type=int, default=10)

@@ -35,6 +35,34 @@ def video2col(video_4d: torch.Tensor, patch_size: int) -> torch.Tensor:
     return torch.stack(out, dim=1).view(-1, c, patch_size, patch_size)
 
 
+def col2video(
+    patches: torch.Tensor, video_shape: Tuple[int, int, int, int]
+) -> torch.Tensor:
+    """
+    Convert a 2D tensor of patches to a 4D video tensor.
+
+    Args:
+        patches (torch.Tensor): A tensor of shape [S, C, P, P] where S is the number of patches and P is the patch size.
+        video_shape (Tuple[int, int, int, int]): The shape of the video tensor [T, C, H, W].
+
+    Returns:
+        torch.Tensor: A tensor of shape [T, C, H, W].
+    """
+    t, c, h, w = video_shape
+    video = torch.empty(t, c, h, w, dtype=patches.dtype, device=patches.device)
+    patch_size = patches.shape[2]
+    num_x_patches = w // patch_size
+    patches = patches.view(t, -1, c, patch_size, patch_size)
+    for y in range(0, h, patch_size):
+        for x in range(0, w, patch_size):
+            if y + patch_size > h or x + patch_size > w:
+                continue
+            # [T, C, P, P]
+            patch = patches[:, y * num_x_patches + x]
+            video[:, :, y : y + patch_size, x : x + patch_size].copy_(patch)
+    return video
+
+
 def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
     """Pad a list of sequences.
 

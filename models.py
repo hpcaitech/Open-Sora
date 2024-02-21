@@ -120,16 +120,58 @@ class PatchEmbedder(nn.Module):
         bias: bool = True,
     ) -> None:
         super().__init__()
-        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias)
+        self.patch_size = patch_size
+        self.proj = nn.Conv2d(
+            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias
+        )
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
         x = x.view(*x.shape[:2], -1)
-        out = F.linear(x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias)
+        out = F.linear(
+            x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
+        )
         out = self.norm(out)
         # [B, S, H]
         return out
+
+
+class TextEmbedder(nn.Module):
+    def __init__(
+        self, in_features: int, embed_dim: int = 768, bias: bool = True
+    ) -> None:
+        super().__init__()
+        self.proj = nn.Linear(in_features, embed_dim, bias=bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # [B, S, C] -> [B, S, H]
+        return self.proj(x)
+
+
+class PositionEmbedding(nn.Module):
+    def __init__(self, dim: int, max_position_embeddings=262114) -> None:
+        super().__init__()
+        self.dim = dim
+        self.max_position_embeddings = max_position_embeddings
+        self._set_pos_embed_cache(max_position_embeddings)
+
+    def _set_pos_embed_cache(self, seq_len: int):
+        self.max_seq_len_cached = seq_len
+        pos_embed = get_2d_sincos_pos_embed(
+            self.dim, int(self.max_position_embeddings**0.5)
+        )
+        pos_embed = torch.from_numpy(pos_embed).float()
+        # [S, H]
+        self.register_buffer("pos_embed_cache", pos_embed, persistent=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # [B, S, H]
+        seq_len = x.shape[1]
+        if seq_len > self.max_seq_len_cached:
+            self._set_pos_embed_cache(seq_len)
+        pos_embed = self.pos_embed_cache[None, :seq_len]
+        return pos_embed
 
 
 #################################################################################
@@ -157,20 +199,11 @@ class DiTBlock(nn.Module):
             act_layer=approx_gelu,
             drop=0,
         )
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True)
-        )
 
     def forward(self, x, c):
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
-            self.adaLN_modulation(c).chunk(6, dim=1)
-        )
-        x = x + gate_msa.unsqueeze(1) * self.attn(
-            modulate(self.norm1(x), shift_msa, scale_msa)
-        )
-        x = x + gate_mlp.unsqueeze(1) * self.mlp(
-            modulate(self.norm2(x), shift_mlp, scale_mlp)
-        )
+        # TODO: use cross attn
+        x = x + self.attn(self.norm1(x))
+        x = x + self.mlp(self.norm2(x))
         return x
 
 
@@ -181,18 +214,18 @@ class FinalLayer(nn.Module):
 
     def __init__(self, hidden_size, patch_size, out_channels):
         super().__init__()
-        self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.linear = nn.Linear(
             hidden_size, patch_size * patch_size * out_channels, bias=True
         )
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True)
-        )
+        self.patch_size = patch_size
 
-    def forward(self, x, c):
-        shift, scale = self.adaLN_modulation(c).chunk(2, dim=1)
-        x = modulate(self.norm_final(x), shift, scale)
+    def unpatchify(self, x):
+        b, s, h = x.shape
+        return x.view(b, s, -1, self.patch_size, self.patch_size)
+
+    def forward(self, x):
         x = self.linear(x)
+        x = self.unpatchify(x)
         return x
 
 
@@ -205,13 +238,13 @@ class DiT(nn.Module):
         self,
         input_size=32,
         patch_size=2,
-        in_channels=4,
+        in_channels=1,
+        text_embed_dim=512,
         hidden_size=1152,
         depth=28,
         num_heads=16,
         mlp_ratio=4.0,
-        class_dropout_prob=0.1,
-        num_classes=1000,
+        max_num_embeddings=256 * 1024,
         learn_sigma=True,
     ):
         super().__init__()
@@ -221,16 +254,12 @@ class DiT(nn.Module):
         self.patch_size = patch_size
         self.num_heads = num_heads
 
-        self.x_embedder = PatchEmbed(
-            input_size, patch_size, in_channels, hidden_size, bias=True
+        self.video_embedder = PatchEmbedder(
+            patch_size, in_channels, hidden_size, bias=True
         )
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
-        num_patches = self.x_embedder.num_patches
-        # Will use fixed sin-cos embedding:
-        self.pos_embed = nn.Parameter(
-            torch.zeros(1, num_patches, hidden_size), requires_grad=False
-        )
+        self.text_embedder = TextEmbedder(text_embed_dim, hidden_size, bias=True)
+        self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
 
         self.blocks = nn.ModuleList(
             [
@@ -251,68 +280,39 @@ class DiT(nn.Module):
 
         self.apply(_basic_init)
 
-        # Initialize (and freeze) pos_embed by sin-cos embedding:
-        pos_embed = get_2d_sincos_pos_embed(
-            self.pos_embed.shape[-1], int(self.x_embedder.num_patches**0.5)
-        )
-        self.pos_embed.data.copy_(torch.from_numpy(pos_embed).float().unsqueeze(0))
-
-        # Initialize patch_embed like nn.Linear (instead of nn.Conv2d):
-        w = self.x_embedder.proj.weight.data
-        nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
-        nn.init.constant_(self.x_embedder.proj.bias, 0)
-
-        # Initialize label embedding table:
-        nn.init.normal_(self.y_embedder.embedding_table.weight, std=0.02)
+        # TODO: update patch embed init
 
         # Initialize timestep embedding MLP:
         nn.init.normal_(self.t_embedder.mlp[0].weight, std=0.02)
         nn.init.normal_(self.t_embedder.mlp[2].weight, std=0.02)
 
-        # Zero-out adaLN modulation layers in DiT blocks:
-        for block in self.blocks:
-            nn.init.constant_(block.adaLN_modulation[-1].weight, 0)
-            nn.init.constant_(block.adaLN_modulation[-1].bias, 0)
-
-        # Zero-out output layers:
-        nn.init.constant_(self.final_layer.adaLN_modulation[-1].weight, 0)
-        nn.init.constant_(self.final_layer.adaLN_modulation[-1].bias, 0)
         nn.init.constant_(self.final_layer.linear.weight, 0)
         nn.init.constant_(self.final_layer.linear.bias, 0)
 
-    def unpatchify(self, x):
+    def forward(
+        self,
+        video_latent_states,
+        t,
+        video_padding_mask=None,
+        text_latent_states=None,
+        text_padding_mask=None,
+    ):
         """
-        x: (N, T, patch_size**2 * C)
-        imgs: (N, H, W, C)
+        video_latent_states: [B, C, S, P, P]
         """
-        c = self.out_channels
-        p = self.x_embedder.patch_size[0]
-        h = w = int(x.shape[1] ** 0.5)
-        assert h * w == x.shape[1]
-
-        x = x.reshape(shape=(x.shape[0], h, w, p, p, c))
-        x = torch.einsum("nhwpqc->nchpwq", x)
-        imgs = x.reshape(shape=(x.shape[0], c, h * p, h * p))
-        return imgs
-
-    def forward(self, x, t, y):
-        """
-        Forward pass of DiT.
-        x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
-        t: (N,) tensor of diffusion timesteps
-        y: (N,) tensor of class labels
-        """
-        x = (
-            self.x_embedder(x) + self.pos_embed
-        )  # (N, T, D), where T = H * W / patch_size ** 2
-        t = self.t_embedder(t)  # (N, D)
-        y = self.y_embedder(y, self.training)  # (N, D)
-        c = t + y  # (N, D)
+        # [B, C, S, P, P] -> [B, S, C, P, P]
+        video_latent_states = video_latent_states.transpose(1, 2)
+        video_latent_states = self.video_embedder(video_latent_states)
+        pos_embed = self.pos_embed(video_latent_states)
+        video_latent_states = video_latent_states + pos_embed
+        text_latent_states = self.text_embedder(text_latent_states)
+        # TODO: use timestep embedding
+        # TODO: use paddings
+        # t = self.t_embedder(t)  # (N, D)
         for block in self.blocks:
-            x = block(x, c)  # (N, T, D)
-        x = self.final_layer(x, c)  # (N, T, patch_size ** 2 * out_channels)
-        x = self.unpatchify(x)  # (N, out_channels, H, W)
-        return x
+            video_latent_states = block(video_latent_states, text_latent_states)
+        video_latent_states = self.final_layer(video_latent_states)
+        return video_latent_states.transpose(1, 2)
 
     def forward_with_cfg(self, x, t, y, cfg_scale):
         """
