@@ -337,6 +337,7 @@ class DiT(nn.Module):
         learn_sigma=True,
     ):
         super().__init__()
+        self.grad_checkpointing = False
         self.learn_sigma = learn_sigma
         self.in_channels = in_channels
         self.out_channels = in_channels * 2 if learn_sigma else in_channels
@@ -387,6 +388,12 @@ class DiT(nn.Module):
             )
         return attention_mask
 
+    def gradient_checkpointing_enable(self):
+        self.grad_checkpointing = True
+
+    def gradient_checkpointing_disable(self):
+        self.grad_checkpointing = False
+
     def forward(
         self,
         video_latent_states,
@@ -407,9 +414,14 @@ class DiT(nn.Module):
         # t = self.t_embedder(t)  # (N, D)
         attention_mask = self._prepare_mask(attention_mask, video_latent_states.dtype)
         for block in self.blocks:
-            video_latent_states = block(
-                video_latent_states, text_latent_states, attention_mask
-            )
+            if self.grad_checkpointing and self.training:
+                video_latent_states = torch.utils.checkpoint.checkpoint(
+                    block, video_latent_states, text_latent_states, attention_mask
+                )
+            else:
+                video_latent_states = block(
+                    video_latent_states, text_latent_states, attention_mask
+                )
         video_latent_states = self.final_layer(video_latent_states)
         return video_latent_states.transpose(1, 2)
 
