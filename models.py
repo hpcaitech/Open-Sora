@@ -16,7 +16,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from timm.models.vision_transformer import Attention, Mlp, PatchEmbed
+from timm.models.vision_transformer import Attention, Mlp
 
 
 def modulate(x, shift, scale):
@@ -54,17 +54,13 @@ class TimestepEmbedder(nn.Module):
         """
         # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
         half = dim // 2
-        freqs = torch.exp(
-            -math.log(max_period)
-            * torch.arange(start=0, end=half, dtype=torch.float32)
-            / half
-        ).to(device=t.device)
+        freqs = torch.exp(-math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half).to(
+            device=t.device
+        )
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         if dim % 2:
-            embedding = torch.cat(
-                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
-            )
+            embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
         return embedding
 
     def forward(self, t):
@@ -81,9 +77,7 @@ class LabelEmbedder(nn.Module):
     def __init__(self, num_classes, hidden_size, dropout_prob):
         super().__init__()
         use_cfg_embedding = dropout_prob > 0
-        self.embedding_table = nn.Embedding(
-            num_classes + use_cfg_embedding, hidden_size
-        )
+        self.embedding_table = nn.Embedding(num_classes + use_cfg_embedding, hidden_size)
         self.num_classes = num_classes
         self.dropout_prob = dropout_prob
 
@@ -92,9 +86,7 @@ class LabelEmbedder(nn.Module):
         Drops labels to enable classifier-free guidance.
         """
         if force_drop_ids is None:
-            drop_ids = (
-                torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
-            )
+            drop_ids = torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
         else:
             drop_ids = force_drop_ids == 1
         labels = torch.where(drop_ids, self.num_classes, labels)
@@ -121,26 +113,20 @@ class PatchEmbedder(nn.Module):
     ) -> None:
         super().__init__()
         self.patch_size = patch_size
-        self.proj = nn.Conv2d(
-            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias
-        )
+        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias)
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
         x = x.view(*x.shape[:2], -1)
-        out = F.linear(
-            x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
-        )
+        out = F.linear(x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias)
         out = self.norm(out)
         # [B, S, H]
         return out
 
 
 class TextEmbedder(nn.Module):
-    def __init__(
-        self, in_features: int, embed_dim: int = 768, bias: bool = True
-    ) -> None:
+    def __init__(self, in_features: int, embed_dim: int = 768, bias: bool = True) -> None:
         super().__init__()
         self.proj = nn.Linear(in_features, embed_dim, bias=bias)
 
@@ -158,9 +144,7 @@ class PositionEmbedding(nn.Module):
 
     def _set_pos_embed_cache(self, seq_len: int):
         self.max_seq_len_cached = seq_len
-        pos_embed = get_2d_sincos_pos_embed(
-            self.dim, int(self.max_position_embeddings**0.5)
-        )
+        pos_embed = get_2d_sincos_pos_embed(self.dim, int(self.max_position_embeddings**0.5))
         pos_embed = torch.from_numpy(pos_embed).float()
         # [S, H]
         self.register_buffer("pos_embed_cache", pos_embed, persistent=False)
@@ -187,9 +171,7 @@ class DiTBlock(nn.Module):
     def __init__(self, hidden_size, num_heads, mlp_ratio=4.0, **block_kwargs):
         super().__init__()
         self.norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.attn = Attention(
-            hidden_size, num_heads=num_heads, qkv_bias=True, **block_kwargs
-        )
+        self.attn = Attention(hidden_size, num_heads=num_heads, qkv_bias=True, **block_kwargs)
         self.norm2 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
         approx_gelu = lambda: nn.GELU(approximate="tanh")
@@ -214,9 +196,7 @@ class FinalLayer(nn.Module):
 
     def __init__(self, hidden_size, patch_size, out_channels):
         super().__init__()
-        self.linear = nn.Linear(
-            hidden_size, patch_size * patch_size * out_channels, bias=True
-        )
+        self.linear = nn.Linear(hidden_size, patch_size * patch_size * out_channels, bias=True)
         self.patch_size = patch_size
 
     def unpatchify(self, x):
@@ -254,19 +234,12 @@ class DiT(nn.Module):
         self.patch_size = patch_size
         self.num_heads = num_heads
 
-        self.video_embedder = PatchEmbedder(
-            patch_size, in_channels, hidden_size, bias=True
-        )
+        self.video_embedder = PatchEmbedder(patch_size, in_channels, hidden_size, bias=True)
         self.t_embedder = TimestepEmbedder(hidden_size)
         self.text_embedder = TextEmbedder(text_embed_dim, hidden_size, bias=True)
         self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
 
-        self.blocks = nn.ModuleList(
-            [
-                DiTBlock(hidden_size, num_heads, mlp_ratio=mlp_ratio)
-                for _ in range(depth)
-            ]
-        )
+        self.blocks = nn.ModuleList([DiTBlock(hidden_size, num_heads, mlp_ratio=mlp_ratio) for _ in range(depth)])
         self.final_layer = FinalLayer(hidden_size, patch_size, self.out_channels)
         self.initialize_weights()
 
@@ -353,9 +326,7 @@ def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False, extra_tokens=
     grid = grid.reshape([2, 1, grid_size, grid_size])
     pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
     if cls_token and extra_tokens > 0:
-        pos_embed = np.concatenate(
-            [np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0
-        )
+        pos_embed = np.concatenate([np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0)
     return pos_embed
 
 

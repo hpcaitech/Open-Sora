@@ -20,7 +20,7 @@ Here is an example of the captions file:
     },
     {
         "file": "video1.mp4",
-        "captions": ["a  comparison of two opposing team football athletes"]    
+        "captions": ["a  comparison of two opposing team football athletes"]
     }
 ]
 ```
