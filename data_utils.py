@@ -99,6 +99,22 @@ def patchify_batch(videos: List[torch.Tensor], patch_size: int) -> Tuple[torch.T
     return pad_sequences(video_patches)
 
 
+def expand_mask_4d(q_mask: torch.Tensor, kv_mask: torch.Tensor) -> torch.Tensor:
+    """expand 2D mask to 4D mask
+
+    Args:
+        q_mask (torch.Tensor): [B, Sq]
+        kv_mask (torch.Tensor): [B, Skv]
+
+    Returns:
+        torch.Tensor: [B, 1, Sq, Skv]
+    """
+    q_len = q_mask.shape[1]
+    mask = kv_mask.unsqueeze(1).repeat(1, q_len, 1)
+    mask = mask * q_mask.unsqueeze(-1)
+    return mask.unsqueeze(1)
+
+
 def make_batch(samples: List[dict], patch_size: int) -> dict:
     """Make a batch of samples.
 
@@ -117,6 +133,7 @@ def make_batch(samples: List[dict], patch_size: int) -> dict:
         "video_padding_mask": video_padding_mask,
         "text_latent_states": texts,
         "text_padding_mask": text_padding_mask,
+        "attention_mask": expand_mask_4d(video_padding_mask, text_padding_mask),
     }
 
 
