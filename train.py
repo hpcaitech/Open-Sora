@@ -25,7 +25,6 @@ from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
 from colossalai.utils import get_current_device
-from diffusers.models import AutoencoderKL
 from tqdm import tqdm
 
 from data_utils import load_datasets, make_batch
@@ -99,9 +98,7 @@ def main(args):
     model.train()  # important! This enables embedding dropout for classifier-free guidance
     ema.eval()  # EMA model should always be in eval mode
 
-    diffusion = create_diffusion(
-        timestep_respacing=""
-    )  # default: 1000 steps, linear noise schedule
+    diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
@@ -153,19 +150,11 @@ def main(args):
                 pbar.update()
 
                 # Save DiT checkpoint:
-                if (
-                    args.save_interval > 0 and (step + 1) % args.save_interval == 0
-                ) or (step + 1) == len(dataloader):
-                    save_path = os.path.join(
-                        args.checkpoint_dir, f"epoch-{epoch}-step-{step}"
-                    )
+                if (args.save_interval > 0 and (step + 1) % args.save_interval == 0) or (step + 1) == len(dataloader):
+                    save_path = os.path.join(args.checkpoint_dir, f"epoch-{epoch}-step-{step}")
                     os.makedirs(save_path, exist_ok=True)
-                    booster.save_model(
-                        model, os.path.join(save_path, "model"), shard=True
-                    )
-                    booster.save_optimizer(
-                        opt, os.path.join(save_path, "optimizer"), shard=True
-                    )
+                    booster.save_model(model, os.path.join(save_path, "model"), shard=True)
+                    booster.save_optimizer(opt, os.path.join(save_path, "optimizer"), shard=True)
                     if coordinator.is_master():
                         ema_state_dict = ema.state_dict()
                         for k, v in ema_state_dict.items():
@@ -179,9 +168,7 @@ def main(args):
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
-    )
+    parser.add_argument("-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8")
     parser.add_argument("--dataset", nargs="+", default=[])
     parser.add_argument("-e", "--epochs", type=int, default=10)
     parser.add_argument("-b", "--batch_size", type=int, default=4)

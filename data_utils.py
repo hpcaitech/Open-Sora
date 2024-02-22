@@ -1,8 +1,7 @@
 import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from datasets import Dataset as HFDataset
 from datasets import dataset_dict, load_from_disk
@@ -35,9 +34,7 @@ def video2col(video_4d: torch.Tensor, patch_size: int) -> torch.Tensor:
     return torch.stack(out, dim=1).view(-1, c, patch_size, patch_size)
 
 
-def col2video(
-    patches: torch.Tensor, video_shape: Tuple[int, int, int, int]
-) -> torch.Tensor:
+def col2video(patches: torch.Tensor, video_shape: Tuple[int, int, int, int]) -> torch.Tensor:
     """
     Convert a 2D tensor of patches to a 4D video tensor.
 
@@ -74,10 +71,7 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
     """
     max_len = max([sequence.shape[0] for sequence in sequences])
     padded_sequences = [
-        F.pad(
-            sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]
-        )
-        for sequence in sequences
+        F.pad(sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]) for sequence in sequences
     ]
     padded_sequences = torch.stack(padded_sequences, dim=0)
     padding_mask = torch.zeros(
@@ -91,9 +85,7 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
     return padded_sequences, padding_mask
 
 
-def patchify_batch(
-    videos: List[torch.Tensor], patch_size: int
-) -> Tuple[torch.Tensor, torch.Tensor]:
+def patchify_batch(videos: List[torch.Tensor], patch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
     """Patchify a batch of videos.
 
     Args:
@@ -128,18 +120,14 @@ def make_batch(samples: List[dict], patch_size: int) -> dict:
     }
 
 
-def load_datasets(
-    dataset_paths: Union[PathType, List[PathType]], mode: str = "train"
-) -> Optional[DatasetType]:
+def load_datasets(dataset_paths: Union[PathType, List[PathType]], mode: str = "train") -> Optional[DatasetType]:
     """
     Load pre-tokenized dataset.
     Each instance of dataset is a dictionary with
     `{'input_ids': List[int], 'labels': List[int], sequence: str}` format.
     """
     mode_map = {"train": "train", "dev": "validation", "test": "test"}
-    assert mode in tuple(
-        mode_map
-    ), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
+    assert mode in tuple(mode_map), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
 
     if isinstance(dataset_paths, (str, os.PathLike)):
         dataset_paths = [dataset_paths]
@@ -148,9 +136,7 @@ def load_datasets(
     for ds_path in dataset_paths:
         ds_path = os.path.abspath(ds_path)
         assert os.path.exists(ds_path), f"Not existed file path {ds_path}"
-        ds_dict = load_from_disk(
-            dataset_path=ds_path, keep_in_memory=False
-        ).with_format("torch")
+        ds_dict = load_from_disk(dataset_path=ds_path, keep_in_memory=False).with_format("torch")
         if isinstance(ds_dict, HFDataset):
             datasets.append(ds_dict)
         else:
