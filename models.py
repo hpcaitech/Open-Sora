@@ -388,10 +388,10 @@ class DiT(nn.Module):
             )
         return attention_mask
 
-    def gradient_checkpointing_enable(self):
+    def enable_gradient_checkpointing(self):
         self.grad_checkpointing = True
 
-    def gradient_checkpointing_disable(self):
+    def disable_gradient_checkpointing(self):
         self.grad_checkpointing = False
 
     def forward(

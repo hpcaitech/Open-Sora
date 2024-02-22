@@ -98,7 +98,7 @@ def main(args):
     model.train()  # important! This enables embedding dropout for classifier-free guidance
     ema.eval()  # EMA model should always be in eval mode
     if args.grad_checkpoint:
-        model.gradient_checkpointing_enable()
+        model.enable_gradient_checkpointing()
 
     diffusion = create_diffusion(
         timestep_respacing=""
