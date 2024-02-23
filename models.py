@@ -211,7 +211,7 @@ class PatchEmbedder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
         # FIXME: hack diffusion and use view
-        x = x.reshape(*x.shape[:2], -1)
+        x = x.view(*x.shape[:2], -1)
         out = F.linear(
             x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
         )
@@ -405,8 +405,6 @@ class DiT(nn.Module):
         """
         video_latent_states: [B, C, S, P, P]
         """
-        # [B, C, S, P, P] -> [B, S, C, P, P]
-        video_latent_states = video_latent_states.transpose(1, 2)
         video_latent_states = self.video_embedder(video_latent_states)
         pos_embed = self.pos_embed(video_latent_states)
         video_latent_states = video_latent_states + pos_embed
@@ -423,7 +421,7 @@ class DiT(nn.Module):
                     video_latent_states, text_latent_states, attention_mask
                 )
         video_latent_states = self.final_layer(video_latent_states)
-        return video_latent_states.transpose(1, 2)
+        return video_latent_states
 
     def forward_with_cfg(self, x, t, y, cfg_scale):
         """

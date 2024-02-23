@@ -173,8 +173,6 @@ def preprocess_batch(
         embeddings = embeddings.squeeze(0).permute(1, 0, 2, 3)
         videos.append(embeddings)
     video_latent_states, video_padding_mask = patchify_batch(videos, patch_size)
-    # hack diffuser, [B, S, C, P, P] -> [B, C, S, P, P]
-    video_latent_states = video_latent_states.transpose(1, 2)
     batch["video_latent_states"] = video_latent_states
     batch["video_padding_mask"] = video_padding_mask
     text_padding_mask = batch.pop("text_padding_mask").to(device)
