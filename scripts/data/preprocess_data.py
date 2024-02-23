@@ -89,7 +89,6 @@ def process_dataset(
     ds = load_dataset("json", data_files=captions_file, keep_in_memory=False, split=train_splits)
 
     for i, part_ds in enumerate(ds):
-        print(f"Processing part {i+1}/{len(ds)}")
         part_ds = part_ds.map(
             process_batch,
             fn_kwargs={"video_dir": video_dir, "tokenizer": tokenizer, "text_model": text_model, "vqvae": vqvae},
@@ -105,10 +104,10 @@ def process_dataset(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Preprocess data")
     parser.add_argument(
-        "captions_file", type=str, help="Path to the captions file. It should be a JSON file or a JSONL file"
+        "-c", "--captions-file", type=str, help="Path to the captions file. It should be a JSON file or a JSONL file"
     )
-    parser.add_argument("video_dir", type=str, help="Path to the video directory")
-    parser.add_argument("output_dir", type=str, help="Path to the output directory")
+    parser.add_argument("-v", "--video-dir", type=str, help="Path to the video directory")
+    parser.add_argument("-o", "--output_dir", type=str, help="Path to the output directory")
     parser.add_argument(
         "-n", "--num_spliced_dataset_bins", type=int, default=10, help="Number of bins for spliced dataset"
     )
