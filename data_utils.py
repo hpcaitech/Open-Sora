@@ -2,10 +2,13 @@ import os
 from typing import List, Optional, Tuple, Union
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from colossalai.utils import get_current_device
 from datasets import Dataset as HFDataset
 from datasets import dataset_dict, load_from_disk
 from torch.utils.data import ConcatDataset, Dataset
+from torchvision.io import read_video
 
 DatasetType = Union[Dataset, ConcatDataset, dataset_dict.Dataset]
 PathType = Union[str, os.PathLike]
@@ -34,7 +37,9 @@ def video2col(video_4d: torch.Tensor, patch_size: int) -> torch.Tensor:
     return torch.stack(out, dim=1).view(-1, c, patch_size, patch_size)
 
 
-def col2video(patches: torch.Tensor, video_shape: Tuple[int, int, int, int]) -> torch.Tensor:
+def col2video(
+    patches: torch.Tensor, video_shape: Tuple[int, int, int, int]
+) -> torch.Tensor:
     """
     Convert a 2D tensor of patches to a 4D video tensor.
 
@@ -71,7 +76,10 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
     """
     max_len = max([sequence.shape[0] for sequence in sequences])
     padded_sequences = [
-        F.pad(sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]) for sequence in sequences
+        F.pad(
+            sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]
+        )
+        for sequence in sequences
     ]
     padded_sequences = torch.stack(padded_sequences, dim=0)
     padding_mask = torch.zeros(
@@ -85,7 +93,9 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
     return padded_sequences, padding_mask
 
 
-def patchify_batch(videos: List[torch.Tensor], patch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
+def patchify_batch(
+    videos: List[torch.Tensor], patch_size: int
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """Patchify a batch of videos.
 
     Args:
@@ -115,7 +125,7 @@ def expand_mask_4d(q_mask: torch.Tensor, kv_mask: torch.Tensor) -> torch.Tensor:
     return mask.unsqueeze(1)
 
 
-def make_batch(samples: List[dict], patch_size: int) -> dict:
+def make_batch(samples: List[dict], video_dir: str) -> dict:
     """Make a batch of samples.
 
     Args:
@@ -124,27 +134,67 @@ def make_batch(samples: List[dict], patch_size: int) -> dict:
     Returns:
         dict: A batch of samples.
     """
-    videos = [sample["video_latent_states"] for sample in samples]
-    videos, video_padding_mask = patchify_batch(videos, patch_size)
+    videos = [
+        read_video(os.path.join(video_dir, sample["video_file"]), pts_unit="sec")[0]
+        for sample in samples
+    ]
     texts = [sample["text_latent_states"] for sample in samples]
     texts, text_padding_mask = pad_sequences(texts)
     return {
-        "video_latent_states": videos,
-        "video_padding_mask": video_padding_mask,
+        "videos": videos,
         "text_latent_states": texts,
         "text_padding_mask": text_padding_mask,
-        "attention_mask": expand_mask_4d(video_padding_mask, text_padding_mask),
     }
 
 
-def load_datasets(dataset_paths: Union[PathType, List[PathType]], mode: str = "train") -> Optional[DatasetType]:
+def normalize_video(video: torch.Tensor) -> torch.Tensor:
+    return video.float() / 255 - 0.5
+
+
+def unnormalize_video(video: torch.Tensor) -> torch.Tensor:
+    return (video + 0.5) * 255
+
+
+@torch.no_grad()
+def preprocess_batch(
+    batch: dict, patch_size: int, vqvae: nn.Module, device=None
+) -> dict:
+    if device is None:
+        device = get_current_device()
+    videos = []
+    for video in batch.pop("videos"):
+        video = video.to(device)
+        video = normalize_video(video)
+        # [T, H, W, C] -> [B, C, T, H, W]
+        video = video.permute(3, 0, 1, 2)
+        video = video.unsqueeze(0)
+        latent_indices, embeddings = vqvae.encode(video, include_embeddings=True)
+        # [B, C, T, H, W] -> [T, C, H, W]
+        embeddings = embeddings.squeeze(0).permute(1, 0, 2, 3)
+        videos.append(embeddings)
+    video_latent_states, video_padding_mask = patchify_batch(videos, patch_size)
+    # hack diffuser, [B, S, C, P, P] -> [B, C, S, P, P]
+    video_latent_states = video_latent_states.transpose(1, 2)
+    batch["video_latent_states"] = video_latent_states
+    batch["video_padding_mask"] = video_padding_mask
+    text_padding_mask = batch.pop("text_padding_mask").to(device)
+    batch["attention_mask"] = expand_mask_4d(video_padding_mask, text_padding_mask)
+    batch["text_latent_states"] = batch["text_latent_states"].to(device)
+    return batch
+
+
+def load_datasets(
+    dataset_paths: Union[PathType, List[PathType]], mode: str = "train"
+) -> Optional[DatasetType]:
     """
     Load pre-tokenized dataset.
     Each instance of dataset is a dictionary with
     `{'input_ids': List[int], 'labels': List[int], sequence: str}` format.
     """
     mode_map = {"train": "train", "dev": "validation", "test": "test"}
-    assert mode in tuple(mode_map), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
+    assert mode in tuple(
+        mode_map
+    ), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
 
     if isinstance(dataset_paths, (str, os.PathLike)):
         dataset_paths = [dataset_paths]
@@ -153,7 +203,9 @@ def load_datasets(dataset_paths: Union[PathType, List[PathType]], mode: str = "t
     for ds_path in dataset_paths:
         ds_path = os.path.abspath(ds_path)
         assert os.path.exists(ds_path), f"Not existed file path {ds_path}"
-        ds_dict = load_from_disk(dataset_path=ds_path, keep_in_memory=False).with_format("torch")
+        ds_dict = load_from_disk(
+            dataset_path=ds_path, keep_in_memory=False
+        ).with_format("torch")
         if isinstance(ds_dict, HFDataset):
             datasets.append(ds_dict)
         else:

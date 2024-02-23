@@ -210,7 +210,8 @@ class PatchEmbedder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
-        x = x.view(*x.shape[:2], -1)
+        # FIXME: hack diffusion and use view
+        x = x.reshape(*x.shape[:2], -1)
         out = F.linear(
             x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
         )
@@ -327,7 +328,7 @@ class DiT(nn.Module):
     def __init__(
         self,
         patch_size=2,
-        in_channels=1,
+        in_channels=256,
         text_embed_dim=512,
         hidden_size=1152,
         depth=28,
@@ -400,7 +401,6 @@ class DiT(nn.Module):
         t,
         text_latent_states=None,
         attention_mask=None,
-        **kwargs,
     ):
         """
         video_latent_states: [B, C, S, P, P]
