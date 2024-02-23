@@ -423,14 +423,18 @@ class DiT(nn.Module):
         video_latent_states = self.final_layer(video_latent_states)
         return video_latent_states
 
-    def forward_with_cfg(self, x, t, y, cfg_scale):
+    def forward_with_cfg(
+        self, x, t, text_latent_states, cfg_scale, attention_mask=None
+    ):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
         """
         # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self.forward(combined, t, y)
+        model_out = self.forward(
+            combined, t, text_latent_states, attention_mask=attention_mask
+        )
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.

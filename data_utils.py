@@ -60,7 +60,7 @@ def col2video(
             if y + patch_size > h or x + patch_size > w:
                 continue
             # [T, C, P, P]
-            patch = patches[:, y * num_x_patches + x]
+            patch = patches[:, (y // patch_size) * num_x_patches + x // patch_size]
             video[:, :, y : y + patch_size, x : x + patch_size].copy_(patch)
     return video
 
