@@ -80,12 +80,18 @@ def main(args):
         os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     # Setup model
-    vqvae = (
-        AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
-        .to(get_current_device())
-        .eval()
-    )
-    model = DiT_models[args.model]().to(get_current_device())
+    if len(args.vqvae) > 0:
+        vqvae = (
+            AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
+            .to(get_current_device())
+            .eval()
+        )
+        model_kwargs = {"in_channels": vqvae.embedding_dim}
+    else:
+        # disable VQ-VAE if not provided, just use raw video frames
+        vqvae = None
+        model_kwargs = {}
+    model = DiT_models[args.model](**model_kwargs).to(get_current_device())
     patch_size = model.patch_size
     ema = deepcopy(model)
     requires_grad(ema, False)

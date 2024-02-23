@@ -150,7 +150,9 @@ class TimestepEmbedder(nn.Module):
         return embedding
 
     def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(self.mlp[0].weight.dtype)
+        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(
+            self.mlp[0].weight.dtype
+        )
         t_emb = self.mlp(t_freq)
         return t_emb
 
@@ -239,12 +241,10 @@ class PositionEmbedding(nn.Module):
         self.max_position_embeddings = max_position_embeddings
         self._set_pos_embed_cache(max_position_embeddings)
 
-    def _set_pos_embed_cache(self, seq_len: int):
+    def _set_pos_embed_cache(self, seq_len: int, device="cpu", dtype=torch.float):
         self.max_seq_len_cached = seq_len
-        pos_embed = get_2d_sincos_pos_embed(
-            self.dim, int(self.max_position_embeddings**0.5)
-        )
-        pos_embed = torch.from_numpy(pos_embed).float()
+        pos_embed = get_2d_sincos_pos_embed(self.dim, math.ceil(seq_len**0.5))
+        pos_embed = torch.from_numpy(pos_embed).to(device=device, dtype=dtype)
         # [S, H]
         self.register_buffer("pos_embed_cache", pos_embed, persistent=False)
 
@@ -252,7 +252,7 @@ class PositionEmbedding(nn.Module):
         # [B, S, H]
         seq_len = x.shape[1]
         if seq_len > self.max_seq_len_cached:
-            self._set_pos_embed_cache(seq_len)
+            self._set_pos_embed_cache(seq_len, x.device, x.dtype)
         pos_embed = self.pos_embed_cache[None, :seq_len]
         return pos_embed
 
@@ -328,7 +328,7 @@ class DiT(nn.Module):
     def __init__(
         self,
         patch_size=2,
-        in_channels=256,
+        in_channels=3,
         text_embed_dim=512,
         hidden_size=1152,
         depth=28,
@@ -435,11 +435,13 @@ class DiT(nn.Module):
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.
         # eps, rest = model_out[:, :self.in_channels], model_out[:, self.in_channels:]
-        eps, rest = model_out[:, :3], model_out[:, 3:]
+        c = model_out.shape[2]
+        assert c == 2 * self.in_channels
+        eps, rest = model_out.chunk(2, dim=2)
         cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
         half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
         eps = torch.cat([half_eps, half_eps], dim=0)
-        return torch.cat([eps, rest], dim=1)
+        return torch.cat([eps, rest], dim=2)
 
 
 #################################################################################
