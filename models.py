@@ -150,7 +150,7 @@ class TimestepEmbedder(nn.Module):
         return embedding
 
     def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size)
+        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(self.mlp[0].weight.dtype)
         t_emb = self.mlp(t_freq)
         return t_emb
 
@@ -348,7 +348,7 @@ class DiT(nn.Module):
         self.video_embedder = PatchEmbedder(
             patch_size, in_channels, hidden_size, bias=True
         )
-        self.t_embedder = TimestepEmbedder(hidden_size)
+        self.t_embedder = TimestepEmbedder(text_embed_dim)
         self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
 
         self.blocks = nn.ModuleList(
@@ -403,13 +403,13 @@ class DiT(nn.Module):
         attention_mask=None,
     ):
         """
-        video_latent_states: [B, C, S, P, P]
+        video_latent_states: [B, S, C, P, P]
         """
         video_latent_states = self.video_embedder(video_latent_states)
         pos_embed = self.pos_embed(video_latent_states)
         video_latent_states = video_latent_states + pos_embed
-        # TODO: use timestep embedding
-        # t = self.t_embedder(t)  # (N, D)
+        t = self.t_embedder(t)  # (N, D)
+        text_latent_states = text_latent_states + t.unsqueeze(1)
         attention_mask = self._prepare_mask(attention_mask, video_latent_states.dtype)
         for block in self.blocks:
             if self.grad_checkpointing and self.training:
