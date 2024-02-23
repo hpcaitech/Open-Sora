@@ -135,13 +135,16 @@ def main(args):
             for step, batch in enumerate(dataloader):
                 batch = {k: v.to(get_current_device()) for k, v in batch.items()}
                 video_inputs = batch.pop("video_latent_states")
+                mask = batch.pop("video_padding_mask")
                 t = torch.randint(
                     0,
                     diffusion.num_timesteps,
                     (video_inputs.shape[0],),
                     device=video_inputs.device,
                 )
-                loss_dict = diffusion.training_losses(model, video_inputs, t, batch)
+                loss_dict = diffusion.training_losses(
+                    model, video_inputs, t, batch, mask=mask
+                )
                 loss = loss_dict["loss"].mean()
                 booster.backward(loss, opt)
                 opt.step()
