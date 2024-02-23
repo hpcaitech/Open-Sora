@@ -26,8 +26,9 @@ from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
 from colossalai.utils import get_current_device
 from tqdm import tqdm
+from transformers import AutoModel
 
-from data_utils import load_datasets, make_batch
+from data_utils import load_datasets, make_batch, preprocess_batch
 from diffusion import create_diffusion
 from models import DiT_models
 
@@ -52,19 +53,6 @@ def requires_grad(model, flag=True):
     """
     for p in model.parameters():
         p.requires_grad = flag
-
-
-def collate_fn(batch, patch_size=2):
-    for sample in batch:
-        video = sample["video_latent_states"]
-        # [T, H, W] -> [T, C, H, W]
-        video = video.unsqueeze(1)
-        video = video.float() * 0.18215
-        sample["video_latent_states"] = video
-    batch = make_batch(batch, patch_size)
-    # hack diffuser, [B, S, C, P, P] -> [B, C, S, P, P]
-    batch["video_latent_states"] = batch["video_latent_states"].transpose(1, 2)
-    return batch
 
 
 def all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
@@ -92,7 +80,13 @@ def main(args):
         os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     # Setup model
+    vqvae = (
+        AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
+        .to(get_current_device())
+        .eval()
+    )
     model = DiT_models[args.model]().to(get_current_device())
+    patch_size = model.patch_size
     ema = deepcopy(model)
     requires_grad(ema, False)
     model.train()  # important! This enables embedding dropout for classifier-free guidance
@@ -112,7 +106,7 @@ def main(args):
     dataloader = plugin.prepare_dataloader(
         dataset,
         batch_size=args.batch_size,
-        collate_fn=partial(collate_fn, patch_size=model.patch_size),
+        collate_fn=partial(make_batch, video_dir=args.video_dir),
         shuffle=True,
         drop_last=True,
     )
@@ -133,7 +127,7 @@ def main(args):
             total=len(dataloader),
         ) as pbar:
             for step, batch in enumerate(dataloader):
-                batch = {k: v.to(get_current_device()) for k, v in batch.items()}
+                batch = preprocess_batch(batch, patch_size, vqvae)
                 video_inputs = batch.pop("video_latent_states")
                 mask = batch.pop("video_padding_mask")
                 t = torch.randint(
@@ -192,10 +186,12 @@ if __name__ == "__main__":
         "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
     )
     parser.add_argument("-d", "--dataset", nargs="+", default=[])
+    parser.add_argument("-v", "--video_dir", type=str, required=True)
     parser.add_argument("-e", "--epochs", type=int, default=10)
     parser.add_argument("-b", "--batch_size", type=int, default=4)
     parser.add_argument("-g", "--grad_checkpoint", action="store_true", default=False)
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
+    parser.add_argument("--vqvae", default="hpcai-tech/vqvae")
     args = parser.parse_args()
     main(args)
