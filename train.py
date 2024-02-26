@@ -108,7 +108,7 @@ def main(args):
     )  # default: 1000 steps, linear noise schedule
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
-    opt = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=0)
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0)
 
     # Setup dataloader
     dataset = load_datasets(args.dataset)
@@ -217,6 +217,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--batch_size", type=int, default=4)
     parser.add_argument("-g", "--grad_checkpoint", action="store_true", default=False)
     parser.add_argument("-a", "--accumulation_steps", default=1, type=int)
+    parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
     parser.add_argument("--tensorboard_dir", type=str, default="runs")
