@@ -25,6 +25,7 @@ from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
 from colossalai.utils import get_current_device
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import AutoModel
 
@@ -78,6 +79,8 @@ def main(args):
 
     if coordinator.is_master():
         os.makedirs(args.checkpoint_dir, exist_ok=True)
+        os.makedirs(args.tensorboard_dir, exist_ok=True)
+        writer = SummaryWriter(args.tensorboard_dir)
 
     # Setup model
     if len(args.vqvae) > 0:
@@ -160,6 +163,15 @@ def main(args):
 
                     all_reduce_mean(total_loss)
                     pbar.set_postfix({"Loss": f"{total_loss.item():.4f}"})
+                    if coordinator.is_master():
+                        global_step = (epoch * num_steps_per_epoch) + (
+                            step + 1
+                        ) // args.accumulation_steps
+                        writer.add_scalar(
+                            tag="Loss",
+                            scalar_value=total_loss.item(),
+                            global_step=global_step,
+                        )
                     pbar.update()
                     total_loss.zero_()
 
@@ -207,6 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--accumulation_steps", default=1, type=int)
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
+    parser.add_argument("--tensorboard_dir", type=str, default="runs")
     parser.add_argument("--vqvae", default="hpcai-tech/vqvae")
     args = parser.parse_args()
     main(args)
