@@ -94,7 +94,13 @@ pip install -r requirements.txt
 
 ### Training
 
+You can invoke the training via the command below.
 
+```bash
+bash ./scripts/train.sh
+```
+
+You can also modify the arguments in `train.sh` for your own need.
 
 ### Inference
 

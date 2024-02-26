@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# get args
+GPUS=${1:8}
+
 # get root dir
 FOLDER_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ROOT_DIR=$FOLDER_DIR/..
@@ -24,7 +27,7 @@ PROCESSED_DATASET=(
 
 # run single node training
 torchrun --standalone \
-    --nproc_per_node 4 \
+    --nproc_per_node $GPUS \
     train.py \
     --epochs 1 \
     --batch_size 1 \
