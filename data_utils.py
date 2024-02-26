@@ -60,7 +60,7 @@ def col2video(
             if y + patch_size > h or x + patch_size > w:
                 continue
             # [T, C, P, P]
-            patch = patches[:, y * num_x_patches + x]
+            patch = patches[:, (y // patch_size) * num_x_patches + x // patch_size]
             video[:, :, y : y + patch_size, x : x + patch_size].copy_(patch)
     return video
 
@@ -157,7 +157,7 @@ def unnormalize_video(video: torch.Tensor) -> torch.Tensor:
 
 @torch.no_grad()
 def preprocess_batch(
-    batch: dict, patch_size: int, vqvae: nn.Module, device=None
+    batch: dict, patch_size: int, vqvae: Optional[nn.Module] = None, device=None
 ) -> dict:
     if device is None:
         device = get_current_device()
@@ -165,16 +165,19 @@ def preprocess_batch(
     for video in batch.pop("videos"):
         video = video.to(device)
         video = normalize_video(video)
-        # [T, H, W, C] -> [B, C, T, H, W]
-        video = video.permute(3, 0, 1, 2)
-        video = video.unsqueeze(0)
-        latent_indices, embeddings = vqvae.encode(video, include_embeddings=True)
-        # [B, C, T, H, W] -> [T, C, H, W]
-        embeddings = embeddings.squeeze(0).permute(1, 0, 2, 3)
-        videos.append(embeddings)
+        if vqvae is not None:
+            # [T, H, W, C] -> [B, C, T, H, W]
+            video = video.permute(3, 0, 1, 2)
+            video = video.unsqueeze(0)
+            latent_indices, embeddings = vqvae.encode(video, include_embeddings=True)
+            # [B, C, T, H, W] -> [T, C, H, W]
+            embeddings = embeddings.squeeze(0).permute(1, 0, 2, 3)
+            videos.append(embeddings)
+        else:
+            # [T, H, W, C] -> [T, C, H, W]
+            video = video.permute(0, 3, 1, 2).contiguous()
+            videos.append(video)
     video_latent_states, video_padding_mask = patchify_batch(videos, patch_size)
-    # hack diffuser, [B, S, C, P, P] -> [B, C, S, P, P]
-    video_latent_states = video_latent_states.transpose(1, 2)
     batch["video_latent_states"] = video_latent_states
     batch["video_padding_mask"] = video_padding_mask
     text_padding_mask = batch.pop("text_padding_mask").to(device)

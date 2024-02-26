@@ -150,7 +150,9 @@ class TimestepEmbedder(nn.Module):
         return embedding
 
     def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size)
+        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(
+            self.mlp[0].weight.dtype
+        )
         t_emb = self.mlp(t_freq)
         return t_emb
 
@@ -211,7 +213,7 @@ class PatchEmbedder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
         # FIXME: hack diffusion and use view
-        x = x.reshape(*x.shape[:2], -1)
+        x = x.view(*x.shape[:2], -1)
         out = F.linear(
             x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
         )
@@ -239,12 +241,10 @@ class PositionEmbedding(nn.Module):
         self.max_position_embeddings = max_position_embeddings
         self._set_pos_embed_cache(max_position_embeddings)
 
-    def _set_pos_embed_cache(self, seq_len: int):
+    def _set_pos_embed_cache(self, seq_len: int, device="cpu", dtype=torch.float):
         self.max_seq_len_cached = seq_len
-        pos_embed = get_2d_sincos_pos_embed(
-            self.dim, int(self.max_position_embeddings**0.5)
-        )
-        pos_embed = torch.from_numpy(pos_embed).float()
+        pos_embed = get_2d_sincos_pos_embed(self.dim, math.ceil(seq_len**0.5))
+        pos_embed = torch.from_numpy(pos_embed).to(device=device, dtype=dtype)
         # [S, H]
         self.register_buffer("pos_embed_cache", pos_embed, persistent=False)
 
@@ -252,7 +252,7 @@ class PositionEmbedding(nn.Module):
         # [B, S, H]
         seq_len = x.shape[1]
         if seq_len > self.max_seq_len_cached:
-            self._set_pos_embed_cache(seq_len)
+            self._set_pos_embed_cache(seq_len, x.device, x.dtype)
         pos_embed = self.pos_embed_cache[None, :seq_len]
         return pos_embed
 
@@ -328,7 +328,7 @@ class DiT(nn.Module):
     def __init__(
         self,
         patch_size=2,
-        in_channels=256,
+        in_channels=3,
         text_embed_dim=512,
         hidden_size=1152,
         depth=28,
@@ -348,7 +348,7 @@ class DiT(nn.Module):
         self.video_embedder = PatchEmbedder(
             patch_size, in_channels, hidden_size, bias=True
         )
-        self.t_embedder = TimestepEmbedder(hidden_size)
+        self.t_embedder = TimestepEmbedder(text_embed_dim)
         self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
 
         self.blocks = nn.ModuleList(
@@ -403,15 +403,13 @@ class DiT(nn.Module):
         attention_mask=None,
     ):
         """
-        video_latent_states: [B, C, S, P, P]
+        video_latent_states: [B, S, C, P, P]
         """
-        # [B, C, S, P, P] -> [B, S, C, P, P]
-        video_latent_states = video_latent_states.transpose(1, 2)
         video_latent_states = self.video_embedder(video_latent_states)
         pos_embed = self.pos_embed(video_latent_states)
         video_latent_states = video_latent_states + pos_embed
-        # TODO: use timestep embedding
-        # t = self.t_embedder(t)  # (N, D)
+        t = self.t_embedder(t)  # (N, D)
+        text_latent_states = text_latent_states + t.unsqueeze(1)
         attention_mask = self._prepare_mask(attention_mask, video_latent_states.dtype)
         for block in self.blocks:
             if self.grad_checkpointing and self.training:
@@ -423,25 +421,31 @@ class DiT(nn.Module):
                     video_latent_states, text_latent_states, attention_mask
                 )
         video_latent_states = self.final_layer(video_latent_states)
-        return video_latent_states.transpose(1, 2)
+        return video_latent_states
 
-    def forward_with_cfg(self, x, t, y, cfg_scale):
+    def forward_with_cfg(
+        self, x, t, text_latent_states, cfg_scale, attention_mask=None
+    ):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
         """
         # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self.forward(combined, t, y)
+        model_out = self.forward(
+            combined, t, text_latent_states, attention_mask=attention_mask
+        )
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.
         # eps, rest = model_out[:, :self.in_channels], model_out[:, self.in_channels:]
-        eps, rest = model_out[:, :3], model_out[:, 3:]
+        c = model_out.shape[2]
+        assert c == 2 * self.in_channels
+        eps, rest = model_out.chunk(2, dim=2)
         cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
         half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
         eps = torch.cat([half_eps, half_eps], dim=0)
-        return torch.cat([eps, rest], dim=1)
+        return torch.cat([eps, rest], dim=2)
 
 
 #################################################################################

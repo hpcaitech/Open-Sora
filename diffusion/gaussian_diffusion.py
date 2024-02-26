@@ -205,7 +205,7 @@ class GaussianDiffusion:
     def q_mean_variance(self, x_start, t):
         """
         Get the distribution q(x_t | x_0).
-        :param x_start: the [N x C x ...] tensor of noiseless inputs.
+        :param x_start: the [N x T x C x ...] tensor of noiseless inputs.
         :param t: the number of diffusion steps (minus 1). Here, 0 means one step.
         :return: A tuple (mean, variance, log_variance), all of x_start's shape.
         """
@@ -266,7 +266,7 @@ class GaussianDiffusion:
         the initial x, x_0.
         :param model: the model, which takes a signal and a batch of timesteps
                       as input.
-        :param x: the [N x C x ...] tensor at time t.
+        :param x: the [N x T x C x ...] tensor at time t.
         :param t: a 1-D Tensor of timesteps.
         :param clip_denoised: if True, clip the denoised signal into [-1, 1].
         :param denoised_fn: if not None, a function which applies to the
@@ -283,7 +283,7 @@ class GaussianDiffusion:
         if model_kwargs is None:
             model_kwargs = {}
 
-        B, C = x.shape[:2]
+        B, S, C = x.shape[:3]
         assert t.shape == (B,)
         model_output = model(x, t, **model_kwargs)
         if isinstance(model_output, tuple):
@@ -292,8 +292,8 @@ class GaussianDiffusion:
             extra = None
 
         if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
-            assert model_output.shape == (B, C * 2, *x.shape[2:])
-            model_output, model_var_values = th.split(model_output, C, dim=1)
+            assert model_output.shape == (B, S, C * 2, *x.shape[3:])
+            model_output, model_var_values = th.split(model_output, C, dim=2)
             min_log = _extract_into_tensor(
                 self.posterior_log_variance_clipped, t, x.shape
             )
@@ -453,7 +453,7 @@ class GaussianDiffusion:
         """
         Generate samples from the model.
         :param model: the model module.
-        :param shape: the shape of the samples, (N, C, H, W).
+        :param shape: the shape of the samples, (N, T, C, H, W).
         :param noise: if specified, the noise from the encoder to sample.
                       Should be of the same shape as `shape`.
         :param clip_denoised: if True, clip x_start predictions to [-1, 1].
@@ -739,8 +739,7 @@ class GaussianDiffusion:
 
     def _expand_mask(self, mask, ndim: int):
         assert mask.ndim == 2
-        # [B, S] -> [B, 1, S, ...]
-        mask = mask.unsqueeze(1)
+        # [B, S] -> [B, S, ...]
         mask = mask.view(*mask.shape, *([1] * (ndim - mask.ndim)))
         return mask
 
@@ -750,7 +749,7 @@ class GaussianDiffusion:
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
-        :param x_start: the [N x C x ...] tensor of inputs.
+        :param x_start: the [N x T x C x ...] tensor of inputs.
         :param t: a batch of timestep indices.
         :param model_kwargs: if not None, a dict of extra keyword arguments to
             pass to the model. This can be used for conditioning.
@@ -788,12 +787,12 @@ class GaussianDiffusion:
                 ModelVarType.LEARNED,
                 ModelVarType.LEARNED_RANGE,
             ]:
-                B, C = x_t.shape[:2]
-                assert model_output.shape == (B, C * 2, *x_t.shape[2:])
-                model_output, model_var_values = th.split(model_output, C, dim=1)
+                B, S, C = x_t.shape[:3]
+                assert model_output.shape == (B, S, C * 2, *x_t.shape[3:])
+                model_output, model_var_values = th.split(model_output, C, dim=2)
                 # Learn the variance using the variational bound, but don't let
                 # it affect our mean prediction.
-                frozen_out = th.cat([model_output.detach(), model_var_values], dim=1)
+                frozen_out = th.cat([model_output.detach(), model_var_values], dim=2)
                 terms["vb"] = self._vb_terms_bpd(
                     model=lambda *args, r=frozen_out: r,
                     x_start=x_start,
@@ -830,7 +829,7 @@ class GaussianDiffusion:
         Get the prior KL term for the variational lower-bound, measured in
         bits-per-dim.
         This term can't be optimized, as it only depends on the encoder.
-        :param x_start: the [N x C x ...] tensor of inputs.
+        :param x_start: the [N x T x C x ...] tensor of inputs.
         :return: a batch of [N] KL values (in bits), one per batch element.
         """
         batch_size = x_start.shape[0]
@@ -846,7 +845,7 @@ class GaussianDiffusion:
         Compute the entire variational lower-bound, measured in bits-per-dim,
         as well as other related quantities.
         :param model: the model to evaluate loss on.
-        :param x_start: the [N x C x ...] tensor of inputs.
+        :param x_start: the [N x T x C x ...] tensor of inputs.
         :param clip_denoised: if True, clip denoised samples.
         :param model_kwargs: if not None, a dict of extra keyword arguments to
             pass to the model. This can be used for conditioning.
