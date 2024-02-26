@@ -160,5 +160,7 @@ cython_debug/
 #.idea/
 .vscode/
 
-# files needed to train
+# misc files
 dataset/
+runs/
+checkpoints/

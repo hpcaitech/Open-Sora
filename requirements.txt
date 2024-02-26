@@ -3,3 +3,4 @@ torchvision
 datasets
 transformers
 av
+tensorboard

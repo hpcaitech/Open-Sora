@@ -94,7 +94,7 @@ pip install -r requirements.txt
 
 ### Training
 
-To be added.
+
 
 ### Inference
 
