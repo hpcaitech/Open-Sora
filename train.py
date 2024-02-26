@@ -125,13 +125,16 @@ def main(args):
         ranks=[0],
     )
 
+    num_steps_per_epoch = len(dataloader) // args.accumulation_steps
+
     for epoch in range(args.epochs):
         dataloader.sampler.set_epoch(epoch)
         with tqdm(
             desc=f"Epoch {epoch}",
             disable=not coordinator.is_master(),
-            total=len(dataloader),
+            total=num_steps_per_epoch,
         ) as pbar:
+            total_loss = torch.tensor(0.0, device=get_current_device())
             for step, batch in enumerate(dataloader):
                 batch = preprocess_batch(batch, patch_size, vqvae)
                 video_inputs = batch.pop("video_latent_states")
@@ -145,20 +148,25 @@ def main(args):
                 loss_dict = diffusion.training_losses(
                     model, video_inputs, t, batch, mask=mask
                 )
-                loss = loss_dict["loss"].mean()
+                loss = loss_dict["loss"].mean() / args.accumulation_steps
+                total_loss.add_(loss.data)
                 booster.backward(loss, opt)
-                opt.step()
-                opt.zero_grad()
-                update_ema(ema, model)
 
-                loss_no_grad = loss.data
-                all_reduce_mean(loss_no_grad)
-                pbar.set_postfix({"Loss": f"{loss_no_grad.item():.4f}"})
-                pbar.update()
+                if (step + 1) % args.accumulation_steps == 0:
+
+                    opt.step()
+                    opt.zero_grad()
+                    update_ema(ema, model)
+
+                    all_reduce_mean(total_loss)
+                    pbar.set_postfix({"Loss": f"{total_loss.item():.4f}"})
+                    pbar.update()
+                    total_loss.zero_()
 
                 # Save DiT checkpoint:
                 if (
-                    args.save_interval > 0 and (step + 1) % args.save_interval == 0
+                    args.save_interval > 0
+                    and (step + 1) % (args.save_interval * args.accumulation_steps) == 0
                 ) or (step + 1) == len(dataloader):
                     save_path = os.path.join(
                         args.checkpoint_dir, f"epoch-{epoch}-step-{step}"
@@ -196,6 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--epochs", type=int, default=10)
     parser.add_argument("-b", "--batch_size", type=int, default=4)
     parser.add_argument("-g", "--grad_checkpoint", action="store_true", default=False)
+    parser.add_argument("-a", "--accumulation_steps", default=1, type=int)
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
     parser.add_argument("--vqvae", default="hpcai-tech/vqvae")
