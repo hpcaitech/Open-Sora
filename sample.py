@@ -34,16 +34,20 @@ def main(args):
             .eval()
         )
         in_channels = vqvae.embedding_dim
+        w_h_factor = 4
+        t_factor = 2
     else:
         # disable VQ-VAE if not provided, just use raw video frames
         vqvae = None
         in_channels = 3
+        w_h_factor = 1
+        t_factor = 1
     text_model = CLIPTextModel.from_pretrained(args.text_model).to(device).eval()
     tokenizer = AutoTokenizer.from_pretrained(args.text_model)
 
     model = DiT_models[args.model](in_channels=in_channels).to(device).eval()
     patch_size = model.patch_size
-    # model.load_state_dict(torch.load(args.ckpt))
+    model.load_state_dict(torch.load(args.ckpt))
     diffusion = create_diffusion(str(args.num_sampling_steps))
 
     # Create sampling noise:
@@ -54,9 +58,9 @@ def main(args):
     num_frames = args.fps * args.sec
     z = torch.randn(
         1,
-        (args.height // patch_size // 4)
-        * (args.width // patch_size // 4)
-        * (num_frames // 2),
+        (args.height // patch_size // w_h_factor)
+        * (args.width // patch_size // w_h_factor)
+        * (num_frames // t_factor),
         in_channels,
         patch_size,
         patch_size,
@@ -87,7 +91,12 @@ def main(args):
     samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
     samples = col2video(
         samples.squeeze(),
-        (num_frames // 2, in_channels, args.height // 4, args.width // 4),
+        (
+            num_frames // t_factor,
+            in_channels,
+            args.height // w_h_factor,
+            args.width // w_h_factor,
+        ),
     )
     if vqvae is not None:
         # [T, C, H, W] -> [B, C, T, H, W]
@@ -106,7 +115,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
+        "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
     )
     parser.add_argument(
         "--text",
