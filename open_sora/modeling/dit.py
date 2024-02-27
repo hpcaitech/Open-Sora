@@ -223,14 +223,32 @@ class PatchEmbedder(nn.Module):
 
 class TextEmbedder(nn.Module):
     def __init__(
-        self, in_features: int, embed_dim: int = 768, bias: bool = True
+        self,
+        in_features: int,
+        embed_dim: int = 768,
+        bias: bool = True,
+        dropout_prob: float = 0.0,
+        use_proj: bool = True,
     ) -> None:
         super().__init__()
-        self.proj = nn.Linear(in_features, embed_dim, bias=bias)
+        self.dropout_prob = dropout_prob
+        self.use_proj = use_proj
+        if self.use_proj:
+            self.proj = nn.Linear(in_features, embed_dim, bias=bias)
+
+    def drop_sample(self, x: torch.Tensor) -> torch.Tensor:
+        drop_ids = torch.rand(x.shape[0], device=x.device) < self.dropout_prob
+        x = torch.where(drop_ids, torch.zeros_like(x), x)
+        return x
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # [B, S, C] -> [B, S, H]
-        return self.proj(x)
+        use_dropout = self.dropout_prob > 0
+        if self.training and use_dropout:
+            x = self.drop_sample(x)
+        if self.use_proj:
+            # [B, S, C] -> [B, S, H]
+            x = self.proj(x)
+        return x
 
 
 class PositionEmbedding(nn.Module):
@@ -359,6 +377,7 @@ class DiT(nn.Module):
         num_heads=16,
         mlp_ratio=4.0,
         max_num_embeddings=256 * 1024,
+        text_dropout_prob=0.1,
         learn_sigma=True,
         use_cross_attn=True,
     ):
@@ -375,11 +394,16 @@ class DiT(nn.Module):
         )
         self.t_embedder = TimestepEmbedder(hidden_size)
         self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
+        self.text_embedder = TextEmbedder(
+            text_embed_dim,
+            hidden_size,
+            bias=True,
+            dropout_prob=text_dropout_prob,
+            use_proj=not use_cross_attn,
+        )
         if not use_cross_attn:
-            self.text_embedder = TextEmbedder(text_embed_dim, hidden_size, bias=True)
             cross_attn_dim = None
         else:
-            self.text_embedder = None
             cross_attn_dim = text_embed_dim
         self.use_cross_attn = use_cross_attn
 
@@ -403,7 +427,7 @@ class DiT(nn.Module):
         self.apply(_basic_init)
 
         # Initialize text embedding layer
-        if self.text_embedder is not None:
+        if self.text_embedder.use_proj:
             nn.init.normal_(self.text_embedder.proj.weight, std=0.02)
 
         # Initialize timestep embedding MLP:
@@ -449,8 +473,8 @@ class DiT(nn.Module):
         """
         video_latent_states = self.video_embedder(video_latent_states)
         text_len = text_latent_states.shape[1]
+        text_latent_states = self.text_embedder(text_latent_states)
         if not self.use_cross_attn:
-            text_latent_states = self.text_embedder(text_latent_states)
             video_latent_states = torch.cat(
                 [text_latent_states, video_latent_states], dim=1
             )

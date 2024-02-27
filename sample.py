@@ -28,7 +28,11 @@ def main(args):
     torch.set_grad_enabled(False)
     device = get_current_device()
     if len(args.vqvae) > 0:
-        vqvae = AutoModel.from_pretrained(args.vqvae, trust_remote_code=True).to(device).eval()
+        vqvae = (
+            AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
+            .to(device)
+            .eval()
+        )
         in_channels = vqvae.embedding_dim
     else:
         # disable VQ-VAE if not provided, just use raw video frames
@@ -50,7 +54,9 @@ def main(args):
     num_frames = args.fps * args.sec
     z = torch.randn(
         1,
-        (args.height // patch_size // 4) * (args.width // patch_size // 4) * (num_frames // 2),
+        (args.height // patch_size // 4)
+        * (args.width // patch_size // 4)
+        * (num_frames // 2),
         in_channels,
         patch_size,
         patch_size,
@@ -60,7 +66,9 @@ def main(args):
     # Setup classifier-free guidance:
     model_kwargs = {}
     z = torch.cat([z, z], 0)
-    model_kwargs["text_latent_states"] = torch.cat([text_latent_states, text_latent_states], 0)
+    model_kwargs["text_latent_states"] = torch.cat(
+        [text_latent_states, torch.zeros_like(text_latent_states)], 0
+    )
     model_kwargs["cfg_scale"] = args.cfg_scale
     model_kwargs["attention_mask"] = torch.ones(
         2, 1, z.shape[1], text_latent_states.shape[1], device=device, dtype=torch.int
@@ -96,7 +104,9 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8")
+    parser.add_argument(
+        "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
+    )
     parser.add_argument(
         "--text",
         type=str,
@@ -112,7 +122,9 @@ if __name__ == "__main__":
         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).",
     )
     parser.add_argument("--vqvae", default="hpcai-tech/vqvae")
-    parser.add_argument("--text_model", type=str, default="openai/clip-vit-base-patch32")
+    parser.add_argument(
+        "--text_model", type=str, default="openai/clip-vit-base-patch32"
+    )
     parser.add_argument("--width", type=int, default=480)
     parser.add_argument("--height", type=int, default=320)
     parser.add_argument("--fps", type=int, default=15)
