@@ -19,7 +19,7 @@ from transformers import AutoModel, AutoTokenizer, CLIPTextModel
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
-from open_sora.utils.data import col2video
+from open_sora.utils.data import col2video, unnormalize_video
 
 
 def main(args):
@@ -98,6 +98,7 @@ def main(args):
     else:
         # [T, C, H, W] -> [T, H, W, C]
         samples = samples.permute(0, 2, 3, 1)
+    samples = unnormalize_video(samples).to(torch.uint8)
 
     write_video("sample.mp4", samples.cpu(), args.fps)
 
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--text",
         type=str,
-        default="two ladies laughing by seeing some thing  another lady throw dresses and keep it back by reverse motion",
+        default="a cartoon animals runs through an ice cave in a video game",
     )
     parser.add_argument("--cfg-scale", type=float, default=4.0)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
