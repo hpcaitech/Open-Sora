@@ -4,3 +4,4 @@ datasets
 transformers
 av
 tensorboard
+colossalai
