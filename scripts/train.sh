@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # get args
-GPUS=${1:8}
+GPUS=${1:-8}
 
 # get root dir
 FOLDER_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -25,6 +25,9 @@ PROCESSED_DATASET=(
     ./dataset/MSRVTT-processed/val/part-00009
 )
 
+# create timestamp to differentiate between runs
+timestamp=$(date +%Y-%m-%d-%H-%M)
+
 # run single node training
 torchrun --standalone \
     --nproc_per_node $GPUS \
@@ -37,5 +40,5 @@ torchrun --standalone \
     --dataset $PROCESSED_DATASET \
     --video_dir $COLLATED_VIDEO_DIR \
     --save_interval 224 \
-    --checkpoint_dir ./checkpoints \
-    --tensorboard_dir ./runs
+    --checkpoint_dir ./checkpoints/$timestamp \
+    --tensorboard_dir ./runs/$timestamp

@@ -46,9 +46,7 @@ class CrossAttention(nn.Module):
     ):
         super().__init__()
         self.hidden_size = head_dim * num_heads
-        cross_attention_dim = (
-            cross_attention_dim if cross_attention_dim is not None else query_dim
-        )
+        cross_attention_dim = cross_attention_dim if cross_attention_dim is not None else query_dim
 
         self.scale = head_dim**-0.5
         self.num_heads = num_heads
@@ -59,9 +57,7 @@ class CrossAttention(nn.Module):
         self.to_k = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
         self.to_v = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
 
-        self.to_out = nn.Sequential(
-            nn.Linear(self.hidden_size, query_dim), nn.Dropout(dropout)
-        )
+        self.to_out = nn.Sequential(nn.Linear(self.hidden_size, query_dim), nn.Dropout(dropout))
 
     def forward(self, hidden_states, context=None, mask=None):
         bsz, q_len, _ = hidden_states.shape
@@ -75,24 +71,18 @@ class CrossAttention(nn.Module):
         # [B, S, H, D]
         query = query.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         key = key.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        value = value.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(
-            1, 2
-        )
+        value = value.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         if mask is not None:
             assert mask.shape == (bsz, 1, q_len, kv_seq_len)
         if self.sdpa:
-            attn_output = F.scaled_dot_product_attention(
-                query, key, value, attn_mask=mask, scale=self.scale
-            )
+            attn_output = F.scaled_dot_product_attention(query, key, value, attn_mask=mask, scale=self.scale)
         else:
             attn_weights = torch.matmul(query, key.transpose(2, 3)) / self.scale
             assert attn_weights.shape == (bsz, self.num_heads, q_len, kv_seq_len)
             if mask is not None:
                 attn_weights = attn_weights + mask
-            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                query.dtype
-            )
+            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
             attn_output = torch.matmul(attn_weights, value)
         assert attn_output.shape == (bsz, self.num_heads, q_len, self.head_dim)
         attn_output = attn_output.transpose(1, 2).contiguous()
@@ -136,23 +126,17 @@ class TimestepEmbedder(nn.Module):
         """
         # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
         half = dim // 2
-        freqs = torch.exp(
-            -math.log(max_period)
-            * torch.arange(start=0, end=half, dtype=torch.float32)
-            / half
-        ).to(device=t.device)
+        freqs = torch.exp(-math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half).to(
+            device=t.device
+        )
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         if dim % 2:
-            embedding = torch.cat(
-                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
-            )
+            embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
         return embedding
 
     def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(
-            self.mlp[0].weight.dtype
-        )
+        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(self.mlp[0].weight.dtype)
         t_emb = self.mlp(t_freq)
         return t_emb
 
@@ -165,9 +149,7 @@ class LabelEmbedder(nn.Module):
     def __init__(self, num_classes, hidden_size, dropout_prob):
         super().__init__()
         use_cfg_embedding = dropout_prob > 0
-        self.embedding_table = nn.Embedding(
-            num_classes + use_cfg_embedding, hidden_size
-        )
+        self.embedding_table = nn.Embedding(num_classes + use_cfg_embedding, hidden_size)
         self.num_classes = num_classes
         self.dropout_prob = dropout_prob
 
@@ -176,9 +158,7 @@ class LabelEmbedder(nn.Module):
         Drops labels to enable classifier-free guidance.
         """
         if force_drop_ids is None:
-            drop_ids = (
-                torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
-            )
+            drop_ids = torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
         else:
             drop_ids = force_drop_ids == 1
         labels = torch.where(drop_ids, self.num_classes, labels)
@@ -205,27 +185,21 @@ class PatchEmbedder(nn.Module):
     ) -> None:
         super().__init__()
         self.patch_size = patch_size
-        self.proj = nn.Conv2d(
-            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias
-        )
+        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias)
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
         # FIXME: hack diffusion and use view
         x = x.view(*x.shape[:2], -1)
-        out = F.linear(
-            x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
-        )
+        out = F.linear(x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias)
         out = self.norm(out)
         # [B, S, H]
         return out
 
 
 class TextEmbedder(nn.Module):
-    def __init__(
-        self, in_features: int, embed_dim: int = 768, bias: bool = True
-    ) -> None:
+    def __init__(self, in_features: int, embed_dim: int = 768, bias: bool = True) -> None:
         super().__init__()
         self.proj = nn.Linear(in_features, embed_dim, bias=bias)
 
@@ -267,9 +241,7 @@ class DiTBlock(nn.Module):
     A DiT block with adaptive layer norm zero (adaLN-Zero) conditioning.
     """
 
-    def __init__(
-        self, hidden_size, num_heads, cross_attention_dim, mlp_ratio=4.0, **block_kwargs
-    ):
+    def __init__(self, hidden_size, num_heads, cross_attention_dim, mlp_ratio=4.0, **block_kwargs):
         super().__init__()
         self.norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.attn = CrossAttention(
@@ -305,9 +277,7 @@ class FinalLayer(nn.Module):
 
     def __init__(self, hidden_size, patch_size, out_channels):
         super().__init__()
-        self.linear = nn.Linear(
-            hidden_size, patch_size * patch_size * out_channels, bias=True
-        )
+        self.linear = nn.Linear(hidden_size, patch_size * patch_size * out_channels, bias=True)
         self.patch_size = patch_size
 
     def unpatchify(self, x):
@@ -345,17 +315,12 @@ class DiT(nn.Module):
         self.patch_size = patch_size
         self.num_heads = num_heads
 
-        self.video_embedder = PatchEmbedder(
-            patch_size, in_channels, hidden_size, bias=True
-        )
+        self.video_embedder = PatchEmbedder(patch_size, in_channels, hidden_size, bias=True)
         self.t_embedder = TimestepEmbedder(text_embed_dim)
         self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
 
         self.blocks = nn.ModuleList(
-            [
-                DiTBlock(hidden_size, num_heads, text_embed_dim, mlp_ratio=mlp_ratio)
-                for _ in range(depth)
-            ]
+            [DiTBlock(hidden_size, num_heads, text_embed_dim, mlp_ratio=mlp_ratio) for _ in range(depth)]
         )
         self.final_layer = FinalLayer(hidden_size, patch_size, self.out_channels)
         self.initialize_weights()
@@ -384,9 +349,7 @@ class DiT(nn.Module):
             assert attention_mask.ndim == 4
             attention_mask = attention_mask.to(dtype)
             inverted_mask = 1.0 - attention_mask
-            return inverted_mask.masked_fill(
-                inverted_mask.to(torch.bool), torch.finfo(dtype).min
-            )
+            return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
         return attention_mask
 
     def enable_gradient_checkpointing(self):
@@ -417,24 +380,18 @@ class DiT(nn.Module):
                     block, video_latent_states, text_latent_states, attention_mask
                 )
             else:
-                video_latent_states = block(
-                    video_latent_states, text_latent_states, attention_mask
-                )
+                video_latent_states = block(video_latent_states, text_latent_states, attention_mask)
         video_latent_states = self.final_layer(video_latent_states)
         return video_latent_states
 
-    def forward_with_cfg(
-        self, x, t, text_latent_states, cfg_scale, attention_mask=None
-    ):
+    def forward_with_cfg(self, x, t, text_latent_states, cfg_scale, attention_mask=None):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
         """
         # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self.forward(
-            combined, t, text_latent_states, attention_mask=attention_mask
-        )
+        model_out = self.forward(combined, t, text_latent_states, attention_mask=attention_mask)
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.
@@ -468,9 +425,7 @@ def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False, extra_tokens=
     grid = grid.reshape([2, 1, grid_size, grid_size])
     pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
     if cls_token and extra_tokens > 0:
-        pos_embed = np.concatenate(
-            [np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0
-        )
+        pos_embed = np.concatenate([np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0)
     return pos_embed
 
 

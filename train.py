@@ -7,16 +7,12 @@
 """
 A minimal training script for DiT using PyTorch DDP.
 """
-import torch
-
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.allow_tf32 = True
 import argparse
 import os
 from copy import deepcopy
 from functools import partial
 
+import torch
 import torch.distributed as dist
 from colossalai import launch_from_torch
 from colossalai.accelerator import get_accelerator
@@ -29,13 +25,19 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import AutoModel
 
-from data_utils import load_datasets, make_batch, preprocess_batch
-from diffusion import create_diffusion
-from models import DiT_models
+from open_sora.diffusion import create_diffusion
+from open_sora.modeling import DiT_models
+from open_sora.utils.data import load_datasets, make_batch, preprocess_batch
 
 #################################################################################
 #                             Training Helper Functions                         #
 #################################################################################
+
+
+def configure_backends():
+    # the first flag below was False when we tested this script but True makes A100 training a lot faster:
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
 
 
 @torch.no_grad()
@@ -71,9 +73,12 @@ def main(args):
     """
     Trains a new DiT model.
     """
+    # Step 1: init distributed environment
     launch_from_torch({})
     coordinator = DistCoordinator()
     logger = get_dist_logger()
+
+    # Step 2: set up acceleration plugins
     plugin = LowLevelZeroPlugin(stage=2, precision="fp16")
     booster = Booster(plugin=plugin)
 
@@ -82,35 +87,35 @@ def main(args):
         os.makedirs(args.tensorboard_dir, exist_ok=True)
         writer = SummaryWriter(args.tensorboard_dir)
 
-    # Setup model
+    # Step 3: Create VQ-VAE
     if len(args.vqvae) > 0:
-        vqvae = (
-            AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
-            .to(get_current_device())
-            .eval()
-        )
+        vqvae = AutoModel.from_pretrained(args.vqvae, trust_remote_code=True).to(get_current_device()).eval()
         model_kwargs = {"in_channels": vqvae.embedding_dim}
     else:
         # disable VQ-VAE if not provided, just use raw video frames
         vqvae = None
         model_kwargs = {}
+
+    # Step 4: Create DiT and EMA
     model = DiT_models[args.model](**model_kwargs).to(get_current_device())
     patch_size = model.patch_size
     ema = deepcopy(model)
     requires_grad(ema, False)
+
     model.train()  # important! This enables embedding dropout for classifier-free guidance
     ema.eval()  # EMA model should always be in eval mode
+
+    # configure gradient checkpointing
     if args.grad_checkpoint:
         model.enable_gradient_checkpointing()
 
-    diffusion = create_diffusion(
-        timestep_respacing=""
-    )  # default: 1000 steps, linear noise schedule
+    # Step 5: create diffusion pipeline
+    diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
 
-    # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
+    # Step 6: setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0)
 
-    # Setup dataloader
+    # Step 7: Setup dataloader
     dataset = load_datasets(args.dataset)
     dataloader = plugin.prepare_dataloader(
         dataset,
@@ -121,13 +126,14 @@ def main(args):
     )
     logger.info(f"Dataset contains {len(dataset)} samples", ranks=[0])
 
-    # Setup booster
+    # Step 8: setup booster
     model, opt, _, dataloader, _ = booster.boost(model, opt, dataloader=dataloader)
     logger.info(
         f"Booster init max device memory: {get_accelerator().max_memory_allocated() / 1024 ** 2:.2f} MB",
         ranks=[0],
     )
 
+    # Step 9: Train
     num_steps_per_epoch = len(dataloader) // args.accumulation_steps
 
     for epoch in range(args.epochs):
@@ -148,15 +154,12 @@ def main(args):
                     (video_inputs.shape[0],),
                     device=video_inputs.device,
                 )
-                loss_dict = diffusion.training_losses(
-                    model, video_inputs, t, batch, mask=mask
-                )
+                loss_dict = diffusion.training_losses(model, video_inputs, t, batch, mask=mask)
                 loss = loss_dict["loss"].mean() / args.accumulation_steps
                 total_loss.add_(loss.data)
                 booster.backward(loss, opt)
 
                 if (step + 1) % args.accumulation_steps == 0:
-
                     opt.step()
                     opt.zero_grad()
                     update_ema(ema, model)
@@ -164,9 +167,7 @@ def main(args):
                     all_reduce_mean(total_loss)
                     pbar.set_postfix({"Loss": f"{total_loss.item():.4f}"})
                     if coordinator.is_master():
-                        global_step = (epoch * num_steps_per_epoch) + (
-                            step + 1
-                        ) // args.accumulation_steps
+                        global_step = (epoch * num_steps_per_epoch) + (step + 1) // args.accumulation_steps
                         writer.add_scalar(
                             tag="Loss",
                             scalar_value=total_loss.item(),
@@ -176,20 +177,13 @@ def main(args):
                     total_loss.zero_()
 
                 # Save DiT checkpoint:
-                if (
-                    args.save_interval > 0
-                    and (step + 1) % (args.save_interval * args.accumulation_steps) == 0
-                ) or (step + 1) == len(dataloader):
-                    save_path = os.path.join(
-                        args.checkpoint_dir, f"epoch-{epoch}-step-{step}"
-                    )
+                if (args.save_interval > 0 and (step + 1) % (args.save_interval * args.accumulation_steps) == 0) or (
+                    step + 1
+                ) == len(dataloader):
+                    save_path = os.path.join(args.checkpoint_dir, f"epoch-{epoch}-step-{step}")
                     os.makedirs(save_path, exist_ok=True)
-                    booster.save_model(
-                        model, os.path.join(save_path, "model"), shard=True
-                    )
-                    booster.save_optimizer(
-                        opt, os.path.join(save_path, "optimizer"), shard=True
-                    )
+                    booster.save_model(model, os.path.join(save_path, "model"), shard=True)
+                    booster.save_optimizer(opt, os.path.join(save_path, "optimizer"), shard=True)
                     if coordinator.is_master():
                         ema_state_dict = ema.state_dict()
                         for k, v in ema_state_dict.items():
@@ -208,9 +202,7 @@ def main(args):
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
-    )
+    parser.add_argument("-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8")
     parser.add_argument("-d", "--dataset", nargs="+", default=[])
     parser.add_argument("-v", "--video_dir", type=str, required=True)
     parser.add_argument("-e", "--epochs", type=int, default=10)
