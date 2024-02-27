@@ -37,7 +37,9 @@ def video2col(video_4d: torch.Tensor, patch_size: int) -> torch.Tensor:
     return torch.stack(out, dim=1).view(-1, c, patch_size, patch_size)
 
 
-def col2video(patches: torch.Tensor, video_shape: Tuple[int, int, int, int]) -> torch.Tensor:
+def col2video(
+    patches: torch.Tensor, video_shape: Tuple[int, int, int, int]
+) -> torch.Tensor:
     """
     Convert a 2D tensor of patches to a 4D video tensor.
 
@@ -74,7 +76,10 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
     """
     max_len = max([sequence.shape[0] for sequence in sequences])
     padded_sequences = [
-        F.pad(sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]) for sequence in sequences
+        F.pad(
+            sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]
+        )
+        for sequence in sequences
     ]
     padded_sequences = torch.stack(padded_sequences, dim=0)
     padding_mask = torch.zeros(
@@ -88,7 +93,9 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
     return padded_sequences, padding_mask
 
 
-def patchify_batch(videos: List[torch.Tensor], patch_size: int) -> Tuple[torch.Tensor, torch.Tensor]:
+def patchify_batch(
+    videos: List[torch.Tensor], patch_size: int
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """Patchify a batch of videos.
 
     Args:
@@ -127,7 +134,10 @@ def make_batch(samples: List[dict], video_dir: str) -> dict:
     Returns:
         dict: A batch of samples.
     """
-    videos = [read_video(os.path.join(video_dir, sample["video_file"]), pts_unit="sec")[0] for sample in samples]
+    videos = [
+        read_video(os.path.join(video_dir, sample["video_file"]), pts_unit="sec")[0]
+        for sample in samples
+    ]
     texts = [sample["text_latent_states"] for sample in samples]
     texts, text_padding_mask = pad_sequences(texts)
     return {
@@ -146,7 +156,13 @@ def unnormalize_video(video: torch.Tensor) -> torch.Tensor:
 
 
 @torch.no_grad()
-def preprocess_batch(batch: dict, patch_size: int, vqvae: Optional[nn.Module] = None, device=None) -> dict:
+def preprocess_batch(
+    batch: dict,
+    patch_size: int,
+    vqvae: Optional[nn.Module] = None,
+    device=None,
+    use_cross_attn=True,
+) -> dict:
     if device is None:
         device = get_current_device()
     videos = []
@@ -169,19 +185,27 @@ def preprocess_batch(batch: dict, patch_size: int, vqvae: Optional[nn.Module] = 
     batch["video_latent_states"] = video_latent_states
     batch["video_padding_mask"] = video_padding_mask
     text_padding_mask = batch.pop("text_padding_mask").to(device)
-    batch["attention_mask"] = expand_mask_4d(video_padding_mask, text_padding_mask)
+    if use_cross_attn:
+        batch["attention_mask"] = expand_mask_4d(video_padding_mask, text_padding_mask)
+    else:
+        attention_mask = torch.cat([text_padding_mask, video_padding_mask], dim=1)
+        batch["attention_mask"] = expand_mask_4d(attention_mask, attention_mask)
     batch["text_latent_states"] = batch["text_latent_states"].to(device)
     return batch
 
 
-def load_datasets(dataset_paths: Union[PathType, List[PathType]], mode: str = "train") -> Optional[DatasetType]:
+def load_datasets(
+    dataset_paths: Union[PathType, List[PathType]], mode: str = "train"
+) -> Optional[DatasetType]:
     """
     Load pre-tokenized dataset.
     Each instance of dataset is a dictionary with
     `{'input_ids': List[int], 'labels': List[int], sequence: str}` format.
     """
     mode_map = {"train": "train", "dev": "validation", "test": "test"}
-    assert mode in tuple(mode_map), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
+    assert mode in tuple(
+        mode_map
+    ), f"Unsupported mode {mode}, it must be in {tuple(mode_map)}"
 
     if isinstance(dataset_paths, (str, os.PathLike)):
         dataset_paths = [dataset_paths]
@@ -190,7 +214,9 @@ def load_datasets(dataset_paths: Union[PathType, List[PathType]], mode: str = "t
     for ds_path in dataset_paths:
         ds_path = os.path.abspath(ds_path)
         assert os.path.exists(ds_path), f"Not existed file path {ds_path}"
-        ds_dict = load_from_disk(dataset_path=ds_path, keep_in_memory=False).with_format("torch")
+        ds_dict = load_from_disk(
+            dataset_path=ds_path, keep_in_memory=False
+        ).with_format("torch")
         if isinstance(ds_dict, HFDataset):
             datasets.append(ds_dict)
         else:
