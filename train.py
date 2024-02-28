@@ -20,6 +20,7 @@ from colossalai.booster import Booster
 from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
+from colossalai.nn.lr_scheduler import CosineAnnealingLR
 from colossalai.utils import get_current_device
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -142,6 +143,9 @@ def main(args):
         shuffle=True,
         drop_last=True,
     )
+    lr_scheduler = CosineAnnealingLR(
+        opt, args.epochs * len(dataloader) // args.accumulation_steps
+    )
     logger.info(f"Dataset contains {len(dataset)} samples", ranks=[0])
 
     # Step 8: setup booster
@@ -186,6 +190,7 @@ def main(args):
                 if (step + 1) % args.accumulation_steps == 0:
                     opt.step()
                     opt.zero_grad()
+                    lr_scheduler.step()
                     update_ema(ema, model)
 
                     all_reduce_mean(total_loss)
