@@ -7,8 +7,10 @@ import torch.nn.functional as F
 from colossalai.utils import get_current_device
 from datasets import Dataset as HFDataset
 from datasets import dataset_dict, load_from_disk
+from diffusers.models import AutoencoderKL
 from torch.utils.data import ConcatDataset, Dataset
 from torchvision.io import read_video
+from transformers import AutoModel
 
 DatasetType = Union[Dataset, ConcatDataset, dataset_dict.Dataset]
 PathType = Union[str, os.PathLike]
@@ -155,11 +157,116 @@ def unnormalize_video(video: torch.Tensor) -> torch.Tensor:
     return (video + 0.5) * 255
 
 
+class VideoCompressor:
+    t_factor: int
+    h_w_factor: int
+    out_channels: int
+
+    def encode(self, video: torch.Tensor) -> torch.Tensor:
+        """Encode a video.
+
+        Args:
+            video (torch.Tensor): [T, H, W, C]
+
+        Returns:
+            torch.Tensor: [T, C, H, W]
+        """
+        raise NotImplementedError
+
+    def decode(self, latent: torch.Tensor) -> torch.Tensor:
+        """Decode a latent tensor.
+
+        Args:
+            latent (torch.Tensor): [T, C, H, W]
+
+        Returns:
+            torch.Tensor: [T, H, W, C]
+        """
+        raise NotImplementedError
+
+
+class RawVideoCompressor(VideoCompressor):
+    t_factor = 1
+    h_w_factor = 1
+    out_channels = 3
+
+    def encode(self, video: torch.Tensor) -> torch.Tensor:
+        # [T, H, W, C] -> [T, C, H, W]
+        return video.permute(0, 3, 1, 2).contiguous()
+
+    def decode(self, latent: torch.Tensor) -> torch.Tensor:
+        # [T, C, H, W] -> [T, H, W, C]
+        return latent.permute(0, 2, 3, 1).contiguous()
+
+
+class VqvaeVideoCompressor(VideoCompressor):
+    t_factor = 2
+    h_w_factor = 4
+
+    def __init__(self, vqvae: nn.Module):
+        self.vqvae = vqvae
+        self.out_channels = vqvae.embedding_dim
+
+    def encode(self, video: torch.Tensor) -> torch.Tensor:
+        # [T, H, W, C] -> [B, C, T, H, W]
+        video = video.permute(3, 0, 1, 2).unsqueeze(0)
+        latent_indices, embeddings = self.vqvae.encode(video, include_embeddings=True)
+        # [B, C, T, H, W] -> [T, C, H, W]
+        return embeddings.squeeze(0).permute(1, 0, 2, 3)
+
+    def decode(self, latent: torch.Tensor) -> torch.Tensor:
+        # [T, C, H, W] -> [B, C, T, H, W]
+        latent = latent.permute(1, 0, 2, 3).unsqueeze(0)
+        video = self.vqvae.decode_from_embeddings(latent)
+        # [B, C, T, H, W] -> [T, H, W, C]
+        video = video.squeeze(0).permute(1, 2, 3, 0)
+        return video
+
+
+class VaeVideoCompressor(VideoCompressor):
+    t_factor = 1
+    h_w_factor = 8
+    out_channels = 4
+
+    def __init__(self, vae: nn.Module):
+        self.vae = vae
+
+    def encode(self, video: torch.Tensor) -> torch.Tensor:
+        # [T, H, W, C] -> [T, C, H, W]
+        video = video.permute(0, 3, 1, 2)
+        return self.vae.encode(video).latent_dist.sample()
+
+    def decode(self, latent: torch.Tensor) -> torch.Tensor:
+        video = self.vae.decode(latent).sample
+        # [T, C, H, W] -> [T, H, W, C]
+        return video.sample.permute(0, 2, 3, 1).contiguous()
+
+
+def create_video_compressor(
+    compressor_type: str,
+    vqvae_path="hpcai-tech/vqvae",
+    vae_path="stabilityai/sd-vae-ft-mse",
+) -> VideoCompressor:
+    if compressor_type == "raw":
+        return RawVideoCompressor()
+    if compressor_type == "vqvae":
+        vqvae = (
+            AutoModel.from_pretrained(vqvae_path, trust_remote_code=True)
+            .to(get_current_device())
+            .eval()
+        )
+        return VqvaeVideoCompressor(vqvae)
+    if compressor_type == "vae":
+        vae = AutoencoderKL.from_pretrained(vae_path).to(get_current_device()).eval()
+        return VaeVideoCompressor(vae)
+    raise ValueError(f"Unsupported video compressor type {compressor_type}")
+
+
 @torch.no_grad()
 def preprocess_batch(
     batch: dict,
     patch_size: int,
-    vqvae: Optional[nn.Module] = None,
+    video_compressor: VideoCompressor,
     device=None,
     use_cross_attn=True,
 ) -> dict:
@@ -169,18 +276,8 @@ def preprocess_batch(
     for video in batch.pop("videos"):
         video = video.to(device)
         video = normalize_video(video)
-        if vqvae is not None:
-            # [T, H, W, C] -> [B, C, T, H, W]
-            video = video.permute(3, 0, 1, 2)
-            video = video.unsqueeze(0)
-            latent_indices, embeddings = vqvae.encode(video, include_embeddings=True)
-            # [B, C, T, H, W] -> [T, C, H, W]
-            embeddings = embeddings.squeeze(0).permute(1, 0, 2, 3)
-            videos.append(embeddings)
-        else:
-            # [T, H, W, C] -> [T, C, H, W]
-            video = video.permute(0, 3, 1, 2).contiguous()
-            videos.append(video)
+        video = video_compressor.encode(video)
+        videos.append(video)
     video_latent_states, video_padding_mask = patchify_batch(videos, patch_size)
     batch["video_latent_states"] = video_latent_states
     batch["video_padding_mask"] = video_padding_mask

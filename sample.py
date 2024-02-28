@@ -15,11 +15,11 @@ import argparse
 
 from colossalai.utils import get_current_device
 from torchvision.io import write_video
-from transformers import AutoModel, AutoTokenizer, CLIPTextModel
+from transformers import AutoTokenizer, CLIPTextModel
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
-from open_sora.utils.data import col2video, unnormalize_video
+from open_sora.utils.data import col2video, create_video_compressor, unnormalize_video
 
 
 def main(args):
@@ -27,25 +27,14 @@ def main(args):
     torch.manual_seed(args.seed)
     torch.set_grad_enabled(False)
     device = get_current_device()
-    if len(args.vqvae) > 0:
-        vqvae = (
-            AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
-            .to(device)
-            .eval()
-        )
-        in_channels = vqvae.embedding_dim
-        w_h_factor = 4
-        t_factor = 2
-    else:
-        # disable VQ-VAE if not provided, just use raw video frames
-        vqvae = None
-        in_channels = 3
-        w_h_factor = 1
-        t_factor = 1
+
+    video_compressor = create_video_compressor(args.compressor)
+    model_kwargs = {"in_channels": video_compressor.out_channels}
+
     text_model = CLIPTextModel.from_pretrained(args.text_model).to(device).eval()
     tokenizer = AutoTokenizer.from_pretrained(args.text_model)
 
-    model = DiT_models[args.model](in_channels=in_channels).to(device).eval()
+    model = DiT_models[args.model](**model_kwargs).to(device).eval()
     patch_size = model.patch_size
     model.load_state_dict(torch.load(args.ckpt))
     diffusion = create_diffusion(str(args.num_sampling_steps))
@@ -58,10 +47,10 @@ def main(args):
     num_frames = args.fps * args.sec
     z = torch.randn(
         1,
-        (args.height // patch_size // w_h_factor)
-        * (args.width // patch_size // w_h_factor)
-        * (num_frames // t_factor),
-        in_channels,
+        (args.height // patch_size // video_compressor.h_w_factor)
+        * (args.width // patch_size // video_compressor.h_w_factor)
+        * (num_frames // video_compressor.t_factor),
+        video_compressor.out_channels,
         patch_size,
         patch_size,
         device=device,
@@ -101,21 +90,13 @@ def main(args):
     samples = col2video(
         samples.squeeze(),
         (
-            num_frames // t_factor,
-            in_channels,
-            args.height // w_h_factor,
-            args.width // w_h_factor,
+            num_frames // video_compressor.t_factor,
+            video_compressor.out_channels,
+            args.height // video_compressor.h_w_factor,
+            args.width // video_compressor.h_w_factor,
         ),
     )
-    if vqvae is not None:
-        # [T, C, H, W] -> [B, C, T, H, W]
-        samples = samples.permute(1, 0, 2, 3).unsqueeze(0)
-        samples = vqvae.decode_from_embeddings(samples)
-        # [B, C, T, H, W] -> [T, H, W, C]
-        samples = samples.squeeze(0).permute(1, 2, 3, 0)
-    else:
-        # [T, C, H, W] -> [T, H, W, C]
-        samples = samples.permute(0, 2, 3, 1)
+    samples = video_compressor.decode(samples)
     samples = unnormalize_video(samples).to(torch.uint8)
 
     write_video("sample.mp4", samples.cpu(), args.fps)
@@ -140,7 +121,9 @@ if __name__ == "__main__":
         required=True,
         help="Optional path to a DiT checkpoint (default: auto-download a pre-trained DiT-XL/2 model).",
     )
-    parser.add_argument("--vqvae", default="hpcai-tech/vqvae")
+    parser.add_argument(
+        "-c", "--compressor", choices=["raw", "vqvae", "vae"], default="raw"
+    )
     parser.add_argument(
         "--text_model", type=str, default="openai/clip-vit-base-patch32"
     )
