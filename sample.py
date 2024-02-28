@@ -69,18 +69,26 @@ def main(args):
 
     # Setup classifier-free guidance:
     model_kwargs = {}
-    z = torch.cat([z, z], 0)
-    model_kwargs["text_latent_states"] = torch.cat(
-        [text_latent_states, torch.zeros_like(text_latent_states)], 0
-    )
-    model_kwargs["cfg_scale"] = args.cfg_scale
+    if not args.disable_cfg:
+        z = torch.cat([z, z], 0)
+        model_kwargs["text_latent_states"] = torch.cat(
+            [text_latent_states, torch.zeros_like(text_latent_states)], 0
+        )
+        model_kwargs["cfg_scale"] = args.cfg_scale
+    else:
+        model_kwargs["text_latent_states"] = text_latent_states
     model_kwargs["attention_mask"] = torch.ones(
-        2, 1, z.shape[1], text_latent_states.shape[1], device=device, dtype=torch.int
+        z.shape[0],
+        1,
+        z.shape[1],
+        text_latent_states.shape[1],
+        device=device,
+        dtype=torch.int,
     )
 
     # Sample images:
     samples = diffusion.p_sample_loop(
-        model.forward_with_cfg,
+        model if args.disable_cfg else model.forward_with_cfg,
         z.shape,
         z,
         clip_denoised=False,
@@ -88,7 +96,8 @@ def main(args):
         progress=True,
         device=device,
     )
-    samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+    if not args.disable_cfg:
+        samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
     samples = col2video(
         samples.squeeze(),
         (
@@ -139,5 +148,6 @@ if __name__ == "__main__":
     parser.add_argument("--height", type=int, default=320)
     parser.add_argument("--fps", type=int, default=15)
     parser.add_argument("--sec", type=int, default=8)
+    parser.add_argument("--disable-cfg", action="store_true", default=False)
     args = parser.parse_args()
     main(args)
