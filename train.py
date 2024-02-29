@@ -20,14 +20,19 @@ from colossalai.booster import Booster
 from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
+from colossalai.nn.lr_scheduler import CosineAnnealingLR
 from colossalai.utils import get_current_device
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from transformers import AutoModel
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
-from open_sora.utils.data import load_datasets, make_batch, preprocess_batch
+from open_sora.utils.data import (
+    create_video_compressor,
+    load_datasets,
+    make_batch,
+    preprocess_batch,
+)
 
 #################################################################################
 #                             Training Helper Functions                         #
@@ -99,18 +104,9 @@ def main(args):
         os.makedirs(args.tensorboard_dir, exist_ok=True)
         writer = SummaryWriter(args.tensorboard_dir)
 
-    # Step 3: Create VQ-VAE
-    if len(args.vqvae) > 0:
-        vqvae = (
-            AutoModel.from_pretrained(args.vqvae, trust_remote_code=True)
-            .to(get_current_device())
-            .eval()
-        )
-        model_kwargs = {"in_channels": vqvae.embedding_dim}
-    else:
-        # disable VQ-VAE if not provided, just use raw video frames
-        vqvae = None
-        model_kwargs = {}
+    # Step 3: Create video compressor
+    video_compressor = create_video_compressor(args.compressor)
+    model_kwargs = {"in_channels": video_compressor.out_channels}
 
     # Step 4: Create DiT and EMA
     model = DiT_models[args.model](**model_kwargs).to(get_current_device())
@@ -142,6 +138,9 @@ def main(args):
         shuffle=True,
         drop_last=True,
     )
+    lr_scheduler = CosineAnnealingLR(
+        opt, args.epochs * len(dataloader) // args.accumulation_steps
+    )
     logger.info(f"Dataset contains {len(dataset)} samples", ranks=[0])
 
     # Step 8: setup booster
@@ -167,7 +166,7 @@ def main(args):
         ) as pbar:
             total_loss = torch.tensor(0.0, device=get_current_device())
             for step, batch in enumerate(dataloader):
-                batch = preprocess_batch(batch, patch_size, vqvae)
+                batch = preprocess_batch(batch, patch_size, video_compressor)
                 video_inputs = batch.pop("video_latent_states")
                 mask = batch.pop("video_padding_mask")
                 t = torch.randint(
@@ -186,6 +185,7 @@ def main(args):
                 if (step + 1) % args.accumulation_steps == 0:
                     opt.step()
                     opt.zero_grad()
+                    lr_scheduler.step()
                     update_ema(ema, model)
 
                     all_reduce_mean(total_loss)
@@ -239,7 +239,9 @@ if __name__ == "__main__":
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
     parser.add_argument("--tensorboard_dir", type=str, default="runs")
-    parser.add_argument("--vqvae", default="hpcai-tech/vqvae")
+    parser.add_argument(
+        "-c", "--compressor", choices=["raw", "vqvae", "vae"], default="raw"
+    )
     parser.add_argument("--load_model", default=None)
     parser.add_argument("--load_optimizer", default=None)
     args = parser.parse_args()

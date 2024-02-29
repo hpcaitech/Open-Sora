@@ -237,7 +237,7 @@ class TextEmbedder(nn.Module):
             self.proj = nn.Linear(in_features, embed_dim, bias=bias)
 
     def drop_sample(self, x: torch.Tensor) -> torch.Tensor:
-        drop_ids = torch.rand(x.shape[0], device=x.device) < self.dropout_prob
+        drop_ids = torch.rand(x.shape[0], 1, 1, device=x.device) < self.dropout_prob
         x = torch.where(drop_ids, torch.zeros_like(x), x)
         return x
 
@@ -517,13 +517,18 @@ class DiT(nn.Module):
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.
         # eps, rest = model_out[:, :self.in_channels], model_out[:, self.in_channels:]
-        c = model_out.shape[2]
-        assert c == 2 * self.in_channels
-        eps, rest = model_out.chunk(2, dim=2)
+        if self.learn_sigma:
+            c = model_out.shape[2]
+            assert c == 2 * self.in_channels
+            eps, rest = model_out.chunk(2, dim=2)
+        else:
+            eps = model_out
         cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
         half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
         eps = torch.cat([half_eps, half_eps], dim=0)
-        return torch.cat([eps, rest], dim=2)
+        if self.learn_sigma:
+            return torch.cat([eps, rest], dim=2)
+        return eps
 
 
 #################################################################################
