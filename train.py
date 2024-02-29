@@ -21,6 +21,7 @@ from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
 from colossalai.nn.lr_scheduler import CosineAnnealingLR
+from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -127,7 +128,7 @@ def main(args):
     )  # default: 1000 steps, linear noise schedule
 
     # Step 6: setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0)
+    opt = HybridAdam(model.parameters(), lr=args.lr, weight_decay=0)
 
     # Step 7: Setup dataloader
     dataset = load_datasets(args.dataset)
