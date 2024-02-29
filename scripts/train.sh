@@ -11,18 +11,18 @@ ROOT_DIR=$FOLDER_DIR/..
 cd $ROOT_DIR
 
 # define dataset shards
-COLLATED_VIDEO_DIR=./dataset/MSRVTT-collated/val/videos
+COLLATED_VIDEO_DIR=./dataset/MSRVTT-collated/train/videos
 PROCESSED_DATASET=(
-    ./dataset/MSRVTT-processed/val/part-00000
-    ./dataset/MSRVTT-processed/val/part-00001
-    ./dataset/MSRVTT-processed/val/part-00002
-    ./dataset/MSRVTT-processed/val/part-00003
-    ./dataset/MSRVTT-processed/val/part-00004
-    ./dataset/MSRVTT-processed/val/part-00005
-    ./dataset/MSRVTT-processed/val/part-00006
-    ./dataset/MSRVTT-processed/val/part-00007
-    ./dataset/MSRVTT-processed/val/part-00008
-    ./dataset/MSRVTT-processed/val/part-00009
+    ./dataset/MSRVTT-processed/train/part-00000
+    ./dataset/MSRVTT-processed/train/part-00001
+    ./dataset/MSRVTT-processed/train/part-00002
+    ./dataset/MSRVTT-processed/train/part-00003
+    ./dataset/MSRVTT-processed/train/part-00004
+    ./dataset/MSRVTT-processed/train/part-00005
+    ./dataset/MSRVTT-processed/train/part-00006
+    ./dataset/MSRVTT-processed/train/part-00007
+    ./dataset/MSRVTT-processed/train/part-00008
+    ./dataset/MSRVTT-processed/train/part-00009
 )
 
 # create timestamp to differentiate between runs
@@ -37,7 +37,7 @@ torchrun --standalone \
     --lr 1e-4 \
     --accumulation_steps 32 \
     --grad_checkpoint \
-    --dataset $PROCESSED_DATASET \
+    --dataset "${PROCESSED_DATASET[@]}" \
     --video_dir $COLLATED_VIDEO_DIR \
     --save_interval 224 \
     --checkpoint_dir ./checkpoints/$timestamp \
