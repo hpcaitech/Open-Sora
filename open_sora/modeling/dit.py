@@ -623,10 +623,12 @@ class DiT(nn.Module):
         attention_mask = self._prepare_mask(attention_mask, video_latent_states.dtype)
 
         if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
+            assert video_latent_states.shape[1] % self.seq_parallel_size == 0
             video_latent_states = video_latent_states.chunk(
                 self.seq_parallel_size, dim=1
             )[self.seq_parallel_rank]
             if text_latent_states is not None:
+                assert text_latent_states.shape[1] % self.seq_parallel_size == 0
                 text_latent_states = text_latent_states.chunk(
                     self.seq_parallel_size, dim=1
                 )[self.seq_parallel_rank]
