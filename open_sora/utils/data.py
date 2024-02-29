@@ -234,10 +234,10 @@ class VaeVideoCompressor(VideoCompressor):
     def encode(self, video: torch.Tensor) -> torch.Tensor:
         # [T, H, W, C] -> [T, C, H, W]
         video = video.permute(0, 3, 1, 2)
-        return self.vae.encode(video).latent_dist.sample()
+        return self.vae.encode(video).latent_dist.sample().mul_(0.18215)
 
     def decode(self, latent: torch.Tensor) -> torch.Tensor:
-        video = self.vae.decode(latent).sample
+        video = self.vae.decode(latent / 0.18215).sample
         # [T, C, H, W] -> [T, H, W, C]
         return video.permute(0, 2, 3, 1).contiguous()
 
