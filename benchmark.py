@@ -14,7 +14,7 @@ import torch
 from colossalai import launch_from_torch
 from colossalai.accelerator import get_accelerator
 from colossalai.booster import Booster
-from colossalai.booster.plugin import LowLevelZeroPlugin, TorchDDPPlugin
+from colossalai.booster.plugin import TorchDDPPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
 from colossalai.nn.optimizer import HybridAdam
@@ -24,6 +24,7 @@ from tqdm import tqdm
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
 from open_sora.utils.data import create_video_compressor, preprocess_batch
+from open_sora.utils.plugin import ZeroSeqParallelPlugin
 
 #################################################################################
 #                                  Training Loop                                #
@@ -44,14 +45,17 @@ def main(args):
         plugin = TorchDDPPlugin()
     elif args.plugin == "zero2":
         # use bf16 to avoid skipping the first few iterations due to NaNs
-        plugin = LowLevelZeroPlugin(stage=2, precision="bf16")
+        plugin = ZeroSeqParallelPlugin(sp_size=args.sp_size, stage=2, precision="bf16")
     else:
         raise ValueError(f"Unknown plugin {args.plugin}")
     booster = Booster(plugin=plugin)
 
     # Create video compressor
     video_compressor = create_video_compressor(args.compressor)
-    model_kwargs = {"in_channels": video_compressor.out_channels}
+    model_kwargs = {
+        "in_channels": video_compressor.out_channels,
+        "seq_parallel_group": plugin.sp_group,
+    }
 
     # Create DiT and EMA
     model = DiT_models[args.model](**model_kwargs).to(get_current_device())
@@ -75,6 +79,7 @@ def main(args):
         torch.randn(args.num_frames, args.height, args.width, 3)
         for _ in range(args.batch_size)
     ]
+    assert args.num_tokens % args.sp_size == 0
     input_ids = torch.randn(args.batch_size, args.num_tokens, args.text_embed_dim)
     text_mask = torch.ones(input_ids.shape[:2], dtype=torch.int)
     batch = {
@@ -82,9 +87,15 @@ def main(args):
         "text_latent_states": input_ids,
         "text_padding_mask": text_mask,
     }
-    batch = preprocess_batch(batch, patch_size, video_compressor)
+    batch = preprocess_batch(
+        batch, patch_size, video_compressor, pad_to_multiple=args.sp_size
+    )
     video_inputs = batch.pop("video_latent_states")
     mask = batch.pop("video_padding_mask")
+    logger.info(
+        f"Num patches: {video_inputs.shape[1]}, num_tokens: {batch['text_latent_states'].shape[1]}",
+        ranks=[0],
+    )
 
     # setup booster
     model, opt, *_ = booster.boost(model, opt)
@@ -125,7 +136,7 @@ def main(args):
         ranks=[0],
     )
     logger.info(
-        f"Throughput: {throughput:.2f} samples/s",
+        f"Throughput per device: {throughput:.2f} samples/s",
         ranks=[0],
     )
 
@@ -139,6 +150,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-p", "--plugin", type=str, default="zero2", choices=["ddp", "zero2"]
     )
+    parser.add_argument("--sp_size", type=int, default=1)
     parser.add_argument("-w", "--warmup_steps", type=int, default=2)
     parser.add_argument("-s", "--steps", type=int, default=3)
     parser.add_argument("-b", "--batch_size", type=int, default=4)

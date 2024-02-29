@@ -17,7 +17,6 @@ import torch.distributed as dist
 from colossalai import launch_from_torch
 from colossalai.accelerator import get_accelerator
 from colossalai.booster import Booster
-from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.logging import get_dist_logger
 from colossalai.nn.lr_scheduler import CosineAnnealingLR
@@ -28,7 +27,13 @@ from tqdm import tqdm
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
-from open_sora.utils.data import create_video_compressor, load_datasets, make_batch, preprocess_batch
+from open_sora.utils.data import (
+    create_video_compressor,
+    load_datasets,
+    make_batch,
+    preprocess_batch,
+)
+from open_sora.utils.plugin import ZeroSeqParallelPlugin
 
 #################################################################################
 #                             Training Helper Functions                         #
@@ -93,7 +98,7 @@ def main(args):
     configure_backends()
 
     # Step 2: set up acceleration plugins
-    plugin = LowLevelZeroPlugin(stage=2, precision="fp16")
+    plugin = ZeroSeqParallelPlugin(sp_size=args.sp_size, stage=2, precision="fp16")
     booster = Booster(plugin=plugin)
 
     if coordinator.is_master():
@@ -103,7 +108,10 @@ def main(args):
 
     # Step 3: Create video compressor
     video_compressor = create_video_compressor(args.compressor)
-    model_kwargs = {"in_channels": video_compressor.out_channels}
+    model_kwargs = {
+        "in_channels": video_compressor.out_channels,
+        "seq_parallel_group": plugin.sp_group,
+    }
 
     # Step 4: Create DiT and EMA
     model = DiT_models[args.model](**model_kwargs).to(get_current_device())
@@ -119,7 +127,9 @@ def main(args):
         model.enable_gradient_checkpointing()
 
     # Step 5: create diffusion pipeline
-    diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
+    diffusion = create_diffusion(
+        timestep_respacing=""
+    )  # default: 1000 steps, linear noise schedule
 
     # Step 6: setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
     opt = HybridAdam(model.parameters(), lr=args.lr, weight_decay=0)
@@ -129,15 +139,21 @@ def main(args):
     dataloader = plugin.prepare_dataloader(
         dataset,
         batch_size=args.batch_size,
-        collate_fn=partial(make_batch, video_dir=args.video_dir),
+        collate_fn=partial(
+            make_batch, video_dir=args.video_dir, pad_to_multiple=args.sp_size
+        ),
         shuffle=True,
         drop_last=True,
     )
-    lr_scheduler = CosineAnnealingLR(opt, args.epochs * len(dataloader) // args.accumulation_steps)
+    lr_scheduler = CosineAnnealingLR(
+        opt, args.epochs * len(dataloader) // args.accumulation_steps
+    )
     logger.info(f"Dataset contains {len(dataset)} samples", ranks=[0])
 
     # Step 8: setup booster
-    model, opt, _, dataloader, _ = booster.boost(model, opt, dataloader=dataloader)
+    model, opt, _, dataloader, lr_scheduler = booster.boost(
+        model, opt, dataloader=dataloader, lr_scheduler=lr_scheduler
+    )
     if args.load_model is not None:
         booster.load_model(model, args.load_model)
     if args.load_optimizer is not None:
@@ -159,7 +175,9 @@ def main(args):
         ) as pbar:
             total_loss = torch.tensor(0.0, device=get_current_device())
             for step, batch in enumerate(dataloader):
-                batch = preprocess_batch(batch, patch_size, video_compressor)
+                batch = preprocess_batch(
+                    batch, patch_size, video_compressor, pad_to_multiple=args.sp_size
+                )
                 video_inputs = batch.pop("video_latent_states")
                 mask = batch.pop("video_padding_mask")
                 t = torch.randint(
@@ -168,7 +186,9 @@ def main(args):
                     (video_inputs.shape[0],),
                     device=video_inputs.device,
                 )
-                loss_dict = diffusion.training_losses(model, video_inputs, t, batch, mask=mask)
+                loss_dict = diffusion.training_losses(
+                    model, video_inputs, t, batch, mask=mask
+                )
                 loss = loss_dict["loss"].mean() / args.accumulation_steps
                 total_loss.add_(loss.data)
                 booster.backward(loss, opt)
@@ -182,7 +202,9 @@ def main(args):
                     all_reduce_mean(total_loss)
                     pbar.set_postfix({"Loss": f"{total_loss.item():.4f}"})
                     if coordinator.is_master():
-                        global_step = (epoch * num_steps_per_epoch) + (step + 1) // args.accumulation_steps
+                        global_step = (epoch * num_steps_per_epoch) + (
+                            step + 1
+                        ) // args.accumulation_steps
                         writer.add_scalar(
                             tag="Loss",
                             scalar_value=total_loss.item(),
@@ -193,9 +215,12 @@ def main(args):
 
                 # Save DiT checkpoint:
                 if args.save_interval > 0 and (
-                    (step + 1) % (args.save_interval * args.accumulation_steps) == 0 or (step + 1) == len(dataloader)
+                    (step + 1) % (args.save_interval * args.accumulation_steps) == 0
+                    or (step + 1) == len(dataloader)
                 ):
-                    save_path = os.path.join(args.checkpoint_dir, f"epoch-{epoch}-step-{step}")
+                    save_path = os.path.join(
+                        args.checkpoint_dir, f"epoch-{epoch}-step-{step}"
+                    )
                     save_checkpoints(booster, model, opt, ema, save_path, coordinator)
                     logger.info(f"Saved checkpoint to {save_path}", ranks=[0])
 
@@ -212,18 +237,23 @@ def main(args):
 if __name__ == "__main__":
     # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8")
+    parser.add_argument(
+        "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
+    )
     parser.add_argument("-d", "--dataset", nargs="+", default=[])
     parser.add_argument("-v", "--video_dir", type=str, required=True)
     parser.add_argument("-e", "--epochs", type=int, default=10)
     parser.add_argument("-b", "--batch_size", type=int, default=4)
     parser.add_argument("-g", "--grad_checkpoint", action="store_true", default=False)
     parser.add_argument("-a", "--accumulation_steps", default=1, type=int)
+    parser.add_argument("--sp_size", type=int, default=1)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")
     parser.add_argument("--tensorboard_dir", type=str, default="runs")
-    parser.add_argument("-c", "--compressor", choices=["raw", "vqvae", "vae"], default="raw")
+    parser.add_argument(
+        "-c", "--compressor", choices=["raw", "vqvae", "vae"], default="raw"
+    )
     parser.add_argument("--load_model", default=None)
     parser.add_argument("--load_optimizer", default=None)
     args = parser.parse_args()

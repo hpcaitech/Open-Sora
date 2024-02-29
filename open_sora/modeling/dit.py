@@ -626,12 +626,12 @@ class DiT(nn.Module):
             assert video_latent_states.shape[1] % self.seq_parallel_size == 0
             video_latent_states = video_latent_states.chunk(
                 self.seq_parallel_size, dim=1
-            )[self.seq_parallel_rank]
+            )[self.seq_parallel_rank].clone()
             if text_latent_states is not None:
                 assert text_latent_states.shape[1] % self.seq_parallel_size == 0
                 text_latent_states = text_latent_states.chunk(
                     self.seq_parallel_size, dim=1
-                )[self.seq_parallel_rank]
+                )[self.seq_parallel_rank].clone()
 
         for block in self.blocks:
             if self.grad_checkpointing and self.training:
