@@ -3,15 +3,26 @@ import pytest
 import torch
 import torch.distributed as dist
 from colossalai.logging import disable_existing_loggers
-from colossalai.testing import rerun_if_address_is_in_use, spawn
+from colossalai.testing import parameterize, rerun_if_address_is_in_use, spawn
 from colossalai.utils import get_current_device
 from torch.testing import assert_close
 
-from open_sora.modeling.dit import CrossAttention, SeqParallelCrossAttention
+from open_sora.modeling.dit import (
+    CrossAttention,
+    FastSeqParallelCrossAttention,
+    SeqParallelCrossAttention,
+)
 from open_sora.utils.comm import gather_seq, split_seq
 
 
-def check_sp_attn():
+@parameterize("layer_cls", [SeqParallelCrossAttention, FastSeqParallelCrossAttention])
+@parameterize("overlap", [True, False])
+def check_sp_attn(layer_cls, overlap):
+    if overlap:
+        return
+    model_kwargs = {}
+    if layer_cls == FastSeqParallelCrossAttention:
+        model_kwargs["overlap"] = overlap
     sp_size = dist.get_world_size()
     sp_rank = dist.get_rank()
     q_dim, context_dim = 8, 4
@@ -23,8 +34,13 @@ def check_sp_attn():
     attn = CrossAttention(q_dim, context_dim, num_heads, head_dim).to(
         get_current_device()
     )
-    parallel_attn = SeqParallelCrossAttention(
-        q_dim, context_dim, num_heads, head_dim, seq_parallel_group=dist.group.WORLD
+    parallel_attn = layer_cls(
+        q_dim,
+        context_dim,
+        num_heads,
+        head_dim,
+        seq_parallel_group=dist.group.WORLD,
+        **model_kwargs
     ).to(get_current_device())
     parallel_attn.load_state_dict(attn.state_dict())
     hidden_states = torch.rand(bs, sq, q_dim, device=get_current_device())
