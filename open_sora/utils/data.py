@@ -16,6 +16,13 @@ DatasetType = Union[Dataset, ConcatDataset, dataset_dict.Dataset]
 PathType = Union[str, os.PathLike]
 
 
+def ceil_to_multiple(x: int, multiple: int) -> int:
+    m = x % multiple
+    if m == 0:
+        return x
+    return x + multiple - m
+
+
 def video2col(video_4d: torch.Tensor, patch_size: int) -> torch.Tensor:
     """
     Convert a 4D video tensor to a 2D tensor where each row is a patch of the video.
@@ -67,7 +74,9 @@ def col2video(
     return video
 
 
-def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
+def pad_sequences(
+    sequences: List[torch.Tensor], pad_to_multiple: Optional[int] = None
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """Pad a list of sequences.
 
     Args:
@@ -77,6 +86,8 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
         Tuple[torch.Tensor, torch.Tensor]: Padded batch of sequences ([B, T, ...]) and padding mask ([B, T]).
     """
     max_len = max([sequence.shape[0] for sequence in sequences])
+    if pad_to_multiple is not None:
+        max_len = ceil_to_multiple(max_len, pad_to_multiple)
     padded_sequences = [
         F.pad(
             sequence, [0] * (sequence.ndim - 1) * 2 + [0, max_len - sequence.shape[0]]
@@ -96,7 +107,7 @@ def pad_sequences(sequences: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Te
 
 
 def patchify_batch(
-    videos: List[torch.Tensor], patch_size: int
+    videos: List[torch.Tensor], patch_size: int, pad_to_multiple: Optional[int] = None
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Patchify a batch of videos.
 
@@ -108,7 +119,7 @@ def patchify_batch(
         Tuple[torch.Tensor, torch.Tensor]: Padded batch of patches ([B, S, C, P, P]) and padding mask ([B, S]).
     """
     video_patches = [video2col(video, patch_size) for video in videos]
-    return pad_sequences(video_patches)
+    return pad_sequences(video_patches, pad_to_multiple=pad_to_multiple)
 
 
 def expand_mask_4d(q_mask: torch.Tensor, kv_mask: torch.Tensor) -> torch.Tensor:
@@ -127,7 +138,9 @@ def expand_mask_4d(q_mask: torch.Tensor, kv_mask: torch.Tensor) -> torch.Tensor:
     return mask.unsqueeze(1)
 
 
-def make_batch(samples: List[dict], video_dir: str) -> dict:
+def make_batch(
+    samples: List[dict], video_dir: str, pad_to_multiple: Optional[int] = None
+) -> dict:
     """Make a batch of samples.
 
     Args:
@@ -141,7 +154,7 @@ def make_batch(samples: List[dict], video_dir: str) -> dict:
         for sample in samples
     ]
     texts = [sample["text_latent_states"] for sample in samples]
-    texts, text_padding_mask = pad_sequences(texts)
+    texts, text_padding_mask = pad_sequences(texts, pad_to_multiple=pad_to_multiple)
     return {
         "videos": videos,
         "text_latent_states": texts,
@@ -269,6 +282,7 @@ def preprocess_batch(
     video_compressor: VideoCompressor,
     device=None,
     use_cross_attn=True,
+    pad_to_multiple: Optional[int] = None,
 ) -> dict:
     if device is None:
         device = get_current_device()
@@ -278,7 +292,9 @@ def preprocess_batch(
         video = normalize_video(video)
         video = video_compressor.encode(video)
         videos.append(video)
-    video_latent_states, video_padding_mask = patchify_batch(videos, patch_size)
+    video_latent_states, video_padding_mask = patchify_batch(
+        videos, patch_size, pad_to_multiple
+    )
     batch["video_latent_states"] = video_latent_states
     batch["video_padding_mask"] = video_padding_mask
     text_padding_mask = batch.pop("text_padding_mask").to(device)
