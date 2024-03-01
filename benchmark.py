@@ -97,7 +97,7 @@ def main(args):
     video_inputs = batch.pop("video_latent_states")
     mask = batch.pop("video_padding_mask")
     logger.info(
-        f"Num patches: {video_inputs.shape[1]}, num_tokens: {batch['text_latent_states'].shape[1]}",
+        f"Num patches: {video_inputs.shape[1]}, num tokens: {batch['text_latent_states'].shape[1]}",
         ranks=[0],
     )
 
