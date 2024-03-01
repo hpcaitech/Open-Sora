@@ -17,7 +17,8 @@ from open_sora.utils.comm import gather_seq, split_seq
 
 @parameterize("layer_cls", [SeqParallelCrossAttention, FastSeqParallelCrossAttention])
 @parameterize("overlap", [True, False])
-def check_sp_attn(layer_cls, overlap):
+@parameterize("cross_attn", [True, False])
+def check_sp_attn(layer_cls, overlap, cross_attn):
     if overlap and layer_cls == SeqParallelCrossAttention:
         return
     model_kwargs = {}
@@ -31,6 +32,9 @@ def check_sp_attn(layer_cls, overlap):
     bs = 2
     sq = 8
     skv = 4
+    if not cross_attn:
+        context_dim = None
+        skv = sq
     attn = CrossAttention(q_dim, context_dim, num_heads, head_dim).to(
         get_current_device()
     )
@@ -44,11 +48,17 @@ def check_sp_attn(layer_cls, overlap):
     ).to(get_current_device())
     parallel_attn.load_state_dict(attn.state_dict())
     hidden_states = torch.rand(bs, sq, q_dim, device=get_current_device())
-    context = torch.rand(bs, skv, context_dim, device=get_current_device())
+    if cross_attn:
+        context = torch.rand(bs, skv, context_dim, device=get_current_device())
+    else:
+        context = None
     mask = torch.zeros(bs, 1, sq, skv, device=get_current_device())
     target = attn(hidden_states, context, mask)
     hidden_states_parallel = split_seq(hidden_states, sp_size, sp_rank)
-    context_parallel = split_seq(context, sp_size, sp_rank)
+    if cross_attn:
+        context_parallel = split_seq(context, sp_size, sp_rank)
+    else:
+        context_parallel = None
     output_parallel = parallel_attn(
         hidden_states_parallel,
         context_parallel,
