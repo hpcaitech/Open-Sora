@@ -80,10 +80,6 @@ def parse_args():
 
 
 def main(args):
-    from os.path import abspath
-
-    abspath(args.output_path)
-
     torch.set_grad_enabled(False)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
