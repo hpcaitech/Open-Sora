@@ -15,16 +15,40 @@ from open_sora.utils.plugin import ZeroSeqParallelPlugin
 
 
 @parameterize("sp_size", [2, 4])
+@parameterize("sp_mode", ["ulysses", "fastseq"])
+@parameterize("sp_overlap", [True, False])
+@parameterize("cross_attn", [True, False])
 def check_dit_model_fwd_bwd(
-    sp_size: int, video_latent_states, text_latent_states, t, mask
+    sp_size: int,
+    sp_mode: str,
+    sp_overlap: bool,
+    cross_attn: bool,
+    video_latent_states,
+    text_latent_states,
+    t,
+    mask,
 ):
+    if sp_overlap and sp_mode == "ulysses":
+        return
+    if not cross_attn:
+        mask = mask.new_ones(
+            *mask.shape[:2],
+            mask.shape[2] + mask.shape[3],
+            mask.shape[2] + mask.shape[3],
+        )
     plugin = ZeroSeqParallelPlugin(
         sp_size=sp_size, stage=2, precision="fp32", master_weights=False
     )
     booster = Booster(plugin=plugin)
-    model = DiT_models["DiT-B/8"](text_dropout_prob=0.0).to(get_current_device())
+    model = DiT_models["DiT-B/8"](text_dropout_prob=0.0, use_cross_attn=cross_attn).to(
+        get_current_device()
+    )
     parallel_model = DiT_models["DiT-B/8"](
-        text_dropout_prob=0.0, seq_parallel_group=plugin.sp_group
+        text_dropout_prob=0.0,
+        use_cross_attn=cross_attn,
+        seq_parallel_group=plugin.sp_group,
+        seq_parallel_mode=sp_mode,
+        seq_parallel_overlap=sp_overlap,
     ).to(get_current_device())
     parallel_model.load_state_dict(model.state_dict())
     opt = HybridAdam(parallel_model.parameters(), lr=1e-3)

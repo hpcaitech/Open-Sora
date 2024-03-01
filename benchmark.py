@@ -11,6 +11,7 @@ import argparse
 import time
 
 import torch
+import torch.distributed as dist
 from colossalai import launch_from_torch
 from colossalai.accelerator import get_accelerator
 from colossalai.booster import Booster
@@ -23,6 +24,7 @@ from tqdm import tqdm
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
+from open_sora.modeling.dit import SUPPORTED_SEQ_PARALLEL_MODES
 from open_sora.utils.data import create_video_compressor, preprocess_batch
 from open_sora.utils.plugin import ZeroSeqParallelPlugin
 
@@ -55,6 +57,8 @@ def main(args):
     model_kwargs = {
         "in_channels": video_compressor.out_channels,
         "seq_parallel_group": plugin.sp_group,
+        "seq_parallel_mode": args.sp_mode,
+        "seq_parallel_overlap": args.sp_overlap,
     }
 
     # Create DiT and EMA
@@ -93,7 +97,7 @@ def main(args):
     video_inputs = batch.pop("video_latent_states")
     mask = batch.pop("video_padding_mask")
     logger.info(
-        f"Num patches: {video_inputs.shape[1]}, num_tokens: {batch['text_latent_states'].shape[1]}",
+        f"Num patches: {video_inputs.shape[1]}, num tokens: {batch['text_latent_states'].shape[1]}",
         ranks=[0],
     )
 
@@ -129,6 +133,11 @@ def main(args):
         if i >= args.warmup_steps:
             total_samples += args.batch_size * coordinator.world_size
             total_duration += time_per_iter
+    total_duration = torch.tensor([total_duration], device=get_current_device())
+    dist.all_reduce(total_duration)
+    total_duration = total_duration / coordinator.world_size
+    total_duration = total_duration.item()
+    total_samples *= coordinator.world_size // args.sp_size
 
     throughput = total_samples / total_duration
     logger.info(
@@ -136,7 +145,7 @@ def main(args):
         ranks=[0],
     )
     logger.info(
-        f"Throughput per device: {throughput:.2f} samples/s",
+        f"Throughput: {throughput:.2f} samples/s",
         ranks=[0],
     )
 
@@ -151,6 +160,10 @@ if __name__ == "__main__":
         "-p", "--plugin", type=str, default="zero2", choices=["ddp", "zero2"]
     )
     parser.add_argument("--sp_size", type=int, default=1)
+    parser.add_argument(
+        "--sp_mode", type=str, default="ulysses", choices=SUPPORTED_SEQ_PARALLEL_MODES
+    )
+    parser.add_argument("--sp_overlap", action="store_true", default=False)
     parser.add_argument("-w", "--warmup_steps", type=int, default=2)
     parser.add_argument("-s", "--steps", type=int, default=3)
     parser.add_argument("-b", "--batch_size", type=int, default=4)

@@ -19,203 +19,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.vision_transformer import Mlp
 
-from open_sora.utils.comm import all_to_all, gather_seq, split_seq
+from open_sora.utils.comm import gather_seq, split_seq
 
+from .attn import (
+    CrossAttention,
+    FastSeqParallelCrossAttention,
+    SeqParallelCrossAttention,
+)
 
-class CrossAttention(nn.Module):
-    r"""
-    A cross attention layer.
-
-    Parameters:
-        query_dim (`int`): The number of channels in the query.
-        cross_attention_dim (`int`, *optional*):
-            The number of channels in the context. If not given, defaults to `query_dim`.
-        num_heads (`int`,  *optional*, defaults to 8): The number of heads to use for multi-head attention.
-        head_dim (`int`,  *optional*, defaults to 64): The number of channels in each head.
-        dropout (`float`, *optional*, defaults to 0.0): The dropout probability to use.
-        bias (`bool`, *optional*, defaults to False):
-            Set to `True` for the query, key, and value linear layers to contain a bias parameter.
-    """
-
-    def __init__(
-        self,
-        query_dim: int,
-        cross_attention_dim: Optional[int] = None,
-        num_heads: int = 8,
-        head_dim: int = 64,
-        dropout: float = 0.0,
-        bias=False,
-        sdpa=True,
-    ):
-        super().__init__()
-        self.hidden_size = head_dim * num_heads
-        cross_attention_dim = (
-            cross_attention_dim if cross_attention_dim is not None else query_dim
-        )
-
-        self.scale = head_dim**-0.5
-        self.num_heads = num_heads
-        self.head_dim = head_dim
-        self.sdpa = sdpa
-
-        self.to_q = nn.Linear(query_dim, self.hidden_size, bias=bias)
-        self.to_k = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
-        self.to_v = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
-
-        self.to_out = nn.Sequential(
-            nn.Linear(self.hidden_size, query_dim), nn.Dropout(dropout)
-        )
-
-    def forward(self, hidden_states, context=None, mask=None):
-        bsz, q_len, _ = hidden_states.shape
-
-        query = self.to_q(hidden_states)
-        context = context if context is not None else hidden_states
-        kv_seq_len = context.shape[1]
-        key = self.to_k(context)
-        value = self.to_v(context)
-
-        # [B, S, H, D]
-        query = query.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        key = key.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        value = value.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(
-            1, 2
-        )
-
-        if mask is not None:
-            assert mask.shape == (bsz, 1, q_len, kv_seq_len)
-        if self.sdpa:
-            attn_output = F.scaled_dot_product_attention(
-                query, key, value, attn_mask=mask, scale=self.scale
-            )
-        else:
-            attn_weights = torch.matmul(query, key.transpose(2, 3)) / self.scale
-            assert attn_weights.shape == (bsz, self.num_heads, q_len, kv_seq_len)
-            if mask is not None:
-                attn_weights = attn_weights + mask
-            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                query.dtype
-            )
-            attn_output = torch.matmul(attn_weights, value)
-        assert attn_output.shape == (bsz, self.num_heads, q_len, self.head_dim)
-        attn_output = attn_output.transpose(1, 2).contiguous()
-        attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
-        attn_output = self.to_out(attn_output)
-        return attn_output
-
-
-class SeqParallelCrossAttention(nn.Module):
-    r"""
-    A cross attention layer.
-
-    Parameters:
-        query_dim (`int`): The number of channels in the query.
-        cross_attention_dim (`int`, *optional*):
-            The number of channels in the context. If not given, defaults to `query_dim`.
-        num_heads (`int`,  *optional*, defaults to 8): The number of heads to use for multi-head attention.
-        head_dim (`int`,  *optional*, defaults to 64): The number of channels in each head.
-        dropout (`float`, *optional*, defaults to 0.0): The dropout probability to use.
-        bias (`bool`, *optional*, defaults to False):
-            Set to `True` for the query, key, and value linear layers to contain a bias parameter.
-    """
-
-    def __init__(
-        self,
-        query_dim: int,
-        cross_attention_dim: Optional[int] = None,
-        num_heads: int = 8,
-        head_dim: int = 64,
-        dropout: float = 0.0,
-        bias=False,
-        sdpa=True,
-        seq_parallel_group=None,
-    ):
-        super().__init__()
-        self.hidden_size = head_dim * num_heads
-        cross_attention_dim = (
-            cross_attention_dim if cross_attention_dim is not None else query_dim
-        )
-
-        self.scale = head_dim**-0.5
-        self.num_heads = num_heads
-        self.head_dim = head_dim
-        self.sdpa = sdpa
-        self.seq_parallel_group = seq_parallel_group
-        self.seq_parallel_size = (
-            dist.get_world_size(self.seq_parallel_group)
-            if seq_parallel_group is not None
-            else 1
-        )
-        assert self.num_heads % self.seq_parallel_size == 0
-
-        self.to_q = nn.Linear(query_dim, self.hidden_size, bias=bias)
-        self.to_k = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
-        self.to_v = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
-
-        self.to_out = nn.Sequential(
-            nn.Linear(self.hidden_size, query_dim), nn.Dropout(dropout)
-        )
-
-    def forward(self, hidden_states, context=None, mask=None):
-        bsz, q_len, _ = hidden_states.shape
-
-        query = self.to_q(hidden_states)
-        context = context if context is not None else hidden_states
-        kv_seq_len = context.shape[1]
-        key = self.to_k(context)
-        value = self.to_v(context)
-
-        # [B, S/P, H] -> [B, S, H/P]
-        num_heads_parallel = self.num_heads // self.seq_parallel_size
-        hidden_size_parallel = self.hidden_size // self.seq_parallel_size
-        if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
-            query = all_to_all(
-                query, self.seq_parallel_group, scatter_dim=2, gather_dim=1
-            )
-            key = all_to_all(key, self.seq_parallel_group, scatter_dim=2, gather_dim=1)
-            value = all_to_all(
-                value, self.seq_parallel_group, scatter_dim=2, gather_dim=1
-            )
-
-        q_len *= self.seq_parallel_size
-        kv_seq_len *= self.seq_parallel_size
-
-        # [B, S, H/P] -> [B, S, N/P, D] -> [B, N/P, S, D]
-        query = query.view(bsz, q_len, num_heads_parallel, self.head_dim).transpose(
-            1, 2
-        )
-        key = key.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(
-            1, 2
-        )
-        value = value.view(
-            bsz, kv_seq_len, num_heads_parallel, self.head_dim
-        ).transpose(1, 2)
-
-        if mask is not None:
-            assert mask.shape == (bsz, 1, q_len, kv_seq_len)
-        if self.sdpa:
-            attn_output = F.scaled_dot_product_attention(
-                query, key, value, attn_mask=mask, scale=self.scale
-            )
-        else:
-            attn_weights = torch.matmul(query, key.transpose(2, 3)) / self.scale
-            assert attn_weights.shape == (bsz, num_heads_parallel, q_len, kv_seq_len)
-            if mask is not None:
-                attn_weights = attn_weights + mask
-            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                query.dtype
-            )
-            attn_output = torch.matmul(attn_weights, value)
-        assert attn_output.shape == (bsz, num_heads_parallel, q_len, self.head_dim)
-        attn_output = attn_output.transpose(1, 2).contiguous()
-        attn_output = attn_output.reshape(bsz, q_len, hidden_size_parallel)
-        # [B, S, H/P] -> [B, S/P, H]
-        if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
-            attn_output = all_to_all(
-                attn_output, self.seq_parallel_group, scatter_dim=1, gather_dim=2
-            )
-        attn_output = self.to_out(attn_output)
-        return attn_output
+SUPPORTED_SEQ_PARALLEL_MODES = ["ulysses", "fastseq"]
 
 
 def modulate(x, shift, scale):
@@ -408,17 +220,33 @@ class DiTBlock(nn.Module):
         cross_attention_dim=None,
         mlp_ratio=4.0,
         seq_parallel_group=None,
+        seq_parallel_mode="ulysses",
+        seq_parallel_overlap=False,
     ):
         super().__init__()
         self.norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.attn = SeqParallelCrossAttention(
+        attn_kwargs = {}
+        if seq_parallel_group is not None:
+            attn_kwargs["seq_parallel_group"] = seq_parallel_group
+            if seq_parallel_mode == "ulysses":
+                attn_cls = SeqParallelCrossAttention
+            elif seq_parallel_mode == "fastseq":
+                attn_cls = FastSeqParallelCrossAttention
+                attn_kwargs["overlap"] = seq_parallel_overlap
+            else:
+                raise ValueError(
+                    f"seq_parallel_mode must be one of {SUPPORTED_SEQ_PARALLEL_MODES}"
+                )
+        else:
+            attn_cls = CrossAttention
+        self.attn = attn_cls(
             query_dim=hidden_size,
             cross_attention_dim=cross_attention_dim,
             num_heads=num_heads,
             head_dim=hidden_size // num_heads,
             bias=True,
             sdpa=True,
-            seq_parallel_group=seq_parallel_group,
+            **attn_kwargs,
         )
 
         self.norm2 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
@@ -500,6 +328,8 @@ class DiT(nn.Module):
         learn_sigma=True,
         use_cross_attn=True,
         seq_parallel_group=None,
+        seq_parallel_mode="ulysses",
+        seq_parallel_overlap=False,
     ):
         super().__init__()
         self.grad_checkpointing = False
@@ -546,6 +376,8 @@ class DiT(nn.Module):
                     cross_attn_dim,
                     mlp_ratio=mlp_ratio,
                     seq_parallel_group=seq_parallel_group,
+                    seq_parallel_mode=seq_parallel_mode,
+                    seq_parallel_overlap=seq_parallel_overlap,
                 )
                 for _ in range(depth)
             ]

@@ -27,6 +27,7 @@ from tqdm import tqdm
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
+from open_sora.modeling.dit import SUPPORTED_SEQ_PARALLEL_MODES
 from open_sora.utils.data import (
     create_video_compressor,
     load_datasets,
@@ -111,6 +112,8 @@ def main(args):
     model_kwargs = {
         "in_channels": video_compressor.out_channels,
         "seq_parallel_group": plugin.sp_group,
+        "seq_parallel_mode": args.sp_mode,
+        "seq_parallel_overlap": args.sp_overlap,
     }
 
     # Step 4: Create DiT and EMA
@@ -247,6 +250,10 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--grad_checkpoint", action="store_true", default=False)
     parser.add_argument("-a", "--accumulation_steps", default=1, type=int)
     parser.add_argument("--sp_size", type=int, default=1)
+    parser.add_argument(
+        "--sp_mode", type=str, default="ulysses", choices=SUPPORTED_SEQ_PARALLEL_MODES
+    )
+    parser.add_argument("--sp_overlap", action="store_true", default=False)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--save_interval", type=int, default=20)
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints")

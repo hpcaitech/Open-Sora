@@ -3,15 +3,27 @@ import pytest
 import torch
 import torch.distributed as dist
 from colossalai.logging import disable_existing_loggers
-from colossalai.testing import rerun_if_address_is_in_use, spawn
+from colossalai.testing import parameterize, rerun_if_address_is_in_use, spawn
 from colossalai.utils import get_current_device
 from torch.testing import assert_close
 
-from open_sora.modeling.dit import CrossAttention, SeqParallelCrossAttention
+from open_sora.modeling.dit import (
+    CrossAttention,
+    FastSeqParallelCrossAttention,
+    SeqParallelCrossAttention,
+)
 from open_sora.utils.comm import gather_seq, split_seq
 
 
-def check_sp_attn():
+@parameterize("layer_cls", [SeqParallelCrossAttention, FastSeqParallelCrossAttention])
+@parameterize("overlap", [True, False])
+@parameterize("cross_attn", [True, False])
+def check_sp_attn(layer_cls, overlap, cross_attn):
+    if overlap and layer_cls == SeqParallelCrossAttention:
+        return
+    model_kwargs = {}
+    if layer_cls == FastSeqParallelCrossAttention:
+        model_kwargs["overlap"] = overlap
     sp_size = dist.get_world_size()
     sp_rank = dist.get_rank()
     q_dim, context_dim = 8, 4
@@ -20,19 +32,33 @@ def check_sp_attn():
     bs = 2
     sq = 8
     skv = 4
+    if not cross_attn:
+        context_dim = None
+        skv = sq
     attn = CrossAttention(q_dim, context_dim, num_heads, head_dim).to(
         get_current_device()
     )
-    parallel_attn = SeqParallelCrossAttention(
-        q_dim, context_dim, num_heads, head_dim, seq_parallel_group=dist.group.WORLD
+    parallel_attn = layer_cls(
+        q_dim,
+        context_dim,
+        num_heads,
+        head_dim,
+        seq_parallel_group=dist.group.WORLD,
+        **model_kwargs,
     ).to(get_current_device())
     parallel_attn.load_state_dict(attn.state_dict())
     hidden_states = torch.rand(bs, sq, q_dim, device=get_current_device())
-    context = torch.rand(bs, skv, context_dim, device=get_current_device())
+    if cross_attn:
+        context = torch.rand(bs, skv, context_dim, device=get_current_device())
+    else:
+        context = None
     mask = torch.zeros(bs, 1, sq, skv, device=get_current_device())
     target = attn(hidden_states, context, mask)
     hidden_states_parallel = split_seq(hidden_states, sp_size, sp_rank)
-    context_parallel = split_seq(context, sp_size, sp_rank)
+    if cross_attn:
+        context_parallel = split_seq(context, sp_size, sp_rank)
+    else:
+        context_parallel = None
     output_parallel = parallel_attn(
         hidden_states_parallel,
         context_parallel,
@@ -49,8 +75,8 @@ def check_sp_attn():
         p.grad.data.div_(sp_size)
         dist.all_reduce(p.grad.data)
 
-    for p1, p2 in zip(attn.parameters(), parallel_attn.parameters()):
-        assert_close(p1.grad, p2.grad)
+    for (n, p1), p2 in zip(attn.named_parameters(), parallel_attn.parameters()):
+        assert_close(p1.grad, p2.grad, msg=lambda m: f"Check {n}\n{m}")
 
 
 def run_dist(rank, world_size, port):
