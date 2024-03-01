@@ -17,10 +17,16 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
+from colossalai.logging import get_dist_logger
 from colossalai.shardformer.layer._operation import gather_forward_split_backward
 from timm.models.vision_transformer import Mlp
 
-from open_sora.utils.comm import all_to_all, gather_seq, split_seq
+from open_sora.utils.comm import (
+    all_to_all,
+    async_all_gather_proj_for_two,
+    gather_seq,
+    split_seq,
+)
 
 
 class CrossAttention(nn.Module):
@@ -251,37 +257,58 @@ class FastSeqParallelCrossAttention(SeqParallelCrossAttention):
             self.hidden_size // self.seq_parallel_size * self.seq_parallel_rank,
             self.hidden_size // self.seq_parallel_size * (self.seq_parallel_rank + 1),
         )
-        # self.overlap = self.seq_parallel_size == 2
+        if overlap and self.seq_parallel_size != 2:
+            logger = get_dist_logger()
+            logger.warning(
+                "FastSeqParallelCrossAttention only supports overlap with seq_parallel_size=2. Fallback to non-overlap",
+                ranks=[0],
+            )
+            overlap = False
         self.overlap = overlap
-        assert not overlap or self.seq_parallel_size == 2
 
-    def _proj(self, x: torch.Tensor, proj_layer: nn.Linear):
-        bias = (
+    def _get_sliced_params(self, proj_layer: nn.Linear):
+        bias = bias = (
             proj_layer.bias[self.sequence_parallel_param_slice]
             if proj_layer.bias is not None
             else None
         )
+        return proj_layer.weight[self.sequence_parallel_param_slice], bias
+
+    def _proj(self, x: torch.Tensor, proj_layer: nn.Linear):
         return F.linear(
             x,
-            proj_layer.weight[self.sequence_parallel_param_slice],
-            bias=bias,
+            *self._get_sliced_params(proj_layer),
         )
 
     def forward(self, hidden_states, context=None, mask=None):
         bsz, q_len, _ = hidden_states.shape
 
-        # TODO: impl overlap
         context = context if context is not None else hidden_states
         kv_seq_len = context.shape[1]
         if self.seq_parallel_size > 1:
-            # [B, S/P, H] -> [B, S, H]
-            hidden_states = gather_forward_split_backward(
-                hidden_states, 1, self.seq_parallel_group
-            )
-            context = gather_forward_split_backward(context, 1, self.seq_parallel_group)
-            query = self._proj(hidden_states, self.to_q)
-            key = self._proj(context, self.to_k)
-            value = self._proj(context, self.to_v)
+            if self.overlap and self.seq_parallel_size == 2:
+                query, key, value = async_all_gather_proj_for_two(
+                    hidden_states,
+                    context,
+                    *self._get_sliced_params(self.to_q),
+                    *self._get_sliced_params(self.to_k),
+                    *self._get_sliced_params(self.to_v),
+                    dim=1,
+                    process_group=self.seq_parallel_group,
+                    sp_size=self.seq_parallel_size,
+                    sp_rank=self.seq_parallel_rank,
+                )
+            else:
+                # [B, S/P, H] -> [B, S, H]
+                hidden_states = gather_forward_split_backward(
+                    hidden_states, 1, self.seq_parallel_group
+                )
+                context = gather_forward_split_backward(
+                    context, 1, self.seq_parallel_group
+                )
+                query = self._proj(hidden_states, self.to_q)
+                key = self._proj(context, self.to_k)
+                value = self._proj(context, self.to_v)
         else:
             query = self.to_q(hidden_states)
             key = self.to_k(context)

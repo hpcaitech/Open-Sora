@@ -18,7 +18,7 @@ from open_sora.utils.comm import gather_seq, split_seq
 @parameterize("layer_cls", [SeqParallelCrossAttention, FastSeqParallelCrossAttention])
 @parameterize("overlap", [True, False])
 def check_sp_attn(layer_cls, overlap):
-    if overlap:
+    if overlap and layer_cls == SeqParallelCrossAttention:
         return
     model_kwargs = {}
     if layer_cls == FastSeqParallelCrossAttention:
@@ -40,7 +40,7 @@ def check_sp_attn(layer_cls, overlap):
         num_heads,
         head_dim,
         seq_parallel_group=dist.group.WORLD,
-        **model_kwargs
+        **model_kwargs,
     ).to(get_current_device())
     parallel_attn.load_state_dict(attn.state_dict())
     hidden_states = torch.rand(bs, sq, q_dim, device=get_current_device())
@@ -65,8 +65,8 @@ def check_sp_attn(layer_cls, overlap):
         p.grad.data.div_(sp_size)
         dist.all_reduce(p.grad.data)
 
-    for p1, p2 in zip(attn.parameters(), parallel_attn.parameters()):
-        assert_close(p1.grad, p2.grad)
+    for (n, p1), p2 in zip(attn.named_parameters(), parallel_attn.parameters()):
+        assert_close(p1.grad, p2.grad, msg=lambda m: f"Check {n}\n{m}")
 
 
 def run_dist(rank, world_size, port):
