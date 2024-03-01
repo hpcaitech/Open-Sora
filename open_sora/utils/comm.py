@@ -5,6 +5,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from colossalai.moe._operation import MoeInGradScaler, MoeOutGradScaler
 from colossalai.shardformer.layer._operation import gather_forward_split_backward
+from torch.distributed.distributed_c10d import get_global_rank
 
 
 def _all_to_all(
@@ -131,15 +132,18 @@ class AsyncAllGatherProjForTwo(torch.autograd.Function):
         else:
             recv_context = recv_hidden_states
 
+        peer_global_rank = get_global_rank(process_group, 1 - sp_rank)
         ops = [
-            dist.P2POp(dist.isend, hidden_states, 1 - sp_rank, process_group),
-            dist.P2POp(dist.irecv, recv_hidden_states, 1 - sp_rank, process_group),
+            dist.P2POp(dist.isend, hidden_states, peer_global_rank, process_group),
+            dist.P2POp(dist.irecv, recv_hidden_states, peer_global_rank, process_group),
         ]
         if is_cross_attn:
             ops.extend(
                 [
-                    dist.P2POp(dist.isend, context, 1 - sp_rank, process_group),
-                    dist.P2POp(dist.irecv, recv_context, 1 - sp_rank, process_group),
+                    dist.P2POp(dist.isend, context, peer_global_rank, process_group),
+                    dist.P2POp(
+                        dist.irecv, recv_context, peer_global_rank, process_group
+                    ),
                 ]
             )
 

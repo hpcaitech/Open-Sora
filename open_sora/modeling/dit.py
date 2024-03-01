@@ -28,6 +28,8 @@ from open_sora.utils.comm import (
     split_seq,
 )
 
+SUPPORTED_SEQ_PARALLEL_MODES = ["ulysses", "fastseq"]
+
 
 class CrossAttention(nn.Module):
     r"""
@@ -548,17 +550,33 @@ class DiTBlock(nn.Module):
         cross_attention_dim=None,
         mlp_ratio=4.0,
         seq_parallel_group=None,
+        seq_parallel_mode="ulysses",
+        seq_parallel_overlap=False,
     ):
         super().__init__()
         self.norm1 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.attn = SeqParallelCrossAttention(
+        attn_kwargs = {}
+        if seq_parallel_group is not None:
+            attn_kwargs["seq_parallel_group"] = seq_parallel_group
+            if seq_parallel_mode == "ulysses":
+                attn_cls = SeqParallelCrossAttention
+            elif seq_parallel_mode == "fastseq":
+                attn_cls = FastSeqParallelCrossAttention
+                attn_kwargs["overlap"] = seq_parallel_overlap
+            else:
+                raise ValueError(
+                    f"seq_parallel_mode must be one of {SUPPORTED_SEQ_PARALLEL_MODES}"
+                )
+        else:
+            attn_cls = CrossAttention
+        self.attn = attn_cls(
             query_dim=hidden_size,
             cross_attention_dim=cross_attention_dim,
             num_heads=num_heads,
             head_dim=hidden_size // num_heads,
             bias=True,
             sdpa=True,
-            seq_parallel_group=seq_parallel_group,
+            **attn_kwargs,
         )
 
         self.norm2 = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
@@ -640,6 +658,8 @@ class DiT(nn.Module):
         learn_sigma=True,
         use_cross_attn=True,
         seq_parallel_group=None,
+        seq_parallel_mode="ulysses",
+        seq_parallel_overlap=False,
     ):
         super().__init__()
         self.grad_checkpointing = False
@@ -686,6 +706,8 @@ class DiT(nn.Module):
                     cross_attn_dim,
                     mlp_ratio=mlp_ratio,
                     seq_parallel_group=seq_parallel_group,
+                    seq_parallel_mode=seq_parallel_mode,
+                    seq_parallel_overlap=seq_parallel_overlap,
                 )
                 for _ in range(depth)
             ]
