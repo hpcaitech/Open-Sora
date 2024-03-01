@@ -3,11 +3,12 @@ import pytest
 import torch
 import torch.distributed as dist
 from colossalai.logging import disable_existing_loggers
-from colossalai.shardformer.layer._operation import gather_forward_split_backward
 from colossalai.testing import rerun_if_address_is_in_use, spawn
 from colossalai.utils import get_current_device
+from torch.testing import assert_close
 
 from open_sora.modeling.dit import CrossAttention, SeqParallelCrossAttention
+from open_sora.utils.comm import gather_seq, split_seq
 
 
 def check_sp_attn():
@@ -30,14 +31,26 @@ def check_sp_attn():
     context = torch.rand(bs, skv, context_dim, device=get_current_device())
     mask = torch.zeros(bs, 1, sq, skv, device=get_current_device())
     target = attn(hidden_states, context, mask)
+    hidden_states_parallel = split_seq(hidden_states, sp_size, sp_rank)
+    context_parallel = split_seq(context, sp_size, sp_rank)
     output_parallel = parallel_attn(
-        hidden_states.chunk(sp_size, dim=1)[sp_rank],
-        context.chunk(sp_size, dim=1)[sp_rank],
+        hidden_states_parallel,
+        context_parallel,
         mask,
     )
     assert torch.equal(target.chunk(sp_size, dim=1)[sp_rank], output_parallel)
-    output = gather_forward_split_backward(output_parallel, 1, dist.group.WORLD)
+    output = gather_seq(output_parallel, sp_size, sp_rank, dist.group.WORLD)
     assert torch.equal(target, output)
+    target.mean().backward()
+    output.mean().backward()
+
+    # all-reduce mean of grads
+    for p in parallel_attn.parameters():
+        p.grad.data.div_(sp_size)
+        dist.all_reduce(p.grad.data)
+
+    for p1, p2 in zip(attn.parameters(), parallel_attn.parameters()):
+        assert_close(p1.grad, p2.grad)
 
 
 def run_dist(rank, world_size, port):

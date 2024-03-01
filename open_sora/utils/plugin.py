@@ -60,7 +60,6 @@ class ZeroSeqParallelPlugin(LowLevelZeroPlugin):
         self.sp_group = self.pg_mesh.get_group_along_axis(SP_AXIS)
         self.dp_rank = self.pg_mesh.coordinate(DP_AXIS)
         self.sp_rank = self.pg_mesh.coordinate(SP_AXIS)
-        self.zero_optim_kwargs["dp_process_group"] = self.dp_group
 
     def __del__(self):
         """Destroy the prcess groups in ProcessGroupMesh"""

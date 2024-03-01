@@ -17,10 +17,9 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-from colossalai.shardformer.layer._operation import gather_forward_split_backward
 from timm.models.vision_transformer import Mlp
 
-from open_sora.utils.comm import all_to_all
+from open_sora.utils.comm import all_to_all, gather_seq, split_seq
 
 
 class CrossAttention(nn.Module):
@@ -624,14 +623,14 @@ class DiT(nn.Module):
 
         if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
             assert video_latent_states.shape[1] % self.seq_parallel_size == 0
-            video_latent_states = video_latent_states.chunk(
-                self.seq_parallel_size, dim=1
-            )[self.seq_parallel_rank].clone()
+            video_latent_states = split_seq(
+                video_latent_states, self.seq_parallel_size, self.seq_parallel_rank
+            )
             if text_latent_states is not None:
                 assert text_latent_states.shape[1] % self.seq_parallel_size == 0
-                text_latent_states = text_latent_states.chunk(
-                    self.seq_parallel_size, dim=1
-                )[self.seq_parallel_rank].clone()
+                text_latent_states = split_seq(
+                    text_latent_states, self.seq_parallel_size, self.seq_parallel_rank
+                )
 
         for block in self.blocks:
             if self.grad_checkpointing and self.training:
@@ -648,8 +647,11 @@ class DiT(nn.Module):
                 )
 
         if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
-            video_latent_states = gather_forward_split_backward(
-                video_latent_states, 1, self.seq_parallel_group
+            video_latent_states = gather_seq(
+                video_latent_states,
+                self.seq_parallel_size,
+                self.seq_parallel_rank,
+                self.seq_parallel_group,
             )
 
         if not self.use_cross_attn:

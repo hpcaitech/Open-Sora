@@ -1,5 +1,7 @@
 import torch
 import torch.distributed as dist
+from colossalai.moe._operation import MoeInGradScaler, MoeOutGradScaler
+from colossalai.shardformer.layer._operation import gather_forward_split_backward
 
 
 def _all_to_all(
@@ -60,3 +62,35 @@ def all_to_all(
     gather_dim: int = 1,
 ):
     return _AllToAll.apply(input_, process_group, scatter_dim, gather_dim)
+
+
+def split_seq(input_: torch.Tensor, sp_size: int, sp_rank: int, dim: int = 1):
+    """Split a tensor along sequence dimension. It will split input and divide grad by sp_size.
+
+    Args:
+        input_ (torch.Tensor): The common shape is (bs, seq, *).
+        sp_size (int): Sequence parallel size.
+        sp_rank (int): Sequence parallel rank.
+        dim (int, optional): Sequence dimension. Defaults to 1.
+    """
+    input_ = input_.chunk(sp_size, dim=dim)[sp_rank].clone()
+    return MoeOutGradScaler.apply(input_, sp_size)
+
+
+def gather_seq(
+    input_: torch.Tensor,
+    sp_size: int,
+    sp_rank: int,
+    sp_group: dist.ProcessGroup,
+    dim: int = 1,
+):
+    """Gather a tensor along sequence dimension. It will gather input and multiply grad by sp_size.
+
+    Args:
+        input_ (torch.Tensor): The common shape is (bs, seq, *).
+        sp_size (int): Sequence parallel size.
+        sp_rank (int): Sequence parallel rank.
+        dim (int, optional): Sequence dimension. Defaults to 1.
+    """
+    input_ = gather_forward_split_backward(input_, dim, sp_group)
+    return MoeInGradScaler.apply(input_, sp_size)
