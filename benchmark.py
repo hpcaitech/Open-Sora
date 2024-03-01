@@ -11,6 +11,7 @@ import argparse
 import time
 
 import torch
+import torch.distributed as dist
 from colossalai import launch_from_torch
 from colossalai.accelerator import get_accelerator
 from colossalai.booster import Booster
@@ -132,6 +133,11 @@ def main(args):
         if i >= args.warmup_steps:
             total_samples += args.batch_size * coordinator.world_size
             total_duration += time_per_iter
+    total_duration = torch.tensor([total_duration], device=get_current_device())
+    dist.all_reduce(total_duration)
+    total_duration = total_duration / coordinator.world_size
+    total_duration = total_duration.item()
+    total_samples *= coordinator.world_size // args.sp_size
 
     throughput = total_samples / total_duration
     logger.info(
@@ -139,7 +145,7 @@ def main(args):
         ranks=[0],
     )
     logger.info(
-        f"Throughput per device: {throughput:.2f} samples/s",
+        f"Throughput: {throughput:.2f} samples/s",
         ranks=[0],
     )
 
