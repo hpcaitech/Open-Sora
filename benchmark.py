@@ -23,6 +23,7 @@ from tqdm import tqdm
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
+from open_sora.modeling.dit import SUPPORTED_SEQ_PARALLEL_MODES
 from open_sora.utils.data import create_video_compressor, preprocess_batch
 from open_sora.utils.plugin import ZeroSeqParallelPlugin
 
@@ -55,6 +56,8 @@ def main(args):
     model_kwargs = {
         "in_channels": video_compressor.out_channels,
         "seq_parallel_group": plugin.sp_group,
+        "seq_parallel_mode": args.sp_mode,
+        "seq_parallel_overlap": args.sp_overlap,
     }
 
     # Create DiT and EMA
@@ -151,6 +154,10 @@ if __name__ == "__main__":
         "-p", "--plugin", type=str, default="zero2", choices=["ddp", "zero2"]
     )
     parser.add_argument("--sp_size", type=int, default=1)
+    parser.add_argument(
+        "--sp_mode", type=str, default="ulysses", choices=SUPPORTED_SEQ_PARALLEL_MODES
+    )
+    parser.add_argument("--sp_overlap", action="store_true", default=False)
     parser.add_argument("-w", "--warmup_steps", type=int, default=2)
     parser.add_argument("-s", "--steps", type=int, default=3)
     parser.add_argument("-b", "--batch_size", type=int, default=4)
