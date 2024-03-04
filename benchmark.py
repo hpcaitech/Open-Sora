@@ -56,7 +56,7 @@ def main(args):
     video_compressor = create_video_compressor(args.compressor)
     model_kwargs = {
         "in_channels": video_compressor.out_channels,
-        "seq_parallel_group": plugin.sp_group,
+        "seq_parallel_group": getattr(plugin, "sp_group", None),
         "seq_parallel_mode": args.sp_mode,
         "seq_parallel_overlap": args.sp_overlap,
     }
