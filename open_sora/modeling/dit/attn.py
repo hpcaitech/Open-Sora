@@ -37,9 +37,7 @@ class CrossAttention(nn.Module):
     ):
         super().__init__()
         self.hidden_size = head_dim * num_heads
-        cross_attention_dim = (
-            cross_attention_dim if cross_attention_dim is not None else query_dim
-        )
+        cross_attention_dim = cross_attention_dim if cross_attention_dim is not None else query_dim
 
         self.scale = head_dim**-0.5
         self.num_heads = num_heads
@@ -50,9 +48,7 @@ class CrossAttention(nn.Module):
         self.to_k = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
         self.to_v = nn.Linear(cross_attention_dim, self.hidden_size, bias=bias)
 
-        self.to_out = nn.Sequential(
-            nn.Linear(self.hidden_size, query_dim), nn.Dropout(dropout)
-        )
+        self.to_out = nn.Sequential(nn.Linear(self.hidden_size, query_dim), nn.Dropout(dropout))
 
     def forward(self, hidden_states, context=None, mask=None):
         bsz, q_len, _ = hidden_states.shape
@@ -66,24 +62,18 @@ class CrossAttention(nn.Module):
         # [B, S, H, D]
         query = query.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         key = key.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        value = value.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(
-            1, 2
-        )
+        value = value.view(bsz, kv_seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
         if mask is not None:
             assert mask.shape == (bsz, 1, q_len, kv_seq_len)
         if self.sdpa:
-            attn_output = F.scaled_dot_product_attention(
-                query, key, value, attn_mask=mask, scale=self.scale
-            )
+            attn_output = F.scaled_dot_product_attention(query, key, value, attn_mask=mask, scale=self.scale)
         else:
             attn_weights = torch.matmul(query, key.transpose(2, 3)) / self.scale
             assert attn_weights.shape == (bsz, self.num_heads, q_len, kv_seq_len)
             if mask is not None:
                 attn_weights = attn_weights + mask
-            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                query.dtype
-            )
+            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
             attn_output = torch.matmul(attn_weights, value)
         assert attn_output.shape == (bsz, self.num_heads, q_len, self.head_dim)
         attn_output = attn_output.transpose(1, 2).contiguous()
@@ -128,11 +118,7 @@ class SeqParallelCrossAttention(CrossAttention):
             sdpa,
         )
         self.seq_parallel_group = seq_parallel_group
-        self.seq_parallel_size = (
-            dist.get_world_size(self.seq_parallel_group)
-            if seq_parallel_group is not None
-            else 1
-        )
+        self.seq_parallel_size = dist.get_world_size(self.seq_parallel_group) if seq_parallel_group is not None else 1
         assert self.num_heads % self.seq_parallel_size == 0
 
     def forward(self, hidden_states, context=None, mask=None):
@@ -148,51 +134,35 @@ class SeqParallelCrossAttention(CrossAttention):
         num_heads_parallel = self.num_heads // self.seq_parallel_size
         hidden_size_parallel = self.hidden_size // self.seq_parallel_size
         if self.seq_parallel_size > 1:
-            query = all_to_all(
-                query, self.seq_parallel_group, scatter_dim=2, gather_dim=1
-            )
+            query = all_to_all(query, self.seq_parallel_group, scatter_dim=2, gather_dim=1)
             key = all_to_all(key, self.seq_parallel_group, scatter_dim=2, gather_dim=1)
-            value = all_to_all(
-                value, self.seq_parallel_group, scatter_dim=2, gather_dim=1
-            )
+            value = all_to_all(value, self.seq_parallel_group, scatter_dim=2, gather_dim=1)
 
         q_len *= self.seq_parallel_size
         kv_seq_len *= self.seq_parallel_size
 
         # [B, S, H/P] -> [B, S, N/P, D] -> [B, N/P, S, D]
-        query = query.view(bsz, q_len, num_heads_parallel, self.head_dim).transpose(
-            1, 2
-        )
-        key = key.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(
-            1, 2
-        )
-        value = value.view(
-            bsz, kv_seq_len, num_heads_parallel, self.head_dim
-        ).transpose(1, 2)
+        query = query.view(bsz, q_len, num_heads_parallel, self.head_dim).transpose(1, 2)
+        key = key.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(1, 2)
+        value = value.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(1, 2)
 
         if mask is not None:
             assert mask.shape == (bsz, 1, q_len, kv_seq_len)
         if self.sdpa:
-            attn_output = F.scaled_dot_product_attention(
-                query, key, value, attn_mask=mask, scale=self.scale
-            )
+            attn_output = F.scaled_dot_product_attention(query, key, value, attn_mask=mask, scale=self.scale)
         else:
             attn_weights = torch.matmul(query, key.transpose(2, 3)) / self.scale
             assert attn_weights.shape == (bsz, num_heads_parallel, q_len, kv_seq_len)
             if mask is not None:
                 attn_weights = attn_weights + mask
-            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                query.dtype
-            )
+            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
             attn_output = torch.matmul(attn_weights, value)
         assert attn_output.shape == (bsz, num_heads_parallel, q_len, self.head_dim)
         attn_output = attn_output.transpose(1, 2).contiguous()
         attn_output = attn_output.reshape(bsz, q_len, hidden_size_parallel)
         # [B, S, H/P] -> [B, S/P, H]
         if self.seq_parallel_size > 1:
-            attn_output = all_to_all(
-                attn_output, self.seq_parallel_group, scatter_dim=1, gather_dim=2
-            )
+            attn_output = all_to_all(attn_output, self.seq_parallel_group, scatter_dim=1, gather_dim=2)
         attn_output = self.to_out(attn_output)
         return attn_output
 
@@ -220,11 +190,7 @@ class FastSeqParallelCrossAttention(SeqParallelCrossAttention):
             sdpa,
             seq_parallel_group,
         )
-        self.seq_parallel_rank = (
-            dist.get_rank(self.seq_parallel_group)
-            if seq_parallel_group is not None
-            else 0
-        )
+        self.seq_parallel_rank = dist.get_rank(self.seq_parallel_group) if seq_parallel_group is not None else 0
         self.sequence_parallel_param_slice = slice(
             self.hidden_size // self.seq_parallel_size * self.seq_parallel_rank,
             self.hidden_size // self.seq_parallel_size * (self.seq_parallel_rank + 1),
@@ -239,11 +205,7 @@ class FastSeqParallelCrossAttention(SeqParallelCrossAttention):
         self.overlap = overlap
 
     def _get_sliced_params(self, proj_layer: nn.Linear):
-        bias = bias = (
-            proj_layer.bias[self.sequence_parallel_param_slice]
-            if proj_layer.bias is not None
-            else None
-        )
+        bias = bias = proj_layer.bias[self.sequence_parallel_param_slice] if proj_layer.bias is not None else None
         return proj_layer.weight[self.sequence_parallel_param_slice], bias
 
     def _proj(self, x: torch.Tensor, proj_layer: nn.Linear):
@@ -272,12 +234,8 @@ class FastSeqParallelCrossAttention(SeqParallelCrossAttention):
                 )
             else:
                 # [B, S/P, H] -> [B, S, H]
-                hidden_states = gather_forward_split_backward(
-                    hidden_states, 1, self.seq_parallel_group
-                )
-                context = gather_forward_split_backward(
-                    context, 1, self.seq_parallel_group
-                )
+                hidden_states = gather_forward_split_backward(hidden_states, 1, self.seq_parallel_group)
+                context = gather_forward_split_backward(context, 1, self.seq_parallel_group)
                 query = self._proj(hidden_states, self.to_q)
                 key = self._proj(context, self.to_k)
                 value = self._proj(context, self.to_v)
@@ -293,38 +251,26 @@ class FastSeqParallelCrossAttention(SeqParallelCrossAttention):
         kv_seq_len *= self.seq_parallel_size
 
         # [B, S, H/P] -> [B, S, N/P, D] -> [B, N/P, S, D]
-        query = query.view(bsz, q_len, num_heads_parallel, self.head_dim).transpose(
-            1, 2
-        )
-        key = key.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(
-            1, 2
-        )
-        value = value.view(
-            bsz, kv_seq_len, num_heads_parallel, self.head_dim
-        ).transpose(1, 2)
+        query = query.view(bsz, q_len, num_heads_parallel, self.head_dim).transpose(1, 2)
+        key = key.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(1, 2)
+        value = value.view(bsz, kv_seq_len, num_heads_parallel, self.head_dim).transpose(1, 2)
 
         if mask is not None:
             assert mask.shape == (bsz, 1, q_len, kv_seq_len)
         if self.sdpa:
-            attn_output = F.scaled_dot_product_attention(
-                query, key, value, attn_mask=mask, scale=self.scale
-            )
+            attn_output = F.scaled_dot_product_attention(query, key, value, attn_mask=mask, scale=self.scale)
         else:
             attn_weights = torch.matmul(query, key.transpose(2, 3)) / self.scale
             assert attn_weights.shape == (bsz, num_heads_parallel, q_len, kv_seq_len)
             if mask is not None:
                 attn_weights = attn_weights + mask
-            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
-                query.dtype
-            )
+            attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
             attn_output = torch.matmul(attn_weights, value)
         assert attn_output.shape == (bsz, num_heads_parallel, q_len, self.head_dim)
         attn_output = attn_output.transpose(1, 2).contiguous()
         attn_output = attn_output.reshape(bsz, q_len, hidden_size_parallel)
         # [B, S, H/P] -> [B, S/P, H]
         if self.seq_parallel_size > 1:
-            attn_output = all_to_all(
-                attn_output, self.seq_parallel_group, scatter_dim=1, gather_dim=2
-            )
+            attn_output = all_to_all(attn_output, self.seq_parallel_group, scatter_dim=1, gather_dim=2)
         attn_output = self.to_out(attn_output)
         return attn_output

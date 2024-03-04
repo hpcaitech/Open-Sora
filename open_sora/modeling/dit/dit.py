@@ -21,11 +21,7 @@ from timm.models.vision_transformer import Mlp
 
 from open_sora.utils.comm import gather_seq, split_seq
 
-from .attn import (
-    CrossAttention,
-    FastSeqParallelCrossAttention,
-    SeqParallelCrossAttention,
-)
+from .attn import CrossAttention, FastSeqParallelCrossAttention, SeqParallelCrossAttention
 
 SUPPORTED_SEQ_PARALLEL_MODES = ["ulysses", "fastseq"]
 
@@ -65,23 +61,17 @@ class TimestepEmbedder(nn.Module):
         """
         # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
         half = dim // 2
-        freqs = torch.exp(
-            -math.log(max_period)
-            * torch.arange(start=0, end=half, dtype=torch.float32)
-            / half
-        ).to(device=t.device)
+        freqs = torch.exp(-math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half).to(
+            device=t.device
+        )
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         if dim % 2:
-            embedding = torch.cat(
-                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
-            )
+            embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
         return embedding
 
     def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(
-            self.mlp[0].weight.dtype
-        )
+        t_freq = self.timestep_embedding(t, self.frequency_embedding_size).to(self.mlp[0].weight.dtype)
         t_emb = self.mlp(t_freq)
         return t_emb
 
@@ -94,9 +84,7 @@ class LabelEmbedder(nn.Module):
     def __init__(self, num_classes, hidden_size, dropout_prob):
         super().__init__()
         use_cfg_embedding = dropout_prob > 0
-        self.embedding_table = nn.Embedding(
-            num_classes + use_cfg_embedding, hidden_size
-        )
+        self.embedding_table = nn.Embedding(num_classes + use_cfg_embedding, hidden_size)
         self.num_classes = num_classes
         self.dropout_prob = dropout_prob
 
@@ -105,9 +93,7 @@ class LabelEmbedder(nn.Module):
         Drops labels to enable classifier-free guidance.
         """
         if force_drop_ids is None:
-            drop_ids = (
-                torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
-            )
+            drop_ids = torch.rand(labels.shape[0], device=labels.device) < self.dropout_prob
         else:
             drop_ids = force_drop_ids == 1
         labels = torch.where(drop_ids, self.num_classes, labels)
@@ -134,17 +120,13 @@ class PatchEmbedder(nn.Module):
     ) -> None:
         super().__init__()
         self.patch_size = patch_size
-        self.proj = nn.Conv2d(
-            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias
-        )
+        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, bias=bias)
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, S, C, P, P] -> [B, S, C*P*P]
         x = x.view(*x.shape[:2], -1)
-        out = F.linear(
-            x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias
-        )
+        out = F.linear(x, self.proj.weight.view(self.proj.weight.shape[0], -1), self.proj.bias)
         out = self.norm(out)
         # [B, S, H]
         return out
@@ -234,9 +216,7 @@ class DiTBlock(nn.Module):
                 attn_cls = FastSeqParallelCrossAttention
                 attn_kwargs["overlap"] = seq_parallel_overlap
             else:
-                raise ValueError(
-                    f"seq_parallel_mode must be one of {SUPPORTED_SEQ_PARALLEL_MODES}"
-                )
+                raise ValueError(f"seq_parallel_mode must be one of {SUPPORTED_SEQ_PARALLEL_MODES}")
         else:
             attn_cls = CrossAttention
         self.attn = attn_cls(
@@ -264,20 +244,14 @@ class DiTBlock(nn.Module):
             act_layer=approx_gelu,
             drop=0,
         )
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True)
-        )
+        self.adaLN_modulation = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True))
 
     def forward(self, x, attention_mask, t, context=None):
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
-            self.adaLN_modulation(t).chunk(6, dim=1)
-        )
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(t).chunk(6, dim=1)
         x = x + gate_msa.unsqueeze(1) * self.attn(
             modulate(self.norm1(x), shift_msa, scale_msa), context, attention_mask
         )
-        x = x + gate_mlp.unsqueeze(1) * self.mlp(
-            modulate(self.norm2(x), shift_mlp, scale_mlp)
-        )
+        x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2(x), shift_mlp, scale_mlp))
         return x
 
 
@@ -289,13 +263,9 @@ class FinalLayer(nn.Module):
     def __init__(self, hidden_size, patch_size, out_channels):
         super().__init__()
         self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
-        self.linear = nn.Linear(
-            hidden_size, patch_size * patch_size * out_channels, bias=True
-        )
+        self.linear = nn.Linear(hidden_size, patch_size * patch_size * out_channels, bias=True)
         self.patch_size = patch_size
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True)
-        )
+        self.adaLN_modulation = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True))
 
     def unpatchify(self, x):
         b, s, h = x.shape
@@ -339,20 +309,10 @@ class DiT(nn.Module):
         self.patch_size = patch_size
         self.num_heads = num_heads
         self.seq_parallel_group = seq_parallel_group
-        self.seq_parallel_size = (
-            dist.get_world_size(self.seq_parallel_group)
-            if seq_parallel_group is not None
-            else 1
-        )
-        self.seq_parallel_rank = (
-            dist.get_rank(self.seq_parallel_group)
-            if seq_parallel_group is not None
-            else 0
-        )
+        self.seq_parallel_size = dist.get_world_size(self.seq_parallel_group) if seq_parallel_group is not None else 1
+        self.seq_parallel_rank = dist.get_rank(self.seq_parallel_group) if seq_parallel_group is not None else 0
 
-        self.video_embedder = PatchEmbedder(
-            patch_size, in_channels, hidden_size, bias=True
-        )
+        self.video_embedder = PatchEmbedder(patch_size, in_channels, hidden_size, bias=True)
         self.t_embedder = TimestepEmbedder(hidden_size)
         self.pos_embed = PositionEmbedding(hidden_size, max_num_embeddings)
         self.text_embedder = TextEmbedder(
@@ -419,9 +379,7 @@ class DiT(nn.Module):
             assert attention_mask.ndim == 4
             attention_mask = attention_mask.to(dtype)
             inverted_mask = 1.0 - attention_mask
-            return inverted_mask.masked_fill(
-                inverted_mask.to(torch.bool), torch.finfo(dtype).min
-            )
+            return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
         return attention_mask
 
     def enable_gradient_checkpointing(self):
@@ -444,9 +402,7 @@ class DiT(nn.Module):
         text_len = text_latent_states.shape[1]
         text_latent_states = self.text_embedder(text_latent_states)
         if not self.use_cross_attn:
-            video_latent_states = torch.cat(
-                [text_latent_states, video_latent_states], dim=1
-            )
+            video_latent_states = torch.cat([text_latent_states, video_latent_states], dim=1)
             text_latent_states = None
         pos_embed = self.pos_embed(video_latent_states)
         video_latent_states = video_latent_states + pos_embed
@@ -455,14 +411,10 @@ class DiT(nn.Module):
 
         if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
             assert video_latent_states.shape[1] % self.seq_parallel_size == 0
-            video_latent_states = split_seq(
-                video_latent_states, self.seq_parallel_size, self.seq_parallel_rank
-            )
+            video_latent_states = split_seq(video_latent_states, self.seq_parallel_size, self.seq_parallel_rank)
             if text_latent_states is not None:
                 assert text_latent_states.shape[1] % self.seq_parallel_size == 0
-                text_latent_states = split_seq(
-                    text_latent_states, self.seq_parallel_size, self.seq_parallel_rank
-                )
+                text_latent_states = split_seq(text_latent_states, self.seq_parallel_size, self.seq_parallel_rank)
 
         for block in self.blocks:
             if self.grad_checkpointing and self.training:
@@ -474,9 +426,7 @@ class DiT(nn.Module):
                     text_latent_states,
                 )
             else:
-                video_latent_states = block(
-                    video_latent_states, attention_mask, t, text_latent_states
-                )
+                video_latent_states = block(video_latent_states, attention_mask, t, text_latent_states)
 
         if self.seq_parallel_group is not None and self.seq_parallel_size > 1:
             video_latent_states = gather_seq(
@@ -491,18 +441,14 @@ class DiT(nn.Module):
         video_latent_states = self.final_layer(video_latent_states, t)
         return video_latent_states
 
-    def forward_with_cfg(
-        self, x, t, text_latent_states, cfg_scale, attention_mask=None
-    ):
+    def forward_with_cfg(self, x, t, text_latent_states, cfg_scale, attention_mask=None):
         """
         Forward pass of DiT, but also batches the unconditional forward pass for classifier-free guidance.
         """
         # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self.forward(
-            combined, t, text_latent_states, attention_mask=attention_mask
-        )
+        model_out = self.forward(combined, t, text_latent_states, attention_mask=attention_mask)
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.
@@ -541,9 +487,7 @@ def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False, extra_tokens=
     grid = grid.reshape([2, 1, grid_size, grid_size])
     pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
     if cls_token and extra_tokens > 0:
-        pos_embed = np.concatenate(
-            [np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0
-        )
+        pos_embed = np.concatenate([np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0)
     return pos_embed
 
 
