@@ -14,8 +14,21 @@
     - [🪄 Acknowledgement](#-acknowledgement)
 
 ## 📍 Overview
+Open-Sora is an open-source project that provides a high-performance implementation of the development pipeline that Sora might use powered by [Colossal-AI](https://github.com/hpcaitech/ColossalAI), including:
 
-This repository is an unofficial implementation of OpenAI's Sora. We built this based on the [facebookresearch/DiT](https://github.com/facebookresearch/DiT) repository.
+- Provide **a complete Sora reproduction architecture solution**, including the whole process from data processing to training and inference.
+- Supports **dynamic resolution**, training can directly train any resolution of the video, without scaling.
+- Supports **multiple model structures**. Since the actual model structure of Sora is unknown, we realize three common multimodal model structures such as adaLN-zero, cross attention, and in-context conditioning (token concat).
+- Supports **multiple video compression methods**. Users can choose to use original video, VQVAE (video native model), SD-VAE (image native model) for training.
+- Supports **multiple parallel training optimizations**. Including the AI large model system optimization capability combined with Colossal-AI, and hybrid sequence parallelism with Ulysses and FastSeq.
+
+<p id="diffusion_demo" align="center">
+<img src="https://raw.githubusercontent.com/hpcaitech/public_assets/main/applications/sora/open-sora-1.png" width=800/>
+</p>
+
+<p id="diffusion_demo" align="center">
+<img src="https://raw.githubusercontent.com/hpcaitech/public_assets/main/applications/sora/open-sora-2.png" width=800/>
+</p>
 
 ## 📂 Dataset Preparation
 
