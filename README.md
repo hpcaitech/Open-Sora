@@ -117,8 +117,18 @@ You can also modify the arguments in `train.sh` for your own need.
 
 ### Inference
 
-To be added.
+We've provided a script to perform inference, allowing you to generate videos from the trained model. You can invoke the inference via the command below.
 
+```bash
+python sample.py -m "DiT/XL-2" --text "a person is walking on the street" --ckpt /path/to/checkpoint --height 256 --width 256 --fps 10 --sec 5 --disable-cfg
+```
+This will generate a "sample.mp4" file in the current directory.
+
+For more command line options, you can use the following command to check the help message.
+
+```bash
+python sample.py -h
+```
 
 ## 🪄 Acknowledgement
 
