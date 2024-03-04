@@ -1,4 +1,11 @@
 # 🎥 Open-Sora
+<div id="top" align="center">
+    
+   [![GitHub Repo stars](https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social)](https://github.com/hpcaitech/Open-Sora/stargazers)
+   [![slack badge](https://img.shields.io/badge/Slack-join-blueviolet?logo=slack&amp)](https://github.com/hpcaitech/public_assets/tree/main/colossalai/contact/slack)
+   [![WeChat badge](https://img.shields.io/badge/微信-加入-green?logo=wechat&amp)](https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png)
+   
+</div>
 
 ## 📎 Table of Contents
 
@@ -12,6 +19,9 @@
         - [Training](#training)
         - [Inference](#inference)
     - [🪄 Acknowledgement](#-acknowledgement)
+
+## Latest News
+* [2024/03] [Open-Sora：Sora Replication Solution with 46% Cost Reduction, Sequence Expansion to Nearly a Million](https://hpc-ai.com/blog/open-sora)
 
 ## 📍 Overview
 Open-Sora is an open-source project that provides a high-performance implementation of the development pipeline that Sora might use powered by [Colossal-AI](https://github.com/hpcaitech/ColossalAI), including:
