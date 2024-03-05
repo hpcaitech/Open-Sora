@@ -147,3 +147,5 @@ During the development of the project, we learned a lot from the following infor
 - [OpenAI Sora Technical Report](https://openai.com/research/video-generation-models-as-world-simulators)
 - [VideoGPT Project](https://github.com/wilson1yan/VideoGPT)
 - [Diffusion Transformers](https://github.com/facebookresearch/DiT)
+- [Deepspeed Ulysses](https://arxiv.org/abs/2309.14509)
+- [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT)
