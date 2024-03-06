@@ -5,3 +5,4 @@ transformers
 av
 tensorboard
 colossalai
+timm
