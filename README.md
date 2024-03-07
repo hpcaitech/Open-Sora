@@ -40,6 +40,10 @@ Open-Sora is an open-source project that provides a high-performance implementat
 <img src="https://raw.githubusercontent.com/hpcaitech/public_assets/main/applications/sora/open-sora-2.png" width=800/>
 </p>
 
+<p id="diffusion_demo" align="center">
+<img src="https://private-user-images.githubusercontent.com/8520472/310444908-6dded50d-7184-4f45-ab8b-4c5c031b09ff.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDk4MTM0NTUsIm5iZiI6MTcwOTgxMzE1NSwicGF0aCI6Ii84NTIwNDcyLzMxMDQ0NDkwOC02ZGRlZDUwZC03MTg0LTRmNDUtYWI4Yi00YzVjMDMxYjA5ZmYucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDMwNyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAzMDdUMTIwNTU1WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZWI4MmNkNmI2MDJlY2FiNzQzZWViNTA1NWViYmQ0OTFkZGI0YTdlZDQwZTBkZmRiM2I5OTMyMmVmY2JmZjEwZiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.MIkdrCFHwc7-N4WE8a199pOf2Z4e3AAtnRs01BiQoMs" width=800/>
+</p>
+
 ## 📂 Dataset Preparation
 
 ### Use MSR-VTT
@@ -60,6 +64,10 @@ python scripts/data/preprocess_data.py -c ./dataset/MSRVTT-collated/train/annota
 python scripts/data/preprocess_data.py -c ./dataset/MSRVTT-collated/val/annotations.json -v ./dataset/MSRVTT-collated/val/videos -o ./dataset/MSRVTT-processed/val
 python scripts/data/preprocess_data.py -c ./dataset/MSRVTT-collated/test/annotations.json -v ./dataset/MSRVTT-collated/test/videos -o ./dataset/MSRVTT-processed/test
 ```
+
+**If you want to use adaLN-zero, you should use `--use_pooled_text` when running `preprocess_data.py`**
+
+```bash
 
 After completing these steps, you should have a processed MSR-VTT dataset in `./dataset/MSRVTT-processed`.
 
@@ -104,6 +112,8 @@ Then you can run the data processing script with the command below:
 python preprocess_data.py -c /path/to/captions.json -v /path/to/video_dir -o /path/to/output_dir
 ```
 
+**If you want to use adaLN-zero, you should use `--use_pooled_text` when running `preprocess_data.py`**
+
 Note that this script needs to be run on a machine with a GPU. To avoid CUDA OOM, we filter out the videos that are too long.
 
 
@@ -125,6 +135,8 @@ bash ./scripts/train.sh
 
 You can also modify the arguments in `train.sh` for your own need.
 
+We provide three model architectures: "adaln", "cross-attn" and "token-concat". You can specify the model architecture with the `-x` option.
+
 ### Inference
 
 We've provided a script to perform inference, allowing you to generate videos from the trained model. You can invoke the inference via the command below.
@@ -139,6 +151,8 @@ For more command line options, you can use the following command to check the he
 ```bash
 python sample.py -h
 ```
+
+Please make sure the video compressor and model architecture are consistent with the training settings.
 
 ## 🪄 Acknowledgement
 
