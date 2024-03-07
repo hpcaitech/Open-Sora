@@ -139,7 +139,10 @@ def expand_mask_4d(q_mask: torch.Tensor, kv_mask: torch.Tensor) -> torch.Tensor:
 
 
 def make_batch(
-    samples: List[dict], video_dir: str, pad_to_multiple: Optional[int] = None
+    samples: List[dict],
+    video_dir: str,
+    pad_to_multiple: Optional[int] = None,
+    use_pooled_text: bool = False,
 ) -> dict:
     """Make a batch of samples.
 
@@ -154,6 +157,12 @@ def make_batch(
         for sample in samples
     ]
     texts = [sample["text_latent_states"] for sample in samples]
+    if use_pooled_text:
+        texts = torch.stack(texts, dim=0)
+        return {
+            "videos": videos,
+            "text_latent_states": texts,
+        }
     texts, text_padding_mask = pad_sequences(texts, pad_to_multiple=pad_to_multiple)
     return {
         "videos": videos,
@@ -281,8 +290,8 @@ def preprocess_batch(
     patch_size: int,
     video_compressor: VideoCompressor,
     device=None,
-    use_cross_attn=True,
     pad_to_multiple: Optional[int] = None,
+    model_arch: str = "cross-attn",
 ) -> dict:
     if device is None:
         device = get_current_device()
@@ -297,12 +306,17 @@ def preprocess_batch(
     )
     batch["video_latent_states"] = video_latent_states
     batch["video_padding_mask"] = video_padding_mask
-    text_padding_mask = batch.pop("text_padding_mask").to(device)
-    if use_cross_attn:
-        batch["attention_mask"] = expand_mask_4d(video_padding_mask, text_padding_mask)
+    if model_arch == "adaln":
+        batch["attention_mask"] = expand_mask_4d(video_padding_mask, video_padding_mask)
     else:
-        attention_mask = torch.cat([text_padding_mask, video_padding_mask], dim=1)
-        batch["attention_mask"] = expand_mask_4d(attention_mask, attention_mask)
+        text_padding_mask = batch.pop("text_padding_mask").to(device)
+        if model_arch == "cross-attn":
+            batch["attention_mask"] = expand_mask_4d(
+                video_padding_mask, text_padding_mask
+            )
+        else:
+            attention_mask = torch.cat([text_padding_mask, video_padding_mask], dim=1)
+            batch["attention_mask"] = expand_mask_4d(attention_mask, attention_mask)
     batch["text_latent_states"] = batch["text_latent_states"].to(device)
     return batch
 

@@ -1,5 +1,4 @@
 import argparse
-import io
 import math
 import os
 
@@ -8,13 +7,15 @@ from datasets import load_dataset
 from torchvision.io import read_video
 from transformers import AutoTokenizer, CLIPTextModel
 
-EMPTY_SAMPLE = {"video_file": [], "video_latent_states": [], "text_latent_states": []}
+EMPTY_SAMPLE = {"video_file": [], "text_latent_states": []}
 
 
-def process_text(text, tokenizer, text_model):
+def process_text(text, tokenizer, text_model, use_pooled_text):
     inputs = tokenizer(text, padding=True, return_tensors="pt")
     inputs = {k: v.cuda() for k, v in inputs.items()}
     outputs = text_model(**inputs)
+    if use_pooled_text:
+        return list(outputs.pooler_output.cpu().unbind(0))
     output_states = []
     for i, x in enumerate(outputs.last_hidden_state):
         valid_x = x[inputs["attention_mask"][i].bool()]
@@ -23,12 +24,14 @@ def process_text(text, tokenizer, text_model):
 
 
 @torch.no_grad()
-def process_item(item, video_dir, tokenizer, text_model):
+def process_item(item, video_dir, tokenizer, text_model, use_pooled_text):
     video_path = os.path.join(video_dir, item["file"])
     video = read_video(video_path, pts_unit="sec")[0]
     if video.size(0) > 600:
         return EMPTY_SAMPLE
-    text_latent_states = process_text(item["captions"], tokenizer, text_model)
+    text_latent_states = process_text(
+        item["captions"], tokenizer, text_model, use_pooled_text
+    )
     torch.cuda.empty_cache()
     return {
         "video_file": [item["file"]] * len(text_latent_states),
@@ -36,9 +39,9 @@ def process_item(item, video_dir, tokenizer, text_model):
     }
 
 
-def process_batch(batch, video_dir, tokenizer, text_model):
+def process_batch(batch, video_dir, tokenizer, text_model, use_pooled_text):
     item = {"file": batch["file"][0], "captions": batch["captions"][0]}
-    return process_item(item, video_dir, tokenizer, text_model)
+    return process_item(item, video_dir, tokenizer, text_model, use_pooled_text)
 
 
 def process_dataset(
@@ -47,6 +50,7 @@ def process_dataset(
     output_dir,
     num_spliced_dataset_bins=10,
     text_model="openai/clip-vit-base-patch32",
+    use_pooled_text=False,
 ):
     tokenizer = AutoTokenizer.from_pretrained(text_model)
     text_model = CLIPTextModel.from_pretrained(text_model).cuda().eval()
@@ -81,6 +85,7 @@ def process_dataset(
                 "video_dir": video_dir,
                 "tokenizer": tokenizer,
                 "text_model": text_model,
+                "use_pooled_text": use_pooled_text,
             },
             batched=True,
             batch_size=1,
@@ -118,6 +123,7 @@ if __name__ == "__main__":
         default="openai/clip-vit-base-patch32",
         help="CLIP text model",
     )
+    parser.add_argument("--use_pooled_text", action="store_true", default=False)
     args = parser.parse_args()
     process_dataset(
         args.captions_file,
@@ -125,4 +131,5 @@ if __name__ == "__main__":
         args.output_dir,
         args.num_spliced_dataset_bins,
         args.text_model,
+        args.use_pooled_text,
     )

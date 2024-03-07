@@ -19,6 +19,7 @@ from transformers import AutoTokenizer, CLIPTextModel
 
 from open_sora.diffusion import create_diffusion
 from open_sora.modeling import DiT_models
+from open_sora.modeling.dit import SUPPORTED_MODEL_ARCH
 from open_sora.utils.data import col2video, create_video_compressor, unnormalize_video
 
 
@@ -29,7 +30,10 @@ def main(args):
     device = get_current_device()
 
     video_compressor = create_video_compressor(args.compressor)
-    model_kwargs = {"in_channels": video_compressor.out_channels}
+    model_kwargs = {
+        "in_channels": video_compressor.out_channels,
+        "model_arch": args.model_arch,
+    }
 
     text_model = CLIPTextModel.from_pretrained(args.text_model).to(device).eval()
     tokenizer = AutoTokenizer.from_pretrained(args.text_model)
@@ -42,7 +46,11 @@ def main(args):
     # Create sampling noise:
     text_inputs = tokenizer(args.text, return_tensors="pt")
     text_inputs = {k: v.to(device) for k, v in text_inputs.items()}
-    text_latent_states = text_model(**text_inputs).last_hidden_state
+    text_latent_states = text_model(**text_inputs)
+    if args.model_arch == "adaln":
+        text_latent_states = text_latent_states.pooler_output
+    else:
+        text_latent_states = text_latent_states.last_hidden_state
 
     num_frames = args.fps * args.sec
     z = torch.randn(
@@ -66,11 +74,14 @@ def main(args):
         model_kwargs["cfg_scale"] = args.cfg_scale
     else:
         model_kwargs["text_latent_states"] = text_latent_states
+    context_len = (
+        text_latent_states.shape[1] if args.model_arch == "cross-attn" else z.shape[1]
+    )
     model_kwargs["attention_mask"] = torch.ones(
         z.shape[0],
         1,
         z.shape[1],
-        text_latent_states.shape[1],
+        context_len,
         device=device,
         dtype=torch.int,
     )
@@ -106,6 +117,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-m", "--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/8"
+    )
+    parser.add_argument(
+        "-x", "--model_arch", choices=SUPPORTED_MODEL_ARCH, default="cross-attn"
     )
     parser.add_argument(
         "--text",
