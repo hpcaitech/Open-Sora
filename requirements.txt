@@ -4,5 +4,6 @@ datasets
 transformers
 av
 tensorboard
-colossalai
+git+https://github.com/hpcaitech/ColossalAI.git@main#egg=colossalai
 timm
+diffusers==0.24.0
