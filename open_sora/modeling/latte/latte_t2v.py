@@ -775,7 +775,7 @@ class LatteT2V(ModelMixin, ConfigMixin):
             height, width = hidden_states.shape[-2] // self.patch_size, hidden_states.shape[-1] // self.patch_size
             num_patches = height * width
 
-            hidden_states = self.pos_embed(hidden_states)  # alrady add positional embeddings
+            hidden_states = self.pos_embed(hidden_states)  # already add positional embeddings
 
             if self.adaln_single is not None:
                 if self.use_additional_conditions and added_cond_kwargs is None:
