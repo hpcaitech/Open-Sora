@@ -41,7 +41,7 @@ Open-Sora is an open-source project that provides a high-performance implementat
 </p>
 
 <p id="diffusion_demo" align="center">
-<img src="https://private-user-images.githubusercontent.com/8520472/310444908-6dded50d-7184-4f45-ab8b-4c5c031b09ff.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDk4MTM0NTUsIm5iZiI6MTcwOTgxMzE1NSwicGF0aCI6Ii84NTIwNDcyLzMxMDQ0NDkwOC02ZGRlZDUwZC03MTg0LTRmNDUtYWI4Yi00YzVjMDMxYjA5ZmYucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDMwNyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAzMDdUMTIwNTU1WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZWI4MmNkNmI2MDJlY2FiNzQzZWViNTA1NWViYmQ0OTFkZGI0YTdlZDQwZTBkZmRiM2I5OTMyMmVmY2JmZjEwZiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.MIkdrCFHwc7-N4WE8a199pOf2Z4e3AAtnRs01BiQoMs" width=800/>
+<img src="https://raw.githubusercontent.com/hpcaitech/public_assets/main/applications/sora/dit-model-arch.png" width=800/>
 </p>
 
 ## 📂 Dataset Preparation
