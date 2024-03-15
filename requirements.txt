@@ -1,9 +1,0 @@
-torch
-torchvision
-datasets
-transformers
-av
-tensorboard
-git+https://github.com/hpcaitech/ColossalAI.git@main#egg=colossalai
-timm
-diffusers==0.24.0
