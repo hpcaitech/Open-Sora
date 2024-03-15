@@ -1,0 +1,29 @@
+# should be installed by users
+torch>=1.13
+colossalai
+flash_attn # optional
+apex # optional
+
+# packages
+accelerate
+diffusers
+timm
+transformers
+xformers # necessary for PixArt
+
+# config & logging
+gdown
+pre-commit
+matplotlib
+mmengine
+tensorboard
+tqdm
+wandb
+
+# video
+pyav
+
+# text
+clip
+ftfy
+
