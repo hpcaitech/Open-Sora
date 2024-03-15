@@ -19,14 +19,16 @@ def run_t5_encoder(rank, world_size, port):
     sf_t5 = deepcopy(hf_t5)
 
     # create huggingface model as normal
-    shard_config = ShardConfig(tensor_parallel_process_group=None,
-                            pipeline_stage_manager=None,
-                            enable_tensor_parallelism=False,
-                            enable_fused_normalization=False,
-                            enable_flash_attention=False,
-                            enable_jit_fused=True,
-                            enable_sequence_parallelism=False,
-                            enable_sequence_overlap=False)
+    shard_config = ShardConfig(
+        tensor_parallel_process_group=None,
+        pipeline_stage_manager=None,
+        enable_tensor_parallelism=False,
+        enable_fused_normalization=False,
+        enable_flash_attention=False,
+        enable_jit_fused=True,
+        enable_sequence_parallelism=False,
+        enable_sequence_overlap=False,
+    )
     shard_former = ShardFormer(shard_config=shard_config)
     sharded_model, _ = shard_former.optimize(sf_t5.model, policy=T5EncoderPolicy())
     sf_t5.model = sharded_model
@@ -65,5 +67,5 @@ def test_t5_encoder():
     spawn(run_t5_encoder)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_t5_encoder()

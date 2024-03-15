@@ -160,8 +160,14 @@ cython_debug/
 .idea/
 .vscode/
 
+# macos
+*.DS_Store
+
 # misc files
 dataset/
 runs/
 checkpoints/
 outputs/
+
+# Secret files
+hostfile

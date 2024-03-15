@@ -26,4 +26,3 @@ pyav
 # text
 clip
 ftfy
-
