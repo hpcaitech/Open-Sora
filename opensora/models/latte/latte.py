@@ -11,10 +11,10 @@
 import torch
 from einops import rearrange, repeat
 
+from opensora.acceleration.checkpoint import auto_grad_checkpoint
 from opensora.models.dit import DiT
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
-from opensora.acceleration.checkpoint import auto_grad_checkpoint
 
 
 @MODELS.register_module()
@@ -56,7 +56,7 @@ class Latte(DiT):
                 if i == 1:
                     x = x + self.pos_embed_temporal
 
-            x = auto_grad_checkpoint(block, x, c) # (B, N, D)
+            x = auto_grad_checkpoint(block, x, c)  # (B, N, D)
 
             if i % 2 == 0:
                 x = rearrange(x, "(b t) s d -> b (t s) d", t=self.num_temporal, s=self.num_spatial)

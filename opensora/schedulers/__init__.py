@@ -1,2 +1,2 @@
-from .iddpm import IDDPM
 from .dpms import DPMS
+from .iddpm import IDDPM

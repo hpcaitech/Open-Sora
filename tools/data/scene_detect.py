@@ -1,14 +1,13 @@
 import os
-from tqdm import tqdm
 from multiprocessing import Pool
-from mmengine.logging import MMLogger, print_log
 
-from scenedetect import detect, ContentDetector
+from mmengine.logging import MMLogger
+from scenedetect import ContentDetector, detect
+from tqdm import tqdm
 
-from .utils import check_mp4_integrity, split_video
-from .utils import clone_folder_structure, iterate_files, iterate_folders
 from opensora.utils.misc import get_timestamp
 
+from .utils import check_mp4_integrity, clone_folder_structure, iterate_files, split_video
 
 # config
 target_fps = 30  # int
@@ -29,14 +28,14 @@ def process_folder(root_src, root_dst):
     folder_path_log = os.path.dirname(root_dst)
     log_name = os.path.basename(root_dst)
     timestamp = get_timestamp()
-    log_path = os.path.join(folder_path_log, f'{log_name}_{timestamp}.log')
+    log_path = os.path.join(folder_path_log, f"{log_name}_{timestamp}.log")
     logger = MMLogger.get_instance(log_name, log_file=log_path)
 
     # clone folder structure
     clone_folder_structure(root_src, root_dst)
 
     # all source videos
-    mp4_list = [x for x in iterate_files(root_src) if x.endswith('.mp4')]
+    mp4_list = [x for x in iterate_files(root_src) if x.endswith(".mp4")]
     mp4_list = sorted(mp4_list)
 
     for idx, sample_path in tqdm(enumerate(mp4_list)):
@@ -59,7 +58,7 @@ def process_folder(root_src, root_dst):
 
 
 def scene_detect():
-    """ detect & cut scenes using a single process
+    """detect & cut scenes using a single process
     Expected dataset structure:
     data/
         your_dataset/
@@ -80,14 +79,14 @@ def scene_detect():
                 yyy_scene-1.mp4
     """
     # TODO: specify your dataset root
-    root_src = f'./data/your_dataset/raw_videos'
-    root_dst = f'./data/your_dataset/clips'
+    root_src = f"./data/your_dataset/raw_videos"
+    root_dst = f"./data/your_dataset/clips"
 
     process_folder(root_src, root_dst)
 
 
 def scene_detect_mp():
-    """ detect & cut scenes using multiple processes
+    """detect & cut scenes using multiple processes
     Expected dataset structure:
     data/
         your_dataset/
@@ -119,11 +118,11 @@ def scene_detect_mp():
                     yyy_scene-1.mp4
     """
     # TODO: specify your dataset root
-    root_src = f'./data/your_dataset/raw_videos'
-    root_dst = f'./data/your_dataset/clips'
+    root_src = f"./data/your_dataset/raw_videos"
+    root_dst = f"./data/your_dataset/clips"
 
     # TODO: specify your splits
-    splits = ['split_0', 'split_1']
+    splits = ["split_0", "split_1"]
 
     # process folders
     root_src_list = [os.path.join(root_src, x) for x in splits]
@@ -133,7 +132,7 @@ def scene_detect_mp():
         pool.starmap(process_folder, list(zip(root_src_list, root_dst_list)))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # TODO: choose single process or multiprocessing
     scene_detect()
     # scene_detect_mp()

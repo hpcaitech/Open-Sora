@@ -11,13 +11,13 @@ from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device
 from tqdm import tqdm
 
+from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import (
     get_data_parallel_group,
     set_data_parallel_group,
     set_sequence_parallel_group,
 )
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
-from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save

@@ -47,5 +47,5 @@ ckpt_every = 1000
 load = None
 
 batch_size = 128
-lr = 1e-4 # according to DiT repo
+lr = 1e-4  # according to DiT repo
 grad_clip = 1.0

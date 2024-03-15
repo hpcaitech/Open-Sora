@@ -18,12 +18,7 @@ def run_attention(rank, world_size):
     torch.manual_seed(1024)
     set_sequence_parallel_group(dist.group.WORLD)
 
-    seq_parallel_attention = SeqParallelAttention(
-        dim=256,
-        num_heads=4,
-        qkv_bias=True,
-        enable_flashattn=False
-    ).cuda()
+    seq_parallel_attention = SeqParallelAttention(dim=256, num_heads=4, qkv_bias=True, enable_flashattn=False).cuda()
 
     torch.manual_seed(1024)
     attention = Attention(
@@ -61,7 +56,7 @@ def run_attention(rank, world_size):
         if p.grad is not None:
             dist.all_reduce(p.grad, group=dist.group.WORLD)
             p.grad.div_(world_size)
-    
+
     # check grad
     for p1, p2 in zip(seq_parallel_attention.parameters(), attention.parameters()):
         assert torch.allclose(p1.grad, p2.grad, atol=1e-7), f"{p1.grad}\nvs\n{p2.grad}"
@@ -126,18 +121,18 @@ def run_cross_attention(rank, world_size):
             p.grad.div_(world_size)
         else:
             print(f"grad of {name} is None")
-    
+
     # # check grad
     for p1, p2 in zip(seq_parallel_attention.named_parameters(), attention.named_parameters()):
         # if not torch.allclose(p1[1].grad, p2[1].grad, atol=1e-7):
         #     print(p1[0], p2[0])
-        assert torch.allclose(p1[1].grad, p2[1].grad, atol=1e-7), f"\n{p1[0]}\nvs\n{p2[0]}:\n{p1[1].grad}\nvs\n{p2[1].grad}"
-        
+        assert torch.allclose(
+            p1[1].grad, p2[1].grad, atol=1e-7
+        ), f"\n{p1[0]}\nvs\n{p2[0]}:\n{p1[1].grad}\nvs\n{p2[1].grad}"
+
     # # check input grad
     assert torch.allclose(x.grad, seq_x.grad, atol=1e-7), f"{x.grad}\nvs\n{seq_x.grad}"
     assert torch.allclose(y.grad, seq_y.grad, atol=1e-7), f"{y.grad}\nvs\n{seq_y.grad}"
-
-    
 
 
 def run_dist(rank, world_size, port):
@@ -145,8 +140,10 @@ def run_dist(rank, world_size, port):
     # run_attention(rank, world_size)
     run_cross_attention(rank, world_size)
 
+
 def test_seq_parallel_attention():
     spawn(run_dist, nprocs=2)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_seq_parallel_attention()

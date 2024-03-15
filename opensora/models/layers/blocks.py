@@ -19,10 +19,9 @@ import torch.nn.functional as F
 import torch.utils.checkpoint
 import xformers.ops
 from einops import rearrange
-from flash_attn import flash_attn_varlen_func
 from timm.models.vision_transformer import Mlp
 
-from opensora.acceleration.communications import all_to_all, split_forward_gather_backward
+from opensora.acceleration.communications import all_to_all
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
 
 approx_gelu = lambda: nn.GELU(approximate="tanh")
@@ -179,7 +178,6 @@ class Attention(nn.Module):
 
 
 class SeqParallelAttention(Attention):
-
     def __init__(
         self,
         dim: int,
@@ -293,7 +291,6 @@ class MultiHeadCrossAttention(nn.Module):
 
 
 class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
-
     def __init__(
         self,
         d_model,

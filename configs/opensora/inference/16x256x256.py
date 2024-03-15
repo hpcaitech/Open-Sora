@@ -23,7 +23,7 @@ text_encoder = dict(
 scheduler = dict(
     # type="iddpm",
     # num_sampling_steps=250,
-    type = "dpm-solver",
+    type="dpm-solver",
     num_sampling_steps=20,
     cfg_scale=7.0,
 )

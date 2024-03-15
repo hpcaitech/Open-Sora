@@ -1,10 +1,10 @@
 import os
-import cv2
 import subprocess
-from mmengine.logging import print_log
 
-from moviepy.editor import VideoFileClip
+import cv2
 from imageio_ffmpeg import get_ffmpeg_exe
+from mmengine.logging import print_log
+from moviepy.editor import VideoFileClip
 from scenedetect import FrameTimecode
 
 
@@ -45,10 +45,10 @@ def clone_folder_structure(root_src, root_dst, verbose=False):
     for folder_path in dst_path_list:
         os.makedirs(folder_path, exist_ok=True)
         if verbose:
-            print(f'Create folder: \'{folder_path}\'')
+            print(f"Create folder: '{folder_path}'")
 
 
-def count_files(root, suffix='.mp4'):
+def count_files(root, suffix=".mp4"):
     files_list = iterate_files(root)
     cnt = len([x for x in files_list if x.endswith(suffix)])
     return cnt
@@ -56,14 +56,14 @@ def count_files(root, suffix='.mp4'):
 
 def check_mp4_integrity(file_path, verbose=True, logger=None):
     try:
-        video_clip = VideoFileClip(file_path)
+        VideoFileClip(file_path)
         if verbose:
-            print_log(f'The MP4 file \'{file_path}\' is intact.', logger=logger)
+            print_log(f"The MP4 file '{file_path}' is intact.", logger=logger)
         return True
     except Exception as e:
         if verbose:
-            print_log(f'Error: {e}', logger=logger)
-            print_log(f'The MP4 file \'{file_path}\' is not intact.', logger=logger)
+            print_log(f"Error: {e}", logger=logger)
+            print_log(f"The MP4 file '{file_path}' is not intact.", logger=logger)
         return False
 
 
@@ -80,23 +80,24 @@ def count_frames(video_path):
     cap.release()
 
 
-def split_video(sample_path,
-                scene_list,
-                save_dir,
-                target_fps=30,
-                min_seconds=1,
-                max_seconds=10,
-                shorter_size=512,
-                verbose=False,
-                logger=None,
-                ):
+def split_video(
+    sample_path,
+    scene_list,
+    save_dir,
+    target_fps=30,
+    min_seconds=1,
+    max_seconds=10,
+    shorter_size=512,
+    verbose=False,
+    logger=None,
+):
     FFMPEG_PATH = get_ffmpeg_exe()
 
     save_path_list = []
     for idx, scene in enumerate(scene_list):
         s, t = scene  # FrameTimecode
         fps = s.framerate
-        max_duration = FrameTimecode(timecode='00:00:00', fps=fps)
+        max_duration = FrameTimecode(timecode="00:00:00", fps=fps)
         max_duration.frame_num = round(fps * max_seconds)
         duration = min(max_duration, t - s)
         if duration.get_frames() < round(min_seconds * fps):
@@ -106,7 +107,7 @@ def split_video(sample_path,
         fname = os.path.basename(sample_path)
         fname_wo_ext = os.path.splitext(fname)[0]
         # TODO: fname pattern
-        save_path = os.path.join(save_dir, f'{fname_wo_ext}_scene-{idx}.mp4')
+        save_path = os.path.join(save_dir, f"{fname_wo_ext}_scene-{idx}.mp4")
 
         # ffmpeg cmd
         cmd = [FFMPEG_PATH]
@@ -117,32 +118,28 @@ def split_video(sample_path,
         # cmd += ['-v', 'error']
 
         # input path
-        cmd += ['-i', sample_path]
+        cmd += ["-i", sample_path]
 
         # clip to cut
-        cmd += [
-            '-nostdin', '-y',
-            '-ss', str(s.get_seconds()),
-            '-t', str(duration.get_seconds())
-        ]
+        cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-t", str(duration.get_seconds())]
 
         # target fps
         # cmd += ['-vf', 'select=mod(n\,2)']
-        cmd += ['-r', f'{target_fps}']
+        cmd += ["-r", f"{target_fps}"]
 
         # aspect ratio
-        cmd += ['-vf', f"scale='if(gt(iw,ih),-2,{shorter_size})':'if(gt(iw,ih),{shorter_size},-2)'"]
+        cmd += ["-vf", f"scale='if(gt(iw,ih),-2,{shorter_size})':'if(gt(iw,ih),{shorter_size},-2)'"]
         # cmd += ['-vf', f"scale='if(gt(iw,ih),{shorter_size},trunc(ow/a/2)*2)':-2"]
 
-        cmd += ['-map', '0', save_path]
+        cmd += ["-map", "0", save_path]
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = proc.communicate()
         if verbose:
-            stdout = stdout.decode('utf-8')
+            stdout = stdout.decode("utf-8")
             print_log(stdout, logger=logger)
 
         save_path_list.append(sample_path)
-        print_log(f'Video clip saved to \'{save_path}\'', logger=logger)
+        print_log(f"Video clip saved to '{save_path}'", logger=logger)
 
     return save_path_list

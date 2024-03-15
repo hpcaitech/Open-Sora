@@ -1,4 +1,3 @@
-
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -42,7 +41,6 @@ class STDiTBlock(nn.Module):
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
     ):
-
         super().__init__()
         self.hidden_size = hidden_size
         self.enable_flashattn = enable_flashattn
