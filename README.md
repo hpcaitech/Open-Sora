@@ -128,7 +128,7 @@ We are grateful for their exceptional work and generous contribution to open sou
 }
 ```
 
-Zangwei Zheng and Xiangyu Peng equally contributed to this work.
+Zangwei Zheng and Xiangyu Peng equally contributed to this work during their internship at [HPC-AI Tech](https://hpc-ai.com/).
 
 ## Star History
 
