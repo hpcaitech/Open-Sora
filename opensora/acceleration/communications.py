@@ -12,12 +12,11 @@ def _all_to_all(
     scatter_dim: int,
     gather_dim: int,
 ):
-    input_list = [
-        t.contiguous() for t in torch.tensor_split(input_, world_size, scatter_dim)
-    ]
+    input_list = [t.contiguous() for t in torch.tensor_split(input_, world_size, scatter_dim)]
     output_list = [torch.empty_like(input_list[0]) for _ in range(world_size)]
     dist.all_to_all(output_list, input_list, group=group)
     return torch.cat(output_list, dim=gather_dim).contiguous()
+
 
 class _AllToAll(torch.autograd.Function):
     """All-to-all communication.
@@ -35,20 +34,18 @@ class _AllToAll(torch.autograd.Function):
         ctx.scatter_dim = scatter_dim
         ctx.gather_dim = gather_dim
         ctx.world_size = dist.get_world_size(process_group)
-        output = _all_to_all(
-            input_, ctx.world_size, process_group, scatter_dim, gather_dim
-        )
+        output = _all_to_all(input_, ctx.world_size, process_group, scatter_dim, gather_dim)
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
         grad_output = _all_to_all(
-                grad_output,
-                ctx.world_size,
-                ctx.process_group,
-                ctx.gather_dim,
-                ctx.scatter_dim,
-            )
+            grad_output,
+            ctx.world_size,
+            ctx.process_group,
+            ctx.gather_dim,
+            ctx.scatter_dim,
+        )
         return (
             grad_output,
             None,
@@ -65,6 +62,7 @@ def all_to_all(
 ):
     return _AllToAll.apply(input_, process_group, scatter_dim, gather_dim)
 
+
 def _gather(
     input_: torch.Tensor,
     world_size: int,
@@ -76,9 +74,11 @@ def _gather(
     dist.gather(input_, gather_list, group=group, gather_dim=gather_dim)
     return gather_list
 
+
 # ====================
 # Gather-Split
 # ====================
+
 
 def _split(input_, pg: dist.ProcessGroup, dim=-1):
     # skip if only one rank involved
@@ -104,7 +104,7 @@ def _gather(input_, pg: dist.ProcessGroup, dim=-1):
     # skip if only one rank involved
     input_ = input_.contiguous()
     world_size = dist.get_world_size(pg)
-    rank = dist.get_rank(pg)
+    dist.get_rank(pg)
 
     if world_size == 1:
         return input_
@@ -119,6 +119,7 @@ def _gather(input_, pg: dist.ProcessGroup, dim=-1):
 
     return output
 
+
 class _GatherForwardSplitBackward(torch.autograd.Function):
     """Gather the input from model parallel region and concatenate.
 
@@ -130,7 +131,6 @@ class _GatherForwardSplitBackward(torch.autograd.Function):
 
     @staticmethod
     def symbolic(graph, input_):
-        
         return _gather(input_)
 
     @staticmethod
@@ -182,6 +182,7 @@ class _SplitForwardGatherBackward(torch.autograd.Function):
 
 def split_forward_gather_backward(input_, process_group, dim, grad_scale=1.0):
     return _SplitForwardGatherBackward.apply(input_, process_group, dim, grad_scale)
+
 
 def gather_forward_split_backward(input_, process_group, dim, grad_scale=None):
     return _GatherForwardSplitBackward.apply(input_, process_group, dim, grad_scale)

@@ -16,9 +16,7 @@ from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
 
 # from .builder import MODELS
-from torch.utils.checkpoint import checkpoint
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
-
 from opensora.models.layers.blocks import (
     Attention,
     CaptionEmbedder,

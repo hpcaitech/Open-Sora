@@ -29,6 +29,3 @@ def update_ema(
             else:
                 param_data = param.data
             ema_params[name].mul_(decay).add_(param_data, alpha=1 - decay)
-
-
-

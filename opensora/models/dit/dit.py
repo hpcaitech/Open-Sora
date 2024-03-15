@@ -16,6 +16,7 @@ import torch.utils.checkpoint
 from einops import rearrange
 from timm.models.vision_transformer import Mlp
 
+from opensora.acceleration.checkpoint import auto_grad_checkpoint
 from opensora.models.layers.blocks import (
     Attention,
     CaptionEmbedder,
@@ -31,7 +32,6 @@ from opensora.models.layers.blocks import (
 )
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
-from opensora.acceleration.checkpoint import auto_grad_checkpoint
 
 
 class DiTBlock(nn.Module):
@@ -209,7 +209,7 @@ class DiT(nn.Module):
         # blocks
         for _, block in enumerate(self.blocks):
             c = condition
-            x = auto_grad_checkpoint(block, x, c) # (B, N, D)
+            x = auto_grad_checkpoint(block, x, c)  # (B, N, D)
 
         # final process
         x = self.final_layer(x, condition)  # (B, N, num_patches * out_channels)

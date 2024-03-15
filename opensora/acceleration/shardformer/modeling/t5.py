@@ -28,9 +28,10 @@ class T5LayerNorm(nn.Module):
 
     @staticmethod
     def from_native_module(module, *args, **kwargs):
-        assert module.__class__.__name__ == "FusedRMSNorm", \
-            "Recovering T5LayerNorm requires the original layer to be apex's Fused RMS Norm." \
+        assert module.__class__.__name__ == "FusedRMSNorm", (
+            "Recovering T5LayerNorm requires the original layer to be apex's Fused RMS Norm."
             "Apex's fused norm is automatically used by Hugging Face Transformers https://github.com/huggingface/transformers/blob/main/src/transformers/models/t5/modeling_t5.py#L265C5-L265C48"
+        )
 
         layer_norm = T5LayerNorm(module.normalized_shape, eps=module.eps)
         layer_norm.weight.data.copy_(module.weight.data)

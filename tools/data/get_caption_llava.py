@@ -6,7 +6,6 @@ import cv2
 import torch
 from llava.constants import DEFAULT_IMAGE_TOKEN, IGNORE_INDEX, IMAGE_TOKEN_INDEX
 from llava.conversation import conv_templates
-from llava.eval.run_llava import eval_model
 from llava.mm_utils import get_anyres_image_grid_shape, get_model_name_from_path, process_images, tokenizer_image_token
 from llava.model.builder import load_pretrained_model
 from llava.model.llava_arch import unpad_image
@@ -137,7 +136,6 @@ def prepare_inputs_labels_for_multimodal(
         labels = torch.full_like(input_ids, IGNORE_INDEX)
 
     # remove the padding using attention_mask -- FIXME
-    _input_ids = input_ids
     input_ids = [
         cur_input_ids[cur_attention_mask] for cur_input_ids, cur_attention_mask in zip(input_ids, attention_mask)
     ]

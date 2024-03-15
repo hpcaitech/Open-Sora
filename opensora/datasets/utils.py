@@ -117,6 +117,7 @@ def prepare_dataloader(
         **_kwargs,
     )
 
+
 def center_crop_arr(pil_image, image_size):
     """
     Center cropping implementation from ADM.

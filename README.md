@@ -33,7 +33,7 @@ inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
 - ✅ We provide video cutting and captioning tools for data preprocessing. Our data collection plan can be found [here]().
 - ✅ We find VQ-VAE from [] has a low quality and thus adopt a better VAE from []. We also find patching in the time dimension deteriorates the quality. See more discussions [here]().
 - ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our STDiT achieves a better trade-off between quality and speed. See more discussions [here]().
-- ✅ Support clip and t5 text conditioning. 
+- ✅ Support clip and t5 text conditioning.
 - ✅ By viewing images as one-frame videos, our project supports training DiT on both images and videos (e.g., ImageNet & UCF101).
 - ✅ Support inference with official weights from [DiT](https://github.com/facebookresearch/DiT), [Latte](https://github.com/Vchitect/Latte), and [PixArt](https://pixart-alpha.github.io/).
 

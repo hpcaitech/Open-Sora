@@ -21,7 +21,7 @@ text_encoder = dict(
     model_max_length=120,
 )
 scheduler = dict(
-    type = "dpm-solver",
+    type="dpm-solver",
     num_sampling_steps=20,
     cfg_scale=7.0,
 )

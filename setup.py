@@ -39,7 +39,7 @@ setup(
             "*.egg-info",
         )
     ),
-    description="OpenDiT",
+    description="OpenSora",
     long_description=fetch_readme(),
     long_description_content_type="text/markdown",
     license="Apache Software License 2.0",

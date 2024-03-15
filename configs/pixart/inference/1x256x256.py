@@ -15,7 +15,7 @@ vae = dict(
     # type="VideoAutoencoderKL",
     # from_pretrained="stabilityai/sd-vae-ft-ema",
     type="VideoAutoencoderKLTemporalDecoder",
-    from_pretrained="pretrained_models/vae_temporal_decoder"
+    from_pretrained="pretrained_models/vae_temporal_decoder",
 )
 text_encoder = dict(
     type="t5",
