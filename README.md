@@ -20,11 +20,15 @@ Open-Sora 1.0 supports a full pipeline of video data preprocessing, training wit
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
 inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
 
+
+
+
+
 ## 🎥 Latest Demo
 
 | **2s 512x512**                                  | **2s 512x512**                                  |
 | ----------------------------------------------- | ----------------------------------------------- |
-| <img src="assets/readme/sample_0.gif" width=""> | <img src="assets/readme/sample_0.gif" width=""> |
+| <img src="assets/readme/sample_0.gif" width=""> | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) |
 
 ## 🔆 New Features/Updates
 
