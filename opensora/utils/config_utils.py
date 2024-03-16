@@ -32,6 +32,7 @@ def parse_args(training=False):
     else:
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
+        parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
 
     return parser.parse_args()
 

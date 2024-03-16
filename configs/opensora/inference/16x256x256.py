@@ -1,15 +1,13 @@
-# sample size
 num_frames = 16
 fps = 24 // 3
 image_size = (256, 256)
 
-# model config
+# Define model
 model = dict(
     type="STDiT-XL/2",
     space_scale=0.5,
     time_scale=1.0,
-    from_pretrained="outputs/129-F16S3-PixArt-ST-XL-2/epoch83-global_step80000/ema.pt",
-    # from_pretrained="outputs/285-F16S3-PixArt-ST-XL-2/epoch615-global_step24000/ema.pt",
+    from_pretrained="PRETRAINED_MODEL",
 )
 vae = dict(
     type="VideoAutoencoderKL",
@@ -21,15 +19,13 @@ text_encoder = dict(
     model_max_length=120,
 )
 scheduler = dict(
-    # type="iddpm",
-    # num_sampling_steps=250,
-    type="dpm-solver",
-    num_sampling_steps=20,
+    type="iddpm",
+    num_sampling_steps=100,
     cfg_scale=7.0,
 )
 dtype = "fp16"
 
-# prompts
+# Others
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/t2v_samples.txt"
