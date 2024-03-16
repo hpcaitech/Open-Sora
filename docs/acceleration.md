@@ -14,9 +14,9 @@ Our training speed on images is comparable to [OpenDiT](https://github.com/NUS-H
 
 | Model    | Throughput (img/s/GPU) | Throughput (tokens/s/GPU) |
 | -------- | ---------------------- | ------------------------- |
-| DiT      |                        |                           |
-| OpenDiT  | 1100                   |                           |
-| OpenSora | 1400                   | 45k                       |
+| DiT      | 100                    | 26k                       |
+| OpenDiT  | 175                    | 45k                       |
+| OpenSora | 175                    | 45k                       |
 
 ## Efficient STDiT
 
