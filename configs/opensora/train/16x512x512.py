@@ -1,26 +1,25 @@
-# sample size
 num_frames = 16
 frame_interval = 3
 image_size = (512, 512)
 
-# dataset
+# Define dataset
 root = None
-data_path = "/home/zhaowangbo/data_hdd/csv/inter4k_pexels_rp_fmin_48.csv"
+data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
 
-# acceleration
-dtype = "fp16"
+# Define acceleration
+dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
-# model config
+# Define model
 model = dict(
     type="STDiT-XL/2",
     space_scale=1.0,
     time_scale=1.0,
-    from_pretrained="outputs/285-F16S3-PixArt-ST-XL-2/epoch615-global_step24000/ema.pt",
+    from_pretrained=None,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
@@ -40,7 +39,7 @@ scheduler = dict(
     timestep_respacing="",
 )
 
-# runtime
+# Others
 seed = 42
 outputs = "outputs"
 wandb = False

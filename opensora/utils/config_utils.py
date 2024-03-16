@@ -32,13 +32,14 @@ def parse_args(training=False):
     else:
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
+        parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
 
     return parser.parse_args()
 
 
 def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
-        cfg.model["from_pratrained"] = args.ckpt_path
+        cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
 
     if not training:

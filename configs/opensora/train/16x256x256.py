@@ -1,22 +1,20 @@
-# sample size
 num_frames = 16
 frame_interval = 3
 image_size = (256, 256)
 
-# dataset
+# Define dataset
 root = None
-# data_path = "/mnt/hdd/data/csv/bak_00/pexels_inter4k_fmin_48_rp.csv"
-data_path = "/mnt/hdd/data/csv/ucf101_videos.csv"
+data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
 
-# acceleration
-dtype = "fp16"
+# Define acceleration
+dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
-# model config
+# Define model
 model = dict(
     type="STDiT-XL/2",
     space_scale=0.5,
@@ -40,7 +38,7 @@ scheduler = dict(
     timestep_respacing="",
 )
 
-# runtime
+# Others
 seed = 42
 outputs = "outputs"
 wandb = False
