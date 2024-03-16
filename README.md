@@ -111,9 +111,9 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              |     |
 | 64×512×512 | 50K HQ |             | 4×64       |                 |     |
 
-Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in [report_v1.md](/docs/report_v1.md). More about dataset can be found in [dataset.md](/docs/dataset.md).
+Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about dataset can be found in [dataset.md](/docs/dataset.md).
 
-**LIMITATION**: Our model is trained on a limited budget. The quality and text alignment are not strong. The model performs badly especially on generating human activities and cannot follow detailed instructions. We are working on improving the quality and text alignment.
+**LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor. The model performs badly especially on generating human beings and cannot follow detailed instructions. We are working on improving the quality and text alignment.
 
 ## Inference
 
