@@ -94,7 +94,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderKL", # Select VAE type
     from_pretrained="stabilityai/sd-vae-ft-ema", # Load from pretrained VAE
-    split=8,                   # Split VAE micro batch size to be batch_size * num_frames // split
+    micro_batch_size=128,      # VAE with micro batch size to save memory
 )
 text_encoder = dict(
     type="t5",                 # Select text encoder type (t5, clip)
@@ -147,7 +147,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
-    split=8,
+    micro_batch_size=128,
 )
 text_encoder = dict(
     type="t5",
