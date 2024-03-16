@@ -61,7 +61,7 @@ class DatasetFromCSV(torch.utils.data.Dataset):
         if ext.lower() in ["mp4", "avi", "mov", "mkv"]:
             self.is_video = True
         else:
-            assert f".{ext.lower()}" in IMG_EXTENSIONS
+            assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
             self.is_video = False
 
         self.transform = transform

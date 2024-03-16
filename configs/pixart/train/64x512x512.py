@@ -1,34 +1,38 @@
-num_frames = 1
-frame_interval = 1
-image_size = (256, 256)
+num_frames = 64
+frame_interval = 2
+image_size = (512, 512)
 
 # Define dataset
 root = None
 data_path = "CSV_PATH"
-use_image_transform = True
+use_image_transform = False
 num_workers = 4
 
 # Define acceleration
 dtype = "bf16"
-grad_checkpoint = False
+grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
 # Define model
 model = dict(
-    type="DiT-XL/2",
-    no_temporal_pos_emb=True,
+    type="PixArt-XL/2",
+    space_scale=1.0,
+    time_scale=2 / 3,
+    from_pretrained=None,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
+    micro_batch_size=128,
 )
 text_encoder = dict(
-    type="clip",
-    from_pretrained="openai/clip-vit-base-patch32",
-    model_max_length=77,
+    type="t5",
+    from_pretrained="./pretrained_models/t5_ckpts",
+    model_max_length=120,
+    shardformer=True,
 )
 scheduler = dict(
     type="iddpm",
@@ -42,9 +46,9 @@ wandb = False
 
 epochs = 1000
 log_every = 10
-ckpt_every = 1000
+ckpt_every = 250
 load = None
 
-batch_size = 128
-lr = 1e-4  # according to DiT repo
+batch_size = 4
+lr = 2e-5
 grad_clip = 1.0
