@@ -23,8 +23,8 @@ inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
 
 ## 🎥 Latest Demo
 
-| **2s 512x512**                                  | **2s 512x512**                                  | **2s 512x512**                                 |
-| ----------------------------------------------- | ----------------------------------------------- |-------------------------------------------------|
+| **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width=""> ](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
 
 Click for the original video.
@@ -32,7 +32,7 @@ Click for the original video.
 ## 🔆 New Features/Updates
 
 - 📍 Open-Sora-v1 is trained on xxx. We train the model in three stages. Model weights are available here. Training details can be found here. [WIP]
-- ✅ Support training acceleration including flash-attention, accelerated T5, mixed precision, gradient checkpointing, splitted VAE, sequence parallelism, etc. XXX times. Details locates at [acceleration.md](docs/acceleration.md). [WIP]
+- ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism. Open-Sora improve XX% training speed when training on XX tokens. Details locates at [acceleration.md](docs/acceleration.md). [WIP]
 - ✅ We provide video cutting and captioning tools for data preprocessing. Instructions can be found [here](tools/data/README.md) and our data collection plan can be found at [datasets.md](docs/datasets.md).
 - ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in the time dimension deteriorates the quality. See our **[report](docs/report_v1.md)** for more discussions.
 - ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our **STDiT** achieves a better trade-off between quality and speed. See our **[report](docs/report_v1.md)** for more discussions.
@@ -144,6 +144,25 @@ We provide code to split a long video into separate clips efficiently using `mul
 ### Generate video caption
 
 ## Training
+
+To launch training, first prepare the dataset and the pretrained weights. [WIP]
+
+Then run the following commands to launch training on a single node.
+
+```bash
+# 1 GPU, 16x256x256
+torchrun --nnodes=1 --nproc_per_node=1 scripts/train.py configs/opensora/train/16x256x512.py --data-path YOUR_CSV_PATH
+# 8 GPUs, 64x512x512
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
+To launch training on multiple nodes, prepare a hostfile according to [ColossalAI](https://colossalai.org/docs/basics/launch_colossalai/#launch-with-colossal-ai-cli), and run the following commands.
+
+```bash
+colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
+For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
 
 ## Acknowledgement
 
