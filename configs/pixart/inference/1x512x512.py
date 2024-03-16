@@ -1,9 +1,8 @@
-# sample size
 num_frames = 1
 fps = 1
 image_size = (512, 512)
 
-# model config
+# Define model
 model = dict(
     type="PixArt-XL/2",
     space_scale=1.0,
@@ -27,7 +26,7 @@ scheduler = dict(
 )
 dtype = "fp16"
 
-# prompts
+# Others
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/t2i_samples.txt"

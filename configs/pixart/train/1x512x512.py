@@ -1,21 +1,20 @@
-# sample size
 num_frames = 1
 frame_interval = 1
 image_size = (512, 512)
 
-# dataset
+# Define dataset
 root = None
-data_path = "/mnt/hdd/data/csv/imagenet_train.csv"
+data_path = "CSV_PATH"
 use_image_transform = True
 num_workers = 4
 
-# acceleration
-dtype = "fp16"
+# Define acceleration
+dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
-# model config
+# Define model
 model = dict(
     type="PixArt-XL/2",
     space_scale=1.0,
@@ -40,7 +39,7 @@ scheduler = dict(
     timestep_respacing="",
 )
 
-# runtime
+# Others
 seed = 42
 outputs = "outputs"
 wandb = False

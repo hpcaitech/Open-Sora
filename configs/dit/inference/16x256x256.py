@@ -7,7 +7,7 @@ image_size = (256, 256)
 model = dict(
     type="DiT-XL/2",
     condition="text",
-    from_pretrained="YOUR_MODEL_PATH",
+    from_pretrained="PRETRAINED_MODEL",
 )
 vae = dict(
     type="VideoAutoencoderKL",

@@ -1,9 +1,8 @@
-# sample size
 num_frames = 16
 fps = 8
 image_size = (256, 256)
 
-# model config
+# Define model
 model = dict(
     type="Latte-XL/2",
     condition="label_101",
@@ -24,7 +23,7 @@ scheduler = dict(
 )
 dtype = "fp16"
 
-# prompts
+# Others
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/ucf101_id.txt"
