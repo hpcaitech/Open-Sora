@@ -23,9 +23,9 @@ inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
 
 ## 🎥 Latest Demo
 
-| **2s 512x512**                                  | **2s 512x512**                                  |
-| ----------------------------------------------- | ----------------------------------------------- |
-| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) |
+| **2s 512x512**                                  | **2s 512x512**                                  | **2s 512x512**                                 |
+| ----------------------------------------------- | ----------------------------------------------- |-------------------------------------------------|
+| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | <img src="assets/readme/sample_2.gif" width=""> |
 
 Click for the original video.
 
