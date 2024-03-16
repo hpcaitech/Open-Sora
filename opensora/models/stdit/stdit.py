@@ -94,17 +94,17 @@ class STDiTBlock(nn.Module):
         x_m = t2i_modulate(self.norm1(x), shift_msa, scale_msa)
 
         # spatial branch
-        x_s = rearrange(x_m, "b (t s) d -> (b t) s d", t=self.d_t, s=self.d_s)
+        x_s = rearrange(x_m, "B (T S) C -> (B T) S C", T=self.d_t, S=self.d_s)
         x_s = self.attn(x_s)
-        x_s = rearrange(x_s, "(b t) s d -> b (t s) d", t=self.d_t, s=self.d_s)
+        x_s = rearrange(x_s, "(B T) S C -> B (T S) C", T=self.d_t, S=self.d_s)
         x = x + self.drop_path(gate_msa * x_s)
 
         # temporal branch
-        x_t = rearrange(x, "b (t s) d -> (b s) t d", t=self.d_t, s=self.d_s)
+        x_t = rearrange(x, "B (T S) C -> (B S) T C", T=self.d_t, S=self.d_s)
         if tpe is not None:
             x_t = x_t + tpe
         x_t = self.attn_temp(x_t)
-        x_t = rearrange(x_t, "(b s) t d -> b (t s) d", t=self.d_t, s=self.d_s)
+        x_t = rearrange(x_t, "(B S) T C -> B (T S) C", T=self.d_t, S=self.d_s)
         x = x + self.drop_path(gate_msa * x_t)
 
         # cross attn
@@ -231,9 +231,9 @@ class STDiT(nn.Module):
 
         # embedding
         x = self.x_embedder(x)  # [B, N, C]
-        x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        x = rearrange(x, "B (T S) C -> B T S C", T=self.num_temporal, S=self.num_spatial)
         x = x + self.pos_embed
-        x = rearrange(x, "b t s d -> b (t s) d")
+        x = rearrange(x, "B T S C -> B (T S) C")
 
         # shard over the sequence dim if sp is enabled
         if self.enable_sequence_parallelism:
