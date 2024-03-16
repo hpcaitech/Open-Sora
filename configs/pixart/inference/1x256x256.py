@@ -11,10 +11,8 @@ model = dict(
     from_pretrained="PixArt-XL-2-256x256.pth",
 )
 vae = dict(
-    # type="VideoAutoencoderKL",
-    # from_pretrained="stabilityai/sd-vae-ft-ema",
-    type="VideoAutoencoderKLTemporalDecoder",
-    from_pretrained="pretrained_models/vae_temporal_decoder",
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
 )
 text_encoder = dict(
     type="t5",

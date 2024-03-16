@@ -20,68 +20,57 @@ Open-Sora 1.0 supports a full pipeline of video data preprocessing, training wit
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
 inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
 
-
 ## 🎥 Latest Demo
 
-| **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width=""> ](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
+| **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
 
-Click for the original video.
+Videos are downsampled to `.gif`. Click the video for original ones.
 
 ## 🔆 New Features/Updates
 
-- 📍 Open-Sora-v1 is trained on xxx. We train the model in three stages. Model weights are available here. Training details can be found here. [WIP]
-- ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism. Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates at [acceleration.md](docs/acceleration.md).
-- ✅ We provide video cutting and captioning tools for data preprocessing. Instructions can be found [here](tools/data/README.md) and our data collection plan can be found at [datasets.md](docs/datasets.md).
-- ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in the time dimension deteriorates the quality. See our **[report](docs/report_v1.md)** for more discussions.
-- ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our **STDiT** achieves a better trade-off between quality and speed. See our **[report](docs/report_v1.md)** for more discussions.
-- ✅ Support clip and T5 text conditioning.
-- ✅ By viewing images as one-frame videos, our project supports training DiT on both images and videos (e.g., ImageNet & UCF101). See [command.md](docs/command.md) for more instructions.
-- ✅ Support inference with official weights from [DiT](https://github.com/facebookresearch/DiT), [Latte](https://github.com/Vchitect/Latte), and [PixArt](https://pixart-alpha.github.io/).
+* 📍 Open-Sora-v1 is trained on xxx. We train the model in three stages. Model weights are available here. Training details can be found here. [WIP]
+* ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism. Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates at [acceleration.md](docs/acceleration.md).
+* ✅ We provide video cutting and captioning tools for data preprocessing. Instructions can be found [here](tools/data/README.md) and our data collection plan can be found at [datasets.md](docs/datasets.md).
+* ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in the time dimension deteriorates the quality. See our **[report](docs/report_v1.md)** for more discussions.
+* ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our **STDiT** achieves a better trade-off between quality and speed. See our **[report](docs/report_v1.md)** for more discussions.
+* ✅ Support clip and T5 text conditioning.
+* ✅ By viewing images as one-frame videos, our project supports training DiT on both images and videos (e.g., ImageNet & UCF101). See [command.md](docs/command.md) for more instructions.
+* ✅ Support inference with official weights from [DiT](https://github.com/facebookresearch/DiT), [Latte](https://github.com/Vchitect/Latte), and [PixArt](https://pixart-alpha.github.io/).
 
 <details>
 <summary>View more</summary>
 
-- ✅ Refactor the codebase. See [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
+* ✅ Refactor the codebase. See [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
 
 </details>
 
 ### TODO list sorted by priority
 
-- [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md]() for more information. **[WIP]**
-- [ ] Training Video-VAE. **[WIP]**
+* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md]() for more information. **[WIP]**
+* [ ] Training Video-VAE. **[WIP]**
 
 <details>
 <summary>View more</summary>
 
-- [ ] Support image and video conditioning.
-- [ ] Evaluation pipeline.
-- [ ] Incoporate a better scheduler, e.g., rectified flow in SD3.
-- [ ] Support variable aspect ratios, resolutions, durations.
-- [ ] Support SD3 when released.
+* [ ] Support image and video conditioning.
+* [ ] Evaluation pipeline.
+* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3.
+* [ ] Support variable aspect ratios, resolutions, durations.
+* [ ] Support SD3 when released.
 
 </details>
 
-## Contents
+## Contentss
 
-- [Open-Sora: Towards Open Reproduction of Sora](#open-sora-towards-open-reproduction-of-sora)
-- [📰 News](#-news)
-- [🎥 Latest Demo](#-latest-demo)
-- [🔆 New Features/Updates](#-new-featuresupdates)
-  - [TODO list sorted by priority](#todo-list-sorted-by-priority)
-- [Contents](#contents)
-- [Installation](#installation)
-- [Model Weights](#model-weights)
-- [Inference](#inference)
-- [Data Processing](#data-processing)
-  - [Split video into clips](#split-video-into-clips)
-  - [Generate video caption](#generate-video-caption)
-- [Training](#training)
-- [Acknowledgement](#acknowledgement)
-- [Citation](#citation)
-- [Star History](#star-history)
-- [TODO](#todo)
+* [Installation](#installation)
+* [Model Weights](#model-weights)
+* [Inference](#inference)
+* [Data Processing](#data-processing)
+* [Training](#training)
+* [Acknowledgement](#acknowledgement)
+* [Citation](#citation)
 
 ## Installation
 
@@ -120,9 +109,7 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 
 ## Inference
 
-To run inference with our provided weights, first prepare the pretrained weights including XXX. [WIP]
-
-Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
 # Sample 16x256x256 (~2s)
@@ -145,9 +132,7 @@ We provide code to split a long video into separate clips efficiently using `mul
 
 ## Training
 
-To launch training, first prepare the dataset and the pretrained weights. [WIP]
-
-Then run the following commands to launch training on a single node.
+To launch training, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to launch training on a single node.
 
 ```bash
 # 1 GPU, 16x256x256
@@ -181,7 +166,7 @@ We are grateful for their exceptional work and generous contribution to open sou
 
 ```bibtex
 @software{opensora,
-  author = {Zangwei Zheng and Xiangyu Peng and Shenggui Li and Yang You},
+  author = {Zangwei Zheng and Xiangyu Peng and Yang You},
   title = {Open-Sora: Towards Open Reproduction of Sora},
   month = {March},
   year = {2024},
@@ -194,17 +179,3 @@ We are grateful for their exceptional work and generous contribution to open sou
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=hpcaitech/Open-Sora&type=Date)](https://star-history.com/#hpcaitech/Open-Sora&Date)
-
-## TODO
-
-Modules for releasing:
-
-* `configs`
-* `opensora`
-* `assets`
-* `scripts`
-* `tools`
-
-packages for data processing
-
-put all outputs under ./checkpoints/, including pretrained_models, checkpoints, samples
