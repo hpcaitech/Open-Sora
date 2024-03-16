@@ -10,7 +10,7 @@ num_workers = 4
 
 # Define acceleration
 dtype = "bf16"
-grad_checkpoint = True
+grad_checkpoint = False
 plugin = "zero2"
 sp_size = 1
 

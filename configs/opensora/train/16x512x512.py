@@ -10,7 +10,7 @@ num_workers = 4
 
 # Define acceleration
 dtype = "bf16"
-grad_checkpoint = True
+grad_checkpoint = False
 plugin = "zero2"
 sp_size = 1
 
@@ -26,7 +26,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
-    split=4,
+    micro_batch_size=128,
 )
 text_encoder = dict(
     type="t5",
