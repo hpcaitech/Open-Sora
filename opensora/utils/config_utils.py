@@ -38,7 +38,7 @@ def parse_args(training=False):
 
 def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
-        cfg.model["from_pratrained"] = args.ckpt_path
+        cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
 
     if not training:

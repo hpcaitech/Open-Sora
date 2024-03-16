@@ -83,9 +83,28 @@ inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
 ## Installation
 
 ```bash
+# create a virtual env
+conda create -n opensora python=3.10
+
+# install torch
+# the command below is for CUDA 12.1, choose install commands from 
+# https://pytorch.org/get-started/locally/ based on your own CUDA version
+pip3 install torch torchvision
+
+# install flash attention (optional)
+pip install packaging ninja
+pip install flash-attn --no-build-isolation
+
+# install apex (optional)
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
+
+# install xformers
+pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
+
+# install this project
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
-pip install xxx
+pip install -v -e .
 ```
 
 After installation, we suggest reading [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
@@ -98,9 +117,20 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 
 ## Inference
 
+To run inference with our provided weights, first prepare the pretrained weights including XXX. [WIP]
+
+Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+
 ```bash
-python scripts/inference.py configs/opensora/inference/16x256x256.py
+# Sample 16x256x256 (~2s)
+python scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
+# Sample 16x512x512 (~2s)
+python scripts/inference.py configs/opensora/inference/16x512x512.py
+# Sample 64x512x512 (~5s)
+python scripts/inference.py configs/opensora/inference/64x512x512.py
 ```
+
+For inference with other models, see [here](docs/commands.md) for more instructions.
 
 ## Data Processing
 
@@ -121,8 +151,7 @@ We provide code to split a long video into separate clips efficiently using `mul
 * [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
 * [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
 * [T5](https://github.com/google-research/text-to-text-transfer-transformer): The powerful text encoder.
-* [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [LLaMA](https://github.com/meta-llama/llama) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
-* [PySceneDetect](https://github.com/Breakthrough/PySceneDetect): A powerful tool to split video into clips.
+* [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
 
 We are grateful for their exceptional work and generous contribution to open source.
 

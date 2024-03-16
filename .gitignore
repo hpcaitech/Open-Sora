@@ -168,6 +168,7 @@ dataset/
 runs/
 checkpoints/
 outputs/
+samples/
 
 # Secret files
 hostfile
