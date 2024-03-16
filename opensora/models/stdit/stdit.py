@@ -282,6 +282,7 @@ class STDiT(nn.Module):
         """
         Args:
             x (torch.Tensor): of shape [B, N, C]
+
         Return:
             x (torch.Tensor): of shape [B, C_out, T, H, W]
         """
@@ -290,8 +291,14 @@ class STDiT(nn.Module):
         T_p, H_p, W_p = self.patch_size
         x = rearrange(
             x,
-            'B (N_t N_h N_w) (T_p H_p W_p C_out) -> B C_out (N_t T_p) (N_h H_p) (N_w W_p)',
-            N_t=N_t, N_h=N_h, N_w=N_w, T_p=T_p, H_p=H_p, W_p=W_p, C_out=self.out_channels,
+            "B (N_t N_h N_w) (T_p H_p W_p C_out) -> B C_out (N_t T_p) (N_h H_p) (N_w W_p)",
+            N_t=N_t,
+            N_h=N_h,
+            N_w=N_w,
+            T_p=T_p,
+            H_p=H_p,
+            W_p=W_p,
+            C_out=self.out_channels,
         )
         return x
 
