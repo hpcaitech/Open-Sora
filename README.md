@@ -30,7 +30,7 @@ Videos are downsampled to `.gif` for display. Click the video for original ones.
 
 ## 🔆 New Features/Updates
 
-* 📍 Open-Sora-v1 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800 days, we are able to generate 2s 512×512 videos.
+* 📍 Open-Sora-v1 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800 days (compared with 152M samples in Stable Video Diffusion), we are able to generate 2s 512×512 videos.
 * ✅ Three stages training from an image diffusion model to a video diffusion model. We provide the weights for each stage.
 * ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism. Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates at [acceleration.md](docs/acceleration.md).
 * ✅ We provide video cutting and captioning tools for data preprocessing. Instructions can be found [here](tools/data/README.md) and our data collection plan can be found at [datasets.md](docs/datasets.md).
@@ -49,7 +49,7 @@ Videos are downsampled to `.gif` for display. Click the video for original ones.
 
 ### TODO list sorted by priority
 
-* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md]() for more information. **[WIP]**
+* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md](/docs/datasets.md) for more information. **[WIP]**
 * [ ] Training Video-VAE. **[WIP]**
 
 <details>
@@ -112,6 +112,8 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 | 64×512×512 | 50K HQ |             | 4×64       |                 |     |
 
 Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in [report_v1.md](/docs/report_v1.md). More about dataset can be found in [dataset.md](/docs/dataset.md).
+
+**LIMITATION**: Our model is trained on a limited budget. The quality and text alignment are not strong. The model performs badly especially on generating human activities and cannot follow detailed instructions. We are working on improving the quality and text alignment.
 
 ## Inference
 
