@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/readme/icon_zw.png" width="250"/>
+    <img src="./assets/readme/icon_new.png" width="250"/>
 <p>
 
 </p>
@@ -150,8 +150,8 @@ We provide code to split a long video into separate clips efficiently using `mul
 * [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
 * [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
 * [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
-* [T5](https://github.com/google-research/text-to-text-transfer-transformer): The powerful text encoder.
-* [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
+* [T5](https://github.com/google-research/text-to-text-transfer-transformer): A powerful text encoder.
+* [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
 
 We are grateful for their exceptional work and generous contribution to open source.
 

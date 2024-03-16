@@ -94,17 +94,17 @@ class STDiTBlock(nn.Module):
         x_m = t2i_modulate(self.norm1(x), shift_msa, scale_msa)
 
         # spatial branch
-        x_s = rearrange(x_m, "b (t s) d -> (b t) s d", t=self.d_t, s=self.d_s)
+        x_s = rearrange(x_m, "B (T S) C -> (B T) S C", T=self.d_t, S=self.d_s)
         x_s = self.attn(x_s)
-        x_s = rearrange(x_s, "(b t) s d -> b (t s) d", t=self.d_t, s=self.d_s)
+        x_s = rearrange(x_s, "(B T) S C -> B (T S) C", T=self.d_t, S=self.d_s)
         x = x + self.drop_path(gate_msa * x_s)
 
         # temporal branch
-        x_t = rearrange(x, "b (t s) d -> (b s) t d", t=self.d_t, s=self.d_s)
+        x_t = rearrange(x, "B (T S) C -> (B S) T C", T=self.d_t, S=self.d_s)
         if tpe is not None:
             x_t = x_t + tpe
         x_t = self.attn_temp(x_t)
-        x_t = rearrange(x_t, "(b s) t d -> b (t s) d", t=self.d_t, s=self.d_s)
+        x_t = rearrange(x_t, "(B S) T C -> B (T S) C", T=self.d_t, S=self.d_s)
         x = x + self.drop_path(gate_msa * x_t)
 
         # cross attn
@@ -214,28 +214,34 @@ class STDiT(nn.Module):
 
     def forward(self, x, timestep, y, mask=None):
         """
-        Forward pass of PixArt.
-        x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
-        t: (N,) tensor of diffusion timesteps
-        y: (N, 1, 120, C) tensor of class labels
+        Forward pass of STDiT.
+        Args:
+            x (torch.Tensor): latent representation of video; of shape [B, C, T, H, W]
+            timestep (torch.Tensor): diffusion time steps; of shape [B]
+            y (torch.Tensor): representation of prompts; of shape [B, 1, N_token, C]
+            mask (torch.Tensor): mask for selecting prompt tokens; of shape [B, N_token]
+
+        Returns:
+            x (torch.Tensor): output latent representation; of shape [B, C, T, H, W]
         """
+
         x = x.to(self.dtype)
         timestep = timestep.to(self.dtype)
         y = y.to(self.dtype)
 
         # embedding
-        x = self.x_embedder(x)  # (B, N, D)
-        x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        x = self.x_embedder(x)  # [B, N, C]
+        x = rearrange(x, "B (T S) C -> B T S C", T=self.num_temporal, S=self.num_spatial)
         x = x + self.pos_embed
-        x = rearrange(x, "b t s d -> b (t s) d")
+        x = rearrange(x, "B T S C -> B (T S) C")
 
         # shard over the sequence dim if sp is enabled
         if self.enable_sequence_parallelism:
             x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="down")
 
-        t = self.t_embedder(timestep, dtype=x.dtype)  # (N, D)
-        t0 = self.t_block(t)
-        y = self.y_embedder(y, self.training)  # (N, 1, L, D)
+        t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
+        t0 = self.t_block(t)  # [B, C]
+        y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
 
         if mask is not None:
             if mask.shape[0] != y.shape[0]:
@@ -262,16 +268,41 @@ class STDiT(nn.Module):
 
         if self.enable_sequence_parallelism:
             x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="up")
+        # x.shape: [B, N, C]
 
         # final process
-        x = self.final_layer(x, t)  # (N, T, patch_size ** 2 * out_channels)
-        x = self.unpatchify(x)  # (N, out_channels, H, W)
+        x = self.final_layer(x, t)  # [B, N, C=T_p * H_p * W_p * C_out]
+        x = self.unpatchify(x)  # [B, C_out, T, H, W]
 
         # cast to float32 for better accuracy
         x = x.to(torch.float32)
         return x
 
     def unpatchify(self, x):
+        """
+        Args:
+            x (torch.Tensor): of shape [B, N, C]
+
+        Return:
+            x (torch.Tensor): of shape [B, C_out, T, H, W]
+        """
+
+        N_t, N_h, N_w = [self.input_size[i] // self.patch_size[i] for i in range(3)]
+        T_p, H_p, W_p = self.patch_size
+        x = rearrange(
+            x,
+            "B (N_t N_h N_w) (T_p H_p W_p C_out) -> B C_out (N_t T_p) (N_h H_p) (N_w W_p)",
+            N_t=N_t,
+            N_h=N_h,
+            N_w=N_w,
+            T_p=T_p,
+            H_p=H_p,
+            W_p=W_p,
+            C_out=self.out_channels,
+        )
+        return x
+
+    def unpatchify_old(self, x):
         c = self.out_channels
         t, h, w = [self.input_size[i] // self.patch_size[i] for i in range(3)]
         pt, ph, pw = self.patch_size

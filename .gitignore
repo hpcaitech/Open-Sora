@@ -164,6 +164,7 @@ cython_debug/
 *.DS_Store
 
 # misc files
+data/
 dataset/
 runs/
 checkpoints/
