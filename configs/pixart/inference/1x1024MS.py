@@ -32,4 +32,4 @@ dtype = "fp16"
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/t2i_samples.txt"
-save_dir = "./samples/"
+save_dir = "./outputs/samples/"
