@@ -130,7 +130,7 @@ use_image_transform = False    # True if training on images
 num_workers = 4                # number of workers for dataloader
 
 # Define acceleration
-dtype = "bf16"                 # Computation type (fp16, fp32, bf16)
+dtype = "bf16"                 # Computation type (fp16, bf16)
 grad_checkpoint = True         # Use gradient checkpointing
 plugin = "zero2"               # Plugin for distributed training (zero2, zero2-seq)
 sp_size = 1                    # Sequence parallelism size (1 for no sequence parallelism)
