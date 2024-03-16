@@ -1,9 +1,8 @@
-# sample size
 num_frames = 1
 fps = 1
 image_size = (256, 256)
 
-# model config
+# Define model
 model = dict(
     type="DiT-XL/2",
     no_temporal_pos_emb=True,
@@ -25,7 +24,7 @@ scheduler = dict(
 )
 dtype = "fp16"
 
-# prompts
+# Others
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/imagenet_id.txt"
