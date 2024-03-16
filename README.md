@@ -16,21 +16,22 @@
 ## 📰 News
 
 * **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, an open-source project to reproduce OpenAI Sora.
-Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
+Open-Sora 1.0 supports a full pipeline including video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
-inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
+inference, and more. Our provided checkpoint can produce 2~5s 512x512 videos with only 3 days training.
 
 ## 🎥 Latest Demo
 
-| **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 |
+| **2s 512×512**                                                                                                                                 | **2s 512×512**                                                                                                                                 | **2s 512×512**                                                                                                                                 |
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
 
-Videos are downsampled to `.gif`. Click the video for original ones.
+Videos are downsampled to `.gif` for display. Click the video for original ones.
 
 ## 🔆 New Features/Updates
 
-* 📍 Open-Sora-v1 is trained on xxx. We train the model in three stages. Model weights are available here. Training details can be found here. [WIP]
+* 📍 Open-Sora-v1 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800 days, we are able to generate 2s 512×512 videos.
+* ✅ Three stages training from an image diffusion model to a video diffusion model. We provide the weights for each stage.
 * ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism. Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates at [acceleration.md](docs/acceleration.md).
 * ✅ We provide video cutting and captioning tools for data preprocessing. Instructions can be found [here](tools/data/README.md) and our data collection plan can be found at [datasets.md](docs/datasets.md).
 * ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in the time dimension deteriorates the quality. See our **[report](docs/report_v1.md)** for more discussions.
@@ -103,9 +104,14 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 
 ## Model Weights
 
-| Model      | #Params | url |
-| ---------- | ------- | --- |
-| 16x256x256 |         |     |
+| Resoluion  | Data   | #iterations | Batch Size | GPU days (H800) | URL |
+| ---------- | ------ | ----------- | ---------- | --------------- | --- |
+| 16×256×256 | 366K   | 80k         | 8×64       | 117             |     |
+| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              |     |
+| 16×512×512 | 20K HQ | 20k         | 2×64       | 35              |     |
+| 64×512×512 | 50K HQ |             | 4×64       |                 |     |
+
+Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in [report_v1.md](/docs/report_v1.md). More about dataset can be found in [dataset.md](/docs/dataset.md).
 
 ## Inference
 
@@ -122,7 +128,7 @@ python scripts/inference.py configs/opensora/inference/64x512x512.py
 
 For inference with other models, see [here](docs/commands.md) for more instructions.
 
-## Data Processing
+## Data Processing (WIP)
 
 ### Split video into clips
 
