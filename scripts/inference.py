@@ -1,12 +1,16 @@
 import os
 
 import torch
+import colossalai
+import torch.distributed as dist
 from mmengine.runner import set_random_seed
 
 from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
+from opensora.acceleration.parallel_states import set_sequence_parallel_group
+from colossalai.cluster import DistCoordinator
 
 
 def load_prompts(prompt_path):
@@ -17,10 +21,20 @@ def load_prompts(prompt_path):
 
 def main():
     # ======================================================
-    # 1. args & cfg
+    # 1. cfg and init distributed env
     # ======================================================
     cfg = parse_configs(training=False)
     print(cfg)
+
+    # init distributed
+    colossalai.launch_from_torch({})
+    coordinator = DistCoordinator()
+
+    if coordinator.world_size > 1:
+        set_sequence_parallel_group(dist.group.WORLD) 
+        enable_sequence_parallelism = True
+    else:
+        enable_sequence_parallelism = False
 
     # ======================================================
     # 2. runtime variables
@@ -49,6 +63,7 @@ def main():
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
+        enable_sequence_parallelism=enable_sequence_parallelism,
     )
     text_encoder.y_embedder = model.y_embedder  # hack for classifier-free guidance
 
@@ -84,11 +99,13 @@ def main():
             additional_args=model_args,
         )
         samples = vae.decode(samples.to(dtype))
-        for idx, sample in enumerate(samples):
-            print(f"Prompt: {batch_prompts[idx]}")
-            save_path = os.path.join(save_dir, f"sample_{sample_idx}")
-            save_sample(sample, fps=cfg.fps, save_path=save_path)
-            sample_idx += 1
+
+        if coordinator.is_master():
+            for idx, sample in enumerate(samples):
+                print(f"Prompt: {batch_prompts[idx]}")
+                save_path = os.path.join(save_dir, f"sample_{sample_idx}")
+                save_sample(sample, fps=cfg.fps, save_path=save_path)
+                sample_idx += 1
 
 
 if __name__ == "__main__":
