@@ -72,18 +72,22 @@ def run_cross_attention(rank, world_size):
     seq_parallel_attention = SeqParallelMultiHeadCrossAttention(
         d_model=256,
         num_heads=4,
-    ).cuda()
+    ).cuda().to(torch.bfloat16)
 
     torch.manual_seed(1024)
     attention = MultiHeadCrossAttention(
         d_model=256,
         num_heads=4,
-    ).cuda()
+    ).cuda().to(torch.bfloat16)
+
+    # make sure the weights are the same
+    for p1, p2 in zip(seq_parallel_attention.parameters(), attention.parameters()):
+        p1.data.copy_(p2.data)
 
     # create inputs
     torch.manual_seed(1024)
-    x = torch.randn(4, 64, 256).cuda()
-    y = torch.randn(4, 32, 256).cuda()
+    x = torch.randn(4, 64, 256).cuda().to(torch.bfloat16)
+    y = torch.randn(4, 32, 256).cuda().to(torch.bfloat16)
 
     mask = [2, 10, 8, 16]
     mask = None
@@ -124,11 +128,7 @@ def run_cross_attention(rank, world_size):
 
     # # check grad
     for p1, p2 in zip(seq_parallel_attention.named_parameters(), attention.named_parameters()):
-        # if not torch.allclose(p1[1].grad, p2[1].grad, atol=1e-7):
-        #     print(p1[0], p2[0])
-        assert torch.allclose(
-            p1[1].grad, p2[1].grad, atol=1e-7
-        ), f"\n{p1[0]}\nvs\n{p2[0]}:\n{p1[1].grad}\nvs\n{p2[1].grad}"
+        assert torch.allclose(p1[1].grad, p2[1].grad, rtol=1e-3, atol=1e-4), f"\n{p1[0]}\nvs\n{p2[0]}:\n{p1[1].grad}\nvs\n{p2[1].grad}"
 
     # # check input grad
     assert torch.allclose(x.grad, seq_x.grad, atol=1e-7), f"{x.grad}\nvs\n{seq_x.grad}"

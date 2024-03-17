@@ -113,11 +113,17 @@ To run inference with our provided weights, first download [T5](https://huggingf
 
 ```bash
 # Sample 16x256x256 (~2s)
-python scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
+
 # Sample 16x512x512 (~2s)
-python scripts/inference.py configs/opensora/inference/16x512x512.py
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py
+
 # Sample 64x512x512 (~5s)
-python scripts/inference.py configs/opensora/inference/64x512x512.py
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py
+
+# Sample 64x512x512 with sequence parallelism(~5s)
+# sequence parallelism is enabled automatically when nproc_per_node is larger than 1
+torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py
 ```
 
 For inference with other models, see [here](docs/commands.md) for more instructions.
