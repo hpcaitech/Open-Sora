@@ -44,7 +44,7 @@ setup(
             "*.egg-info",
         )
     ),
-    description="An open-source initiative dedicated to efficiently reproducing OpenAI's Sora",
+    description="Democratizing Efficient Video Production for All",
     long_description=fetch_readme(),
     long_description_content_type="text/markdown",
     license="Apache Software License 2.0",
