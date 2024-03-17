@@ -58,7 +58,7 @@ class DatasetFromCSV(torch.utils.data.Dataset):
             self.samples = list(reader)
 
         ext = self.samples[0][0].split(".")[-1]
-        if ext.lower() in ["mp4", "avi", "mov", "mkv"]:
+        if ext.lower() in ("mp4", "avi", "mov", "mkv"):
             self.is_video = True
         else:
             assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"

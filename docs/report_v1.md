@@ -22,9 +22,9 @@ We also try to use a 3D patch embedder in DiT. However, with 2x downsampling on 
 
 ## Data is the key to high quality
 
-We find that the number and quality of data have a great impact on the quality of generated videos, even larger than the model architecture and training strategy. At this time, we only prepared the first split (366K video clips) from [HD-VG-130M](https://github.com/daooshee/HD-VG-130M). The quality of these videos varies greatly, and the captions are not that accurate. Thus, we further collect 20k relatively high quality videos from [Pexels](https://www.pexels.com/), which provides free license videos. We label the video with LLaVA, an image captioning model, with three frames and a designed prompt.
+We find that the number and quality of data have a great impact on the quality of generated videos, even larger than the model architecture and training strategy. At this time, we only prepared the first split (366K video clips) from [HD-VG-130M](https://github.com/daooshee/HD-VG-130M). The quality of these videos varies greatly, and the captions are not that accurate. Thus, we further collect 20k relatively high quality videos from [Pexels](https://www.pexels.com/), which provides free license videos. We label the video with LLaVA, an image captioning model, with three frames and a designed prompt. With designed prompt, LLaVA can generate good quality of captions.
 
-[figure]
+![Caption](https://i0.imgs.ovh/2024/03/16/eXdvC.png)
 
 As we lay more emphasis on the quality of data, we prepare to collect more data and build a video preprocessing pipeline in our next version.
 
