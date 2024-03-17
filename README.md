@@ -9,14 +9,17 @@
     <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-加入-green?logo=wechat&amp"></a>
 </div>
 
-## Open-Sora: Towards Open Reproduction of Sora
-
-**Open-Sora** is an **open-source** initiative dedicated to **efficiently** reproducing OpenAI's Sora. Our project aims to cover **the full pipeline**, including video data preprocessing, training with acceleration, efficient inference and more. Operating on a limited budget, we prioritize the vibrant open-source community, providing access to text-to-image, image captioning, and language models. We hope to make a contribution to the community and make the project more accessible to everyone.
+## Open-Sora: Democratizing Efficient Video Production for All
+We present **Open-Sora**, an initiative dedicated to **efficiently** produce high-quality video and make the model, 
+tools and contents accessible to all. By embracing **open-source** principles, 
+Open-Sora not only democratizes access to advanced video generation techniques, but also offers a 
+streamlined and user-friendly platform that simplifies the complexities of video production.
+With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation.
 
 ## 📰 News
 
-* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, an open-source project to reproduce OpenAI Sora.
-Open-Sora 1.0 supports a full pipeline including video data preprocessing, training with
+* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, our first open-source project for video generation.
+Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
 inference, and more. Our provided checkpoint can produce 2~5s 512x512 videos with only 3 days training.
 
@@ -26,7 +29,7 @@ inference, and more. Our provided checkpoint can produce 2~5s 512x512 videos wit
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
 
-Videos are downsampled to `.gif` for display. Click the video for original ones.
+Videos are downsampled to `.gif` for display. Click for original videos.
 
 ## 🔆 New Features/Updates
 
@@ -180,8 +183,13 @@ We are grateful for their exceptional work and generous contribution to open sou
 
 ```bibtex
 @software{opensora,
+<<<<<<< HEAD
+  author = {Zangwei Zheng and Xiangyu Peng and Shenggui Li and Yang You},
+  title = {Open-Sora: Democratizing Efficient Video Production for All},
+=======
   author = {Zangwei Zheng and Xiangyu Peng and Yang You},
   title = {Open-Sora: Towards Open Reproduction of Sora},
+>>>>>>> 713b0e03b94565d1fc6dcd64750b67b4a2505f1f
   month = {March},
   year = {2024},
   url = {https://github.com/hpcaitech/Open-Sora}
