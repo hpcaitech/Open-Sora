@@ -7,7 +7,9 @@ model = dict(
     type="STDiT-XL/2",
     space_scale=1.0,
     time_scale=1.0,
-    from_pretrained="PRETRAINED_MODEL",
+    enable_flashattn=True,
+    enable_layernorm_kernel=True,
+    from_pretrained="PRETRAINED_MODEL"
 )
 vae = dict(
     type="VideoAutoencoderKL",
