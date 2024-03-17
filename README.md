@@ -183,13 +183,8 @@ We are grateful for their exceptional work and generous contribution to open sou
 
 ```bibtex
 @software{opensora,
-<<<<<<< HEAD
-  author = {Zangwei Zheng and Xiangyu Peng and Shenggui Li and Yang You},
-  title = {Open-Sora: Democratizing Efficient Video Production for All},
-=======
   author = {Zangwei Zheng and Xiangyu Peng and Yang You},
-  title = {Open-Sora: Towards Open Reproduction of Sora},
->>>>>>> 713b0e03b94565d1fc6dcd64750b67b4a2505f1f
+  title = {Open-Sora: Democratizing Efficient Video Production for All},
   month = {March},
   year = {2024},
   url = {https://github.com/hpcaitech/Open-Sora}
