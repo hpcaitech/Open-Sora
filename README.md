@@ -33,7 +33,7 @@ inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s
 | [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94) | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9) | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65) |
 | A bustling city street at night, filled with the glow of car headlights and the ambient light of streetlights. [...]                                                           | The vibrant beauty of a sunflower field. The sunflowers are arranged in neat rows, creating a sense of order and symmetry. [...]                                            | A serene underwater scene featuring a sea turtle swimming through a coral reef. The turtle, with its greenish-brown shell [...]                   |
 
-Videos are downsampled to `.gif` for display. Click for original videos. Texts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full texts. See more samples at our [gallery](https://hpcaitech.github.io/Open-Sora/).
+Videos are downsampled to `.gif` for display. Click for original videos. Prompts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full prompts. See more samples at our [gallery](https://hpcaitech.github.io/Open-Sora/).
 
 
 ## 🔆 New Features/Updates
