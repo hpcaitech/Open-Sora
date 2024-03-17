@@ -111,30 +111,30 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              |     |
 | 64×512×512 | 50K HQ |             | 4×64       |                 |     |
 
-Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about dataset can be found in [dataset.md](/docs/dataset.md).
+Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about dataset can be found in [dataset.md](/docs/dataset.md). HQ means high quality.
 
-**LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor. The model performs badly especially on generating human beings and cannot follow detailed instructions. We are working on improving the quality and text alignment.
+:warning: **LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor. The model performs badly especially on generating human beings and cannot follow detailed instructions. We are working on improving the quality and text alignment.
 
 ## Inference
 
 To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
-# Sample 16x256x256 (may take less than 1 min)
+# Sample 16x256x256 (5s/sample)
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
 
-# Sample 16x512x512 (may take less than 1 min)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py
+# Sample 16x512x512 (20s/sample, 100 time steps)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 
-# Sample 64x512x512 (may take 1 min or more)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py
+# Sample 64x512x512 (40s/sample, 100 time steps)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 
-# Sample 64x512x512 with sequence parallelism (may take 1 min or more)
+# Sample 64x512x512 with sequence parallelism (30s/sample, 100 time steps)
 # sequence parallelism is enabled automatically when nproc_per_node is larger than 1
-torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py
+torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 ```
 
-For inference with other models, see [here](docs/commands.md) for more instructions.
+The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
 
 ## Data Processing (WIP)
 
@@ -166,7 +166,7 @@ For training other models and advanced usage, see [here](docs/commands.md) for m
 ## Acknowledgement
 
 * [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
-* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. OpenDiT's team provides valuable suggestions on acceleration of our training process.
+* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration strategies for training progress from OpenDiT.
 * [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
 * [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
 * [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
