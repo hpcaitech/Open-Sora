@@ -31,10 +31,11 @@ inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
 | A serene night scene in a forested area. [...] The video is a time-lapse, capturing the transition from day to night, with the lake and forest serving as a constant backdrop. | A soaring drone footage captures the majestic beauty of a coastal cliff, [...] The water gently laps at the rock base and the greenery that clings to the top of the cliff. | The majestic beauty of a waterfall cascading down a cliff into a serene lake. [...] The camera angle provides a bird's eye view of the waterfall. |
-| <img src="assets/readme/sample_3.gif" width="">                                                                                                                                | <img src="assets/readme/sample_4.gif" width="">                                                                                                                             | <img src="assets/readme/sample_5.gif" width="">                                                                                                   |
+| [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94) | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9) | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65) |
 | A bustling city street at night, filled with the glow of car headlights and the ambient light of streetlights. [...]                                                           | The vibrant beauty of a sunflower field. The sunflowers are arranged in neat rows, creating a sense of order and symmetry. [...]                                            | A serene underwater scene featuring a sea turtle swimming through a coral reef. The turtle, with its greenish-brown shell [...]                   |
 
-Videos are downsampled to `.gif` for display. Click for original videos. Texts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full texts. See more samples at our [gallery](https://hpcaitech.github.io/Open-Sora/).
+Videos are downsampled to `.gif` for display. Click for original videos. Prompts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full prompts. See more samples at our [gallery](https://hpcaitech.github.io/Open-Sora/).
+
 
 ## 🔆 New Features/Updates
 
@@ -71,7 +72,7 @@ Videos are downsampled to `.gif` for display. Click for original videos. Texts a
 
 </details>
 
-## Contentss
+## Contents
 
 * [Installation](#installation)
 * [Model Weights](#model-weights)
