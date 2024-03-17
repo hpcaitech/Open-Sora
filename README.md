@@ -18,19 +18,21 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 📰 News
 
-* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, our first open-source project for video generation.
+* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, an fully open-sourced project for video generation.
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
-inference, and more. Our provided checkpoint can produce 2~5s 512x512 videos with only 3 days training.
+inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s 512x512 videos with only 3 days training.
+* **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
 
 ## 🎥 Latest Demo
 
-| **2s 512×512**                                                                                                                                 | **2s 512×512**                                                                                                                                 | **2s 512×512**                                                                                                                                 |
-|------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
-| <img src="assets/readme/sample_3.gif" width="">                                                                                                | <img src="assets/readme/sample_4.gif" width="">                                                                                             | <img src="assets/readme/sample_5.gif" width="">                                                                                              |
+| **2s 512×512**                                                                                                                                                                 | **2s 512×512**                                                                                                                                                              | **2s 512×512**                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
+| A serene night scene in a forested area. [...] The video is a time-lapse, capturing the transition from day to night, with the lake and forest serving as a constant backdrop. | A soaring drone footage captures the majestic beauty of a coastal cliff, [...] The water gently laps at the rock base and the greenery that clings to the top of the cliff. | The majestic beauty of a waterfall cascading down a cliff into a serene lake. [...] The camera angle provides a bird's eye view of the waterfall. |
+| <img src="assets/readme/sample_3.gif" width="">                                                                                                                                | <img src="assets/readme/sample_4.gif" width="">                                                                                                                             | <img src="assets/readme/sample_5.gif" width="">                                                                                                   |
 
-Videos are downsampled to `.gif` for display. Click for original videos.
+Videos are downsampled to `.gif` for display. Click for original videos. Texts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full texts.
 
 ## 🔆 New Features/Updates
 
