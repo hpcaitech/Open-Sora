@@ -1,4 +1,3 @@
-import os
 from typing import List
 
 from setuptools import find_packages, setup
@@ -29,47 +28,26 @@ def fetch_readme() -> str:
         return f.read()
 
 
-def get_version() -> str:
-    """
-    This function reads the version.txt and generates the colossalai/version.py file.
-
-    Returns:
-        The library version stored in version.txt.
-    """
-
-    setup_file_path = os.path.abspath(__file__)
-    project_path = os.path.dirname(setup_file_path)
-    version_txt_path = os.path.join(project_path, "version.txt")
-
-    with open(version_txt_path) as f:
-        version = f.read().strip()
-    return version
-
-
 setup(
-    name="open-sora",
-    version=get_version(),
+    name="opensora",
+    version="1.0.0",
     packages=find_packages(
         exclude=(
-            "docker",
-            "tests",
+            "assets",
+            "configs",
             "docs",
-            "examples",
-            "tests",
+            "outputs",
+            "pretrained_models",
             "scripts",
-            "requirements",
-            "extensions",
+            "tests",
+            "tools",
             "*.egg-info",
-        ),
+        )
     ),
-    description="Unofficial implementation of OpenAI's Sora by the Colossal-AI Team",
+    description="Democratizing Efficient Video Production for All",
     long_description=fetch_readme(),
     long_description_content_type="text/markdown",
     license="Apache Software License 2.0",
-    url="https://www.colossalai.org",
-    project_urls={
-        "Github": "https://github.com/hpcaitech/Open-Sora",
-    },
     install_requires=fetch_requirements("requirements.txt"),
     python_requires=">=3.6",
     classifiers=[
