@@ -120,16 +120,16 @@ Our model's weight is partially initialized from [PixArt-α](https://github.com/
 To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
-# Sample 16x256x256 (~2s)
+# Sample 16x256x256 (may take less than 1 min)
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
 
-# Sample 16x512x512 (~2s)
+# Sample 16x512x512 (may take less than 1 min)
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py
 
-# Sample 64x512x512 (~5s)
+# Sample 64x512x512 (may take 1 min or more)
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py
 
-# Sample 64x512x512 with sequence parallelism(~5s)
+# Sample 64x512x512 with sequence parallelism (may take 1 min or more)
 # sequence parallelism is enabled automatically when nproc_per_node is larger than 1
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py
 ```
