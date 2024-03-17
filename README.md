@@ -5,8 +5,8 @@
 </p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
-    <a href="https://github.com/hpcaitech/public_assets/tree/main/colossalai/contact/slack"><img src="https://img.shields.io/badge/Slack-join-blueviolet?logo=slack&amp"></a>
-    <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-加入-green?logo=wechat&amp"></a>
+    <a href="https://github.com/hpcaitech/public_assets/tree/main/colossalai/contact/slack"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
+    <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-ColossalAI-green?logo=wechat&amp"></a>
 </div>
 
 ## Open-Sora: Democratizing Efficient Video Production for All
@@ -14,7 +14,7 @@ We present **Open-Sora**, an initiative dedicated to **efficiently** produce hig
 tools and contents accessible to all. By embracing **open-source** principles, 
 Open-Sora not only democratizes access to advanced video generation techniques, but also offers a 
 streamlined and user-friendly platform that simplifies the complexities of video production.
-With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation.
+With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation. [[中文]](/docs/README_zh.md)
 
 ## 📰 News
 
