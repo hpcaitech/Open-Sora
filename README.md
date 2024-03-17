@@ -5,32 +5,42 @@
 </p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
-    <a href="https://github.com/hpcaitech/public_assets/tree/main/colossalai/contact/slack"><img src="https://img.shields.io/badge/Slack-join-blueviolet?logo=slack&amp"></a>
-    <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-加入-green?logo=wechat&amp"></a>
+    <a href="https://discord.gg/shpbperhGs"><img src="https://img.shields.io/badge/Discord-join-blueviolet?logo=discord&amp"></a>
+    <a href="https://join.slack.com/t/colossalaiworkspace/shared_invite/zt-247ipg9fk-KRRYmUl~u2ll2637WRURVA"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
+    <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-小助手加群-green?logo=wechat&amp"></a>
 </div>
 
-## Open-Sora: Towards Open Reproduction of Sora
-
-**Open-Sora** is an **open-source** initiative dedicated to **efficiently** reproducing OpenAI's Sora. Our project aims to cover **the full pipeline**, including video data preprocessing, training with acceleration, efficient inference and more. Operating on a limited budget, we prioritize the vibrant open-source community, providing access to text-to-image, image captioning, and language models. We hope to make a contribution to the community and make the project more accessible to everyone.
+## Open-Sora: Democratizing Efficient Video Production for All
+We present **Open-Sora**, an initiative dedicated to **efficiently** produce high-quality video and make the model, 
+tools and contents accessible to all. By embracing **open-source** principles, 
+Open-Sora not only democratizes access to advanced video generation techniques, but also offers a 
+streamlined and user-friendly platform that simplifies the complexities of video production.
+With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation. [[中文]](/docs/README_zh.md)
 
 ## 📰 News
 
-* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, an open-source project to reproduce OpenAI Sora.
+* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, a fully open-source project for video generation.
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
-inference, and more. Our provided checkpoint can produce 2s 512x512 videos.
+inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s 512x512 videos with only 3 days training.
+* **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
 
 ## 🎥 Latest Demo
 
-| **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 | **2s 512x512**                                                                                                                                 |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80) | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc) | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16) |
+| **2s 512×512**                                                                                                                                                                 | **2s 512×512**                                                                                                                                                              | **2s 512×512**                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
+| A serene night scene in a forested area. [...] The video is a time-lapse, capturing the transition from day to night, with the lake and forest serving as a constant backdrop. | A soaring drone footage captures the majestic beauty of a coastal cliff, [...] The water gently laps at the rock base and the greenery that clings to the top of the cliff. | The majestic beauty of a waterfall cascading down a cliff into a serene lake. [...] The camera angle provides a bird's eye view of the waterfall. |
+| [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94) | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9) | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65) |
+| A bustling city street at night, filled with the glow of car headlights and the ambient light of streetlights. [...]                                                           | The vibrant beauty of a sunflower field. The sunflowers are arranged in neat rows, creating a sense of order and symmetry. [...]                                            | A serene underwater scene featuring a sea turtle swimming through a coral reef. The turtle, with its greenish-brown shell [...]                   |
 
-Videos are downsampled to `.gif`. Click the video for original ones.
+Videos are downsampled to `.gif` for display. Click for original videos. Prompts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full prompts. See more samples at our [gallery](https://hpcaitech.github.io/Open-Sora/).
+
 
 ## 🔆 New Features/Updates
 
-* 📍 Open-Sora-v1 is trained on xxx. We train the model in three stages. Model weights are available here. Training details can be found here. [WIP]
+* 📍 Open-Sora-v1 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800 days (compared with 152M samples in Stable Video Diffusion), we are able to generate 2s 512×512 videos.
+* ✅ Three stages training from an image diffusion model to a video diffusion model. We provide the weights for each stage.
 * ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism. Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates at [acceleration.md](docs/acceleration.md).
 * ✅ We provide video cutting and captioning tools for data preprocessing. Instructions can be found [here](tools/data/README.md) and our data collection plan can be found at [datasets.md](docs/datasets.md).
 * ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in the time dimension deteriorates the quality. See our **[report](docs/report_v1.md)** for more discussions.
@@ -48,7 +58,7 @@ Videos are downsampled to `.gif`. Click the video for original ones.
 
 ### TODO list sorted by priority
 
-* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md]() for more information. **[WIP]**
+* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md](/docs/datasets.md) for more information. **[WIP]**
 * [ ] Training Video-VAE. **[WIP]**
 
 <details>
@@ -62,13 +72,14 @@ Videos are downsampled to `.gif`. Click the video for original ones.
 
 </details>
 
-## Contentss
+## Contents
 
 * [Installation](#installation)
 * [Model Weights](#model-weights)
 * [Inference](#inference)
 * [Data Processing](#data-processing)
 * [Training](#training)
+* [Contribution](#contribution)
 * [Acknowledgement](#acknowledgement)
 * [Citation](#citation)
 
@@ -96,39 +107,52 @@ pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
 # install this project
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
-pip install -v -e .
+pip install -v .
 ```
 
 After installation, we suggest reading [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
 
 ## Model Weights
 
-| Model      | #Params | url |
-| ---------- | ------- | --- |
-| 16x256x256 |         |     |
+| Resoluion  | Data   | #iterations | Batch Size | GPU days (H800) | URL        |
+| ---------- | ------ | ----------- | ---------- | --------------- | ---------- |
+| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth) |
+| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
+| 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
+| 64×512×512 | 50K HQ |             |            |                 | TBD        |
+
+Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about dataset can be found in [dataset.md](/docs/dataset.md). HQ means high quality.
+
+:warning: **LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor. The model performs badly especially on generating human beings and cannot follow detailed instructions. We are working on improving the quality and text alignment.
 
 ## Inference
 
-To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights. Run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
-# Sample 16x256x256 (~2s)
-python scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
-# Sample 16x512x512 (~2s)
-python scripts/inference.py configs/opensora/inference/16x512x512.py
-# Sample 64x512x512 (~5s)
-python scripts/inference.py configs/opensora/inference/64x512x512.py
+# Sample 16x256x256 (5s/sample)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
+
+# Sample 16x512x512 (20s/sample, 100 time steps)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth
+
+# Sample 64x512x512 (40s/sample, 100 time steps)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
+
+# Sample 64x512x512 with sequence parallelism (30s/sample, 100 time steps)
+# sequence parallelism is enabled automatically when nproc_per_node is larger than 1
+torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 ```
 
-For inference with other models, see [here](docs/commands.md) for more instructions.
+The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
 
 ## Data Processing
 
-### Split video into clips
+High-quality Data is the key to high-quality models. Our used datasets and data collection plan is [here](/docs/datasets.md). We provide tools to process video data. Currently, our data processing pipeline includes the following steps:
 
-We provide code to split a long video into separate clips efficiently using `multiprocessing`. See `tools/data/scene_detect.py`.
-
-### Generate video caption
+1. Downloading datasets. [[docs](/tools/datasets/README.md)]
+2. Split videos into clips. [[docs](/tools/scenedetect/README.md)]
+3. Generate video captions. [[docs](/tools/caption/README.md)]
 
 ## Training
 
@@ -149,10 +173,14 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 
 For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
 
+## Contribution
+
+If you wish to contribute to this project, you can refer to the [Contribution Guideline](./CONTRIBUTING.md).
+
 ## Acknowledgement
 
 * [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
-* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. OpenDiT's team provides valuable suggestions on acceleration of our training process.
+* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration strategies for training progress from OpenDiT.
 * [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
 * [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
 * [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
@@ -167,7 +195,7 @@ We are grateful for their exceptional work and generous contribution to open sou
 ```bibtex
 @software{opensora,
   author = {Zangwei Zheng and Xiangyu Peng and Yang You},
-  title = {Open-Sora: Towards Open Reproduction of Sora},
+  title = {Open-Sora: Democratizing Efficient Video Production for All},
   month = {March},
   year = {2024},
   url = {https://github.com/hpcaitech/Open-Sora}

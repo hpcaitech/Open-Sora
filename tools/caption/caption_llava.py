@@ -1,8 +1,8 @@
 import argparse
 import csv
 import os
+import warnings
 
-import cv2
 import torch
 from llava.constants import DEFAULT_IMAGE_TOKEN, IGNORE_INDEX, IMAGE_TOKEN_INDEX
 from llava.conversation import conv_templates
@@ -10,42 +10,11 @@ from llava.mm_utils import get_anyres_image_grid_shape, get_model_name_from_path
 from llava.model.builder import load_pretrained_model
 from llava.model.llava_arch import unpad_image
 from llava.utils import disable_torch_init
-from PIL import Image
 from tqdm import tqdm
 
+from .utils import extract_frames, prompts, read_video_list
+
 disable_torch_init()
-
-prompts = {
-    "three_frames": "A video is given by providing three frames in chronological order. Describe this video and its style to generate a description. Pay attention to all objects in the video. Do not describe each frame individually. Do not reply with words like 'first frame'. The description should be useful for AI to re-generate the video. The description should be less than six sentences. Here are some examples of good descriptions: 1. A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about. 2. Several giant wooly mammoths approach treading through a snowy meadow, their long wooly fur lightly blows in the wind as they walk, snow covered trees and dramatic snow capped mountains in the distance, mid afternoon light with wispy clouds and a sun high in the distance creates a warm glow, the low camera view is stunning capturing the large furry mammal with beautiful photography, depth of field. 3. Drone view of waves crashing against the rugged cliffs along Big Sur's garay point beach. The crashing blue waters create white-tipped waves, while the golden light of the setting sun illuminates the rocky shore. A small island with a lighthouse sits in the distance, and green shrubbery covers the cliff's edge. The steep drop from the road down to the beach is a dramatic feat, with the cliff’s edges jutting out over the sea. This is a view that captures the raw beauty of the coast and the rugged landscape of the Pacific Coast Highway.",
-}
-
-
-def get_filelist(file_path):
-    Filelist = []
-    for home, dirs, files in os.walk(file_path):
-        for filename in files:
-            Filelist.append(os.path.join(home, filename))
-    return Filelist
-
-
-def get_video_length(cap):
-    return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-
-def extract_frames(video_path, points=[0.2, 0.5, 0.8]):
-    cap = cv2.VideoCapture(video_path)
-    length = get_video_length(cap)
-    points = [int(length * point) for point in points]
-    frames = []
-    if length < 3:
-        return frames, length
-    for point in points:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, point)
-        ret, frame = cap.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = Image.fromarray(frame)
-        frames.append(frame)
-    return frames, length
 
 
 def prepare_inputs_labels_for_multimodal(
@@ -274,43 +243,44 @@ def prepare_inputs_labels_for_multimodal(
 
 @torch.inference_mode()
 def main(args):
-    bs = args.bs
-    video_folder = args.video_folder
-
-    processed_videos = []
-    if os.path.exists(args.output_file):
-        with open(args.output_file, "r") as f:
-            reader = csv.reader(f)
-            samples = list(reader)
-            processed_videos = [sample[0] for sample in samples]
+    # ======================================================
+    # 1. read video list
+    # ======================================================
+    videos = read_video_list(args.video_folder, args.output_file)
     f = open(args.output_file, "a")
     writer = csv.writer(f)
 
+    # ======================================================
+    # 2. load model and prepare prompts
+    # ======================================================
     model_path = "liuhaotian/llava-v1.6-34b"
-    query = prompts["three_frames"]
+    query = prompts[args.prompt]
+    print(f"Prompt: {query}")
     conv = conv_templates["chatml_direct"].copy()
     conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + query)
     prompt = conv.get_prompt()
 
-    tokenizer, model, image_processor, context_len = load_pretrained_model(
-        model_path=model_path,
-        model_base=None,
-        model_name=get_model_name_from_path(model_path),
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # Pytorch non-meta copying warning fills out the console
+        tokenizer, model, image_processor, context_len = load_pretrained_model(
+            model_path=model_path,
+            model_base=None,
+            model_name=get_model_name_from_path(model_path),
+        )
     input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
     input_ids = input_ids.unsqueeze(0).to(model.device)
 
-    videos = get_filelist(video_folder)
-    print(f"Dataset contains {len(videos)} videos.")
-    videos = [video for video in videos if video not in processed_videos]
-    print(f"Processing {len(videos)} new videos.")
+    # ======================================================
+    # 3. generate captions
+    # ======================================================
+    bs = args.bs
     for i in tqdm(range(0, len(videos), bs)):
         # prepare a batch of inputs
         video_files = videos[i : i + bs]
         frames = []
         video_lengths = []
         for video_file in video_files:
-            frame, length = extract_frames(os.path.join(video_folder, video_file))
+            frame, length = extract_frames(os.path.join(args.video_folder, video_file))
             if len(frame) < 3:
                 continue
             frames.append(frame)
@@ -373,8 +343,10 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--video_folder", type=str, required=True)
+    parser.add_argument("video_folder", type=str)
+    parser.add_argument("output_file", type=str)
     parser.add_argument("--bs", type=int, default=32)
-    parser.add_argument("--output_file", type=str, default="video_captions.csv")
+    parser.add_argument("--prompt", type=str, default="three_frames")
     args = parser.parse_args()
+
     main(args)

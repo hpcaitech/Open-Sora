@@ -33,11 +33,18 @@ setup(
     version="1.0.0",
     packages=find_packages(
         exclude=(
+            "assets",
+            "configs",
+            "docs",
+            "outputs",
+            "pretrained_models",
+            "scripts",
             "tests",
+            "tools",
             "*.egg-info",
         )
     ),
-    description="OpenSora",
+    description="Democratizing Efficient Video Production for All",
     long_description=fetch_readme(),
     long_description_content_type="text/markdown",
     license="Apache Software License 2.0",

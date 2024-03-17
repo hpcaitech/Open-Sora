@@ -12,11 +12,11 @@ Open-Sora boosts the training speed by:
 
 Our training speed on images is comparable to [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT), an project to accelerate DiT training. The training speed is measured on 8 H800 GPUs with batch size 128, image size 256x256.
 
-| Model    | Throughput (img/s) | Throughput (tokens/s) |
-| -------- | ------------------ | --------------------- |
-| DiT      |                    |                       |
-| OpenDiT  |                    |                       |
-| OpenSora | 175                | 45k                   |
+| Model    | Throughput (img/s/GPU) | Throughput (tokens/s/GPU) |
+| -------- | ---------------------- | ------------------------- |
+| DiT      | 100                    | 26k                       |
+| OpenDiT  | 175                    | 45k                       |
+| OpenSora | 175                    | 45k                       |
 
 ## Efficient STDiT
 
@@ -24,15 +24,15 @@ Our STDiT adopts spatial-temporal attention to model the video data. Compared wi
 
 The training speed is measured on 8 H800 GPUs with acceleration techniques applied, GC means gradient checkpointing. Both with T5 conditioning like PixArt.
 
-| Model            | Setting        | Throughput (sample/s) | Throughput (tokens/s) |
-| ---------------- | -------------- | --------------------- | --------------------- |
-| DiT              | 16x256  (4k)   | 7.20                  | 29k                   |
-| STDiT            | 16x256  (4k)   | 7.00                  | 28k                   |
-| DiT              | 16x512  (16k)  | 0.85                  | 14k                   |
-| STDiT            | 16x512  (16k)  | 1.45                  | 23k                   |
-| DiT (GC)         | 64x512  (65k)  | 0.08                  | 5k                    |
-| STDiT (GC)       | 64x512  (65k)  | 0.40                  | 25k                   |
-| STDiT (GC, sp=2) | 360x512 (370k) | 0.10                  | 18k                   |
+| Model            | Setting        | Throughput (sample/s/GPU) | Throughput (tokens/s/GPU) |
+| ---------------- | -------------- | ------------------------- | ------------------------- |
+| DiT              | 16x256  (4k)   | 7.20                      | 29k                       |
+| STDiT            | 16x256  (4k)   | 7.00                      | 28k                       |
+| DiT              | 16x512  (16k)  | 0.85                      | 14k                       |
+| STDiT            | 16x512  (16k)  | 1.45                      | 23k                       |
+| DiT (GC)         | 64x512  (65k)  | 0.08                      | 5k                        |
+| STDiT (GC)       | 64x512  (65k)  | 0.40                      | 25k                       |
+| STDiT (GC, sp=2) | 360x512 (370k) | 0.10                      | 18k                       |
 
 With a 4x downsampling in the temporal dimension with Video-VAE, an 24fps video has 450 frames. The gap between the speed of STDiT (28k tokens/s) and DiT on images (up to 45k tokens/s) mainly comes from the T5 and VAE encoding, and temperal attention.
 
@@ -49,9 +49,9 @@ For option 2, we boost T5 speed and memory requirement. According to [OpenDiT](h
 
 The training speed is measured on 8 H800 GPUs with STDiT.
 
-| Acceleration | Setting       | Throughput (img/s) | Throughput (tokens/s) |
-| ------------ | ------------- | ------------------ | --------------------- |
-| Baseline     | 16x256  (4k)  | 6.16               | 25k                   |
-| w. faster T5 | 16x256  (4k)  | 7.00               | 29k                   |
-| Baseline     | 64x512  (65k) | 0.94               | 15k                   |
-| w. both      | 64x512  (65k) | 1.45               | 23k                   |
+| Acceleration | Setting       | Throughput (img/s/GPU) | Throughput (tokens/s/GPU) |
+| ------------ | ------------- | ---------------------- | ------------------------- |
+| Baseline     | 16x256  (4k)  | 6.16                   | 25k                       |
+| w. faster T5 | 16x256  (4k)  | 7.00                   | 29k                       |
+| Baseline     | 64x512  (65k) | 0.94                   | 15k                       |
+| w. both      | 64x512  (65k) | 1.45                   | 23k                       |
