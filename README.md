@@ -117,7 +117,7 @@ Our model's weight is partially initialized from [PixArt-α](https://github.com/
 
 ## Inference
 
-To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights. Run the following commands to generate samples. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
 # Sample 16x256x256 (5s/sample)
