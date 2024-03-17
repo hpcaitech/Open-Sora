@@ -169,6 +169,7 @@ runs/
 checkpoints/
 outputs/
 samples/
+pretrained_models/
 
 # Secret files
 hostfile
