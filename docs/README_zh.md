@@ -1,11 +1,13 @@
 <p align="center">
-    <img src="./assets/readme/icon_new.png" width="250"/>
+    <img src="../assets/readme/icon.png" width="250"/>
 <p>
 
-</p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
-    <a href="https://github.com/hpcaitech/public_assets/tree/main/colossalai/contact/slack"><img src="https://img.shields.io/badge/Slack-Join-blueviolet?logo=slack&amp"></a>
+    <a href="https://hpcaitech.github.io/Open-Sora/"><img src="https://img.shields.io/badge/Gallery-View-orange?logo=&amp"></a>
+    <a href="https://discord.gg/shpbperhGs"><img src="https://img.shields.io/badge/Discord-join-blueviolet?logo=discord&amp"></a>
+    <a href="https://join.slack.com/t/colossalaiworkspace/shared_invite/zt-247ipg9fk-KRRYmUl~u2ll2637WRURVA"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
+    <a href="https://twitter.com/yangyou1991/status/1769411544083996787?s=61&t=jT0Dsx2d-MS5vS9rNM5e5g"><img src="https://img.shields.io/badge/Twitter-Discuss-blue?logo=twitter&amp"></a>
     <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-小助手加群-green?logo=wechat&amp"></a>
 </div>
 
@@ -13,12 +15,12 @@
 **Open-Sora**项目是一项致力于**高效**制作高质量视频，并使所有人都能使用其模型、工具和内容的计划。
 通过采用**开源**原则，Open-Sora 不仅实现了先进视频生成技术的低成本普及，还提供了一个精简且用户友好的方案，简化了视频制作的复杂性。
 通过 Open-Sora，我们希望更多开发者一起探索内容创作领域的创新、创造和包容。
- [[English]](https://github.com/hpcaitech/Open-Sora/blob/main/README.md)
+ [[English]](/README.md)
 
 ## 📰 资讯
 
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
-* Open-Sora 1.0 支持视频数据预处理、<a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> 加速训练、推理等全套流程。
+* Open-Sora 1.0 支持视频数据预处理、<a href="https://github.com/hpcaitech/ColossalAI"><img src="../assets/readme/colossal_ai.png" width="8%" ></a> 加速训练、推理等全套流程。
 * 我们提供的[模型权重](#model-weights)只需 3 天的训练就能生成 2~5 秒的 512x512 视频。
 * **[2024.03.04]** Open-Sora：开源Sora复现方案，成本降低46%，序列扩充至近百万
 
@@ -42,7 +44,7 @@
 * ✅ 我们发现来自[VideoGPT](https://wilson1yan.github.io/videogpt/index.html)的 VQ-VAE 质量较低，因此采用了来自[Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original) 的更好的 VAE。我们还发现在时间维度上进行修补会降低质量。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
 * ✅ 我们研究了不同的架构，包括 DiT、Latte 和我们提出的 **STDiT**。我们的STDiT在质量和速度之间实现了更好的权衡。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
 * ✅ 支持剪辑和 T5 文本调节。
-* ✅ 通过将图像视为单帧视频，我们的项目支持在图像和视频（如 ImageNet 和 UCF101）上训练 DiT。更多说明请参见 [评论](docs/command.md)
+* ✅ 通过将图像视为单帧视频，我们的项目支持在图像和视频（如 ImageNet 和 UCF101）上训练 DiT。更多说明请参见 [指令解析](docs/command.md)。
 * ✅ 利用[DiT](https://github.com/facebookresearch/DiT)、[Latte](https://github.com/Vchitect/Latte) 和 [PixArt](https://pixart-alpha.github.io/) 的官方权重支持推理。
 
 <details>
@@ -54,8 +56,7 @@
 
 ### 下一步计划【按优先级排序】
 
-* [ ] 完成数据处理管道（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](/docs/datasets.md)。**[WIP］**
-* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md](/docs/datasets.md) for more information. **[项目进行中]**
+* [ ] 完成数据处理管道（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](/docs/datasets.md)。**[项目进行中］**
 * [ ] 训练视频-VAE。 **[项目进行中]**
 
 <details>
