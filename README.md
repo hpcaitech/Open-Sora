@@ -114,9 +114,9 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 
 | Resoluion  | Data   | #iterations | Batch Size | GPU days (H800) | URL        |
 | ---------- | ------ | ----------- | ---------- | --------------- | ---------- |
-| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:]() |
-| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:]() |
-| 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:]() |
+| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth) |
+| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
+| 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 64×512×512 | 50K HQ |             |            |                 | TBD        |
 
 Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about dataset can be found in [dataset.md](/docs/dataset.md). HQ means high quality.
