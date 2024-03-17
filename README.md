@@ -18,7 +18,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 📰 News
 
-* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, an fully open-sourced project for video generation.
+* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, a fully open-source project for video generation.
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
 inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s 512x512 videos with only 3 days training.
