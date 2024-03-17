@@ -136,13 +136,13 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
 
-## Data Processing (WIP)
+## Data Processing
 
-### Split video into clips
+High-quality Data is the key to high-quality models. Our used datasets and data collection plan is [here](/docs/datasets.md). We provide tools to process video data. Currently, our data processing pipeline includes the following steps:
 
-We provide code to split a long video into separate clips efficiently using `multiprocessing`. See `tools/data/scene_detect.py`.
-
-### Generate video caption
+1. Downloading datasets. [[docs](/tools/datasets/README.md)]
+2. Split videos into clips. [[docs](/tools/scenedetect/README.md)]
+3. Generate video captions. [[docs](/tools/caption/README.md)]
 
 ## Training
 

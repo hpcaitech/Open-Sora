@@ -30,14 +30,14 @@ def main(args):
     if output_path is None:
         name = os.path.basename(input_path)
         name, ext = os.path.splitext(name)
-        if args.num_frames_min is not None:
-            name += f"_fmin_{args.num_frames_min}"
-        if args.num_frames_max is not None:
-            name += f"_fmax_{args.num_frames_max}"
-        if args.filter_null_text:
-            name += "_fnt"
-        if args.remove_prefix:
-            name += "_rp"
+        if args.fmin is not None:
+            name += f"_fmin_{args.fmin}"
+        if args.fmax is not None:
+            name += f"_fmax_{args.fmax}"
+        if args.remove_empty_caption:
+            name += "_rec"
+        if args.remove_caption_prefix:
+            name += "_rcp"
         if args.root is not None:
             name += f"_root"
         if args.relength:
@@ -54,13 +54,13 @@ def main(args):
         path = row[0]
         caption = row[1]
         n_frames = int(row[2])
-        if args.num_frames_min is not None and n_frames < args.num_frames_min:
+        if args.fmin is not None and n_frames < args.fmin:
             continue
-        if args.num_frames_max is not None and n_frames > args.num_frames_max:
+        if args.fmax is not None and n_frames > args.fmax:
             continue
-        if args.filter_null_text and len(caption) == 0:
+        if args.remove_empty_caption and len(caption) == 0:
             continue
-        if args.remove_prefix:
+        if args.remove_caption_prefix:
             for prefix in PREFIX:
                 if caption.startswith(prefix):
                     caption = caption[len(prefix) :].strip()
@@ -84,13 +84,13 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=str, required=True)
+    parser.add_argument("input", type=str)
     parser.add_argument("--output", type=str, default=None)
-    parser.add_argument("--num_frames_min", type=int, default=None)
-    parser.add_argument("--num_frames_max", type=int, default=None)
-    parser.add_argument("--filter_null_text", action="store_true")
-    parser.add_argument("--remove_prefix", action="store_true")
+    parser.add_argument("--fmin", type=int, default=None)
+    parser.add_argument("--fmax", type=int, default=None)
     parser.add_argument("--root", type=str, default=None)
+    parser.add_argument("--remove-empty-caption", action="store_true")
+    parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--relength", action="store_true")
     args = parser.parse_args()
     main(args)
