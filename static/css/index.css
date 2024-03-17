@@ -170,3 +170,19 @@ body {
 .video-description {
   text-align: center;
 }
+
+
+.equalHW {
+	flex: 1;
+}
+
+.equalHMWrap {
+	justify-content: space-between;
+  display: flex;
+}
+
+.caption {
+  text-align: left;
+  line-height: 100%;
+  font-size: 80%;
+}
