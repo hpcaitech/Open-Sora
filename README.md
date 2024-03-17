@@ -70,7 +70,7 @@ Videos are downsampled to `.gif` for display. Click for original videos. Texts a
 
 </details>
 
-## Contentss
+## Contents
 
 * [Installation](#installation)
 * [Model Weights](#model-weights)
