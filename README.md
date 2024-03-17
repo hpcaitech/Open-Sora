@@ -74,6 +74,7 @@ Videos are downsampled to `.gif` for display. Click for original videos.
 * [Inference](#inference)
 * [Data Processing](#data-processing)
 * [Training](#training)
+* [Contribution](#contribution)
 * [Acknowledgement](#acknowledgement)
 * [Citation](#citation)
 
@@ -101,7 +102,7 @@ pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
 # install this project
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
-pip install -v -e .
+pip install -v .
 ```
 
 After installation, we suggest reading [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
@@ -166,6 +167,10 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 ```
 
 For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
+
+## Contribution
+
+If you wish to contribute to this project, you can refer to the [Contribution Guideline](./CONTRIBUTING.md).
 
 ## Acknowledgement
 
