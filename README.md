@@ -26,7 +26,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 * **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, a fully open-source project for video generation.
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
-inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s 512x512 videos with only 3 days training.
+inference, and more. Our provided [checkpoints](#model-weights) can produce 2s 512x512 videos with only 3 days training.
 * **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
 
 ## 🎥 Latest Demo
@@ -123,7 +123,6 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 | 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
-| 64×512×512 | 50K HQ |             |            |                 | TBD                                                                                           |
 
 Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about dataset can be found in [dataset.md](/docs/dataset.md). HQ means high quality.
 
