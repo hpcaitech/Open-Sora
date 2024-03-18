@@ -1,6 +1,7 @@
 <p align="center">
     <img src="./assets/readme/icon.png" width="250"/>
 </p>
+<h4 align="center">Open-Sora is still at an early stage and under active development.</h4>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
     <a href="https://hpcaitech.github.io/Open-Sora/"><img src="https://img.shields.io/badge/Gallery-View-orange?logo=&amp"></a>
