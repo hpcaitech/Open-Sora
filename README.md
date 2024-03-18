@@ -118,7 +118,7 @@ After installation, we suggest reading [structure.md](docs/structure.md) to lear
 
 ## Model Weights
 
-| Resoluion  | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
+| Resolution  | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
 | ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
 | 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
