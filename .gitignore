@@ -171,6 +171,7 @@ checkpoints/
 outputs/
 samples/
 pretrained_models/
+*.swp
 
 # Secret files
 hostfile
