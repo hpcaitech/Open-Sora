@@ -163,7 +163,7 @@ To launch training, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1
 
 ```bash
 # 1 GPU, 16x256x256
-torchrun --nnodes=1 --nproc_per_node=1 scripts/train.py configs/opensora/train/16x256x512.py --data-path YOUR_CSV_PATH
+torchrun --nnodes=1 --nproc_per_node=1 scripts/train.py configs/opensora/train/16x256x256.py --data-path YOUR_CSV_PATH
 # 8 GPUs, 64x512x512
 torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
