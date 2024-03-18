@@ -39,9 +39,9 @@
 
 * 📍Open-Sora-v1 已发布。[这里](#model-weights)提供了模型权重。只需 400K 视频片段和在单卡 H800 上训200天（类比Stable Video Diffusion 的 152M 样本），我们就能生成 2 秒的 512×512 视频。
 * ✅ 从图像扩散模型到视频扩散模型的三阶段训练。我们提供每个阶段的权重。
-* ✅ 支持训练加速，包括加速变压器、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[加速训练](docs/acceleration.md)。
+* ✅ 支持训练加速，包括Transformer加速、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[训练加速](docs/acceleration.md)。
 * ✅ 我们提供用于数据预处理的视频切割和字幕工具。有关说明请点击[此处](tools/data/README.md)，我们的数据收集计划请点击 [数据集](docs/datasets.md)。
-* ✅ 我们发现来自[VideoGPT](https://wilson1yan.github.io/videogpt/index.html)的 VQ-VAE 质量较低，因此采用了来自[Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original) 的更好的 VAE。我们还发现在时间维度上进行修补会降低质量。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
+* ✅ 我们发现来自[VideoGPT](https://wilson1yan.github.io/videogpt/index.html)的 VQ-VAE 质量较低，因此采用了来自[Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original) 的高质量 VAE。我们还发现使用添加了时间维度的采样会导致生成质量降低。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
 * ✅ 我们研究了不同的架构，包括 DiT、Latte 和我们提出的 **STDiT**。我们的STDiT在质量和速度之间实现了更好的权衡。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
 * ✅ 支持剪辑和 T5 文本调节。
 * ✅ 通过将图像视为单帧视频，我们的项目支持在图像和视频（如 ImageNet 和 UCF101）上训练 DiT。更多说明请参见 [指令解析](docs/command.md)。
@@ -56,7 +56,7 @@
 
 ### 下一步计划【按优先级排序】
 
-* [ ] 完成数据处理管道（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](/docs/datasets.md)。**[项目进行中］**
+* [ ] 完成数据处理流程（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](/docs/datasets.md)。**[项目进行中］**
 * [ ] 训练视频-VAE。 **[项目进行中]**
 
 <details>
@@ -64,7 +64,7 @@
 
 * [ ] 支持图像和视频调节。
 * [ ] 评估流程。
-* [ ] 加入更好的调度程序，如 SD3 中的整流程序。
+* [ ] 加入更好的调度程序，如 SD3 中的rectified flow程序。
 * [ ] 支持可变长宽比、分辨率和持续时间。
 * [ ] 发布后支持 SD3。
 
@@ -81,7 +81,7 @@
 * [声明](/#acknowledgement)
 * [引用](/#citation)
 
-## Installation
+## 安装
 
 ```bash
 # create a virtual env
