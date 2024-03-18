@@ -142,7 +142,7 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/i
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](docs/commands.md)获取更多说明。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](./commands_zh.md)获取更多说明。
 
 ## 数据处理
 
@@ -169,11 +169,11 @@ torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/6
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-有关其他型号的培训和高级使用方法，请参阅[此处](docs/commands.md)获取更多说明。
+有关其他模型的训练和高级使用方法，请参阅[此处](./commands_zh.md)获取更多说明。
 
 ## 贡献
 
-如果您希望为该项目做出贡献，可以参考 [贡献指南](./CONTRIBUTING.md).
+如果您希望为该项目做出贡献，可以参考 [贡献指南](../CONTRIBUTING.md).
 
 ## 声明
 
