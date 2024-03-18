@@ -1,0 +1,41 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="25">
+            <item index="0" class="java.lang.String" itemvalue="coverage" />
+            <item index="1" class="java.lang.String" itemvalue="pydantic" />
+            <item index="2" class="java.lang.String" itemvalue="transformers" />
+            <item index="3" class="java.lang.String" itemvalue="pytest" />
+            <item index="4" class="java.lang.String" itemvalue="yapf" />
+            <item index="5" class="java.lang.String" itemvalue="dadaptation" />
+            <item index="6" class="java.lang.String" itemvalue="rich" />
+            <item index="7" class="java.lang.String" itemvalue="numpy" />
+            <item index="8" class="java.lang.String" itemvalue="dvclive" />
+            <item index="9" class="java.lang.String" itemvalue="lmdb" />
+            <item index="10" class="java.lang.String" itemvalue="addict" />
+            <item index="11" class="java.lang.String" itemvalue="bitsandbytes" />
+            <item index="12" class="java.lang.String" itemvalue="mlflow" />
+            <item index="13" class="java.lang.String" itemvalue="pyyaml" />
+            <item index="14" class="java.lang.String" itemvalue="termcolor" />
+            <item index="15" class="java.lang.String" itemvalue="parameterized" />
+            <item index="16" class="java.lang.String" itemvalue="matplotlib" />
+            <item index="17" class="java.lang.String" itemvalue="lion-pytorch" />
+            <item index="18" class="java.lang.String" itemvalue="clearml" />
+            <item index="19" class="java.lang.String" itemvalue="timm" />
+            <item index="20" class="java.lang.String" itemvalue="tensorboard" />
+            <item index="21" class="java.lang.String" itemvalue="fair-esm" />
+            <item index="22" class="java.lang.String" itemvalue="subword-nmt" />
+            <item index="23" class="java.lang.String" itemvalue="einops" />
+            <item index="24" class="java.lang.String" itemvalue="mmengine" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="ShellCheck" enabled="true" level="ERROR" enabled_by_default="true">
+      <shellcheck_settings value="SC2068" />
+    </inspection_tool>
+  </profile>
+</component>
