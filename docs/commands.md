@@ -37,7 +37,7 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/pixart/inf
 
 ### Inference with checkpoints saved during training
 
-During training, an experiment logging folder is created in `outputs` directory. Under each checpoint folder, e.g. `epoch12-global_step2000`, there is a `ema.pt` and the shared `model` folder. Run the following command to perform inference.
+During training, an experiment logging folder is created in `outputs` directory. Under each checkpoint folder, e.g. `epoch12-global_step2000`, there is a `ema.pt` and the shared `model` folder. Run the following command to perform inference.
 
 ```bash
 # inference with ema model
@@ -62,13 +62,14 @@ type="dmp-solver"
 num_sampling_steps=20
 ```
 
-1. You can use [SVD](https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt)'s finetuned VAE decoder on videos for inference (consumes more memory). However, we do not see significant improvement in the video result. To use it, download [the pretrained weights](https://huggingface.co/maxin-cn/Latte/tree/main/t2v_required_models/vae_temporal_decoder) into `./pretrained_models/vae_temporal_decoder` and modify the config file as follows.
+2. You can use [SVD](https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt)'s finetuned VAE decoder on videos for inference (consumes more memory). However, we do not see significant improvement in the video result. To use it, download [the pretrained weights](https://huggingface.co/maxin-cn/Latte/tree/main/t2v_required_models/vae_temporal_decoder) into `./pretrained_models/vae_temporal_decoder` and modify the config file as follows.
 
 ```python
 vae = dict(
     type="VideoAutoencoderKLTemporalDecoder",
     from_pretrained="pretrained_models/vae_temporal_decoder",
 )
+```
 
 ## Training
 
