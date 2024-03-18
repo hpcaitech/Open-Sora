@@ -1,7 +1,6 @@
 <p align="center">
     <img src="./assets/readme/icon.png" width="250"/>
 </p>
-<h4 align="center">Open-Sora is still at an early stage and under active development.</h4>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
     <a href="https://hpcaitech.github.io/Open-Sora/"><img src="https://img.shields.io/badge/Gallery-View-orange?logo=&amp"></a>
@@ -18,6 +17,9 @@ tools and contents accessible to all. By embracing **open-source** principles,
 Open-Sora not only democratizes access to advanced video generation techniques, but also offers a 
 streamlined and user-friendly platform that simplifies the complexities of video production.
 With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation. [[中文]](/docs/README_zh.md)
+
+<h4>Open-Sora is still at an early stage and under active development.</h4>
+
 
 ## 📰 News
 
