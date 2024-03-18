@@ -17,11 +17,13 @@
 通过 Open-Sora，我们希望更多开发者一起探索内容创作领域的创新、创造和包容。
  [[English]](/README.md)
 
+ <h4>Open-Sora 项目目前处在早期阶段，并将持续更新。</h4>
+
 ## 📰 资讯
 
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
 * Open-Sora 1.0 支持视频数据预处理、<a href="https://github.com/hpcaitech/ColossalAI"><img src="../assets/readme/colossal_ai.png" width="8%" ></a> 加速训练、推理等全套流程。
-* 我们提供的[模型权重](#model-weights)只需 3 天的训练就能生成 2~5 秒的 512x512 视频。
+* 我们提供的[模型权重](#model-weights)只需 3 天的训练就能生成 2 秒的 512x512 视频。
 * **[2024.03.04]** Open-Sora：开源Sora复现方案，成本降低46%，序列扩充至近百万
 
 ## 🎥 最新视频
@@ -117,7 +119,6 @@ pip install -v .
 | 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:]() |
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:]() |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:]() |
-| 64×512×512 | 50K HQ |             |            |                 | TBD        |
 
 我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](/docs/report_v1.md)**。有关数据集的更多信息，请参阅[数据](/docs/dataset.md)。HQ 表示高质量。
 :warning: **局限性**：我们的模型是在有限的预算内训练出来的。质量和文本对齐度相对较差。特别是在生成人类时，模型表现很差，无法遵循详细的指令。我们正在努力改进质量和文本对齐。
@@ -141,7 +142,7 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/i
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](docs/commands.md)获取更多说明。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](/docs/commands_zh.md)获取更多说明。
 
 ## 数据处理
 
@@ -168,11 +169,11 @@ torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/6
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-有关其他型号的培训和高级使用方法，请参阅[此处](docs/commands.md)获取更多说明。
+有关其他模型的训练和高级使用方法，请参阅[此处](/docs/commands_zh.md)获取更多说明。
 
 ## 贡献
 
-如果您希望为该项目做出贡献，可以参考 [贡献指南](./CONTRIBUTING.md).
+如果您希望为该项目做出贡献，可以参考 [贡献指南](/CONTRIBUTING.md).
 
 ## 声明
 
