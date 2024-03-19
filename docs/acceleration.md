@@ -6,7 +6,7 @@ Open-Sora aims to provide a high-speed training framework for diffusion models. 
 
 Open-Sora boosts the training speed by:
 
-- Kernal optimization including [flash attention](https://github.com/Dao-AILab/flash-attention), fused layernorm kernal, and the ones compiled by colossalAI.
+- Kernel optimization including [flash attention](https://github.com/Dao-AILab/flash-attention), fused layernorm kernal, and the ones compiled by colossalAI.
 - Hybrid parallelism including ZeRO.
 - Gradient checkpointing for larger batch size.
 
