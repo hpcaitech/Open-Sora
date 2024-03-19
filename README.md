@@ -21,7 +21,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 <h4>Open-Sora is still at an early stage and under active development.</h4>
 
 
-## 📰 News
+## 📰 News :-
 
 * **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, a fully open-source project for video generation.
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
@@ -29,7 +29,7 @@ Open-Sora 1.0 supports a full pipeline of video data preprocessing, training wit
 inference, and more. Our provided [checkpoints](#model-weights) can produce 2s 512x512 videos with only 3 days training.
 * **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
 
-## 🎥 Latest Demo
+## 🎥 Latest Demo :-
 
 | **2s 512×512**                                                                                                                                                                 | **2s 512×512**                                                                                                                                                              | **2s 512×512**                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +41,7 @@ inference, and more. Our provided [checkpoints](#model-weights) can produce 2s 5
 Videos are downsampled to `.gif` for display. Click for original videos. Prompts are trimmed for display, see [here](/assets/texts/t2v_samples.txt) for full prompts. See more samples at our [gallery](https://hpcaitech.github.io/Open-Sora/).
 
 
-## 🔆 New Features/Updates
+## 🔆 New Features/Updates :-
 
 * 📍 Open-Sora-v1 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800 days (compared with 152M samples in Stable Video Diffusion), we are able to generate 2s 512×512 videos.
 * ✅ Three stages training from an image diffusion model to a video diffusion model. We provide the weights for each stage.
@@ -60,7 +60,7 @@ Videos are downsampled to `.gif` for display. Click for original videos. Prompts
 
 </details>
 
-### TODO list sorted by priority
+### TODO list sorted by priority :-
 
 * [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, deduplication, etc.). See [datasets.md](/docs/datasets.md) for more information. **[WIP]**
 * [ ] Training Video-VAE. **[WIP]**
@@ -76,7 +76,7 @@ Videos are downsampled to `.gif` for display. Click for original videos. Prompts
 
 </details>
 
-## Contents
+## Contents :-
 
 * [Installation](#installation)
 * [Model Weights](#model-weights)
@@ -87,7 +87,7 @@ Videos are downsampled to `.gif` for display. Click for original videos. Prompts
 * [Acknowledgement](#acknowledgement)
 * [Citation](#citation)
 
-## Installation
+## Installation :-
 
 ```bash
 # create a virtual env
@@ -116,7 +116,7 @@ pip install -v .
 
 After installation, we suggest reading [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
 
-## Model Weights
+## Model Weights :-
 
 | Resolution  | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
 | ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
@@ -128,7 +128,7 @@ Our model's weight is partially initialized from [PixArt-α](https://github.com/
 
 :warning: **LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor. The model performs badly especially on generating human beings and cannot follow detailed instructions. We are working on improving the quality and text alignment.
 
-## Inference
+## Inference :-
 
 To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights from [huggingface](https://huggingface.co/hpcai-tech/Open-Sora/tree/main). Run the following commands to generate samples. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
@@ -153,7 +153,7 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
 
-## Data Processing
+## Data Processing :-
 
 High-quality Data is the key to high-quality models. Our used datasets and data collection plan is [here](/docs/datasets.md). We provide tools to process video data. Currently, our data processing pipeline includes the following steps:
 
@@ -161,7 +161,7 @@ High-quality Data is the key to high-quality models. Our used datasets and data 
 2. Split videos into clips. [[docs](/tools/scenedetect/README.md)]
 3. Generate video captions. [[docs](/tools/caption/README.md)]
 
-## Training
+## Training :-
 
 To launch training, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to launch training on a single node.
 
@@ -180,7 +180,7 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 
 For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
 
-## Contribution
+## Contribution :-
 
 Thanks goes to these wonderful contributors ([emoji key](https://allcontributors.org/docs/en/emoji-key) following [all-contributors](https://github.com/all-contributors/all-contributors) specification):
 
@@ -213,7 +213,7 @@ Thanks goes to these wonderful contributors ([emoji key](https://allcontributors
 
 If you wish to contribute to this project, you can refer to the [Contribution Guideline](./CONTRIBUTING.md).
 
-## Acknowledgement
+## Acknowledgement :-
 
 * [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
 * [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration strategies for training progress from OpenDiT.
@@ -226,7 +226,7 @@ If you wish to contribute to this project, you can refer to the [Contribution Gu
 
 We are grateful for their exceptional work and generous contribution to open source.
 
-## Citation
+## Citation :-
 
 ```bibtex
 @software{opensora,
@@ -240,6 +240,6 @@ We are grateful for their exceptional work and generous contribution to open sou
 
 [Zangwei Zheng](https://github.com/zhengzangw) and [Xiangyu Peng](https://github.com/xyupeng) equally contributed to this work during their internship at [HPC-AI Tech](https://hpc-ai.com/).
 
-## Star History
+## Star History :-
 
 [![Star History Chart](https://api.star-history.com/svg?repos=hpcaitech/Open-Sora&type=Date)](https://star-history.com/#hpcaitech/Open-Sora&Date)
