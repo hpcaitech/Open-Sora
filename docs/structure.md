@@ -31,7 +31,7 @@ Open-Sora
 │   │   ├── latte
 │   │   ├── pixart
 │   │   └── stdit                  -> Our STDiT related code
-│   ├── schedulers                 -> Diffusion shedulers
+│   ├── schedulers                 -> Diffusion schedulers
 │   │   ├── iddpm                  -> IDDPM for training and inference
 │   │   └── dpms                   -> DPM-Solver for fast inference
 │   └── utils
