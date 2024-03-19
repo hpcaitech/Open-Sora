@@ -175,3 +175,7 @@ pretrained_models/
 
 # Secret files
 hostfile
+
+# cog demo files
+output*.mp4
+.cog

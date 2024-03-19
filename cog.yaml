@@ -1,0 +1,51 @@
+# Configuration for Cog ⚙️
+# Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
+
+build:
+  # set to true if your model requires a GPU
+  gpu: true
+  cuda: "12.1"
+
+  # a list of ubuntu apt packages to install
+  system_packages:
+     - "libgl1-mesa-glx"
+  #   - "libglib2.0-0"
+
+  # python version in the form '3.11' or '3.11.4'
+  python_version: "3.10"
+
+  # a list of packages in the format <package-name>==<version>
+  python_packages:
+    - "torch==2.1.0"
+    - "torchvision"
+    - "packaging"
+    - "ninja"
+    - "xformers"
+    - "colossalai"
+    - "accelerate"
+    - "diffusers"
+    - "ftfy"
+    - "gdown"
+    - "mmengine"
+    - "pre-commit"
+    - "pyav"
+    - "tensorboard"
+    - "timm"
+    - "tqdm"
+    - "transformers"
+    - "wandb"
+  #   - "numpy==1.19.4"
+  #   - "torch==1.8.0"
+  #   - "torchvision==0.9.0"
+
+  # commands run after the environment is setup
+  run:
+    - 'pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git'
+    - 'pip install --no-build-isolation flash-attn'
+    - curl -o /usr/local/bin/pget -L "https://github.com/replicate/pget/releases/download/v0.6.2/pget_Linux_x86_64" && chmod +x /usr/local/bin/pget
+
+  #   - "echo env is ready!"
+  #   - "echo another command if needed"
+
+# predict.py defines how predictions are run on your model
+predict: "predict.py:Predictor"
