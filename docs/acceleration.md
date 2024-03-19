@@ -6,11 +6,11 @@ Open-Sora aims to provide a high-speed training framework for diffusion models. 
 
 Open-Sora boosts the training speed by:
 
-- Kernel optimization including [flash attention](https://github.com/Dao-AILab/flash-attention), fused layernorm kernal, and the ones compiled by colossalAI.
+- Kernel optimization including [flash attention](https://github.com/Dao-AILab/flash-attention), fused layernorm kernel, and the ones compiled by colossalAI.
 - Hybrid parallelism including ZeRO.
 - Gradient checkpointing for larger batch size.
 
-Our training speed on images is comparable to [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT), an project to accelerate DiT training. The training speed is measured on 8 H800 GPUs with batch size 128, image size 256x256.
+Our training speed on images is comparable to [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT), a project to accelerate DiT training. The training speed is measured on 8 H800 GPUs with batch size 128, image size 256x256.
 
 | Model    | Throughput (img/s/GPU) | Throughput (tokens/s/GPU) |
 | -------- | ---------------------- | ------------------------- |
@@ -34,7 +34,7 @@ The training speed is measured on 8 H800 GPUs with acceleration techniques appli
 | STDiT (GC)       | 64x512  (65k)  | 0.40                      | 25k                       |
 | STDiT (GC, sp=2) | 360x512 (370k) | 0.10                      | 18k                       |
 
-With a 4x downsampling in the temporal dimension with Video-VAE, an 24fps video has 450 frames. The gap between the speed of STDiT (28k tokens/s) and DiT on images (up to 45k tokens/s) mainly comes from the T5 and VAE encoding, and temperal attention.
+With a 4x downsampling in the temporal dimension with Video-VAE, an 24fps video has 450 frames. The gap between the speed of STDiT (28k tokens/s) and DiT on images (up to 45k tokens/s) mainly comes from the T5 and VAE encoding, and temporal attention.
 
 ## Accelerated Encoder (T5, VAE)
 
@@ -45,7 +45,7 @@ During training, texts are encoded by T5, and videos are encoded by VAE. Typical
 
 For option 1, 120 tokens for one sample require 1M disk space, and a 64x64x64 latent requires 4M. Considering a training dataset with 10M video clips, the total disk space required is 50TB. Our storage system is not ready at this time for this scale of data.
 
-For option 2, we boost T5 speed and memory requirement. According to [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT), we find VAE consumes a large number of GPU memory. Thus we split batch size into smaller ones for VAE encoding. With both techniques, we can greatly accelerated the training speed.
+For option 2, we boost T5 speed and memory requirement. According to [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT), we find VAE consumes a large number of GPU memory. Thus we split batch size into smaller ones for VAE encoding. With both techniques, we can greatly accelerate the training speed.
 
 The training speed is measured on 8 H800 GPUs with STDiT.
 
