@@ -14,7 +14,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
-    micro_batch_size=128,
+    micro_batch_size=2,
 )
 text_encoder = dict(
     type="t5",

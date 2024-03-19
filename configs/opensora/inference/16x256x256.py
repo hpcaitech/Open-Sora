@@ -14,6 +14,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
+    micro_batch_size=4,
 )
 text_encoder = dict(
     type="t5",
@@ -28,7 +29,7 @@ scheduler = dict(
 dtype = "fp16"
 
 # Others
-batch_size = 2
+batch_size = 1
 seed = 42
 prompt_path = "./assets/texts/t2v_samples.txt"
 save_dir = "./outputs/samples/"
