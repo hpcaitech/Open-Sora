@@ -52,7 +52,7 @@
 <details>
 <summary>查看更多</summary>
 
-* ✅ 重构代码库。请参阅[结构](docs/structure.md)，了解项目结构以及如何使用配置文件。
+* ✅ 重构代码库。请参阅[结构](structure.md)，了解项目结构以及如何使用配置文件。
 
 </details>
 
@@ -110,7 +110,7 @@ cd Open-Sora
 pip install -v .
 ```
 
-安装完成后，建议阅读[结构](docs/structure.md)，了解项目结构以及如何使用配置文件。
+安装完成后，建议阅读[结构](structure.md)，了解项目结构以及如何使用配置文件。
 
 ## 模型权重
 
@@ -142,11 +142,11 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/i
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](/docs/commands_zh.md)获取更多说明。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands_zh.md)获取更多说明。
 
 ## 数据处理
 
-高质量数据是高质量模型的关键。[这里](/docs/datasets.md)有我们使用过的数据集和数据收集计划。我们提供处理视频数据的工具。目前，我们的数据处理流程包括以下步骤：
+高质量数据是高质量模型的关键。[这里](datasets.md)有我们使用过的数据集和数据收集计划。我们提供处理视频数据的工具。目前，我们的数据处理流程包括以下步骤：
 
 1. 下载数据集。[[文件](/tools/datasets/README.md)]
 2. 将视频分割成片段。 [[文件](/tools/scenedetect/README.md)]
@@ -169,7 +169,7 @@ torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/6
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-有关其他模型的训练和高级使用方法，请参阅[此处](/docs/commands_zh.md)获取更多说明。
+有关其他模型的训练和高级使用方法，请参阅[此处](commands_zh.md)获取更多说明。
 
 ## 贡献
 
