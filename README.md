@@ -27,7 +27,9 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
 <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
 inference, and more. Our provided [checkpoints](#model-weights) can produce 2s 512x512 videos with only 3 days training.
+[[blog]](https://hpc-ai.com/blog/open-sora-v1.0)
 * **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
+[[blog]](https://hpc-ai.com/blog/open-sora)
 
 ## 🎥 Latest Demo
 
@@ -192,7 +194,7 @@ Thanks goes to these wonderful contributors ([emoji key](https://allcontributors
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/zhengzangw"><img src="https://avatars.githubusercontent.com/zhengzangw?v=4?s=100" width="100px;" alt="zhengzangw"/><br /><sub><b>zhengzangw</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=zhengzangw" title="Code">💻</a> <a href="https://github.com/hpcaitech/Open-Sora/commits?author=zhengzangw" title="Documentation">📖</a> <a href="#ideas-zhengzangw" title="Ideas, Planning, & Feedback">🤔</a> <a href="#video-zhengzangw" title="Videos">📹</a> <a href="#maintenance-zhengzangw" title="Maintenance">🚧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ver217"><img src="https://avatars.githubusercontent.com/ver217?v=4?s=100" width="100px;" alt="ver217"/><br /><sub><b>ver217</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=ver217" title="Code">💻</a> <a href="#ideas-ver217" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/hpcaitech/Open-Sora/commits?author=ver217" title="Documentation">📖</a> <a href="#bug-ver217" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/nkLeeeee"><img src="https://avatars.githubusercontent.com/nkLeeeee?v=4?s=100" width="100px;" alt="nkLeeeee"/><br /><sub><b>nkLeeeee</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=nkLeeeee" title="Code">💻</a> <a href="#infra-nkLeeeee" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#tool-nkLeeeee" title="Tools">🔧</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/FrankLeeeee"><img src="https://avatars.githubusercontent.com/FrankLeeeee?v=4?s=100" width="100px;" alt="FrankLeeeee"/><br /><sub><b>FrankLeeeee</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=FrankLeeeee" title="Code">💻</a> <a href="#infra-FrankLeeeee" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#tool-FrankLeeeee" title="Tools">🔧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/xyupeng"><img src="https://avatars.githubusercontent.com/xyupeng?v=4?s=100" width="100px;" alt="xyupeng"/><br /><sub><b>xyupeng</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=xyupeng" title="Code">💻</a> <a href="#doc-xyupeng" title="Documentation">📖</a> <a href="#design-xyupeng" title="Design">🎨</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Yanjia0"><img src="https://avatars.githubusercontent.com/Yanjia0?v=4?s=100" width="100px;" alt="Yanjia0"/><br /><sub><b>Yanjia0</b></sub></a><br /><a href="#doc-Yanjia0" title="Documentation">📖</a></td>
     </tr>
@@ -215,6 +217,7 @@ If you wish to contribute to this project, you can refer to the [Contribution Gu
 
 ## Acknowledgement
 
+* [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization system.
 * [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
 * [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration strategies for training progress from OpenDiT.
 * [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
