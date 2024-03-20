@@ -88,7 +88,7 @@ Videos are downsampled to `.gif` for display. Click for original videos. Prompts
 * [Citation](#citation)
 
 ## Installation
-
+### On Linux
 ```bash
 # create a virtual env
 conda create -n opensora python=3.10
@@ -115,6 +115,15 @@ pip install -v .
 ```
 
 After installation, we suggest reading [structure.md](docs/structure.md) to learn the project structure and how to use the config files.
+
+### Docker build
+```bash
+# Build
+docker build -t <tag name> .
+# Run
+docker run -v /path/to/t5-v1_1-xxl:/workspace/Open-Sora/pretrained_models/t5_ckpts/t5-v1_1-xxl -v /path/to/pth:/workspace/pth -it --gpus all <tag name> bash
+```
+You may meet some trouble while building, see [常见问题](docs/docker_qa_zh.md).
 
 ## Model Weights
 
