@@ -175,3 +175,4 @@ pretrained_models/
 
 # Secret files
 hostfile
+gradio_cached_examples/
