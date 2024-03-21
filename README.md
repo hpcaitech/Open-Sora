@@ -94,6 +94,8 @@ Videos are downsampled to `.gif` for display. Click for original videos. Prompts
 ```bash
 # create a virtual env
 conda create -n opensora python=3.10
+# activate opensora
+conda activate opensora
 
 # install torch
 # the command below is for CUDA 12.1, choose install commands from 
