@@ -134,7 +134,15 @@ Our model's weight is partially initialized from [PixArt-α](https://github.com/
 
 ## Inference
 
-To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights from [huggingface](https://huggingface.co/hpcai-tech/Open-Sora/tree/main). Run the following commands to generate samples. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+We have provided a Gradio application in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
+
+```bash
+python scripts/demo.py
+```
+
+This will launch a Gradio application on your localhost.
+
+Besides, we have also provided an offline inference script. To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights from [huggingface](https://huggingface.co/hpcai-tech/Open-Sora/tree/main). Run the following commands to generate samples. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
 # Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
