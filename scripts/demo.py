@@ -19,7 +19,7 @@ import torch
 MODEL_TYPES = ["v1-16x256x256", "v1-HQ-16x256x256", "v1-HQ-16x512x512"]
 CONFIG_MAP = {
     "v1-16x256x256": "configs/opensora/inference/16x256x256.py",
-    "v1-HQ-16x256x256": "configs/opensora/inference/16x512x512.py",
+    "v1-HQ-16x256x256": "configs/opensora/inference/16x256x256.py",
     "v1-HQ-16x512x512": "configs/opensora/inference/16x512x512.py",
 }
 HF_STDIT_MAP = {
