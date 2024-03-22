@@ -33,6 +33,7 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
         x = x.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
         write_video(save_path, x, fps=fps, video_codec="h264")
     print(f"Saved to {save_path}")
+    return save_path
 
 
 class StatefulDistributedSampler(DistributedSampler):

@@ -114,6 +114,8 @@ our [gallery](https://hpcaitech.github.io/Open-Sora/).
 ```bash
 # create a virtual env
 conda create -n opensora python=3.10
+# activate opensora
+conda activate opensora
 
 # install torch
 # the command below is for CUDA 12.1, choose install commands from 
@@ -157,29 +159,33 @@ on improving the quality and text alignment.
 
 ## Inference
 
-To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)
-weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights
-from [huggingface](https://huggingface.co/hpcai-tech/Open-Sora/tree/main). Run the following commands to generate
-samples. To change sampling prompts, modify the txt file passed to `--prompt-path`.
-See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+We have provided a Gradio application in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
+
+```bash
+python scripts/demo.py
+```
+
+This will launch a Gradio application on your localhost.
+
+Besides, we have also provided an offline inference script. To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights from [huggingface](https://huggingface.co/hpcai-tech/Open-Sora/tree/main). Run the following commands to generate samples. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
 # Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./asserts/texts/t2v_samples.txt
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 # Auto Download
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path OpenSora-v1-HQ-16x256x256.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./asserts/texts/t2v_samples.txt
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 # Auto Download
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path OpenSora-v1-HQ-16x512x512.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 64x512x512 (40s/sample, 100 time steps)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./asserts/texts/t2v_samples.txt
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 64x512x512 with sequence parallelism (30s/sample, 100 time steps)
 # sequence parallelism is enabled automatically when nproc_per_node is larger than 1
-torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./asserts/texts/t2v_samples.txt
+torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 ```
 
 The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
