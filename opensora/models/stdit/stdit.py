@@ -5,6 +5,7 @@ import torch.nn as nn
 from einops import rearrange
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
+from timm.models.layers import trunc_normal_
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
 from opensora.acceleration.communications import gather_forward_split_backward, split_forward_gather_backward
@@ -137,6 +138,7 @@ class STDiT(nn.Module):
         space_scale=1.0,
         time_scale=1.0,
         freeze=None,
+        use_x_mask=False,
         enable_flashattn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
@@ -195,6 +197,11 @@ class STDiT(nn.Module):
         )
         self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
 
+        self.use_x_mask = use_x_mask
+        if self.use_x_mask:
+            self.x_mask = nn.Parameter(torch.zeros(self.hidden_size))
+            trunc_normal_(self.x_mask, std=0.02)
+
         # init model
         self.initialize_weights()
         self.initialize_temporal()
@@ -212,7 +219,7 @@ class STDiT(nn.Module):
         else:
             self.sp_rank = None
 
-    def forward(self, x, timestep, y, mask=None):
+    def forward(self, x, timestep, y, mask=None, x_mask=None):
         """
         Forward pass of STDiT.
         Args:
@@ -233,6 +240,10 @@ class STDiT(nn.Module):
         x = self.x_embedder(x)  # [B, N, C]
         x = rearrange(x, "B (T S) C -> B T S C", T=self.num_temporal, S=self.num_spatial)
         x = x + self.pos_embed
+        if x_mask is not None:
+            assert self.use_x_mask
+            # x: [B, T, S, C], mask: [B, T], self.x_mask: [C]
+            x = x + ~x_mask[:, :, None, None] * self.x_mask
         x = rearrange(x, "B T S C -> B (T S) C")
 
         # shard over the sequence dim if sp is enabled

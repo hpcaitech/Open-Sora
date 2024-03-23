@@ -87,6 +87,8 @@ def forward_with_cfg(model, x, timestep, y, cfg_scale, **kwargs):
     # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
     half = x[: len(x) // 2]
     combined = torch.cat([half, half], dim=0)
+    if "x_mask" in kwargs and kwargs["x_mask"] is not None:
+        kwargs["x_mask"] = torch.cat([kwargs["x_mask"], kwargs["x_mask"]], dim=0)
     model_out = model.forward(combined, timestep, y, **kwargs)
     model_out = model_out["x"] if isinstance(model_out, dict) else model_out
     eps, rest = model_out[:, :3], model_out[:, 3:]
