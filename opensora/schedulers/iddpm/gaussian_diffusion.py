@@ -15,15 +15,24 @@ import math
 
 import numpy as np
 import torch as th
+from einops import rearrange
 
 from .diffusion_utils import discretized_gaussian_log_likelihood, normal_kl
 
 
-def mean_flat(tensor):
+def mean_flat(tensor, mask=None):
     """
     Take the mean over all non-batch dimensions.
     """
-    return tensor.mean(dim=list(range(1, len(tensor.shape))))
+    if mask is None:
+        return tensor.mean(dim=list(range(1, len(tensor.shape))))
+    else:
+        assert tensor.dim() == 5
+        assert tensor.shape[2] == mask.shape[1]
+        tensor = rearrange(tensor, "b c t h w -> b t (c h w)")
+        denom = mask.sum(dim=1) * tensor.shape[-1]
+        loss = (tensor * mask.unsqueeze(2)).sum(dim=1).sum(dim=1) / denom
+        return loss
 
 
 class ModelMeanType(enum.Enum):
@@ -368,6 +377,7 @@ class GaussianDiffusion:
         denoised_fn=None,
         cond_fn=None,
         model_kwargs=None,
+        mask=None,
     ):
         """
         Sample x_{t-1} from the model at the given timestep.
@@ -398,6 +408,11 @@ class GaussianDiffusion:
         if cond_fn is not None:
             out["mean"] = self.condition_mean(cond_fn, out, x, t, model_kwargs=model_kwargs)
         sample = out["mean"] + nonzero_mask * th.exp(0.5 * out["log_variance"]) * noise
+        if mask is not None:
+            if mask.shape[0] != x.shape[0]:
+                mask = mask.repeat(2, 1) # HACK
+            sample = th.where(mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1), sample, x)
+
         return {"sample": sample, "pred_xstart": out["pred_xstart"]}
 
     def p_sample_loop(
@@ -411,6 +426,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
+        mask=None,
     ):
         """
         Generate samples from the model.
@@ -441,6 +457,7 @@ class GaussianDiffusion:
             model_kwargs=model_kwargs,
             device=device,
             progress=progress,
+            mask=mask,
         ):
             final = sample
         return final["sample"]
@@ -456,6 +473,7 @@ class GaussianDiffusion:
         model_kwargs=None,
         device=None,
         progress=False,
+        mask=None,
     ):
         """
         Generate samples from the model and yield intermediate samples from
@@ -490,6 +508,7 @@ class GaussianDiffusion:
                     denoised_fn=denoised_fn,
                     cond_fn=cond_fn,
                     model_kwargs=model_kwargs,
+                    mask=mask,
                 )
                 yield out
                 img = out["sample"]

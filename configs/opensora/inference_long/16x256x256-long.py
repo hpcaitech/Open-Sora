@@ -22,8 +22,8 @@ text_encoder = dict(
     model_max_length=120,
 )
 scheduler = dict(
-    type="iddpm",
-    # type="dpm-solver",
+    # type="iddpm",
+    type="dpm-solver",
     num_sampling_steps=100,
     cfg_scale=7.0,
 )
@@ -39,9 +39,9 @@ loop = 10
 condition_frame_length = 4
 reference_path = ["assets/images/condition/wave.png"]
 mask_strategy = ["0,0,0,1,0"]  # valid when reference_path is not None
-# loop id, ref id, ref start, length, target start
+# (loop id, ref id, ref start, length, target start)
 
 # Others
 batch_size = 2
 seed = 42
-save_dir = "./samples/"
+save_dir = "./outputs/samples/"

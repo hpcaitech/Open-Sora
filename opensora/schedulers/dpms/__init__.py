@@ -21,6 +21,7 @@ class DMP_SOLVER:
         prompts,
         device,
         additional_args=None,
+        mask=None,
     ):
         n = len(prompts)
         model_args = text_encoder.encode(prompts)
