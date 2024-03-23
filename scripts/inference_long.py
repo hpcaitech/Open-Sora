@@ -176,6 +176,7 @@ def main():
                             j
                         ] += f";{loop_i},{len(refs)-1},-{cfg.condition_frame_length},{cfg.condition_frame_length},0"
                 masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
+                model_args["x_mask"] = masks
 
             # 4.6. diffusion sampling
             samples = scheduler.sample(

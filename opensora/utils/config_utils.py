@@ -48,26 +48,27 @@ def merge_args(cfg, args, training=False):
         cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
 
-    if not training:
-        if args.cfg_scale is not None:
-            cfg.scheduler["cfg_scale"] = args.cfg_scale
-            args.cfg_scale = None
-
     for k, v in vars(args).items():
         if k in cfg and v is not None:
             cfg[k] = v
 
-    if "reference_path" not in cfg:
-        cfg["reference_path"] = None
-    if "loop" not in cfg:
-        cfg["loop"] = 1
+    if not training:
+    # Inference only
+        if "reference_path" not in cfg:
+            cfg["reference_path"] = None
+        if "loop" not in cfg:
+            cfg["loop"] = 1
+        if "prompt" not in cfg or cfg["prompt"] is None:
+            assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
+            cfg["prompt"] = load_prompts(cfg["prompt_path"])
+    else:
+    # Training only
+        if "mask_ratios" not in cfg:
+            cfg["mask_ratios"] = None
+
+    # Both training and inference
     if "multi_resolution" not in cfg:
         cfg["multi_resolution"] = False
-    if "mask_ratios" not in cfg:
-        cfg["mask_ratios"] = None
-    if "prompt" not in cfg or cfg["prompt"] is None:
-        assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
-        cfg["prompt"] = load_prompts(cfg["prompt_path"])
 
     return cfg
 

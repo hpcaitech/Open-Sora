@@ -37,7 +37,7 @@ prompt = [
     "In an ornate, historical hall, a massive tidal wave peaks and begins to crash. Two surfers, seizing the moment, skillfully navigate the face of the wave."
 ]
 
-loop = 10
+loop = 5
 condition_frame_length = 4
 reference_path = ["assets/images/condition/wave.png"]
 mask_strategy = ["0,0,0,1,0"]  # valid when reference_path is not None
