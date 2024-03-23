@@ -28,7 +28,7 @@ from opensora.utils.config_utils import (
     save_training_config,
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
-from opensora.utils.train_utils import update_ema
+from opensora.utils.train_utils import update_ema, MaskGenerator
 
 
 def main():
@@ -168,6 +168,8 @@ def main():
     model.train()
     update_ema(ema, model, decay=0, sharded=False)
     ema.eval()
+    if cfg.mask_ratios is not None:
+        mask_generator = MaskGenerator(cfg.mask_ratios)
 
     # =======================================================
     # 5. boost model for distributed training with colossalai
@@ -214,15 +216,23 @@ def main():
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
                 y = batch["text"]
 
+                # Visual and text encoding
                 with torch.no_grad():
                     # Prepare visual inputs
                     x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y)
+                
+                # Mask
+                if cfg.mask_ratios is not None:
+                    mask = mask_generator.get_masks(x)
+                    model_args["x_mask"] = mask
+                else:
+                    mask = None
 
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
-                loss_dict = scheduler.training_losses(model, x, t, model_args)
+                loss_dict = scheduler.training_losses(model, x, t, model_args, mask=mask)
 
                 # Backward & update
                 loss = loss_dict["loss"].mean()
