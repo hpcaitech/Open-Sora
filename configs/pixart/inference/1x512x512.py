@@ -26,8 +26,12 @@ scheduler = dict(
 )
 dtype = "fp16"
 
+# prompt_path = "./assets/texts/t2i_samples.txt"
+prompt = [
+    "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.",
+]
+
 # Others
 batch_size = 2
 seed = 42
-prompt_path = "./assets/texts/t2i_samples.txt"
 save_dir = "./outputs/samples/"
