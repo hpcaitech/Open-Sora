@@ -24,6 +24,21 @@ def get_video_length(path):
     return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 
+def shard_csv(data, shard, input_path):
+    n = len(data)
+    num_shard = n // shard
+    for i in range(shard):
+        start = i * num_shard
+        end = (i + 1) * num_shard if i != shard - 1 else n
+        file_name, ext = os.path.splitext(input_path)
+        output_path = os.path.join(os.path.join(os.path.dirname(file_name)), f"{os.path.basename(file_name)}_{i}{ext}")
+        with open(output_path, "w") as f:
+            writer = csv.writer(f)
+            writer.writerows(data[start:end])
+        print(f"Saved {end - start} samples to {output_path}.")
+    print("Done.")
+2
+
 def main(args):
     input_path = args.input
     output_path = args.output
@@ -49,11 +64,16 @@ def main(args):
         data = list(reader)
     print("Number of videos before filtering:", len(data))
 
+    if args.shard is not None:
+        shard_csv(data, args.shard, input_path)
+        return
+
     data_new = []
     for i, row in tqdm(enumerate(data)):
         path = row[0]
         caption = row[1]
-        n_frames = int(row[2])
+        if len(row) >= 3:
+            n_frames = int(row[2])
         if args.fmin is not None and n_frames < args.fmin:
             continue
         if args.fmax is not None and n_frames > args.fmax:
@@ -72,7 +92,10 @@ def main(args):
             row[0] = os.path.join(args.root, path)
         if args.relength:
             n_frames = get_video_length(row[0])
-            row[2] = n_frames
+            if len(row) < 3:
+                row.append(n_frames)
+            else:
+                row[2] = n_frames
         data_new.append(row)
 
     print("Number of videos after filtering:", len(data_new))
@@ -92,5 +115,6 @@ if __name__ == "__main__":
     parser.add_argument("--remove-empty-caption", action="store_true")
     parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--relength", action="store_true")
+    parser.add_argument("--shard", type=int, default=None)
     args = parser.parse_args()
     main(args)

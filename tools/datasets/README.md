@@ -13,6 +13,12 @@ The training data should be provided in a CSV file with the following format:
 
 This dataset comprises 130M text-video pairs. You can download the dataset and prepare it for training according to [the dataset repository's instructions](https://github.com/daooshee/HD-VG-130M). There is a README.md file in the Google Drive link that provides instructions on how to download and cut the videos. For this version, we directly use the dataset provided by the authors.
 
+## VidProM
+
+```bash
+python -m tools.datasets.convert_dataset vidprom VIDPROM_FOLDER --info VidProM_semantic_unique.csv
+```
+
 ## Demo Dataset
 
 You can use ImageNet and UCF101 for a quick demo. After downloading the datasets, you can use the following command to prepare the csv file for the dataset:
