@@ -4,35 +4,10 @@ import os
 import numpy as np
 import torch
 import torchvision
-import torchvision.transforms as transforms
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
 from . import video_transforms
-from .utils import center_crop_arr, VID_EXTENSIONS
-
-
-def get_transforms_video(resolution=256):
-    transform_video = transforms.Compose(
-        [
-            video_transforms.ToTensorVideo(),  # TCHW
-            # video_transforms.RandomHorizontalFlipVideo(),
-            video_transforms.UCFCenterCropVideo(resolution),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-        ]
-    )
-    return transform_video
-
-
-def get_transforms_image(image_size=256):
-    transform = transforms.Compose(
-        [
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size)),
-            # transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-        ]
-    )
-    return transform
+from .utils import VID_EXTENSIONS
 
 
 class DatasetFromCSV(torch.utils.data.Dataset):

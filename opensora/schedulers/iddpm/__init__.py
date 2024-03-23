@@ -54,13 +54,12 @@ class IDDPM(SpacedDiffusion):
         self,
         model,
         text_encoder,
-        z_size,
+        z,
         prompts,
         device,
         additional_args=None,
     ):
         n = len(prompts)
-        z = torch.randn(n, *z_size, device=device)
         z = torch.cat([z, z], 0)
         model_args = text_encoder.encode(prompts)
         y_null = text_encoder.null(n)
