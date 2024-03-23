@@ -18,7 +18,7 @@ vae = dict(
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="DeepFloyd/t5-v1_1-xxl",
+    from_pretrained="./pretrained_models/t5_ckpts",
     model_max_length=120,
 )
 scheduler = dict(
@@ -29,10 +29,18 @@ scheduler = dict(
 dtype = "fp16"
 
 # Condition
-prompt_path = "./assets/texts/t2v_samples.txt"
-prompt = None # prompt has higher priority than prompt_path
+prompt_path = None
+prompt = [
+    "In an ornate, historical hall, a massive tidal wave peaks and begins to crash. Two surfers, seizing the moment, skillfully navigate the face of the wave."
+]
+
+loop = 10
+condition_frame_length = 4
+reference_path = ["assets/images/condition/wave.png"]
+mask_strategy = ["0,0,0,1,0"]  # valid when reference_path is not None
+# loop id, ref id, ref start, length, target start
 
 # Others
-batch_size = 1
+batch_size = 2
 seed = 42
-save_dir = "./outputs/samples/"
+save_dir = "./samples/"

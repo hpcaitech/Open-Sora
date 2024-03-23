@@ -13,12 +13,6 @@ from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from colossalai.cluster import DistCoordinator
 
 
-def load_prompts(prompt_path):
-    with open(prompt_path, "r") as f:
-        prompts = [line.strip() for line in f.readlines()]
-    return prompts
-
-
 def main():
     # ======================================================
     # 1. cfg and init distributed env
@@ -31,7 +25,7 @@ def main():
     coordinator = DistCoordinator()
 
     if coordinator.world_size > 1:
-        set_sequence_parallel_group(dist.group.WORLD) 
+        set_sequence_parallel_group(dist.group.WORLD)
         enable_sequence_parallelism = True
     else:
         enable_sequence_parallelism = False
@@ -45,7 +39,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = to_torch_dtype(cfg.dtype)
     set_random_seed(seed=cfg.seed)
-    prompts = load_prompts(cfg.prompt_path)
+    prompts = cfg.prompt
 
     # ======================================================
     # 3. build model & load weights
