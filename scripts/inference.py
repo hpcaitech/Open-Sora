@@ -1,16 +1,16 @@
 import os
 
-import torch
 import colossalai
+import torch
 import torch.distributed as dist
+from colossalai.cluster import DistCoordinator
 from mmengine.runner import set_random_seed
 
+from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
-from opensora.acceleration.parallel_states import set_sequence_parallel_group
-from colossalai.cluster import DistCoordinator
 
 
 def main():
@@ -82,12 +82,18 @@ def main():
     sample_idx = 0
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
+
+    # 4.1. batch generation
     for i in range(0, len(prompts), cfg.batch_size):
+        # 4.2 sample in hidden space
         batch_prompts = prompts[i : i + cfg.batch_size]
+        z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
+
+        # 4.3. diffusion sampling
         samples = scheduler.sample(
             model,
             text_encoder,
-            z_size=(vae.out_channels, *latent_size),
+            z=z,
             prompts=batch_prompts,
             device=device,
             additional_args=model_args,

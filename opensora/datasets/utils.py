@@ -3,15 +3,44 @@ from typing import Iterator, Optional
 
 import numpy as np
 import torch
+import torchvision
+import torchvision.transforms as transforms
 from PIL import Image
 from torch.distributed import ProcessGroup
 from torch.distributed.distributed_c10d import _get_default_group
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
+from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 from torchvision.io import write_video
 from torchvision.utils import save_image
 
+from . import video_transforms
+
 VID_EXTENSIONS = ("mp4", "avi", "mov", "mkv")
+
+
+def get_transforms_video(resolution=256):
+    transform_video = transforms.Compose(
+        [
+            video_transforms.ToTensorVideo(),  # TCHW
+            # video_transforms.RandomHorizontalFlipVideo(),
+            video_transforms.UCFCenterCropVideo(resolution),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+        ]
+    )
+    return transform_video
+
+
+def get_transforms_image(image_size=256):
+    transform = transforms.Compose(
+        [
+            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size)),
+            # transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+        ]
+    )
+    return transform
 
 
 def read_image_from_path(path, transform=None, num_frames=1, image_size=256):
