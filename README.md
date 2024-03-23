@@ -145,16 +145,16 @@ the config files.
 
 | Resolution | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
 |------------|--------|-------------|------------|-----------------|-----------------------------------------------------------------------------------------------|
-| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
-| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
+| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
+| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 
 Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of
 parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about
-dataset can be found in [datasets.md](/docs/datasets.md). HQ means high quality.
+the dataset can be found in [datasets.md](/docs/datasets.md). HQ means high quality.
 
 :warning: **LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor.
-The model performs badly especially on generating human beings and cannot follow detailed instructions. We are working
+The model performs badly, especially on generating human beings and cannot follow detailed instructions. We are working
 on improving the quality and text alignment.
 
 ## Inference
@@ -167,18 +167,14 @@ python scripts/demo.py
 
 This will launch a Gradio application on your localhost.
 
-Besides, we have also provided an offline inference script. To run inference with our provided weights, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then download the model weights from [huggingface](https://huggingface.co/hpcai-tech/Open-Sora/tree/main). Run the following commands to generate samples. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+Besides, we have also provided an offline inference script. Run the following commands to generate samples, the required model weights will be automatically downloaded. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
 ```bash
-# Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
-# Auto Download
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path OpenSora-v1-HQ-16x256x256.pth --prompt-path ./assets/texts/t2v_samples.txt
-
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
-# Auto Download
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path OpenSora-v1-HQ-16x512x512.pth --prompt-path ./assets/texts/t2v_samples.txt
+
+# Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path OpenSora-v1-HQ-16x256x256.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 64x512x512 (40s/sample, 100 time steps)
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
