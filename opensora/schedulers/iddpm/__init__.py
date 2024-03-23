@@ -58,6 +58,7 @@ class IDDPM(SpacedDiffusion):
         prompts,
         device,
         additional_args=None,
+        mask=None,
     ):
         n = len(prompts)
         z = torch.cat([z, z], 0)
@@ -76,6 +77,7 @@ class IDDPM(SpacedDiffusion):
             model_kwargs=model_args,
             progress=True,
             device=device,
+            mask=mask,
         )
         samples, _ = samples.chunk(2, dim=0)
         return samples
