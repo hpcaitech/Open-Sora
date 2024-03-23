@@ -23,6 +23,7 @@ class DMP_SOLVER:
         additional_args=None,
         mask=None,
     ):
+        assert mask is None, "mask is not supported in dpm-solver"
         n = len(prompts)
         model_args = text_encoder.encode(prompts)
         y = model_args.pop("y")

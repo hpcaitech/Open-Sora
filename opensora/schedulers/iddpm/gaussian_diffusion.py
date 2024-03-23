@@ -395,6 +395,7 @@ class GaussianDiffusion:
                  - 'sample': a random sample from the model.
                  - 'pred_xstart': a prediction of x_0.
         """
+        model_kwargs['x_mask'] = mask
         out = self.p_mean_variance(
             model,
             x,

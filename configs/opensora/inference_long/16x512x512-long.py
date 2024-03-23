@@ -1,15 +1,17 @@
+# scripts/inference_long.py
 num_frames = 16
 fps = 24 // 3
-image_size = (256, 256)
+image_size = (512, 512)
 
 # Define model
 model = dict(
     type="STDiT-XL/2",
-    space_scale=0.5,
+    space_scale=1.0,
     time_scale=1.0,
+    use_x_mask=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
-    from_pretrained="PRETRAINED_MODEL",
+    from_pretrained=None,
 )
 vae = dict(
     type="VideoAutoencoderKL",
@@ -22,8 +24,8 @@ text_encoder = dict(
     model_max_length=120,
 )
 scheduler = dict(
-    # type="iddpm",
-    type="dpm-solver",
+    type="iddpm",
+    # type="dpm-solver",
     num_sampling_steps=100,
     cfg_scale=7.0,
 )
