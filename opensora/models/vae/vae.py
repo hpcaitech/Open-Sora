@@ -56,6 +56,14 @@ class VideoAutoencoderKL(nn.Module):
         input_size = [input_size[i] // self.patch_size[i] for i in range(3)]
         return input_size
 
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    @property
+    def dtype(self):
+        return next(self.parameters()).dtype
+
 
 @MODELS.register_module()
 class VideoAutoencoderKLTemporalDecoder(nn.Module):
@@ -80,3 +88,11 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
             assert input_size[i] % self.patch_size[i] == 0, "Input size must be divisible by patch size"
         input_size = [input_size[i] // self.patch_size[i] for i in range(3)]
         return input_size
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    @property
+    def dtype(self):
+        return next(self.parameters()).dtype

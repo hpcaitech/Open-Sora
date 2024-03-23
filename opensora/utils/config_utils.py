@@ -7,6 +7,12 @@ from mmengine.config import Config
 from torch.utils.tensorboard import SummaryWriter
 
 
+def load_prompts(prompt_path):
+    with open(prompt_path, "r") as f:
+        prompts = [line.strip() for line in f.readlines()]
+    return prompts
+
+
 def parse_args(training=False):
     parser = argparse.ArgumentParser()
 
@@ -47,11 +53,21 @@ def merge_args(cfg, args, training=False):
             cfg.scheduler["cfg_scale"] = args.cfg_scale
             args.cfg_scale = None
 
-    if "multi_resolution" not in cfg:
-        cfg["multi_resolution"] = False
     for k, v in vars(args).items():
         if k in cfg and v is not None:
             cfg[k] = v
+
+    if "reference_path" not in cfg:
+        cfg["reference_path"] = None
+    if "loop" not in cfg:
+        cfg["loop"] = 1
+    if "multi_resolution" not in cfg:
+        cfg["multi_resolution"] = False
+    if "mask_ratios" not in cfg:
+        cfg["mask_ratios"] = None
+    if "prompt" not in cfg or cfg["prompt"] is None:
+        assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
+        cfg["prompt"] = load_prompts(cfg["prompt_path"])
 
     return cfg
 
