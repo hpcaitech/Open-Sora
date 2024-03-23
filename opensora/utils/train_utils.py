@@ -35,6 +35,8 @@ def update_ema(
 class MaskGenerator:
     def __init__(self, mask_ratios):
         self.mask_name = ["mask_no", "mask_random", "mask_head", "mask_tail", "mask_head_tail"]
+        assert len(mask_ratios) == len(self.mask_name)
+        assert sum(mask_ratios) == 1.0
         self.mask_prob = mask_ratios
         print(self.mask_prob)
         self.mask_acc_prob = [sum(self.mask_prob[: i + 1]) for i in range(len(self.mask_prob))]

@@ -24,7 +24,7 @@ model = dict(
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
-mask_ratios = [0.5, 0.29, 0.07, 0.07, 0.07]
+mask_ratios = [0.7, 0.15, 0.05, 0.05, 0.05]
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
