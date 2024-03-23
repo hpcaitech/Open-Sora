@@ -6,6 +6,7 @@ import time
 from collections import OrderedDict
 from collections.abc import Sequence
 from itertools import repeat
+from typing import Tuple
 
 import numpy as np
 import torch
@@ -50,7 +51,7 @@ def all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
     return tensor
 
 
-def get_model_numel(model: torch.nn.Module) -> (int, int):
+def get_model_numel(model: torch.nn.Module) -> Tuple[int, int]:
     num_params = 0
     num_params_trainable = 0
     for p in model.parameters():

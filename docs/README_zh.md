@@ -23,7 +23,7 @@
 
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
 * Open-Sora 1.0 支持视频数据预处理、<a href="https://github.com/hpcaitech/ColossalAI"><img src="../assets/readme/colossal_ai.png" width="8%" ></a> 加速训练、推理等全套流程。
-* 我们提供的[模型权重](#model-weights)只需 3 天的训练就能生成 2 秒的 512x512 视频。
+* 我们提供的[模型权重](/#model-weights)只需 3 天的训练就能生成 2 秒的 512x512 视频。
 * **[2024.03.04]** Open-Sora：开源Sora复现方案，成本降低46%，序列扩充至近百万
 
 ## 🎥 最新视频
@@ -39,20 +39,20 @@
 
 ## 🔆 新功能
 
-* 📍Open-Sora-v1 已发布。[这里](#model-weights)提供了模型权重。只需 400K 视频片段和在单卡 H800 上训200天（类比Stable Video Diffusion 的 152M 样本），我们就能生成 2 秒的 512×512 视频。
+* 📍Open-Sora-v1 已发布。[这里](/#model-weights)提供了模型权重。只需 400K 视频片段和在单卡 H800 上训200天（类比Stable Video Diffusion 的 152M 样本），我们就能生成 2 秒的 512×512 视频。
 * ✅ 从图像扩散模型到视频扩散模型的三阶段训练。我们提供每个阶段的权重。
-* ✅ 支持训练加速，包括Transformer加速、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[训练加速](docs/acceleration.md)。
+* ✅ 支持训练加速，包括Transformer加速、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[训练加速](/acceleration.md)。
 * ✅ 我们提供用于数据预处理的视频切割和字幕工具。有关说明请点击[此处](tools/data/README.md)，我们的数据收集计划请点击 [数据集](docs/datasets.md)。
 * ✅ 我们发现来自[VideoGPT](https://wilson1yan.github.io/videogpt/index.html)的 VQ-VAE 质量较低，因此采用了来自[Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original) 的高质量 VAE。我们还发现使用添加了时间维度的采样会导致生成质量降低。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
 * ✅ 我们研究了不同的架构，包括 DiT、Latte 和我们提出的 **STDiT**。我们的STDiT在质量和速度之间实现了更好的权衡。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
 * ✅ 支持剪辑和 T5 文本调节。
-* ✅ 通过将图像视为单帧视频，我们的项目支持在图像和视频（如 ImageNet 和 UCF101）上训练 DiT。更多说明请参见 [指令解析](docs/command.md)。
+* ✅ 通过将图像视为单帧视频，我们的项目支持在图像和视频（如 ImageNet 和 UCF101）上训练 DiT。更多说明请参见 [指令解析](command.md)。
 * ✅ 利用[DiT](https://github.com/facebookresearch/DiT)、[Latte](https://github.com/Vchitect/Latte) 和 [PixArt](https://pixart-alpha.github.io/) 的官方权重支持推理。
 
 <details>
 <summary>查看更多</summary>
 
-* ✅ 重构代码库。请参阅[结构](docs/structure.md)，了解项目结构以及如何使用配置文件。
+* ✅ 重构代码库。请参阅[结构](structure.md)，了解项目结构以及如何使用配置文件。
 
 </details>
 
@@ -110,7 +110,7 @@ cd Open-Sora
 pip install -v .
 ```
 
-安装完成后，建议阅读[结构](docs/structure.md)，了解项目结构以及如何使用配置文件。
+安装完成后，建议阅读[结构](structure.md)，了解项目结构以及如何使用配置文件。
 
 ## 模型权重
 
@@ -120,7 +120,7 @@ pip install -v .
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:]() |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:]() |
 
-我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](/docs/report_v1.md)**。有关数据集的更多信息，请参阅[数据](/docs/dataset.md)。HQ 表示高质量。
+我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](/docs/report_v1.md)**。有关数据集的更多信息，请参阅[数据](datasets.md)。HQ 表示高质量。
 :warning: **局限性**：我们的模型是在有限的预算内训练出来的。质量和文本对齐度相对较差。特别是在生成人类时，模型表现很差，无法遵循详细的指令。我们正在努力改进质量和文本对齐。
 
 ## 推理
@@ -128,25 +128,29 @@ pip install -v .
 要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](docs/structure.md#inference-config-demos)自定义配置。
 
 ```bash
-# Sample 16x256x256 (5s/sample)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth
+# Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
+# Auto Download
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path OpenSora-v1-HQ-16x256x256.pth --prompt-path ./assets/texts/t2v_samples.txt
 
-# Sample 16x512x512 (20s/sample, 100 time steps)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth
+# Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
+# Auto Download
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path OpenSora-v1-HQ-16x512x512.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 64x512x512 (40s/sample, 100 time steps)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 64x512x512 with sequence parallelism (30s/sample, 100 time steps)
 # sequence parallelism is enabled automatically when nproc_per_node is larger than 1
-torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth
+torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](/docs/commands_zh.md)获取更多说明。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands_zh.md)获取更多说明。
 
 ## 数据处理
 
-高质量数据是高质量模型的关键。[这里](/docs/datasets.md)有我们使用过的数据集和数据收集计划。我们提供处理视频数据的工具。目前，我们的数据处理流程包括以下步骤：
+高质量数据是高质量模型的关键。[这里](datasets.md)有我们使用过的数据集和数据收集计划。我们提供处理视频数据的工具。目前，我们的数据处理流程包括以下步骤：
 
 1. 下载数据集。[[文件](/tools/datasets/README.md)]
 2. 将视频分割成片段。 [[文件](/tools/scenedetect/README.md)]
@@ -169,7 +173,7 @@ torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/6
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-有关其他模型的训练和高级使用方法，请参阅[此处](/docs/commands_zh.md)获取更多说明。
+有关其他模型的训练和高级使用方法，请参阅[此处](commands_zh.md)获取更多说明。
 
 ## 贡献
 
