@@ -2,11 +2,12 @@
 
 ## Dataset Format
 
-The training data should be provided in a CSV file with the following format:
+The training data should be provided in a CSV file, with each row containing the following information:
 
 ```csv
+path, text, num_frames, aesthetic_score
 /absolute/path/to/image1.jpg, caption1, num_of_frames
-/absolute/path/to/image2.jpg, caption2, num_of_frames
+/absolute/path/to/video2.mp4, caption2, num_of_frames
 ```
 
 ## HD-VG-130M
