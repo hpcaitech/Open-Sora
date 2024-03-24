@@ -4,6 +4,7 @@ diffusers
 ftfy
 gdown
 mmengine
+pandas
 pre-commit
 pyav
 tensorboard
