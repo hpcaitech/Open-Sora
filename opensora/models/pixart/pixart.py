@@ -132,8 +132,10 @@ class PixArt(nn.Module):
         time_scale=1.0,
         enable_flashattn=False,
         enable_layernorm_kernel=False,
+        enable_sequence_parallelism=False,
     ):
         super().__init__()
+        assert enable_sequence_parallelism is False, "Sequence parallelism is not supported in this version."
         self.pred_sigma = pred_sigma
         self.in_channels = in_channels
         self.out_channels = in_channels * 2 if pred_sigma else in_channels

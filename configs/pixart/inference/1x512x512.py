@@ -16,7 +16,7 @@ vae = dict(
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="./pretrained_models/t5_ckpts",
+    from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=120,
 )
 scheduler = dict(
@@ -28,7 +28,9 @@ dtype = "fp16"
 
 # prompt_path = "./assets/texts/t2i_samples.txt"
 prompt = [
-    "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.",
+    "Pirate ship trapped in a cosmic maelstrom nebula.",
+    "A small cactus with a happy face in the Sahara desert.",
+    "A small cactus with a sad face in the Sahara desert.",
 ]
 
 # Others
