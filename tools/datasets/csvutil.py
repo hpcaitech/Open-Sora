@@ -1,6 +1,8 @@
 import argparse
 import csv
+import html
 import os
+import re
 
 from tqdm import tqdm
 
@@ -37,7 +39,7 @@ def shard_csv(data, shard, input_path):
             writer.writerows(data[start:end])
         print(f"Saved {end - start} samples to {output_path}.")
     print("Done.")
-2
+
 
 def main(args):
     input_path = args.input
@@ -57,6 +59,20 @@ def main(args):
             name += f"_root"
         if args.relength:
             name += "_relength"
+        if args.clean:
+            name += "_clean"
+        if args.unescape:
+            name += "_unescape"
+        if args.remove_url:
+            name += "_nourl"
+        if args.lang is not None:
+            name += f"_{args.lang}"
+            from lingua import Language, LanguageDetectorBuilder
+
+            lang_dict = dict(en=Language.ENGLISH)
+            assert args.lang in lang_dict
+            valid_lang = lang_dict[args.lang]
+            detector = LanguageDetectorBuilder.from_all_spoken_languages().with_low_accuracy_mode().build()
         output_path = os.path.join(os.path.dirname(input_path), name + ext)
 
     with open(input_path, "r") as f:
@@ -80,6 +96,20 @@ def main(args):
             continue
         if args.remove_empty_caption and len(caption) == 0:
             continue
+        if args.clean:
+            caption = caption.strip()
+            row[1] = caption
+        if args.unescape:
+            caption = html.unescape(caption)
+            row[1] = caption
+        if args.lang is not None:
+            confidence_values = detector.compute_language_confidence_values(caption)
+            confidence = [x.language for x in confidence_values[:5]]
+            if valid_lang not in confidence:
+                continue
+        if args.remove_url:
+            if re.search("(?P<url>https?://[^\s]+)", caption) is not None:
+                continue
         if args.remove_caption_prefix:
             for prefix in PREFIX:
                 if caption.startswith(prefix):
@@ -116,5 +146,9 @@ if __name__ == "__main__":
     parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--relength", action="store_true")
     parser.add_argument("--shard", type=int, default=None)
+    parser.add_argument("--lang", type=str, default=None)
+    parser.add_argument("--clean", action="store_true")
+    parser.add_argument("--unescape", action="store_true")
+    parser.add_argument("--remove-url", action="store_true")
     args = parser.parse_args()
     main(args)
