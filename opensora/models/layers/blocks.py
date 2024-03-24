@@ -328,7 +328,7 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         if mask is not None:
             attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
         x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
-        
+
         # apply all to all to gather back attention heads and scatter sequence
         x = x.view(B, -1, self.num_heads // sp_size, self.head_dim)
         x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
@@ -363,16 +363,28 @@ class T2IFinalLayer(nn.Module):
     The final layer of PixArt.
     """
 
-    def __init__(self, hidden_size, num_patch, out_channels):
+    def __init__(self, hidden_size, num_patch, out_channels, d_t=None, d_s=None):
         super().__init__()
         self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.linear = nn.Linear(hidden_size, num_patch * out_channels, bias=True)
         self.scale_shift_table = nn.Parameter(torch.randn(2, hidden_size) / hidden_size**0.5)
         self.out_channels = out_channels
+        self.d_t = d_t
+        self.d_s = d_s
 
-    def forward(self, x, t):
+    def forward(self, x, t, x_mask=None, t0=None):
         shift, scale = (self.scale_shift_table[None] + t[:, None]).chunk(2, dim=1)
         x = t2i_modulate(self.norm_final(x), shift, scale)
+        if x_mask is not None:
+            shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(2, dim=1)
+            x_zero = t2i_modulate(self.norm_final(x), shift_zero, scale_zero)
+
+            # t_mask_select
+            x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+            x_zero = rearrange(x_zero, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+            x = torch.where(x_mask[:, :, None, None], x, x_zero)
+            x = rearrange(x, "B T S C -> B (T S) C", T=self.d_t, S=self.d_s)
+
         x = self.linear(x)
         return x
 

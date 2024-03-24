@@ -1,6 +1,6 @@
 num_frames = 16
 frame_interval = 3
-image_size = (512, 512)
+image_size = (256, 256)
 
 # Define dataset
 root = None
@@ -17,9 +17,9 @@ sp_size = 1
 # Define model
 model = dict(
     type="STDiT-XL/2",
-    space_scale=1.0,
+    space_scale=0.5,
     time_scale=1.0,
-    from_pretrained=None,
+    from_pretrained="PixArt-XL-2-512x512.pth",
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
@@ -27,7 +27,6 @@ mask_ratios = [0.7, 0.15, 0.05, 0.05, 0.05]
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
-    micro_batch_size=128,
 )
 text_encoder = dict(
     type="t5",
