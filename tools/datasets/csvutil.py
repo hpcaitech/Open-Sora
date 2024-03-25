@@ -4,10 +4,21 @@ import html
 import os
 import re
 
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
-# path, name, #frames
-PREFIX = [
+tqdm.pandas()
+
+
+def get_video_length(path):
+    import cv2
+
+    cap = cv2.VideoCapture(path)
+    return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+
+LLAVA_PREFIX = [
     "The video shows",
     "The video captures",
     "The video features",
@@ -19,136 +30,170 @@ PREFIX = [
 ]
 
 
-def get_video_length(path):
-    import cv2
+def remove_caption_prefix(caption):
+    for prefix in LLAVA_PREFIX:
+        if caption.startswith(prefix):
+            caption = caption[len(prefix) :].strip()
+            if caption[0].islower():
+                caption = caption[0].upper() + caption[1:]
+            return caption
 
-    cap = cv2.VideoCapture(path)
-    return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+def build_lang_detector(lang_to_detect):
+    from lingua import Language, LanguageDetectorBuilder
+
+    lang_dict = dict(en=Language.ENGLISH)
+    assert lang_to_detect in lang_dict
+    valid_lang = lang_dict[lang_to_detect]
+    detector = LanguageDetectorBuilder.from_all_spoken_languages().with_low_accuracy_mode().build()
+
+    def detect_lang(caption):
+        confidence_values = detector.compute_language_confidence_values(caption)
+        confidence = [x.language for x in confidence_values[:5]]
+        if valid_lang not in confidence:
+            return False
+        return True
+
+    return detect_lang
 
 
-def shard_csv(data, shard, input_path):
-    n = len(data)
-    num_shard = n // shard
-    for i in range(shard):
-        start = i * num_shard
-        end = (i + 1) * num_shard if i != shard - 1 else n
-        file_name, ext = os.path.splitext(input_path)
-        output_path = os.path.join(os.path.join(os.path.dirname(file_name)), f"{os.path.basename(file_name)}_{i}{ext}")
-        with open(output_path, "w") as f:
-            writer = csv.writer(f)
-            writer.writerows(data[start:end])
-        print(f"Saved {end - start} samples to {output_path}.")
-    print("Done.")
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=str, nargs="+")
+    parser.add_argument("--output", type=str, default=None)
+    # special case
+    parser.add_argument("--shard", type=int, default=None)
+
+    # path processing
+    parser.add_argument("--abspath", type=str, default=None)
+    parser.add_argument("--relpath", type=str, default=None)
+    # caption filtering
+    parser.add_argument("--remove-empty-caption", action="store_true")
+    parser.add_argument("--lang", type=str, default=None)
+    parser.add_argument("--remove-url", action="store_true")
+    # caption processing
+    parser.add_argument("--remove-caption-prefix", action="store_true")
+    parser.add_argument("--unescape", action="store_true")
+    # num_frames processing
+    parser.add_argument("--relength", action="store_true")
+    # num_frames filtering
+    parser.add_argument("--fmin", type=int, default=None)
+    parser.add_argument("--fmax", type=int, default=None)
+    # aesthetic filtering
+    parser.add_argument("--aesmin", type=float, default=None)
+
+    return parser.parse_args()
+
+
+def get_output_path(args, input_name):
+    if args.output is not None:
+        return args.output
+
+    name = input_name
+    dir_path = os.path.dirname(args.input[0])
+
+    # path processing
+    if args.abspath is not None:
+        name += "_abspath"
+    if args.relpath is not None:
+        name += "_relpath"
+    # caption filtering
+    if args.remove_empty_caption:
+        name += "_rec"
+    if args.lang is not None:
+        name += f"_{args.lang}"
+    if args.remove_url:
+        name += "_nourl"
+    # caption processing
+    if args.remove_caption_prefix:
+        name += "_rcp"
+    if args.unescape:
+        name += "_unescape"
+    # num_frames processing
+    if args.relength:
+        name += "_relength"
+    # num_frames filtering
+    if args.fmin is not None:
+        name += f"_fmin_{args.fmin}"
+    if args.fmax is not None:
+        name += f"_fmax_{args.fmax}"
+    # aesthetic filtering
+    if args.aesmin is not None:
+        name += f"_aesmin_{args.aesmin}"
+
+    output_path = os.path.join(dir_path, f"{name}.csv")
+    return output_path
 
 
 def main(args):
-    input_path = args.input
-    output_path = args.output
-    if output_path is None:
-        name = os.path.basename(input_path)
-        name, ext = os.path.splitext(name)
-        if args.fmin is not None:
-            name += f"_fmin_{args.fmin}"
-        if args.fmax is not None:
-            name += f"_fmax_{args.fmax}"
-        if args.remove_empty_caption:
-            name += "_rec"
-        if args.remove_caption_prefix:
-            name += "_rcp"
-        if args.root is not None:
-            name += f"_root"
-        if args.relength:
-            name += "_relength"
-        if args.clean:
-            name += "_clean"
-        if args.unescape:
-            name += "_unescape"
-        if args.remove_url:
-            name += "_nourl"
-        if args.lang is not None:
-            name += f"_{args.lang}"
-            from lingua import Language, LanguageDetectorBuilder
+    # reading data
+    data = []
+    input_name = ""
+    for i, input_path in enumerate(args.input):
+        data.append(pd.read_csv(input_path))
+        input_name += os.path.basename(input_path).split(".")[0]
+        if i != len(args.input) - 1:
+            input_name += "|"
+        print(f"Loaded {len(data[-1])} samples from {input_path}.")
+    data = pd.concat(data, ignore_index=True, sort=False)
+    print(f"Total number of samples: {len(data)}.")
 
-            lang_dict = dict(en=Language.ENGLISH)
-            assert args.lang in lang_dict
-            valid_lang = lang_dict[args.lang]
-            detector = LanguageDetectorBuilder.from_all_spoken_languages().with_low_accuracy_mode().build()
-        output_path = os.path.join(os.path.dirname(input_path), name + ext)
+    # get output path
+    output_path = get_output_path(args, input_name)
 
-    with open(input_path, "r") as f:
-        reader = csv.reader(f)
-        data = list(reader)
-    print("Number of videos before filtering:", len(data))
+    # preparation
+    if args.lang is not None:
+        detect_lang = build_lang_detector(args.lang)
 
+    # processing
+    if args.abspath is not None:
+        assert args.relpath is None
+        data["path"] = data["path"].progress_apply(lambda x: os.path.join(args.abspath, x))
+    if args.relpath is not None:
+        assert args.abspath is None
+        data["path"] = data["path"].progress_apply(lambda x: os.path.relpath(x, args.relpath))
+    if args.remove_caption_prefix:
+        assert "text" in data.columns
+        data["text"] = data["text"].progress_apply(remove_caption_prefix)
+    if args.unescape:
+        assert "text" in data.columns
+        data["text"] = data["text"].progress_apply(html.unescape)
+    if args.relength:
+        data["num_frames"] = data["path"].progress_apply(get_video_length)
+
+    # filtering
+    if args.remove_empty_caption:
+        assert "text" in data.columns
+        data = data[data["text"].str.len() > 0]
+    if args.remove_url:
+        assert "text" in data.columns
+        data = data[~data["text"].str.contains(r"(?P<url>https?://[^\s]+)", regex=True)]
+    if args.lang is not None:
+        assert "text" in data.columns
+        data = data[data["text"].progress_apply(detect_lang)]
+    if args.fmin is not None:
+        assert "num_frames" in data.columns
+        data = data[data["num_frames"] >= args.fmin]
+    if args.fmax is not None:
+        assert "num_frames" in data.columns
+        data = data[data["num_frames"] <= args.fmax]
+    if args.aesmin is not None:
+        assert "aesthetic_score" in data.columns
+        data = data[data["aesthetic_score"] >= args.aesmin]
+    print(f"Filtered number of samples: {len(data)}.")
+
+    # shard data
     if args.shard is not None:
-        shard_csv(data, args.shard, input_path)
-        return
-
-    data_new = []
-    for i, row in tqdm(enumerate(data)):
-        path = row[0]
-        caption = row[1]
-        if len(row) >= 3:
-            n_frames = int(row[2])
-        if args.fmin is not None and n_frames < args.fmin:
-            continue
-        if args.fmax is not None and n_frames > args.fmax:
-            continue
-        if args.remove_empty_caption and len(caption) == 0:
-            continue
-        if args.clean:
-            caption = caption.strip()
-            row[1] = caption
-        if args.unescape:
-            caption = html.unescape(caption)
-            row[1] = caption
-        if args.lang is not None:
-            confidence_values = detector.compute_language_confidence_values(caption)
-            confidence = [x.language for x in confidence_values[:5]]
-            if valid_lang not in confidence:
-                continue
-        if args.remove_url:
-            if re.search("(?P<url>https?://[^\s]+)", caption) is not None:
-                continue
-        if args.remove_caption_prefix:
-            for prefix in PREFIX:
-                if caption.startswith(prefix):
-                    caption = caption[len(prefix) :].strip()
-                    if caption[0].islower():
-                        caption = caption[0].upper() + caption[1:]
-                    row[1] = caption
-                    break
-        if args.root is not None:
-            row[0] = os.path.join(args.root, path)
-        if args.relength:
-            n_frames = get_video_length(row[0])
-            if len(row) < 3:
-                row.append(n_frames)
-            else:
-                row[2] = n_frames
-        data_new.append(row)
-
-    print("Number of videos after filtering:", len(data_new))
-    with open(output_path, "w") as f:
-        writer = csv.writer(f)
-        writer.writerows(data_new)
-    print("Output saved to", output_path)
+        sharded_data = np.array_split(data, args.shard)
+        for i in range(args.shard):
+            output_path = output_path.replace(".csv", f"_{i}.csv")
+            sharded_data[i].to_csv(output_path, index=False)
+            print(f"Saved {len(sharded_data[i])} samples to {output_path}.")
+    else:
+        data.to_csv(output_path, index=False)
+        print(f"Saved {len(data)} samples to {output_path}.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input", type=str)
-    parser.add_argument("--output", type=str, default=None)
-    parser.add_argument("--fmin", type=int, default=None)
-    parser.add_argument("--fmax", type=int, default=None)
-    parser.add_argument("--root", type=str, default=None)
-    parser.add_argument("--remove-empty-caption", action="store_true")
-    parser.add_argument("--remove-caption-prefix", action="store_true")
-    parser.add_argument("--relength", action="store_true")
-    parser.add_argument("--shard", type=int, default=None)
-    parser.add_argument("--lang", type=str, default=None)
-    parser.add_argument("--clean", action="store_true")
-    parser.add_argument("--unescape", action="store_true")
-    parser.add_argument("--remove-url", action="store_true")
-    args = parser.parse_args()
+    args = parse_args()
     main(args)
