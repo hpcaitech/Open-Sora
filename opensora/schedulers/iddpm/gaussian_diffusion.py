@@ -697,7 +697,7 @@ class GaussianDiffusion:
         output = th.where((t == 0), decoder_nll, kl)
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, mask=None):
+    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, mask=None, weights=None):
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
@@ -763,7 +763,11 @@ class GaussianDiffusion:
                 ModelMeanType.EPSILON: noise,
             }[self.model_mean_type]
             assert model_output.shape == target.shape == x_start.shape
-            terms["mse"] = mean_flat((target - model_output) ** 2, mask=mask)
+            if weights is None:
+                terms["mse"] = mean_flat((target - model_output) ** 2, mask=mask)
+            else:
+                weight = _extract_into_tensor(weights, t, target.shape)
+                terms["mse"] = mean_flat(weight * (target - model_output) ** 2, mask=mask)
             if "vb" in terms:
                 terms["loss"] = terms["mse"] + terms["vb"]
             else:
