@@ -25,12 +25,12 @@ python -m tools.datasets.convert_dataset ucf101 UCF101_FOLDER --split videos
 
 ## Dataset Format
 
-The dataset should be provided in a CSV file, which is used both for training and data preprocessing. The CSV file should only contain the following columns (can be optional):
+The dataset should be provided in a CSV file, which is used both for training and data preprocessing. The CSV file should only contain the following columns (can be optional). Aspect ratio is width divided by height.
 
 ```csv
-path, text, num_frames, aesthetic_score, fps, width, height, aspect_ratio
-/absolute/path/to/image1.jpg, caption1, num_of_frames, score1
-/absolute/path/to/video2.mp4, caption2, num_of_frames, score2
+path, text, num_frames, fps, width, height, aspect_ratio, aesthetic_score, clip_score
+/absolute/path/to/image1.jpg, caption1, num_of_frames
+/absolute/path/to/video2.mp4, caption2, num_of_frames
 ```
 
 We use pandas to manage the CSV files. You can use the following code to read and write the CSV files:
@@ -47,18 +47,36 @@ We provide `csvutils.py` to manage the CSV files. You can use the following comm
 ```bash
 # csvutil takes multiple CSV files as input and merge them into one CSV file
 python -m tools.datasets.csvutil DATA1.csv DATA2.csv
+
 # filter frames between 128 and 256, with captions
 python -m tools.datasets.csvutil DATA.csv --fmin 128 --fmax 256 --remove-empty-caption
 # compute the number of frames for each video
-python -m tools.datasets.csvutil DATA.csv --relength
+python -m tools.datasets.csvutil DATA.csv --video-info
 # remove caption prefix
 python -m tools.datasets.csvutil DATA.csv --remove-caption-prefix
 # generate DATA_root.csv with absolute path
 python -m tools.datasets.csvutil DATA.csv --abspath /absolute/path/to/dataset
+
+# examine the first 10 rows of the CSV file
+head -n 10 DATA1.csv
+# count the number of data in the CSV file (approximately)
+wc -l DATA1.csv
 ```
 
 To accelerate processing speed, you can install [pandarallel](https://github.com/nalepae/pandarallel):
 
 ```bash
 pip install pandarallel
+```
+
+To filter text language, you need to install [lingua](https://github.com/pemistahl/lingua-py):
+
+```bash
+pip install lingua-language-detector
+```
+
+To get video information, you need to install [opencv-python](https://github.com/opencv/opencv-python):
+
+```bash
+pip install opencv-python
 ```

@@ -23,11 +23,18 @@ def apply(df, func):
     return df.progress_apply(func)
 
 
-def get_video_length(path):
+def get_video_info(path):
     import cv2
 
     cap = cv2.VideoCapture(path)
-    return int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    num_frames, height, width, fps = (
+        int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        float(cap.get(cv2.CAP_PROP_FPS)),
+    )
+    aspect_ratio = width / height if height > 0 else np.nan
+    return num_frames, height, width, aspect_ratio, fps
 
 
 LLAVA_PREFIX = [
@@ -76,6 +83,8 @@ def parse_args():
     parser.add_argument("--disable-parallel", action="store_true")
     # special case
     parser.add_argument("--shard", type=int, default=None)
+    parser.add_argument("--sort-descending", type=str, default=None)
+    parser.add_argument("--sort-ascending", type=str, default=None)
 
     # path processing
     parser.add_argument("--abspath", type=str, default=None)
@@ -88,12 +97,13 @@ def parse_args():
     parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--unescape", action="store_true")
     # num_frames processing
-    parser.add_argument("--relength", action="store_true")
+    parser.add_argument("--video-info", action="store_true")
     # num_frames filtering
     parser.add_argument("--fmin", type=int, default=None)
     parser.add_argument("--fmax", type=int, default=None)
     # aesthetic filtering
     parser.add_argument("--aesmin", type=float, default=None)
+    parser.add_argument("--matchmin", type=float, default=None)
 
     return parser.parse_args()
 
@@ -123,8 +133,8 @@ def get_output_path(args, input_name):
     if args.unescape:
         name += "_unescape"
     # num_frames processing
-    if args.relength:
-        name += "_relength"
+    if args.video_info:
+        name += "_vinfo"
     # num_frames filtering
     if args.fmin is not None:
         name += f"_fmin_{args.fmin}"
@@ -133,6 +143,16 @@ def get_output_path(args, input_name):
     # aesthetic filtering
     if args.aesmin is not None:
         name += f"_aesmin_{args.aesmin}"
+    # clip score filtering
+    if args.matchmin is not None:
+        name += f"_matchmin_{args.matchmin}"
+    # sort
+    if args.sort_descending is not None:
+        assert args.sort_ascending is None
+        name += "_sort"
+    if args.sort_ascending is not None:
+        assert args.sort_descending is None
+        name += "_sort"
 
     output_path = os.path.join(dir_path, f"{name}.csv")
     return output_path
@@ -171,8 +191,9 @@ def main(args):
     if args.unescape:
         assert "text" in data.columns
         data["text"] = apply(data["text"], html.unescape)
-    if args.relength:
-        data["num_frames"] = apply(data["path"], get_video_length)
+    if args.video_info:
+        info = apply(data["path"], get_video_info)
+        data["num_frames"], data["height"], data["width"], data["aspect_ratio"], data["fps"] = zip(*info)
 
     # filtering
     if args.remove_empty_caption:
@@ -183,7 +204,7 @@ def main(args):
         data = data[~data["text"].str.contains(r"(?P<url>https?://[^\s]+)", regex=True)]
     if args.lang is not None:
         assert "text" in data.columns
-        data = data[data["text"].progress_apply(detect_lang)] # cannot parallelize
+        data = data[data["text"].progress_apply(detect_lang)]  # cannot parallelize
     if args.fmin is not None:
         assert "num_frames" in data.columns
         data = data[data["num_frames"] >= args.fmin]
@@ -193,7 +214,16 @@ def main(args):
     if args.aesmin is not None:
         assert "aesthetic_score" in data.columns
         data = data[data["aesthetic_score"] >= args.aesmin]
+    if args.matchmin is not None:
+        assert "clip_score" in data.columns
+        data = data[data["clip_score"] >= args.matchmin]
     print(f"Filtered number of samples: {len(data)}.")
+
+    # sort
+    if args.sort_descending is not None:
+        data = data.sort_values(by=args.sort_descending, ascending=False)
+    if args.sort_ascending is not None:
+        data = data.sort_values(by=args.sort_ascending, ascending=True)
 
     # shard data
     if args.shard is not None:
