@@ -166,7 +166,7 @@ def main(args):
         data.append(pd.read_csv(input_path))
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(args.input) - 1:
-            input_name += "|"
+            input_name += "+"
         print(f"Loaded {len(data[-1])} samples from {input_path}.")
     data = pd.concat(data, ignore_index=True, sort=False)
     print(f"Total number of samples: {len(data)}.")
