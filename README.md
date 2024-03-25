@@ -162,6 +162,7 @@ on improving the quality and text alignment.
 We have provided a Gradio application in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
 
 ```bash
+pip install gradio
 python scripts/demo.py
 ```
 
