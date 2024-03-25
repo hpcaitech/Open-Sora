@@ -1,3 +1,4 @@
+import math
 import random
 from collections import OrderedDict
 
@@ -33,13 +34,14 @@ def update_ema(
 
 
 class MaskGenerator:
-    def __init__(self, mask_ratios):
+    def __init__(self, mask_ratios, condition_frames=4):
         self.mask_name = ["mask_no", "mask_random", "mask_head", "mask_tail", "mask_head_tail"]
         assert len(mask_ratios) == len(self.mask_name)
-        assert sum(mask_ratios) == 1.0
+        assert math.isclose(sum(mask_ratios), 1.0, abs_tol=1e-6)
         self.mask_prob = mask_ratios
         print(self.mask_prob)
         self.mask_acc_prob = [sum(self.mask_prob[: i + 1]) for i in range(len(self.mask_prob))]
+        self.condition_frames = condition_frames
 
     def get_mask(self, x):
         mask_type = random.random()
@@ -50,18 +52,18 @@ class MaskGenerator:
 
         mask = torch.ones(x.shape[2], dtype=torch.bool, device=x.device)
         if mask_name == "mask_random":
-            random_size = random.randint(1, 4)
+            random_size = random.randint(1, self.condition_frames)
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
             return mask
         elif mask_name == "mask_head":
-            random_size = random.randint(1, 4)
+            random_size = random.randint(1, self.condition_frames)
             mask[:random_size] = 0
         elif mask_name == "mask_tail":
-            random_size = random.randint(1, 4)
+            random_size = random.randint(1, self.condition_frames)
             mask[-random_size:] = 0
         elif mask_name == "mask_head_tail":
-            random_size = random.randint(1, 4)
+            random_size = random.randint(1, self.condition_frames)
             mask[:random_size] = 0
             mask[-random_size:] = 0
 
