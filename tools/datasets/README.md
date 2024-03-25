@@ -1,16 +1,18 @@
 # Dataset Download and Management
 
-## HD-VG-130M
+## Dataset Download
+
+### HD-VG-130M
 
 This dataset comprises 130M text-video pairs. You can download the dataset and prepare it for training according to [the dataset repository's instructions](https://github.com/daooshee/HD-VG-130M). There is a README.md file in the Google Drive link that provides instructions on how to download and cut the videos. For this version, we directly use the dataset provided by the authors.
 
-## VidProM
+### VidProM
 
 ```bash
 python -m tools.datasets.convert_dataset vidprom VIDPROM_FOLDER --info VidProM_semantic_unique.csv
 ```
 
-## Demo Dataset
+### Demo Dataset
 
 You can use ImageNet and UCF101 for a quick demo. After downloading the datasets, you can use the following command to prepare the csv file for the dataset:
 
@@ -53,4 +55,10 @@ python -m tools.datasets.csvutil DATA.csv --relength
 python -m tools.datasets.csvutil DATA.csv --remove-caption-prefix
 # generate DATA_root.csv with absolute path
 python -m tools.datasets.csvutil DATA.csv --abspath /absolute/path/to/dataset
+```
+
+To accelerate processing speed, you can install [pandarallel](https://github.com/nalepae/pandarallel):
+
+```bash
+pip install pandarallel
 ```

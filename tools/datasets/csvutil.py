@@ -1,14 +1,26 @@
 import argparse
-import csv
 import html
 import os
-import re
 
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 tqdm.pandas()
+
+try:
+    from pandarallel import pandarallel
+
+    pandarallel.initialize(progress_bar=True)
+    pandas_has_parallel = True
+except ImportError:
+    pandas_has_parallel = False
+
+
+def apply(df, func):
+    if pandas_has_parallel:
+        return df.parallel_apply(func)
+    return df.progress_apply(func)
 
 
 def get_video_length(path):
@@ -61,6 +73,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, nargs="+")
     parser.add_argument("--output", type=str, default=None)
+    parser.add_argument("--disable-parallel", action="store_true")
     # special case
     parser.add_argument("--shard", type=int, default=None)
 
@@ -148,18 +161,18 @@ def main(args):
     # processing
     if args.abspath is not None:
         assert args.relpath is None
-        data["path"] = data["path"].progress_apply(lambda x: os.path.join(args.abspath, x))
+        data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
     if args.relpath is not None:
         assert args.abspath is None
-        data["path"] = data["path"].progress_apply(lambda x: os.path.relpath(x, args.relpath))
+        data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
     if args.remove_caption_prefix:
         assert "text" in data.columns
-        data["text"] = data["text"].progress_apply(remove_caption_prefix)
+        data["text"] = apply(data["text"], remove_caption_prefix)
     if args.unescape:
         assert "text" in data.columns
-        data["text"] = data["text"].progress_apply(html.unescape)
+        data["text"] = apply(data["text"], html.unescape)
     if args.relength:
-        data["num_frames"] = data["path"].progress_apply(get_video_length)
+        data["num_frames"] = apply(data["path"], get_video_length)
 
     # filtering
     if args.remove_empty_caption:
@@ -170,7 +183,7 @@ def main(args):
         data = data[~data["text"].str.contains(r"(?P<url>https?://[^\s]+)", regex=True)]
     if args.lang is not None:
         assert "text" in data.columns
-        data = data[data["text"].progress_apply(detect_lang)]
+        data = data[data["text"].progress_apply(detect_lang)] # cannot parallelize
     if args.fmin is not None:
         assert "num_frames" in data.columns
         data = data[data["num_frames"] >= args.fmin]
@@ -196,4 +209,6 @@ def main(args):
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.disable_parallel:
+        pandas_has_parallel = False
     main(args)
