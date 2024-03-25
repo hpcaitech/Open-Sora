@@ -100,7 +100,7 @@ vae = dict(
 )
 text_encoder = dict(
     type="t5",                 # Select text encoder type (t5, clip)
-    from_pretrained="./pretrained_models/t5_ckpts", # Load from pretrained text encoder
+    from_pretrained="DeepFloyd/t5-v1_1-xxl", # Load from pretrained text encoder
     model_max_length=120,      # Maximum length of input text
 )
 scheduler = dict(
@@ -153,7 +153,7 @@ vae = dict(
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="./pretrained_models/t5_ckpts",
+    from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=120,
     shardformer=True,           # Enable shardformer for T5 acceleration
 )

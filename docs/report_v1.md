@@ -14,7 +14,7 @@ As shown in the figure, we insert a temporal attention right after each spatial 
 
 To focus on video generation, we hope to train the model based on a powerful image generation model. [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) is an efficiently trained high-quality image generation model with T5-conditioned DiT structure. We initialize our model with PixArt-α and initialize the projection layer of inserted temporal attention with zero. This initialization preserves model's ability of image generation at beginning, while Latte's architecture cannot. The inserted attention increases the number of parameter from 580M to 724M.
 
-![Architecture](https://i0.imgs.ovh/2024/03/16/erC1d.png)
+![Architecture](https://image.jiqizhixin.com/uploads/editor/ff49eaba-6b19-43d7-b65d-ad2ecdb9d555/640.jpeg)
 
 Drawing from the success of PixArt-α and Stable Video Diffusion, we also adopt a progressive training strategy: 16x256x256 on 366K pretraining datasets, and then 16x256x256, 16x512x512, and 64x512x512 on 20K datasets. With scaled position embedding, this strategy greatly reduces the computational cost.
 
