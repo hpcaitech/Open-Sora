@@ -17,4 +17,3 @@ __pycache__
 /venv
 pretrained_models/
 output*.mp4
-.cog
