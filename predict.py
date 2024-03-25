@@ -1,31 +1,23 @@
 # Prediction interface for Cog ⚙️
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
+import os
 import random
 import subprocess
-import numpy as np
 import shutil
 import time
 from typing import List
 
-from cog import BasePredictor, Input, Path
-
-# scripts/inference.py
-import os
-from mmengine.config import Config
-
-
+import numpy as np
 import torch
-import colossalai
-import torch.distributed as dist
+from cog import BasePredictor, Input, Path
+from mmengine.config import Config
 from mmengine.runner import set_random_seed
 
 from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import merge_args
 from opensora.utils.misc import to_torch_dtype
-from opensora.acceleration.parallel_states import set_sequence_parallel_group
-from colossalai.cluster import DistCoordinator
 
 MAX_SEED = np.iinfo(np.int32).max
 
@@ -43,26 +35,25 @@ def download_weights(url, dest, extract=True):
     print("downloading took: ", time.time() - start)
     
 def cog_config():
-    # taken from 64x512x512.py
+    # taken from 16x512x512.py
     cfg = Config(dict(
-        num_frames = 64,
-        fps = 24 // 2,
+        num_frames = 16,
+        fps = 24 // 3,
         image_size = (512, 512),
         dtype = "fp16",
-        batch_size = 1,
+        batch_size = 2,
         seed = 42,
         prompt_path = "./assets/texts/t2v_samples.txt",
         save_dir = "./outputs/samples/",
     ))
 
-    # Define model
     cfg.model = dict(
         type="STDiT-XL/2",
         space_scale=1.0,
-        time_scale=2 / 3,
+        time_scale=1.0,
         enable_flashattn=True,
         enable_layernorm_kernel=True,
-        from_pretrained="PRETRAINED_MODEL",
+        from_pretrained="PRETRAINED_MODEL"
     )
     cfg.vae = dict(
         type="VideoAutoencoderKL",
@@ -92,22 +83,10 @@ class Predictor(BasePredictor):
         if not os.path.exists(WEIGHTS_FOLDER):
             download_weights(MODEL_URL, WEIGHTS_FOLDER, extract=True)
         
-        # extra config:
-        ckpt_path = "pretrained_models/Open-Sora/OpenSora-v1-HQ-16x512x512.pth"
-        config_file = "configs/opensora/inference/64x512x512.py"
-        config_file = "configs/opensora/inference/16x512x512.py"
-        
-        # load config file
-        # option 1: manually
-        #self.cfg = cog_config()
-        #self.cfg.model["from_pretrained"] = ckpt_path
-        #if "multi_resolution" not in self.cfg:
-        #    self.cfg["multi_resolution"] = False
-        
-        # command line arguments from config_utils
+        # command line arguments from opensora.utils.config_utils
         extra_args = Config({
             'seed': 42,
-            'ckpt_path': ckpt_path,
+            'ckpt_path': "pretrained_models/Open-Sora/OpenSora-v1-HQ-16x512x512.pth",
             'batch-size': None,
             'prompt-path': None,
             'save-dir': None,
@@ -115,49 +94,19 @@ class Predictor(BasePredictor):
             'cfg_scale': None,
         })
         
-        # option 2: use config_utils
-        self.cfg = Config.fromfile(config_file)
+        self.cfg = cog_config()
         self.cfg = merge_args(self.cfg, args=extra_args, training=False)
 
-
-        # from scripts/inference
-
-        # ======================================================
-        # 1. cfg and init distributed env
-        # ======================================================
-
-        # # init distributed
-        # colossalai.launch_from_torch({})
-        # self.coordinator = DistCoordinator()
-
-        # if self.coordinator.world_size > 1:
-        #     set_sequence_parallel_group(dist.group.WORLD) 
-        #     enable_sequence_parallelism = True
-        # else:
-        #     enable_sequence_parallelism = False
-
-        # ======================================================
-        # 2. runtime variables
-        # ======================================================
         torch.set_grad_enabled(False)
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
-        print(self.cfg)
         self.dtype = to_torch_dtype(self.cfg.dtype)
 
-        # ======================================================
-        # 3. build model & load weights
-        # ======================================================
-        # 3.1. build model
         input_size = (self.cfg.num_frames, *self.cfg.image_size)
-        print(f"number of frames: {self.cfg.num_frames}, image_size: {self.cfg.image_size}")
-        print(f"resulting input size: {input_size}")
         self.vae = build_module(self.cfg.vae, MODELS)
-        print("vae", self.vae)
         self.latent_size = self.vae.get_latent_size(input_size)
-        print("latent size:", self.latent_size)
         self.text_encoder = build_module(self.cfg.text_encoder, MODELS, device=self.device)  # T5 must be fp32
         self.model = build_module(
             self.cfg.model,
@@ -171,14 +120,10 @@ class Predictor(BasePredictor):
         )
         self.text_encoder.y_embedder = self.model.y_embedder  # hack for classifier-free guidance
 
-        # 3.2. move to device & eval
         self.vae = self.vae.to(self.device, self.dtype).eval()
         self.model = self.model.to(self.device, self.dtype).eval()
-
-        # 3.3. build scheduler
         self.scheduler = build_module(self.cfg.scheduler, SCHEDULERS)
 
-        # 3.4. support for multi-resolution
         self.model_args = dict()
         if self.cfg.multi_resolution:
             image_size = self.cfg.image_size
@@ -207,32 +152,17 @@ class Predictor(BasePredictor):
             print(f"Using seed {seed}...")
         set_random_seed(seed=seed)
 
-        prompts = [prompt]
-          
-        # ======================================================
-        # 4. inference
-        # ======================================================
-        sample_idx = 0
+        samples = self.scheduler.sample(
+            self.model,
+            self.text_encoder,
+            z_size=(self.vae.out_channels, *self.latent_size),
+            prompts=[prompt],
+            device=self.device,
+            additional_args=self.model_args,
+        )
+        samples = self.vae.decode(samples.to(self.dtype))
 
-        for i in range(0, len(prompts), self.cfg.batch_size):
-            batch_prompts = prompts[i : i + self.cfg.batch_size]
-            samples = self.scheduler.sample(
-                self.model,
-                self.text_encoder,
-                z_size=(self.vae.out_channels, *self.latent_size),
-                prompts=batch_prompts,
-                device=self.device,
-                additional_args=self.model_args,
-            )
-            samples = self.vae.decode(samples.to(self.dtype))
-
-            save_paths = []
-            # if self.coordinator.is_master():
-            for idx, sample in enumerate(samples):
-                print(f"Prompt: {batch_prompts[idx]}")
-                save_path = os.path.join(save_dir, f"sample_{sample_idx}")
-                save_sample(sample, fps=self.cfg.fps, save_path=save_path)
-                save_paths.append(f"{save_path}.mp4")
-                sample_idx += 1
+        save_path = os.path.join(save_dir, f"output")
+        save_sample(samples[0], fps=self.cfg.fps, save_path=save_path) # write file to {save_path}.mp4
                 
-        return [Path(save_path) for save_path in save_paths]
+        return [Path(f"{save_path}.mp4")]
