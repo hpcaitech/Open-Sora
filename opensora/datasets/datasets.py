@@ -1,7 +1,7 @@
-import csv
 import os
 
 import numpy as np
+import pandas as pd
 import torch
 import torchvision
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
@@ -28,11 +28,9 @@ class DatasetFromCSV(torch.utils.data.Dataset):
         root=None,
     ):
         self.csv_path = csv_path
-        with open(csv_path, "r") as f:
-            reader = csv.reader(f)
-            self.samples = list(reader)
+        self.data = pd.read_csv(csv_path)
 
-        ext = self.samples[0][0].split(".")[-1]
+        ext = self.data["path"][0].split(".")[-1]
         if ext.lower() in VID_EXTENSIONS:
             self.is_video = True
         else:
@@ -40,18 +38,17 @@ class DatasetFromCSV(torch.utils.data.Dataset):
             self.is_video = False
 
         self.transform = transform
-
         self.num_frames = num_frames
         self.frame_interval = frame_interval
         self.temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
         self.root = root
 
     def getitem(self, index):
-        sample = self.samples[index]
-        path = sample[0]
+        sample = self.data.iloc[index]
+        path = sample["path"]
         if self.root:
             path = os.path.join(self.root, path)
-        text = sample[1]
+        text = sample["text"]
 
         if self.is_video:
             vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
@@ -86,4 +83,4 @@ class DatasetFromCSV(torch.utils.data.Dataset):
         raise RuntimeError("Too many bad data.")
 
     def __len__(self):
-        return len(self.samples)
+        return len(self.data)
