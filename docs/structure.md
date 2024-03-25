@@ -100,13 +100,14 @@ vae = dict(
 )
 text_encoder = dict(
     type="t5",                 # Select text encoder type (t5, clip)
-    from_pretrained="./pretrained_models/t5_ckpts", # Load from pretrained text encoder
+    from_pretrained="DeepFloyd/t5-v1_1-xxl", # Load from pretrained text encoder
     model_max_length=120,      # Maximum length of input text
 )
 scheduler = dict(
     type="iddpm",              # Select scheduler type (iddpm, dpm-solver)
     num_sampling_steps=100,    # Number of sampling steps
     cfg_scale=7.0,             # hyper-parameter for classifier-free diffusion
+    cfg_channel=3,             # how many channels to use for classifier-free diffusion, if None, use all channels
 )
 dtype = "fp16"                 # Computation type (fp16, fp32, bf16)
 
@@ -153,7 +154,7 @@ vae = dict(
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="./pretrained_models/t5_ckpts",
+    from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=120,
     shardformer=True,           # Enable shardformer for T5 acceleration
 )
