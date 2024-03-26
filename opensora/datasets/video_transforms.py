@@ -18,7 +18,9 @@
 import numbers
 import random
 
+import numpy as np
 import torch
+from PIL import Image
 
 
 def _is_tensor_video_clip(clip):

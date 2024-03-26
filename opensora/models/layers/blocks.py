@@ -121,6 +121,7 @@ class Attention(nn.Module):
         proj_drop: float = 0.0,
         norm_layer: nn.Module = nn.LayerNorm,
         enable_flashattn: bool = False,
+        rope=None,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -137,16 +138,27 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
+        self.rope = False
+        if rope is not None:
+            self.rope = True
+            self.rotary_emb = rope
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, N, C = x.shape
         qkv = self.qkv(x)
         qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
-        if self.enable_flashattn:
-            qkv_permute_shape = (2, 0, 1, 3, 4)
-        else:
-            qkv_permute_shape = (2, 0, 3, 1, 4)
-        qkv = qkv.view(qkv_shape).permute(qkv_permute_shape)
+
+        qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
+        if self.rope:
+            q = self.rotary_emb(q)
+            k = self.rotary_emb(k)
+        if self.enable_flashattn:
+            # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
+            q = q.permute(0, 2, 1, 3)
+            k = k.permute(0, 2, 1, 3)
+            v = v.permute(0, 2, 1, 3)
+
         q, k = self.q_norm(q), self.k_norm(k)
         if self.enable_flashattn:
             from flash_attn import flash_attn_func
@@ -188,7 +200,9 @@ class SeqParallelAttention(Attention):
         proj_drop: float = 0.0,
         norm_layer: nn.Module = nn.LayerNorm,
         enable_flashattn: bool = False,
+        rope=None,
     ) -> None:
+        assert rope is None, "Rope is not supported in SeqParallelAttention"
         super().__init__(
             dim=dim,
             num_heads=num_heads,
@@ -372,19 +386,23 @@ class T2IFinalLayer(nn.Module):
         self.d_t = d_t
         self.d_s = d_s
 
+    def t_mask_select(self, x_mask, x, masked_x):
+        # x: [B, (T, S), C]
+        # mased_x: [B, (T, S), C]
+        # x_mask: [B, T]
+        x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        x = torch.where(x_mask[:, :, None, None], x, masked_x)
+        x = rearrange(x, "B T S C -> B (T S) C")
+        return x
+
     def forward(self, x, t, x_mask=None, t0=None):
         shift, scale = (self.scale_shift_table[None] + t[:, None]).chunk(2, dim=1)
         x = t2i_modulate(self.norm_final(x), shift, scale)
         if x_mask is not None:
             shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(2, dim=1)
             x_zero = t2i_modulate(self.norm_final(x), shift_zero, scale_zero)
-
-            # t_mask_select
-            x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
-            x_zero = rearrange(x_zero, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
-            x = torch.where(x_mask[:, :, None, None], x, x_zero)
-            x = rearrange(x, "B T S C -> B (T S) C", T=self.d_t, S=self.d_s)
-
+            x = self.t_mask_select(x_mask, x, x_zero)
         x = self.linear(x)
         return x
 
