@@ -35,8 +35,6 @@ class STDiT2Block(nn.Module):
         self,
         hidden_size,
         num_heads,
-        d_s=None,
-        d_t=None,
         mlp_ratio=4.0,
         drop_path=0.0,
         enable_flashattn=False,
@@ -49,6 +47,7 @@ class STDiT2Block(nn.Module):
         self.enable_flashattn = enable_flashattn
         self._enable_sequence_parallelism = enable_sequence_parallelism
 
+        assert not self._enable_sequence_parallelism, "Sequence parallelism is not supported."
         if enable_sequence_parallelism:
             self.attn_cls = SeqParallelAttention
             self.mha_cls = SeqParallelMultiHeadCrossAttention
@@ -56,6 +55,7 @@ class STDiT2Block(nn.Module):
             self.attn_cls = Attention
             self.mha_cls = MultiHeadCrossAttention
 
+        # spatial branch
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = self.attn_cls(
             hidden_size,
@@ -63,24 +63,20 @@ class STDiT2Block(nn.Module):
             qkv_bias=True,
             enable_flashattn=enable_flashattn,
         )
+        self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
+
+        # cross attn
         self.cross_attn = self.mha_cls(hidden_size, num_heads)
+
+        # mlp branch
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.mlp = Mlp(
             in_features=hidden_size, hidden_features=int(hidden_size * mlp_ratio), act_layer=approx_gelu, drop=0
         )
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
-        self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)  # new
 
-        # temporal attention
-        self.d_s = d_s
-        self.d_t = d_t
-
-        if self._enable_sequence_parallelism:
-            sp_size = dist.get_world_size(get_sequence_parallel_group())
-            # make sure d_t is divisible by sp_size
-            assert d_t % sp_size == 0
-            self.d_t = d_t // sp_size
-
+        # temporal branch
+        self.norm_temp = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)  # new
         self.attn_temp = self.attn_cls(
             hidden_size,
             num_heads=num_heads,
@@ -89,19 +85,18 @@ class STDiT2Block(nn.Module):
             rope=rope,
         )
         self.scale_shift_table_temporal = nn.Parameter(torch.randn(3, hidden_size) / hidden_size**0.5)  # new
-        self.norm_temp = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)  # new
 
-    def t_mask_select(self, x_mask, x, masked_x):
+    def t_mask_select(self, x_mask, x, masked_x, T, S):
         # x: [B, (T, S), C]
         # mased_x: [B, (T, S), C]
         # x_mask: [B, T]
-        x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
-        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        x = rearrange(x, "B (T S) C -> B T S C", T=self.T, S=self.S)
+        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=T, S=S)
         x = torch.where(x_mask[:, :, None, None], x, masked_x)
         x = rearrange(x, "B T S C -> B (T S) C")
         return x
 
-    def forward(self, x, y, t, t_tmp, mask=None, x_mask=None, t0=None, t0_tmp=None):
+    def forward(self, x, y, t, t_tmp, mask=None, x_mask=None, t0=None, t0_tmp=None, T=None, S=None):
         B, N, C = x.shape
 
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
@@ -122,16 +117,16 @@ class STDiT2Block(nn.Module):
         x_m = t2i_modulate(self.norm1(x), shift_msa, scale_msa)
         if x_mask is not None:
             x_m_zero = t2i_modulate(self.norm1(x), shift_msa_zero, scale_msa_zero)
-            x_m = self.t_mask_select(x_mask, x_m, x_m_zero)
+            x_m = self.t_mask_select(x_mask, x_m, x_m_zero, T, S)
 
         # spatial branch
-        x_s = rearrange(x_m, "B (T S) C -> (B T) S C", T=self.d_t, S=self.d_s)
+        x_s = rearrange(x_m, "B (T S) C -> (B T) S C", T=T, S=S)
         x_s = self.attn(x_s)
-        x_s = rearrange(x_s, "(B T) S C -> B (T S) C", T=self.d_t, S=self.d_s)
+        x_s = rearrange(x_s, "(B T) S C -> B (T S) C", T=T, S=S)
         if x_mask is not None:
             x_s_zero = gate_msa_zero * x_s
             x_s = gate_msa * x_s
-            x_s = self.t_mask_select(x_mask, x_s, x_s_zero)
+            x_s = self.t_mask_select(x_mask, x_s, x_s_zero, T, S)
         else:
             x_s = gate_msa * x_s
         x = x + self.drop_path(x_s)
@@ -140,16 +135,16 @@ class STDiT2Block(nn.Module):
         x_m = t2i_modulate(self.norm_temp(x), shift_tmp, scale_tmp)
         if x_mask is not None:
             x_m_zero = t2i_modulate(self.norm_temp(x), shift_tmp_zero, scale_tmp_zero)
-            x_m = self.t_mask_select(x_mask, x_m, x_m_zero)
+            x_m = self.t_mask_select(x_mask, x_m, x_m_zero, T, S)
 
         # temporal branch
-        x_t = rearrange(x_m, "B (T S) C -> (B S) T C", T=self.d_t, S=self.d_s)
+        x_t = rearrange(x_m, "B (T S) C -> (B S) T C", T=T, S=S)
         x_t = self.attn_temp(x_t)
-        x_t = rearrange(x_t, "(B S) T C -> B (T S) C", T=self.d_t, S=self.d_s)
+        x_t = rearrange(x_t, "(B S) T C -> B (T S) C", T=T, S=S)
         if x_mask is not None:
             x_t_zero = gate_tmp_zero * x_t
             x_t = gate_tmp * x_t
-            x_t = self.t_mask_select(x_mask, x_t, x_t_zero)
+            x_t = self.t_mask_select(x_mask, x_t, x_t_zero, T, S)
         else:
             x_t = gate_tmp * x_t
         x = x + self.drop_path(x_t)
@@ -161,14 +156,14 @@ class STDiT2Block(nn.Module):
         x_m = t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)
         if x_mask is not None:
             x_m_zero = t2i_modulate(self.norm2(x), shift_mlp_zero, scale_mlp_zero)
-            x_m = self.t_mask_select(x_mask, x_m, x_m_zero)
+            x_m = self.t_mask_select(x_mask, x_m, x_m_zero, T, S)
 
         # mlp
         x_mlp = self.mlp(x_m)
         if x_mask is not None:
             x_mlp_zero = gate_mlp_zero * x_mlp
             x_mlp = gate_mlp * x_mlp
-            x_mlp = self.t_mask_select(x_mask, x_mlp, x_mlp_zero)
+            x_mlp = self.t_mask_select(x_mask, x_mlp, x_mlp_zero, T, S)
         else:
             x_mlp = gate_mlp * x_mlp
         x = x + self.drop_path(x_mlp)
@@ -217,14 +212,6 @@ class STDiT2(nn.Module):
         # support dynamic input
         self.patch_size = patch_size
         self.input_size = input_size
-        if input_size[0] == None:
-            self.num_temporal = None
-        else:
-            self.num_temporal = input_size[0] // patch_size[0]
-        self.num_spatial = np.prod(input_size[1:]) // np.prod(patch_size[1:])
-
-        self.register_buffer("pos_embed", self.get_spatial_pos_embed())
-        # self.register_buffer("pos_embed_temporal", self.get_temporal_pos_embed())
 
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
@@ -250,8 +237,6 @@ class STDiT2(nn.Module):
                     enable_flashattn=self.enable_flashattn,
                     enable_layernorm_kernel=self.enable_layernorm_kernel,
                     enable_sequence_parallelism=enable_sequence_parallelism,
-                    d_t=self.num_temporal,
-                    d_s=self.num_spatial,
                     rope=self.rope.rotate_queries_or_keys,
                 )
                 for i in range(self.depth)
@@ -282,7 +267,20 @@ class STDiT2(nn.Module):
         else:
             self.sp_rank = None
 
-    def forward(self, x, timestep, y, mask=None, x_mask=None):
+    def get_dynamic_size(self, x):
+        _, _, T, H, W = x.size()
+        if T % self.patch_size[0] != 0:
+            T += self.patch_size[0] - T % self.patch_size[0]
+        if H % self.patch_size[1] != 0:
+            H += self.patch_size[1] - H % self.patch_size[1]
+        if W % self.patch_size[2] != 0:
+            W += self.patch_size[2] - W % self.patch_size[2]
+        T = T // self.patch_size[0]
+        H = H // self.patch_size[1]
+        W = W // self.patch_size[2]
+        return (T, H, W)
+
+    def forward(self, x, timestep, y, mask=None, x_mask=None, num_frames=None):
         """
         Forward pass of STDiT.
         Args:
@@ -302,16 +300,23 @@ class STDiT2(nn.Module):
         # TODO: hard-coded for now
         hw = torch.tensor([self.input_size[1], self.input_size[2]], device=x.device, dtype=x.dtype).repeat(B, 1)
         ar = torch.tensor([[self.input_size[1] / self.input_size[2]]], device=x.device, dtype=x.dtype).repeat(B, 1)
-        fl = torch.tensor([self.input_size[0]], device=x.device, dtype=x.dtype).repeat(B, 1)
+        if num_frames is None:
+            num_frames = torch.tensor([x.shape[2]], device=x.device, dtype=x.dtype)
+        fl = num_frames.unsqueeze(1)
         csize = self.csize_embedder(hw, B)
         ar = self.ar_embedder(ar, B)
         fl = self.fl_embedder(fl, B)
         data_info = torch.cat([csize, ar], dim=1)
 
+        # Dynamic
+        _, _, Tx, Hx, Wx = x.size()
+        T, H, W = self.get_dynamic_size(x)
+        S = H * W
+
         # embedding
         x = self.x_embedder(x)  # [B, N, C]
-        x = rearrange(x, "B (T S) C -> B T S C", T=self.num_temporal, S=self.num_spatial)
-        x = x + self.pos_embed
+        x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
+        x = x + self.get_spatial_pos_embed(H, W).to(x.device, x.dtype)
         x = rearrange(x, "B T S C -> B (T S) C")
 
         # shard over the sequence dim if sp is enabled
@@ -362,6 +367,8 @@ class STDiT2(nn.Module):
                 x_mask,
                 t0_spc_mlp,
                 t0_tmp_mlp,
+                T,
+                S,
             )
 
         if self.enable_sequence_parallelism:
@@ -369,14 +376,14 @@ class STDiT2(nn.Module):
         # x.shape: [B, N, C]
 
         # final process
-        x = self.final_layer(x, t, x_mask, t0_spc)  # [B, N, C=T_p * H_p * W_p * C_out]
-        x = self.unpatchify(x)  # [B, C_out, T, H, W]
+        x = self.final_layer(x, t, x_mask, t0_spc, T, S)  # [B, N, C=T_p * H_p * W_p * C_out]
+        x = self.unpatchify(x, T, H, W, Tx, Hx, Wx)  # [B, C_out, T, H, W]
 
         # cast to float32 for better accuracy
         x = x.to(torch.float32)
         return x
 
-    def unpatchify(self, x):
+    def unpatchify(self, x, N_t, N_h, N_w, R_t, R_h, R_w):
         """
         Args:
             x (torch.Tensor): of shape [B, N, C]
@@ -385,7 +392,7 @@ class STDiT2(nn.Module):
             x (torch.Tensor): of shape [B, C_out, T, H, W]
         """
 
-        N_t, N_h, N_w = [self.input_size[i] // self.patch_size[i] for i in range(3)]
+        # N_t, N_h, N_w = [self.input_size[i] // self.patch_size[i] for i in range(3)]
         T_p, H_p, W_p = self.patch_size
         x = rearrange(
             x,
@@ -398,6 +405,8 @@ class STDiT2(nn.Module):
             W_p=W_p,
             C_out=self.out_channels,
         )
+        # unpad
+        x = x[:, :, :R_t, :R_h, :R_w]
         return x
 
     def unpatchify_old(self, x):
@@ -410,12 +419,10 @@ class STDiT2(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, t * pt, h * ph, w * pw))
         return imgs
 
-    def get_spatial_pos_embed(self, grid_size=None):
-        if grid_size is None:
-            grid_size = self.input_size[1:]
+    def get_spatial_pos_embed(self, H, W):
         pos_embed = get_2d_sincos_pos_embed(
             self.hidden_size,
-            (grid_size[0] // self.patch_size[1], grid_size[1] // self.patch_size[2]),
+            (H, W),
             scale=self.space_scale,
         )
         pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)

@@ -69,6 +69,8 @@ def merge_args(cfg, args, training=False):
             args.data_path = None
         if "mask_ratios" not in cfg:
             cfg["mask_ratios"] = None
+        if "transform_name" not in cfg.dataset:
+            cfg.dataset["transform_name"] = "center"
 
     # Both training and inference
     if "multi_resolution" not in cfg:

@@ -104,6 +104,25 @@ def center_crop_using_short_edge(clip):
     return crop(clip, i, j, th, tw)
 
 
+def resize_crop_to_fill(clip, target_size):
+    if not _is_tensor_video_clip(clip):
+        raise ValueError("clip should be a 4D torch.tensor")
+    h, w = clip.size(-2), clip.size(-1)
+    th, tw = target_size[0], target_size[1]
+    rh, rw = th / h, tw / w
+    if rh > rw:
+        sh, sw = th, int(w * rh)
+        clip = resize(clip, (sh, sw), "bilinear")
+        i = 0
+        j = int(round(sw - tw) / 2.0)
+    else:
+        sh, sw = int(h * rw), tw
+        clip = resize(clip, (sh, sw), "bilinear")
+        i = int(round(sh - th) / 2.0)
+        j = 0
+    return crop(clip, i, j, th, tw)
+
+
 def random_shift_crop(clip):
     """
     Slide along the long edge, with the short edge as crop size
@@ -170,6 +189,21 @@ def hflip(clip):
     if not _is_tensor_video_clip(clip):
         raise ValueError("clip should be a 4D torch.tensor")
     return clip.flip(-1)
+
+
+class ResizeCrop:
+    def __init__(self, size):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+
+    def __call__(self, clip):
+        clip = resize_crop_to_fill(clip, self.size)
+        return clip
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size})"
 
 
 class RandomCropVideo:

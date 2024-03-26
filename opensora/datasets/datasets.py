@@ -25,6 +25,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         num_frames=16,
         frame_interval=1,
         image_size=(256, 256),
+        transform_name="center",
     ):
         self.data_path = data_path
         self.data = pd.read_csv(data_path)
@@ -32,8 +33,8 @@ class VideoTextDataset(torch.utils.data.Dataset):
         self.frame_interval = frame_interval
         self.image_size = image_size
         self.transforms = {
-            "image": get_transforms_image(image_size[0]),
-            "video": get_transforms_video(image_size[0]),
+            "image": get_transforms_image(transform_name, image_size),
+            "video": get_transforms_video(transform_name, image_size),
         }
 
     def get_type(self, path):

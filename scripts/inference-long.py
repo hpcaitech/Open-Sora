@@ -156,7 +156,7 @@ def main():
 
         # 4.2. load reference videos & images
         if cfg.reference_path is not None:
-            refs_x = collect_references_batch(cfg.reference_path[i : i + cfg.batch_size], vae, cfg.image_size[0])
+            refs_x = collect_references_batch(cfg.reference_path[i : i + cfg.batch_size], vae, cfg.image_size)
             mask_strategy = cfg.mask_strategy[i : i + cfg.batch_size]
 
         # 4.3. long video generation
