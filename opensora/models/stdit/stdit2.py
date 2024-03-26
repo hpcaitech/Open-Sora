@@ -195,7 +195,6 @@ class STDiT2(nn.Module):
         model_max_length=120,
         dtype=torch.float32,
         space_scale=1.0,
-        time_scale=1.0,
         freeze=None,
         enable_flashattn=False,
         enable_layernorm_kernel=False,
@@ -206,12 +205,6 @@ class STDiT2(nn.Module):
         self.in_channels = in_channels
         self.out_channels = in_channels * 2 if pred_sigma else in_channels
         self.hidden_size = hidden_size
-        self.patch_size = patch_size
-        self.input_size = input_size
-        num_patches = np.prod([input_size[i] // patch_size[i] for i in range(3)])
-        self.num_patches = num_patches
-        self.num_temporal = input_size[0] // patch_size[0]
-        self.num_spatial = num_patches // self.num_temporal
         self.num_heads = num_heads
         self.dtype = dtype
         self.no_temporal_pos_emb = no_temporal_pos_emb
@@ -220,7 +213,15 @@ class STDiT2(nn.Module):
         self.enable_flashattn = enable_flashattn
         self.enable_layernorm_kernel = enable_layernorm_kernel
         self.space_scale = space_scale
-        self.time_scale = time_scale
+
+        # support dynamic input
+        self.patch_size = patch_size
+        self.input_size = input_size
+        if input_size[0] == None:
+            self.num_temporal = None
+        else:
+            self.num_temporal = input_size[0] // patch_size[0]
+        self.num_spatial = np.prod(input_size[1:]) // np.prod(patch_size[1:])
 
         self.register_buffer("pos_embed", self.get_spatial_pos_embed())
         # self.register_buffer("pos_embed_temporal", self.get_temporal_pos_embed())
@@ -416,15 +417,6 @@ class STDiT2(nn.Module):
             self.hidden_size,
             (grid_size[0] // self.patch_size[1], grid_size[1] // self.patch_size[2]),
             scale=self.space_scale,
-        )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
-        return pos_embed
-
-    def get_temporal_pos_embed(self):
-        pos_embed = get_1d_sincos_pos_embed(
-            self.hidden_size,
-            self.input_size[0] // self.patch_size[0],
-            scale=self.time_scale,
         )
         pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed

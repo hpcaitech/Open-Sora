@@ -8,6 +8,7 @@ from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
 from . import video_transforms
 from .utils import VID_EXTENSIONS
+from .utils import get_transforms_image, get_transforms_video
 
 
 class DatasetFromCSV(torch.utils.data.Dataset):
@@ -24,53 +25,61 @@ class DatasetFromCSV(torch.utils.data.Dataset):
         csv_path,
         num_frames=16,
         frame_interval=1,
-        transform=None,
-        root=None,
+        image_size=(256, 256),
     ):
         self.csv_path = csv_path
         self.data = pd.read_csv(csv_path)
-
-        ext = self.data["path"][0].split(".")[-1]
-        if ext.lower() in VID_EXTENSIONS:
-            self.is_video = True
-        else:
-            assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
-            self.is_video = False
-
-        self.transform = transform
         self.num_frames = num_frames
         self.frame_interval = frame_interval
         self.temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
-        self.root = root
+        self.transforms = {
+            "image": get_transforms_image(image_size[0]),
+            "video": get_transforms_video(image_size[0]),
+        }
+
+    def get_type(self, path):
+        ext = path.split(".")[-1]
+        if ext.lower() in VID_EXTENSIONS:
+            return "video"
+        else:
+            assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
+            return "image"
 
     def getitem(self, index):
         sample = self.data.iloc[index]
         path = sample["path"]
-        if self.root:
-            path = os.path.join(self.root, path)
         text = sample["text"]
+        file_type = self.get_type(path)
 
-        if self.is_video:
-            vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-            total_frames = len(vframes)
+        if file_type == "video":
+            # loading
+            vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
 
             # Sampling video frames
+            total_frames = len(vframes)
             start_frame_ind, end_frame_ind = self.temporal_sample(total_frames)
             assert (
                 end_frame_ind - start_frame_ind >= self.num_frames
             ), f"{path} with index {index} has not enough frames."
             frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, self.num_frames, dtype=int)
-
             video = vframes[frame_indice]
-            video = self.transform(video)  # T C H W
+
+            # transform
+            transform = self.transforms["video"]
+            video = transform(video)  # T C H W
         else:
+            # loading
             image = pil_loader(path)
-            image = self.transform(image)
+
+            # transform
+            transform = self.transforms["image"]
+            image = transform(image)
+
+            # repeat
             video = image.unsqueeze(0).repeat(self.num_frames, 1, 1, 1)
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-
         return {"video": video, "text": text}
 
     def __getitem__(self, index):
