@@ -410,8 +410,8 @@ class GaussianDiffusion:
         sample = out["mean"] + nonzero_mask * th.exp(0.5 * out["log_variance"]) * noise
         if mask is not None:
             if mask.shape[0] != x.shape[0]:
-                mask = mask.repeat(2, 1) # HACK
-            sample = th.where(mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1), sample, x)
+                mask = mask.repeat(2, 1)  # HACK
+            sample = th.where(mask[:, None, :, None, None], sample, x)
 
         return {"sample": sample, "pred_xstart": out["pred_xstart"]}
 
@@ -684,13 +684,16 @@ class GaussianDiffusion:
         true_mean, _, true_log_variance_clipped = self.q_posterior_mean_variance(x_start=x_start, x_t=x_t, t=t)
         out = self.p_mean_variance(model, x_t, t, clip_denoised=clip_denoised, model_kwargs=model_kwargs)
         kl = normal_kl(true_mean, true_log_variance_clipped, out["mean"], out["log_variance"])
-        kl = mean_flat(kl, mask=mask) / np.log(2.0)
 
         decoder_nll = -discretized_gaussian_log_likelihood(
             x_start, means=out["mean"], log_scales=0.5 * out["log_variance"]
         )
         assert decoder_nll.shape == x_start.shape
-        decoder_nll = mean_flat(decoder_nll, mask=mask) / np.log(2.0)
+
+        if mask is not None:
+            kl = th.where(mask[:, None, :, None, None], kl, decoder_nll)
+        kl = mean_flat(kl) / np.log(2.0)
+        decoder_nll = mean_flat(decoder_nll) / np.log(2.0)
 
         # At the first timestep return the decoder NLL,
         # otherwise return KL(q(x_{t-1}|x_t,x_0) || p(x_{t-1}|x_t))
@@ -715,7 +718,9 @@ class GaussianDiffusion:
             noise = th.randn_like(x_start)
         x_t = self.q_sample(x_start, t, noise=noise)
         if mask is not None:
-            x_t = th.where(mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1), x_t, x_start)
+            t0 = th.zeros_like(t)
+            x_t0 = self.q_sample(x_start, t0, noise=noise)
+            x_t = th.where(mask[:, None, :, None, None], x_t, x_t0)
 
         terms = {}
 
@@ -764,10 +769,10 @@ class GaussianDiffusion:
             }[self.model_mean_type]
             assert model_output.shape == target.shape == x_start.shape
             if weights is None:
-                terms["mse"] = mean_flat((target - model_output) ** 2, mask=mask)
+                terms["mse"] = mean_flat((target - model_output) ** 2)
             else:
                 weight = _extract_into_tensor(weights, t, target.shape)
-                terms["mse"] = mean_flat(weight * (target - model_output) ** 2, mask=mask)
+                terms["mse"] = mean_flat(weight * (target - model_output) ** 2)
             if "vb" in terms:
                 terms["loss"] = terms["mse"] + terms["vb"]
             else:
