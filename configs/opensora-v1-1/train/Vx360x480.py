@@ -1,10 +1,13 @@
 # Define dataset
 dataset = dict(
-    type="VideoTextDataset",
+    type="VariableVideoTextDataset",
     data_path=None,
-    num_frames=16,
+    num_frames=None,
     frame_interval=3,
-    image_size=(256, 256),
+    image_size=(360, 480),
+    transform_name="resize_crop",
+    bucket=[24, 48, 72],
+    batch_size_bucket={24: 12, 48: 6, 72: 4},
 )
 
 # Define acceleration
@@ -48,6 +51,6 @@ log_every = 10
 ckpt_every = 1000
 load = None
 
-batch_size = 8
+batch_size = 10 # only for logging
 lr = 2e-5
 grad_clip = 1.0

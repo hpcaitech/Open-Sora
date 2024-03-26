@@ -386,23 +386,27 @@ class T2IFinalLayer(nn.Module):
         self.d_t = d_t
         self.d_s = d_s
 
-    def t_mask_select(self, x_mask, x, masked_x):
+    def t_mask_select(self, x_mask, x, masked_x, T, S):
         # x: [B, (T, S), C]
         # mased_x: [B, (T, S), C]
         # x_mask: [B, T]
-        x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
-        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
+        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=T, S=S)
         x = torch.where(x_mask[:, :, None, None], x, masked_x)
         x = rearrange(x, "B T S C -> B (T S) C")
         return x
 
-    def forward(self, x, t, x_mask=None, t0=None):
+    def forward(self, x, t, x_mask=None, t0=None, T=None, S=None):
+        if T is None:
+            T = self.d_t
+        if S is None:
+            S = self.d_s
         shift, scale = (self.scale_shift_table[None] + t[:, None]).chunk(2, dim=1)
         x = t2i_modulate(self.norm_final(x), shift, scale)
         if x_mask is not None:
             shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(2, dim=1)
             x_zero = t2i_modulate(self.norm_final(x), shift_zero, scale_zero)
-            x = self.t_mask_select(x_mask, x, x_zero)
+            x = self.t_mask_select(x_mask, x, x_zero, T, S)
         x = self.linear(x)
         return x
 

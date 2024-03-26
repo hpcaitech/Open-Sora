@@ -19,7 +19,8 @@ from opensora.acceleration.parallel_states import (
 )
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from opensora.datasets import prepare_dataloader
-from opensora.registry import MODELS, SCHEDULERS, DATASETS, build_module
+from opensora.datasets.datasets_variable import prepare_dataloader_with_batchsampler
+from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
     create_experiment_workspace,
@@ -28,7 +29,7 @@ from opensora.utils.config_utils import (
     save_training_config,
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
-from opensora.utils.train_utils import update_ema, MaskGenerator
+from opensora.utils.train_utils import MaskGenerator, update_ema
 
 
 def main():
@@ -97,15 +98,29 @@ def main():
     #      "video": torch.Tensor,  # [B, C, T, H, W],
     #      "text": List[str],
     # }
-    dataloader = prepare_dataloader(
-        dataset,
-        batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
-        shuffle=True,
-        drop_last=True,
-        pin_memory=True,
-        process_group=get_data_parallel_group(),
-    )
+    if cfg.dataset.type == "VideoTextDataset":
+        dataloader = prepare_dataloader(
+            dataset,
+            batch_size=cfg.batch_size,
+            num_workers=cfg.num_workers,
+            shuffle=True,
+            drop_last=True,
+            pin_memory=True,
+            process_group=get_data_parallel_group(),
+        )
+    else:
+        dataloader = prepare_dataloader_with_batchsampler(
+            dataset,
+            batch_size=cfg.batch_size,
+            batch_size_bucket=dataset.batch_size_bucket,
+            bucket=dataset.bucket,
+            num_workers=cfg.num_workers,
+            shuffle=True,
+            drop_last=True,
+            pin_memory=True,
+            process_group=get_data_parallel_group(),
+        )
+        print(dataset.batch_size_bucket)
     logger.info(f"Dataset contains {len(dataset):,} videos ({dataset.data_path})")
 
     total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
@@ -184,12 +199,14 @@ def main():
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
-    dataloader.sampler.set_start_index(sampler_start_idx)
+    if cfg.dataset.type == "VideoTextDataset":
+        dataloader.sampler.set_start_index(sampler_start_idx)
     model_sharding(ema)
 
     # 6.2. training loop
     for epoch in range(start_epoch, cfg.epochs):
-        dataloader.sampler.set_epoch(epoch)
+        if cfg.dataset.type == "VideoTextDataset":
+            dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
         logger.info(f"Beginning epoch {epoch}...")
 
@@ -218,6 +235,10 @@ def main():
                     model_args["x_mask"] = mask
                 else:
                     mask = None
+
+                # Video info
+                if "num_frames" in batch:
+                    model_args["num_frames"] = batch["num_frames"].to(device, dtype)
 
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)

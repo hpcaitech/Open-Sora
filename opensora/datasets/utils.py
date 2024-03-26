@@ -18,6 +18,7 @@ from . import video_transforms
 
 VID_EXTENSIONS = ("mp4", "avi", "mov", "mkv")
 
+
 def temporal_random_crop(vframes, num_frames, frame_interval):
     temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
     total_frames = len(vframes)
@@ -26,46 +27,64 @@ def temporal_random_crop(vframes, num_frames, frame_interval):
     frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, num_frames, dtype=int)
     video = vframes[frame_indice]
     return video
-    
 
-def get_transforms_video(resolution=256):
-    transform_video = transforms.Compose(
-        [
-            video_transforms.ToTensorVideo(),  # TCHW
-            # video_transforms.RandomHorizontalFlipVideo(),
-            video_transforms.UCFCenterCropVideo(resolution),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-        ]
-    )
+
+def get_transforms_video(name="center", resolution=(256, 256)):
+    if name == "center":
+        assert resolution[0] == resolution[1], "Resolution must be square for center crop"
+        transform_video = transforms.Compose(
+            [
+                video_transforms.ToTensorVideo(),  # TCHW
+                # video_transforms.RandomHorizontalFlipVideo(),
+                video_transforms.UCFCenterCropVideo(resolution[0]),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            ]
+        )
+    elif name == "resize_crop":
+        transform_video = transforms.Compose(
+            [
+                video_transforms.ToTensorVideo(),  # TCHW
+                video_transforms.ResizeCrop(resolution),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            ]
+        )
+    else:
+        raise NotImplementedError(f"Transform {name} not implemented")
     return transform_video
 
 
-def get_transforms_image(image_size=256):
-    transform = transforms.Compose(
-        [
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size)),
-            # transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-        ]
-    )
+def get_transforms_image(name="center", image_size=(256, 256)):
+    if name == "center":
+        assert image_size[0] == image_size[1], "Image size must be square for center crop"
+        transform = transforms.Compose(
+            [
+                transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size[0])),
+                # transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            ]
+        )
+    elif name == "resize_crop":
+        transform = None
+    else:
+        raise NotImplementedError(f"Transform {name} not implemented")
     return transform
 
 
-def read_image_from_path(path, transform=None, num_frames=1, image_size=256):
+def read_image_from_path(path, transform=None, num_frames=1, image_size=(256, 256)):
     image = pil_loader(path)
     if transform is None:
-        transform = get_transforms_image(image_size)
+        transform = get_transforms_image(image_size=image_size)
     image = transform(image)
     video = image.unsqueeze(0).repeat(num_frames, 1, 1, 1)
     video = video.permute(1, 0, 2, 3)
     return video
 
 
-def read_video_from_path(path, transform=None, image_size=256):
+def read_video_from_path(path, transform=None, image_size=(256, 256)):
     vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
     if transform is None:
-        transform = get_transforms_video(image_size)
+        transform = get_transforms_video(image_size=image_size)
     video = transform(vframes)  # T C H W
     video = video.permute(1, 0, 2, 3)
     return video
