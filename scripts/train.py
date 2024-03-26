@@ -90,16 +90,10 @@ def main():
     # 3. build dataset and dataloader
     # ======================================================
     dataset = DatasetFromCSV(
-        cfg.data_path,
-        # TODO: change transforms
-        transform=(
-            get_transforms_video(cfg.image_size[0])
-            if not cfg.use_image_transform
-            else get_transforms_image(cfg.image_size[0])
-        ),
+        csv_path=cfg.data_path,
         num_frames=cfg.num_frames,
         frame_interval=cfg.frame_interval,
-        root=cfg.root,
+        image_size=cfg.image_size,
     )
 
     # TODO: use plugin's prepare dataloader
@@ -222,7 +216,7 @@ def main():
                     x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y)
-                
+
                 # Mask
                 if cfg.mask_ratios is not None:
                     mask = mask_generator.get_masks(x)
