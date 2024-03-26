@@ -47,6 +47,9 @@ def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
+    if args.data_path is not None:
+        cfg.dataset["data_path"] = args.data_path
+        args.data_path = None
 
     for k, v in vars(args).items():
         if k in cfg and v is not None:
@@ -96,7 +99,7 @@ def create_experiment_workspace(cfg):
 
     # Create an experiment folder
     model_name = cfg.model["type"].replace("/", "-")
-    exp_name = f"{experiment_index:03d}-F{cfg.num_frames}S{cfg.frame_interval}-{model_name}"
+    exp_name = f"{experiment_index:03d}-{model_name}"
     exp_dir = f"{cfg.outputs}/{exp_name}"
     os.makedirs(exp_dir, exist_ok=True)
     return exp_name, exp_dir

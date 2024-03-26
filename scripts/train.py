@@ -18,8 +18,8 @@ from opensora.acceleration.parallel_states import (
     set_sequence_parallel_group,
 )
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
-from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
-from opensora.registry import MODELS, SCHEDULERS, build_module
+from opensora.datasets import prepare_dataloader
+from opensora.registry import MODELS, SCHEDULERS, DATASETS, build_module
 from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
     create_experiment_workspace,
@@ -89,12 +89,7 @@ def main():
     # ======================================================
     # 3. build dataset and dataloader
     # ======================================================
-    dataset = DatasetFromCSV(
-        csv_path=cfg.data_path,
-        num_frames=cfg.num_frames,
-        frame_interval=cfg.frame_interval,
-        image_size=cfg.image_size,
-    )
+    dataset = build_module(cfg.dataset, DATASETS)
 
     # TODO: use plugin's prepare dataloader
     # a batch contains:
@@ -111,7 +106,7 @@ def main():
         pin_memory=True,
         process_group=get_data_parallel_group(),
     )
-    logger.info(f"Dataset contains {len(dataset):,} videos ({cfg.data_path})")
+    logger.info(f"Dataset contains {len(dataset):,} videos ({dataset.data_path})")
 
     total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
     logger.info(f"Total batch size: {total_batch_size}")
@@ -120,10 +115,10 @@ def main():
     # 4. build model
     # ======================================================
     # 4.1. build model
-    input_size = (cfg.num_frames, *cfg.image_size)
+    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
     vae = build_module(cfg.vae, MODELS)
+    input_size = (dataset.num_frames, *dataset.image_size)
     latent_size = vae.get_latent_size(input_size)
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
     model = build_module(
         cfg.model,
         MODELS,

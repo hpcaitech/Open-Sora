@@ -6,12 +6,13 @@ import torch
 import torchvision
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
+from opensora.registry import DATASETS
+
 from . import video_transforms
-from .utils import VID_EXTENSIONS
-from .utils import get_transforms_image, get_transforms_video
+from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video
 
-
-class DatasetFromCSV(torch.utils.data.Dataset):
+@DATASETS.register_module()
+class VideoTextDataset(torch.utils.data.Dataset):
     """load video according to the csv file.
 
     Args:
@@ -22,15 +23,16 @@ class DatasetFromCSV(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        csv_path,
+        data_path,
         num_frames=16,
         frame_interval=1,
         image_size=(256, 256),
     ):
-        self.csv_path = csv_path
-        self.data = pd.read_csv(csv_path)
+        self.data_path = data_path
+        self.data = pd.read_csv(data_path)
         self.num_frames = num_frames
         self.frame_interval = frame_interval
+        self.image_size = image_size
         self.temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
         self.transforms = {
             "image": get_transforms_image(image_size[0]),

@@ -1,8 +1,11 @@
 # Define dataset
-data_path = "CSV_PATH"
-num_frames = 16
-frame_interval = 3
-image_size = (256, 256)
+dataset = dict(
+    type="VideoTextDataset",
+    data_path=None,
+    num_frames=16,
+    frame_interval=3,
+    image_size=(256, 256),
+)
 
 # Define acceleration
 num_workers = 4
