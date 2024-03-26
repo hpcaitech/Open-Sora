@@ -18,6 +18,15 @@ from . import video_transforms
 
 VID_EXTENSIONS = ("mp4", "avi", "mov", "mkv")
 
+def temporal_random_crop(vframes, num_frames, frame_interval):
+    temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
+    total_frames = len(vframes)
+    start_frame_ind, end_frame_ind = temporal_sample(total_frames)
+    assert end_frame_ind - start_frame_ind >= num_frames
+    frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, num_frames, dtype=int)
+    video = vframes[frame_indice]
+    return video
+    
 
 def get_transforms_video(resolution=256):
     transform_video = transforms.Compose(

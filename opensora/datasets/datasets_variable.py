@@ -10,7 +10,7 @@ from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, t
 
 
 @DATASETS.register_module()
-class VideoTextDataset(torch.utils.data.Dataset):
+class VariableVideoTextDataset(torch.utils.data.Dataset):
     """load video according to the csv file.
 
     Args:
