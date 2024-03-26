@@ -47,9 +47,7 @@ def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
-    if args.data_path is not None:
-        cfg.dataset["data_path"] = args.data_path
-        args.data_path = None
+    
 
     for k, v in vars(args).items():
         if k in cfg and v is not None:
@@ -66,6 +64,9 @@ def merge_args(cfg, args, training=False):
             cfg["prompt"] = load_prompts(cfg["prompt_path"])
     else:
     # Training only
+        if args.data_path is not None:
+            cfg.dataset["data_path"] = args.data_path
+            args.data_path = None
         if "mask_ratios" not in cfg:
             cfg["mask_ratios"] = None
 
