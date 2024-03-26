@@ -1,14 +1,14 @@
-num_frames = 16
-frame_interval = 3
-image_size = (256, 256)
-
 # Define dataset
-root = None
-data_path = "CSV_PATH"
-use_image_transform = False
-num_workers = 4
+dataset = dict(
+    type="VideoTextDataset",
+    data_path=None,
+    num_frames=16,
+    frame_interval=3,
+    image_size=(256, 256),
+)
 
 # Define acceleration
+num_workers = 4
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
@@ -23,7 +23,7 @@ model = dict(
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
-# mask_ratios = [0.5, 0.29, 0.07, 0.07, 0.07]
+mask_ratios = [0.5, 0.29, 0.07, 0.07, 0.07]
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
