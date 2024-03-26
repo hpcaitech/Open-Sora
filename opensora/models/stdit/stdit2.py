@@ -322,7 +322,7 @@ class STDiT2(nn.Module):
         t_spc = t + data_info  # [B, C]
         t_tmp = t + fl  # [B, C]
         t_spc_mlp = self.t_block(t_spc)  # [B, 6*C]
-        t_tmp_mlp = self.t_block_temp(t + fl)  # [B, 3*C]
+        t_tmp_mlp = self.t_block_temp(t_tmp)  # [B, 3*C]
         if x_mask is not None:
             t0_timestep = torch.zeros_like(timestep)
             t0 = self.t_embedder(t0_timestep, dtype=x.dtype)
