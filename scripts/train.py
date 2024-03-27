@@ -299,7 +299,8 @@ def main():
                     )
 
         # the continue epochs are not resumed, so we need to reset the sampler start index and start step
-        dataloader.sampler.set_start_index(0)
+        if cfg.dataset.type == "VideoTextDataset":
+            dataloader.sampler.set_start_index(0)
         start_step = 0
 
 
