@@ -56,6 +56,8 @@ class VariableVideoTextDataset(torch.utils.data.Dataset):
         self.data["bucket"] = num_effect_frames.apply(lambda x: closet_smaller_bucket(x, bucket))
         gb = self.data.groupby("bucket")
         self.data_bucket = {x: gb.get_group(x) for x in bucket}
+        self.data_bucket_len = {x: len(self.data_bucket[x]) for x in bucket}
+        print(self.data_bucket_len)
 
         self.num_frames = num_frames
         assert self.num_frames is None, "num_frames must be None"

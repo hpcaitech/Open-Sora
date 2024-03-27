@@ -175,7 +175,7 @@ class STDiT2Block(nn.Module):
 class STDiT2(nn.Module):
     def __init__(
         self,
-        input_size=(1, 32, 32),
+        input_size=(None, 32, 32),
         in_channels=4,
         patch_size=(1, 2, 2),
         hidden_size=1152,
