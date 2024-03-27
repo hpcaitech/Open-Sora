@@ -19,7 +19,8 @@ The cost is approximately $0.01 per video (3 frames per video). The output is a 
 First, install LLaVA according to their [official instructions](https://github.com/haotian-liu/LLaVA?tab=readme-ov-file#install). We use the `liuhaotian/llava-v1.6-34b` model for captioning, which can be download [here](https://huggingface.co/liuhaotian/llava-v1.6-vicuna-7b). Then, run the following command to generate captions for videos with LLaVA:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,1 python -m tools.caption.caption_llava samples output.csv
+# we run this on 8xH800 GPUs
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava samples output.csv --tp-size 2 --dp-size 4 --bs 16
 ```
 
 The Yi-34B requires 2 80GB GPUs and 3s/sample. The output is a CSV file with path and caption.

@@ -1,6 +1,7 @@
 import base64
 import csv
 import os
+import time
 
 import cv2
 from PIL import Image
@@ -18,7 +19,7 @@ def get_filelist(file_path):
         for filename in files:
             ext = filename.split(".")[-1]
             if ext in VID_EXTENSIONS:
-                Filelist.append(filename)
+                Filelist.append(os.path.join(home, filename))
     return Filelist
 
 
@@ -65,3 +66,18 @@ def read_video_list(video_folder, output_file):
     videos = [video for video in videos if video not in processed_videos]
     print(f"Processing {len(videos)} new videos.")
     return videos
+
+
+class Timer:
+    def __init__(self):
+        self.time_taken = 0
+        self.start_time = 0
+        self.end_time = 0
+
+    def __enter__(self):
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self.end_time = time.time()
+        self.time_taken = self.end_time - self.start_time
