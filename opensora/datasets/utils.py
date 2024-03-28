@@ -11,7 +11,7 @@ from torchvision.utils import save_image
 
 from . import video_transforms
 
-VID_EXTENSIONS = ("mp4", "avi", "mov", "mkv")
+VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
 
 def temporal_random_crop(vframes, num_frames, frame_interval):

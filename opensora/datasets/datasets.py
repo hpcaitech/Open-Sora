@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 import torch
@@ -38,11 +40,11 @@ class VideoTextDataset(torch.utils.data.Dataset):
         }
 
     def get_type(self, path):
-        ext = path.split(".")[-1]
+        ext = os.path.splitext(path)[-1].lower()
         if ext.lower() in VID_EXTENSIONS:
             return "video"
         else:
-            assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
+            assert ext.lower() in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
             return "image"
 
     def getitem(self, index):
@@ -139,13 +141,14 @@ class VariableVideoTextDataset(VideoTextDataset):
             image = transform(image)
 
             # repeat
-            video = image.unsqueeze(0).repeat(self.num_frames, 1, 1, 1)
+            video = image.unsqueeze(0)
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
         return {"video": video, "text": text, "num_frames": num_frames, "height": height, "width": width, "ar": ar}
 
     def __getitem__(self, index):
+        return self.getitem(index)
         for _ in range(10):
             try:
                 return self.getitem(index)

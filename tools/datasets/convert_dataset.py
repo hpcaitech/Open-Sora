@@ -1,16 +1,21 @@
 import argparse
-import csv
 import os
 
 import pandas as pd
 from torchvision.datasets import ImageNet
 
 
-def get_filelist(file_path):
+IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
+VID_EXTENSIONS = ("mp4", "avi", "mov", "mkv")
+
+
+def get_filelist(file_path, exts=None):
     Filelist = []
     for home, dirs, files in os.walk(file_path):
         for filename in files:
-            Filelist.append(os.path.join(home, filename))
+            ext = os.path.splitext(filename)[-1].lower()
+            if exts is None or ext in exts:
+                Filelist.append(os.path.join(home, filename))
     return Filelist
 
 
@@ -61,9 +66,25 @@ def process_vidprom(root, info):
     print(f"Saved {len(df)} samples to vidprom.csv.")
 
 
+def process_general_images(root):
+    root = os.path.expanduser(root)
+    image_lists = get_filelist(root, IMG_EXTENSIONS)
+    df = pd.DataFrame(dict(path=image_lists))
+    df.to_csv("images.csv", index=False)
+    print(f"Saved {len(df)} samples to images.csv.")
+
+
+def process_general_videos(root):
+    root = os.path.expanduser(root)
+    video_lists = get_filelist(root, VID_EXTENSIONS)
+    df = pd.DataFrame(dict(path=video_lists))
+    df.to_csv("videos.csv", index=False)
+    print(f"Saved {len(df)} samples to videos.csv.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset", type=str, choices=["imagenet", "ucf101", "vidprom"])
+    parser.add_argument("dataset", type=str, choices=["imagenet", "ucf101", "vidprom", "image", "video"])
     parser.add_argument("root", type=str)
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--info", type=str, default=None)
@@ -75,5 +96,9 @@ if __name__ == "__main__":
         process_ucf101(args.root, args.split)
     elif args.dataset == "vidprom":
         process_vidprom(args.root, args.info)
+    elif args.dataset == "image":
+        process_general_images(args.root)
+    elif args.dataset == "video":
+        process_general_videos(args.root)
     else:
         raise ValueError("Invalid dataset")
