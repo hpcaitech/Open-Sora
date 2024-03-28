@@ -18,7 +18,7 @@ sp_size = 1
 
 model = dict(
     type="VAE_3D",
-    in_out_channels = 4,
+    in_out_channels = 3,
     latent_embed_dim = 256,
     filters = 64,
     num_res_blocks = 2,
