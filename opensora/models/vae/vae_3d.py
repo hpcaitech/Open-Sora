@@ -274,8 +274,8 @@ class Decoder(nn.Module):
 
 
         # NOTE: upsample, dimensions T, H, W
-        self.upsample_with_t = nn.Upsample(scale_factor=(2,2,2))
-        self.upsample = nn.Upsample(scale_factor=(1,2,2))
+        self.upsampler_with_t = nn.Upsample(scale_factor=(2,2,2))
+        self.upsampler = nn.Upsample(scale_factor=(1,2,2))
 
         # ResBlocks and conv upsample
         prev_filters = filters # SCH: in_channels
@@ -330,9 +330,9 @@ class Decoder(nn.Module):
                     x = self.conv_blocks[i-1](x)
             elif self.upsample == 'nearest+conv':
                 if self.temporal_downsample[i - 1]:
-                    x = self.upsample_with_t(x)
+                    x = self.upsampler_with_t(x)
                 else:
-                    x = self.upsample(x)
+                    x = self.upsampler(x)
                 x = self.conv_blocks[i-1](x)
             else:
                 raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
