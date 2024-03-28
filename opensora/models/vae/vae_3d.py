@@ -170,7 +170,7 @@ class Encoder(nn.Module):
             prev_filters = filters # update in_channels
 
         # MAGVIT uses Group Normalization
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device = self.device) # SCH: separate <prev_filters> channels into 32 groups
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype) # SCH: separate <prev_filters> channels into 32 groups
 
         self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1))
 
@@ -308,7 +308,7 @@ class Decoder(nn.Module):
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
                 
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=self.device)
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype)
         self.conv2 = self.conv_fn(prev_filters, self.output_dim, kernel_size=(3, 3, 3))
 
 
