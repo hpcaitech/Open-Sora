@@ -33,7 +33,7 @@ from opensora.utils.config_utils import (
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
 from opensora.utils.train_utils import update_ema, MaskGenerator
-
+from opensora.models.vae.model_utils import VEA3DLoss
 
 
 def main():
@@ -205,7 +205,11 @@ def main():
                 batch = next(dataloader_iter)
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
 
-                loss = vae.get_loss(x)
+                # loss = vae.get_loss(x)
+                loss_function = VEA3DLoss(kl_weight=cfg.kl_weight)
+                reconstructions, posterior = vae(x)
+                loss = loss_function(batch, reconstructions, posterior)
+
                 # Backward & update
                 booster.backward(loss=loss, optimizer=optimizer)
                 optimizer.step()
