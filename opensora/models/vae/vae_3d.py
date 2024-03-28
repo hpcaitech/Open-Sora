@@ -222,6 +222,7 @@ class Decoder(nn.Module):
         self.channel_multipliers = channel_multipliers
         self.temporal_downsample = temporal_downsample
         self.num_groups = num_groups
+        self.dtype = dtype
 
         if isinstance(self.temporal_downsample, int):
             self.temporal_downsample = _get_selected_flags(
