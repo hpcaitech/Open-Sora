@@ -45,8 +45,17 @@ class Conv(nn.Conv3d):
         padding=VALID to disable padding in nn.Conv.
     """
 
-    def __init__(self, custom_padding:Optional[str] = None):
-        super().__init__()
+    def __init__(
+        self, 
+        in_channels,
+        out_channels,
+        kernel_size,
+        dtype = "bf16",
+        padding = "same",
+        use_bias=False,
+        custom_padding:Optional[str] = None,
+    ):
+        super(Conv, self).__init__(in_channels, out_channels, kernel_size, dtype=dtype, padding=padding)
         self.custom_padding = custom_padding
 
     def forward(self, x):
