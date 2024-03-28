@@ -46,6 +46,7 @@ class Conv(nn.Conv3d):
     """
 
     def __init__(self, custom_padding:Optional[str] = None):
+        super().__init__()
         self.custom_padding = custom_padding
 
     def forward(self, x):
