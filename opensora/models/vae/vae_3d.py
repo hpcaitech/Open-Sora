@@ -41,9 +41,9 @@ class ResBlock(nn.Module):
         self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype)
+        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype, device=self.device)
         self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype)
+        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype, device=self.device)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if self.use_conv_shortcut:
             self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
@@ -170,7 +170,7 @@ class Encoder(nn.Module):
             prev_filters = filters # update in_channels
 
         # MAGVIT uses Group Normalization
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype) # SCH: separate <prev_filters> channels into 32 groups
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device = self.device) # SCH: separate <prev_filters> channels into 32 groups
 
         self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1))
 
@@ -308,7 +308,7 @@ class Decoder(nn.Module):
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
                 
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype)
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=self.device)
         self.conv2 = self.conv_fn(prev_filters, self.output_dim, kernel_size=(3, 3, 3))
 
 
