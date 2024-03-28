@@ -53,15 +53,15 @@ class ResBlock(nn.Module):
 
 
     def forward(self, x):
-        input_dim = x.shape[-1]
+        input_dim = x.shape[1]
         residual = x
         x = self.norm1(x)
         x = self.activate(x)
         x = self.conv1(x)
         x = self.norm2(x)
         x = self.activate(x)
-        x = self.conv2(x) 
-        if input_dim != self.filters:
+        x = self.conv2(x)  
+        if input_dim != self.filters: # TODO: what does it do here
             residual = self.conv3(residual)
         return x + residual 
     
