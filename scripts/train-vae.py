@@ -131,7 +131,7 @@ def main():
     # 4. build model
     # ======================================================
     # 4.1. build model
-    vae = build_module(cfg.model, MODELS)
+    vae = build_module(cfg.model, MODELS, device=device)
     vae_numel, vae_numel_trainable = get_model_numel(vae)
     logger.info(
         f"Trainable vae params: {format_numel_str(vae_numel_trainable)}, Total model params: {format_numel_str(vae_numel)}"
@@ -207,8 +207,8 @@ def main():
 
                 # loss = vae.get_loss(x)
                 loss_function = VEA3DLoss(kl_weight=cfg.model.kl_weight).to(device, dtype)
-                reconstructions, posterior = vae(x)
                 breakpoint()
+                reconstructions, posterior = vae(x)
                 loss = loss_function(batch, reconstructions, posterior)
 
                 # Backward & update

@@ -33,6 +33,7 @@ class ResBlock(nn.Module):
             activation_fn=nn.ReLU, 
             use_conv_shortcut=False,
             num_groups=32,
+            device="cpu",
     ):
         super().__init__()
         self.filters = filters
@@ -41,9 +42,9 @@ class ResBlock(nn.Module):
         self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype)
+        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype, device=device)
         self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype)
+        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype, device=device)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if self.use_conv_shortcut:
             self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
@@ -88,6 +89,7 @@ class Encoder(nn.Module):
         custom_conv_padding = None,
         activation_fn = 'swish',
         dtype=torch.bfloat16,
+        device="cpu",
     ):
         super().__init__()
         self.dtype = dtype
@@ -132,6 +134,7 @@ class Encoder(nn.Module):
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
             num_groups=self.num_groups,
+            device=device,
         )
         
         self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
@@ -170,7 +173,7 @@ class Encoder(nn.Module):
             prev_filters = filters # update in_channels
 
         # MAGVIT uses Group Normalization
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype) # SCH: separate <prev_filters> channels into 32 groups
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=device) # SCH: separate <prev_filters> channels into 32 groups
 
         self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1))
 
@@ -213,6 +216,7 @@ class Decoder(nn.Module):
         custom_conv_padding = None,
         activation_fn = 'swish',
         dtype=torch.bfloat16,
+        device="cpu",
     ):
         super().__init__()
         self.output_dim = in_out_channels
@@ -260,6 +264,7 @@ class Decoder(nn.Module):
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
             num_groups=self.num_groups,
+            device=device,
         )
         self.num_blocks = len(self.channel_multipliers)
 
@@ -308,7 +313,7 @@ class Decoder(nn.Module):
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
                 
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype)
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=device)
         self.conv2 = self.conv_fn(prev_filters, self.output_dim, kernel_size=(3, 3, 3))
 
 
@@ -362,6 +367,7 @@ class VAE_3D(nn.Module):
         kl_embed_dim = 64,
         kl_weight = 0.000001,
         dtype=torch.bfloat16,
+        device="cpu",
         # precision: Any = jax.lax.Precision.DEFAULT
     ):
         super().__init__()
@@ -384,7 +390,8 @@ class VAE_3D(nn.Module):
             conv_downsample = conv_downsample, 
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn, 
-            dtype=dtype
+            dtype=dtype,
+            device=device,
         )
         self.decoder = Decoder(
             latent_embed_dim = latent_embed_dim,
@@ -398,6 +405,7 @@ class VAE_3D(nn.Module):
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn,
             dtype=dtype,
+            device=device,
         )
 
         # self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
