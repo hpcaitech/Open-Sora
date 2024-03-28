@@ -134,8 +134,15 @@ class Encoder(nn.Module):
             num_groups=self.num_groups,
         )
         
-
-        self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
+        self.conv1 = nn.Conv3d(
+            in_out_channels, 
+            self.filters, 
+            kernel_size=(3, 3, 3), 
+            bias=False,
+            dtype=self.dtype,
+            padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
+        )
+        # self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
 
         # ResBlocks and conv downsample
         self.block_res_blocks = []
