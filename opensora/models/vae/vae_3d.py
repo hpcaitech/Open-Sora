@@ -39,13 +39,13 @@ class ResBlock(nn.Module):
         
         # SCH: MAGVIT uses GroupNorm by default
         self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype)
-        self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), use_bias=False)
+        self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
         self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype)
-        self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), use_bias=False)
+        self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if self.use_conv_shortcut:
-            self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), use_bias=False)
+            self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         else:
-            self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(1, 1, 1), use_bias=False)
+            self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(1, 1, 1), bias=False)
 
         self.dtype = dtype
         self.activate = activation_fn()
@@ -135,7 +135,7 @@ class Encoder(nn.Module):
         )
         
 
-        self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), use_bias=False)
+        self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
 
         # ResBlocks and conv downsample
         self.block_res_blocks = []
@@ -265,7 +265,7 @@ class Decoder(nn.Module):
 
         filters = self.filters * self.channel_multipliers[-1]
 
-        self.conv1 = self.conv_fn(self.embedding_dim, filters, kernel_size=(3, 3, 3), use_bias=True)
+        self.conv1 = self.conv_fn(self.embedding_dim, filters, kernel_size=(3, 3, 3), bias=True)
 
         # last layer res block
         self.res_blocks = []
