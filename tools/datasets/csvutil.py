@@ -42,7 +42,7 @@ def get_video_info(path):
             int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
             float(cap.get(cv2.CAP_PROP_FPS)),
         )
-        aspect_ratio = height / width if width > 0 else np.nan
+    aspect_ratio = height / width if width > 0 else np.nan
     return num_frames, height, width, aspect_ratio, fps
 
 

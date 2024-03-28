@@ -160,6 +160,7 @@ class Bucket:
 
     def info_bucket(self, dataset, frame_interval=1):
         infos = dict()
+        infos_ar = dict()
         for i in range(len(dataset)):
             T, H, W = dataset.get_data_info(i)
             bucket_id = self.get_bucket_id(T, H, W, frame_interval)
@@ -167,9 +168,13 @@ class Bucket:
                 continue
             if f"{(bucket_id[0], bucket_id[1])}" not in infos:
                 infos[f"{(bucket_id[0], bucket_id[1])}"] = 0
+            if f"{bucket_id[2]}" not in infos_ar:
+                infos_ar[f"{bucket_id[2]}"] = 0
             infos[f"{(bucket_id[0], bucket_id[1])}"] += 1
+            infos_ar[f"{bucket_id[2]}"] += 1
         print(f"Dataset contains {len(dataset)} samples.")
         print("Bucket info:", infos)
+        print("Aspect ratio info:", infos_ar)
 
     def get_bucket_id(self, T, H, W, frame_interval=1):
         # hw
