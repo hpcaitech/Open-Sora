@@ -206,7 +206,7 @@ def main():
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
 
                 # loss = vae.get_loss(x)
-                loss_function = VEA3DLoss(kl_weight=cfg.kl_weight)
+                loss_function = VEA3DLoss(kl_weight=cfg.model.kl_weight)
                 reconstructions, posterior = vae(x)
                 loss = loss_function(batch, reconstructions, posterior)
 
