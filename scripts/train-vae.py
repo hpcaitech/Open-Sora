@@ -131,7 +131,7 @@ def main():
     # 4. build model
     # ======================================================
     # 4.1. build model
-    vae = build_module(cfg.vae, MODELS)
+    vae = build_module(cfg.model, MODELS)
     vae_numel, vae_numel_trainable = get_model_numel(vae)
     logger.info(
         f"Trainable vae params: {format_numel_str(vae_numel_trainable)}, Total model params: {format_numel_str(vae_numel)}"

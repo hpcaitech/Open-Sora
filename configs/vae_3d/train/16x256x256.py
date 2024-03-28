@@ -16,7 +16,7 @@ sp_size = 1
 
 # Define model
 
-vae = dict(
+model = dict(
     type="VAE_3D",
     from_pretrained=None,
     in_out_channels = 4,
