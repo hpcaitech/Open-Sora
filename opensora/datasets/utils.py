@@ -1,15 +1,9 @@
-import random
-from typing import Iterator, Optional
-
 import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
-from torch.distributed import ProcessGroup
-from torch.distributed.distributed_c10d import _get_default_group
-from torch.utils.data import DataLoader, Dataset
-from torch.utils.data.distributed import DistributedSampler
+
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 from torchvision.io import write_video
 from torchvision.utils import save_image
@@ -29,14 +23,16 @@ def temporal_random_crop(vframes, num_frames, frame_interval):
     return video
 
 
-def get_transforms_video(name="center", resolution=(256, 256)):
-    if name == "center":
-        assert resolution[0] == resolution[1], "Resolution must be square for center crop"
+def get_transforms_video(name="center", image_size=(256, 256)):
+    if name is None:
+        return None
+    elif name == "center":
+        assert image_size[0] == image_size[1], "image_size must be square for center crop"
         transform_video = transforms.Compose(
             [
                 video_transforms.ToTensorVideo(),  # TCHW
                 # video_transforms.RandomHorizontalFlipVideo(),
-                video_transforms.UCFCenterCropVideo(resolution[0]),
+                video_transforms.UCFCenterCropVideo(image_size[0]),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
             ]
         )
@@ -44,7 +40,7 @@ def get_transforms_video(name="center", resolution=(256, 256)):
         transform_video = transforms.Compose(
             [
                 video_transforms.ToTensorVideo(),  # TCHW
-                video_transforms.ResizeCrop(resolution),
+                video_transforms.ResizeCrop(image_size),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
             ]
         )
@@ -54,7 +50,9 @@ def get_transforms_video(name="center", resolution=(256, 256)):
 
 
 def get_transforms_image(name="center", image_size=(256, 256)):
-    if name == "center":
+    if name is None:
+        return None
+    elif name == "center":
         assert image_size[0] == image_size[1], "Image size must be square for center crop"
         transform = transforms.Compose(
             [
@@ -121,89 +119,6 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
         write_video(save_path, x, fps=fps, video_codec="h264")
     print(f"Saved to {save_path}")
     return save_path
-
-
-class StatefulDistributedSampler(DistributedSampler):
-    def __init__(
-        self,
-        dataset: Dataset,
-        num_replicas: Optional[int] = None,
-        rank: Optional[int] = None,
-        shuffle: bool = True,
-        seed: int = 0,
-        drop_last: bool = False,
-    ) -> None:
-        super().__init__(dataset, num_replicas, rank, shuffle, seed, drop_last)
-        self.start_index: int = 0
-
-    def __iter__(self) -> Iterator:
-        iterator = super().__iter__()
-        indices = list(iterator)
-        indices = indices[self.start_index :]
-        return iter(indices)
-
-    def __len__(self) -> int:
-        return self.num_samples - self.start_index
-
-    def set_start_index(self, start_index: int) -> None:
-        self.start_index = start_index
-
-
-def prepare_dataloader(
-    dataset,
-    batch_size,
-    shuffle=False,
-    seed=1024,
-    drop_last=False,
-    pin_memory=False,
-    num_workers=0,
-    process_group: Optional[ProcessGroup] = None,
-    **kwargs,
-):
-    r"""
-    Prepare a dataloader for distributed training. The dataloader will be wrapped by
-    `torch.utils.data.DataLoader` and `StatefulDistributedSampler`.
-
-
-    Args:
-        dataset (`torch.utils.data.Dataset`): The dataset to be loaded.
-        shuffle (bool, optional): Whether to shuffle the dataset. Defaults to False.
-        seed (int, optional): Random worker seed for sampling, defaults to 1024.
-        add_sampler: Whether to add ``DistributedDataParallelSampler`` to the dataset. Defaults to True.
-        drop_last (bool, optional): Set to True to drop the last incomplete batch, if the dataset size
-            is not divisible by the batch size. If False and the size of dataset is not divisible by
-            the batch size, then the last batch will be smaller, defaults to False.
-        pin_memory (bool, optional): Whether to pin memory address in CPU memory. Defaults to False.
-        num_workers (int, optional): Number of worker threads for this dataloader. Defaults to 0.
-        kwargs (dict): optional parameters for ``torch.utils.data.DataLoader``, more details could be found in
-                `DataLoader <https://pytorch.org/docs/stable/_modules/torch/utils/data/dataloader.html#DataLoader>`_.
-
-    Returns:
-        :class:`torch.utils.data.DataLoader`: A DataLoader used for training or testing.
-    """
-    _kwargs = kwargs.copy()
-    process_group = process_group or _get_default_group()
-    sampler = StatefulDistributedSampler(
-        dataset, num_replicas=process_group.size(), rank=process_group.rank(), shuffle=shuffle
-    )
-
-    # Deterministic dataloader
-    def seed_worker(worker_id):
-        worker_seed = seed
-        np.random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
-        random.seed(worker_seed)
-
-    return DataLoader(
-        dataset,
-        batch_size=batch_size,
-        sampler=sampler,
-        worker_init_fn=seed_worker,
-        drop_last=drop_last,
-        pin_memory=pin_memory,
-        num_workers=num_workers,
-        **_kwargs,
-    )
 
 
 def center_crop_arr(pil_image, image_size):

@@ -71,6 +71,8 @@ def merge_args(cfg, args, training=False):
             cfg["mask_ratios"] = None
         if "transform_name" not in cfg.dataset:
             cfg.dataset["transform_name"] = "center"
+        if "bucket_config" not in cfg:
+            cfg["bucket_config"] = None
 
     # Both training and inference
     if "multi_resolution" not in cfg:
