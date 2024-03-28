@@ -1,9 +1,10 @@
+import numbers
+
 import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
 from PIL import Image
-
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 from torchvision.io import write_video
 from torchvision.utils import save_image
@@ -63,7 +64,13 @@ def get_transforms_image(name="center", image_size=(256, 256)):
             ]
         )
     elif name == "resize_crop":
-        transform = None
+        transform = transforms.Compose(
+            [
+                transforms.Lambda(lambda pil_image: resize_crop_to_fill(pil_image, image_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            ]
+        )
     else:
         raise NotImplementedError(f"Transform {name} not implemented")
     return transform
@@ -136,3 +143,21 @@ def center_crop_arr(pil_image, image_size):
     crop_y = (arr.shape[0] - image_size) // 2
     crop_x = (arr.shape[1] - image_size) // 2
     return Image.fromarray(arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size])
+
+
+def resize_crop_to_fill(pil_image, image_size):
+    w, h = pil_image.size # PIL is (W, H)
+    th, tw = image_size 
+    rh, rw = th / h, tw / w
+    if rh > rw:
+        sh, sw = th, int(w * rh)
+        image = pil_image.resize((sw, sh), Image.BICUBIC)
+        i = 0
+        j = int(round((sw - tw) / 2.0))
+    else:
+        sh, sw = int(h * rw), tw
+        image = pil_image.resize((sw, sh), Image.BICUBIC)
+        i = int(round((sh - th) / 2.0))
+        j = 0
+    arr = np.array(image)
+    return Image.fromarray(arr[i : i + th, j : j + tw])

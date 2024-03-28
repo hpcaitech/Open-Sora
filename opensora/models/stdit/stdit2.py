@@ -15,13 +15,13 @@ from opensora.models.layers.blocks import (
     CaptionEmbedder,
     MultiHeadCrossAttention,
     PatchEmbed3D,
+    PositionEmbedding2D,
     SeqParallelAttention,
     SeqParallelMultiHeadCrossAttention,
     SizeEmbedder,
     T2IFinalLayer,
     TimestepEmbedder,
     approx_gelu,
-    get_1d_sincos_pos_embed,
     get_2d_sincos_pos_embed,
     get_layernorm,
     t2i_modulate,
@@ -175,7 +175,8 @@ class STDiT2Block(nn.Module):
 class STDiT2(nn.Module):
     def __init__(
         self,
-        input_size=(None, 32, 32),
+        input_size=(None, None, None),
+        input_sq_size=32,
         in_channels=4,
         patch_size=(1, 2, 2),
         hidden_size=1152,
@@ -210,7 +211,8 @@ class STDiT2(nn.Module):
         # support dynamic input
         self.patch_size = patch_size
         self.input_size = input_size
-        self.input_sq_size = int((input_size[1] * input_size[2]) ** 0.5)
+        self.input_sq_size = input_sq_size
+        self.pos_embed = PositionEmbedding2D(hidden_size)
 
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
@@ -298,23 +300,16 @@ class STDiT2(nn.Module):
 
         # === process data info ===
         # 1. get dynamic size
-        if height is None or width is None:
-            hw = torch.tensor([self.input_size[1], self.input_size[2]], device=x.device, dtype=x.dtype).repeat(B, 1)
-        else:
-            hw = torch.cat([height[:, None], width[:, None]], dim=1)
+        hw = torch.cat([height[:, None], width[:, None]], dim=1)
+        rs = (height[0].item() * width[0].item()) ** 0.5
         csize = self.csize_embedder(hw, B)
 
         # 2. get aspect ratio
-        if ar is None:
-            ar = torch.tensor([[self.input_size[1] / self.input_size[2]]], device=x.device, dtype=x.dtype).repeat(B, 1)
-        else:
-            ar = ar.unsqueeze(1)
+        ar = ar.unsqueeze(1)
         ar = self.ar_embedder(ar, B)
         data_info = torch.cat([csize, ar], dim=1)
 
         # 3. get number of frames
-        if num_frames is None:
-            num_frames = torch.tensor([x.shape[2]], device=x.device, dtype=x.dtype)
         fl = num_frames.unsqueeze(1)
         fl = self.fl_embedder(fl, B)
 
@@ -322,9 +317,9 @@ class STDiT2(nn.Module):
         _, _, Tx, Hx, Wx = x.size()
         T, H, W = self.get_dynamic_size(x)
         S = H * W
-        rs = (height[0] * width[0]).sqrt().item()
         scale = rs / self.input_sq_size
-        pos_emb = self.get_spatial_pos_embed(H, W, scale=scale, base_size=round(S**0.5)).to(x.device, x.dtype)
+        base_size = round(S**0.5)
+        pos_emb = self.pos_embed(x, H, W, scale=scale, base_size=base_size)
 
         # embedding
         x = self.x_embedder(x)  # [B, N, C]

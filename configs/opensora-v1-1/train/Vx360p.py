@@ -4,7 +4,7 @@ dataset = dict(
     data_path=None,
     num_frames=None,
     frame_interval=3,
-    image_size=(512, 512),  # pretrained model is trained on 512x512
+    image_size=(None, None, None),
     transform_name="resize_crop",
 )
 bucket_config = {
@@ -25,6 +25,7 @@ sp_size = 1
 model = dict(
     type="STDiT2-XL/2",
     from_pretrained="PixArt-XL-2-1024-MS.pth",
+    input_sq_size=512,  # pretrained model is trained on 512x512
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )

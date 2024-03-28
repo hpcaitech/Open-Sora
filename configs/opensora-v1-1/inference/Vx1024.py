@@ -1,13 +1,13 @@
-num_frames = 16
+num_frames = 4
 fps = 24 // 3
-image_size = (256, 256)
+image_size = (704, 1472)
+multi_resolution = "STDiT2"
 
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    space_scale=0.5,
-    time_scale=1.0,
     from_pretrained="PixArt-XL-2-1024-MS.pth",
+    input_sq_size=512,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
