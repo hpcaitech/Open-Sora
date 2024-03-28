@@ -87,7 +87,7 @@ class Encoder(nn.Module):
         conv_downsample = False, 
         custom_conv_padding = None,
         activation_fn = 'swish',
-        dtype="bf16",
+        dtype=torch.bfloat16,
     ):
         super().__init__()
         self.dtype = dtype
@@ -134,15 +134,7 @@ class Encoder(nn.Module):
             num_groups=self.num_groups,
         )
         
-        self.conv1 = nn.Conv3d(
-            in_out_channels, 
-            self.filters, 
-            kernel_size=(3, 3, 3), 
-            bias=False,
-            dtype=self.dtype,
-            padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
-        )
-        # self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
+        self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
 
         # ResBlocks and conv downsample
         self.block_res_blocks = []
@@ -220,7 +212,7 @@ class Decoder(nn.Module):
         upsample = "nearest+conv", # options: "deconv", "nearest+conv"
         custom_conv_padding = None,
         activation_fn = 'swish',
-        dtype="bf16",
+        dtype=torch.bfloat16,
     ):
 
         self.output_dim = in_out_channels
@@ -368,10 +360,17 @@ class VAE_3D(nn.Module):
         in_out_channels = 4, 
         kl_embed_dim = 64,
         kl_weight = 0.000001,
-        dtype="bf16",
+        dtype=torch.bfloat16,
         # precision: Any = jax.lax.Precision.DEFAULT
     ):
   
+        if type(dtype) == str:
+            if dtype == "bf16":
+                dtype = torch.bfloat16
+            elif dtype == "fp16":
+                dtype = torch.float16
+            else:
+                raise NotImplementedError(f'dtype: {dtype}')
 
         self.encoder = Encoder(
             filters=filters, 
