@@ -400,7 +400,7 @@ class VAE_3D(nn.Module):
             dtype=dtype,
         )
 
-        self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
+        # self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
 
         self.quant_conv = nn.Conv3d(2*latent_embed_dim, 2*kl_embed_dim, 1)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
@@ -435,13 +435,12 @@ class VAE_3D(nn.Module):
         dec = self.decode(z)
         return dec, posterior
     
+    # def get_loss(
+    #     self,
+    #     batch, # [B, C, T, H, W]
+    #     optimizer_idx=None, # NOTE: to add GAN later
+    # ):
+    #     reconstructions, posterior = self(batch)
+    #     loss = self.loss(batch, reconstructions, posterior)
 
-    def get_loss(
-        self,
-        batch, # [B, C, T, H, W]
-        optimizer_idx=None, # NOTE: to add GAN later
-    ):
-        reconstructions, posterior = self(batch)
-        loss = self.loss(batch, reconstructions, posterior)
-
-        return loss 
+    #     return loss 
