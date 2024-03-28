@@ -208,6 +208,7 @@ def main():
                 # loss = vae.get_loss(x)
                 loss_function = VEA3DLoss(kl_weight=cfg.model.kl_weight).to(device, dtype)
                 reconstructions, posterior = vae(x)
+                breakpoint()
                 loss = loss_function(batch, reconstructions, posterior)
 
                 # Backward & update
