@@ -41,9 +41,9 @@ class ResBlock(nn.Module):
         self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype, device=self.device)
+        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype)
         self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype, device=self.device)
+        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if self.use_conv_shortcut:
             self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
