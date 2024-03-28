@@ -412,8 +412,8 @@ class VAE_3D(nn.Module):
 
         # self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
 
-        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1)
-        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
+        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, dtype=dtype, device=device)
+        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, dtype=dtype, device=device)
 
     def encode(
         self,
