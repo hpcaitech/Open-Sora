@@ -336,14 +336,14 @@ class Decoder(nn.Module):
                 if self.upsample == 'deconv':
                     assert self.custom_conv_padding is None, ('Custom padding not implemented for ConvTranspose')
                     x = self.conv_blocks[i-1](x)
-            elif self.upsample == 'nearest+conv':
-                if self.temporal_downsample[i - 1]:
-                    x = self.upsampler_with_t(x)
+                elif self.upsample == 'nearest+conv':
+                    if self.temporal_downsample[i - 1]:
+                        x = self.upsampler_with_t(x)
+                    else:
+                        x = self.upsampler(x)
+                    x = self.conv_blocks[i-1](x)
                 else:
-                    x = self.upsampler(x)
-                x = self.conv_blocks[i-1](x)
-            else:
-                raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
+                    raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
         x = self.norm1(x)
         x = self.activate(x)
         x = self.conv2(x)
