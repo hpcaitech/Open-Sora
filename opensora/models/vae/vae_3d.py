@@ -36,6 +36,9 @@ class ResBlock(nn.Module):
     ):
         super().__init__()
         self.filters = filters
+        self.dtype = dtype
+        self.activate = activation_fn()
+        self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
         self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype)
@@ -47,9 +50,6 @@ class ResBlock(nn.Module):
         else:
             self.conv3 = conv_fn(self.filters, self.filters, kernel_size=(1, 1, 1), bias=False)
 
-        self.dtype = dtype
-        self.activate = activation_fn()
-        self.use_conv_shortcut = use_conv_shortcut
 
     def forward(self, x):
         input_dim = x.shape[-1]
