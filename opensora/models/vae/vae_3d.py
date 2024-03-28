@@ -214,7 +214,7 @@ class Decoder(nn.Module):
         activation_fn = 'swish',
         dtype=torch.bfloat16,
     ):
-
+        super().__init__()
         self.output_dim = in_out_channels
         self.embedding_dim = latent_embed_dim
         self.filters = filters
@@ -363,7 +363,7 @@ class VAE_3D(nn.Module):
         dtype=torch.bfloat16,
         # precision: Any = jax.lax.Precision.DEFAULT
     ):
-  
+        super().__init__()
         if type(dtype) == str:
             if dtype == "bf16":
                 dtype = torch.bfloat16
