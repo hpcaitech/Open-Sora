@@ -414,6 +414,7 @@ class VAE_3D(nn.Module):
 
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, dtype=dtype, device=device)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, dtype=dtype, device=device)
+        self.dtype = dtype 
 
     def encode(
         self,
@@ -421,7 +422,7 @@ class VAE_3D(nn.Module):
     ):
         encoded_feature = self.encoder(x)
         moments = self.quant_conv(encoded_feature)
-        posterior = model_utils.DiagonalGaussianDistribution(moments)
+        posterior = model_utils.DiagonalGaussianDistribution(moments, dtype=self.dtype)
         return posterior
     
     def decode(
