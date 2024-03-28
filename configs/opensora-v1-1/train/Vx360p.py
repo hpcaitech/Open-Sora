@@ -4,14 +4,18 @@ dataset = dict(
     data_path=None,
     num_frames=None,
     frame_interval=3,
-    image_size=(360, 480),
+    image_size=(360, 480),  # base size
     transform_name="resize_crop",
-    bucket=[24, 48, 72],
-    batch_size_bucket={24: 12, 48: 6, 72: 4},
 )
+bucket_config = {
+    "240p": {1: (1.0, 128), 16: (1.0, 4), 48: (1.0, 4), 72: (1.0, 2)},
+    "360p": {1: (1.0, 64), 16: (0.5, 2), 24: (0.5, 2), 72: (0.0, None)},
+    "720p": {1: (1.0, 32), 16: (0.5, 1), 72: (0.0, None)},
+    "1080p": {1: (1.0, 16)},
+}
 
 # Define acceleration
-num_workers = 4
+num_workers = 0
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
@@ -51,6 +55,6 @@ log_every = 10
 ckpt_every = 1000
 load = None
 
-batch_size = 10 # only for logging
+batch_size = 10  # only for logging
 lr = 2e-5
 grad_clip = 1.0

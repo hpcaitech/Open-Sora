@@ -87,3 +87,69 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.data)
+
+
+@DATASETS.register_module()
+class VariableVideoTextDataset(VideoTextDataset):
+    def __init__(
+        self,
+        data_path,
+        num_frames=None,
+        frame_interval=1,
+        image_size=None,
+        transform_name=None,
+    ):
+        super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
+        self.transform_name = transform_name
+        self.data_info = self.data[["num_frames", "height", "width"]].to_numpy().tolist()
+
+    def set_data_info(self, idx, T, H, W):
+        self.data_info[idx] = [T, H, W]
+
+    def get_data_info(self, index):
+        T = self.data.iloc[index]["num_frames"]
+        H = self.data.iloc[index]["height"]
+        W = self.data.iloc[index]["width"]
+        return T, H, W
+
+    def getitem(self, index):
+        sample = self.data.iloc[index]
+        path = sample["path"]
+        text = sample["text"]
+        file_type = self.get_type(path)
+        num_frames, height, width = self.data_info[index]
+        ar = width / height
+
+        if file_type == "video":
+            # loading
+            vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+
+            # Sampling video frames
+            video = temporal_random_crop(vframes, num_frames, self.frame_interval)
+
+            # transform
+            transform = get_transforms_video(self.transform_name, (height, width))
+            video = transform(video)  # T C H W
+        else:
+            # loading
+            image = pil_loader(path)
+
+            # transform
+            transform = get_transforms_image(self.transform_name, (height, width))
+            image = transform(image)
+
+            # repeat
+            video = image.unsqueeze(0).repeat(self.num_frames, 1, 1, 1)
+
+        # TCHW -> CTHW
+        video = video.permute(1, 0, 2, 3)
+        return {"video": video, "text": text, "num_frames": num_frames, "height": height, "width": width, "ar": ar}
+
+    def __getitem__(self, index):
+        for _ in range(10):
+            try:
+                return self.getitem(index)
+            except Exception as e:
+                print(e)
+                index = np.random.randint(len(self))
+        raise RuntimeError("Too many bad data.")

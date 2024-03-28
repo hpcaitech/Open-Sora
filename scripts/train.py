@@ -18,8 +18,7 @@ from opensora.acceleration.parallel_states import (
     set_sequence_parallel_group,
 )
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
-from opensora.datasets import prepare_dataloader
-from opensora.datasets.datasets_variable import prepare_dataloader_with_batchsampler
+from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
@@ -91,39 +90,22 @@ def main():
     # 3. build dataset and dataloader
     # ======================================================
     dataset = build_module(cfg.dataset, DATASETS)
-
+    dataloader_args = dict(
+        dataset=dataset,
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        process_group=get_data_parallel_group(),
+    )
     # TODO: use plugin's prepare dataloader
-    # a batch contains:
-    # {
-    #      "video": torch.Tensor,  # [B, C, T, H, W],
-    #      "text": List[str],
-    # }
-    if cfg.dataset.type == "VideoTextDataset":
-        dataloader = prepare_dataloader(
-            dataset,
-            batch_size=cfg.batch_size,
-            num_workers=cfg.num_workers,
-            shuffle=True,
-            drop_last=True,
-            pin_memory=True,
-            process_group=get_data_parallel_group(),
-        )
+    if cfg.bucket_config is None:
+        dataloader = prepare_dataloader(**dataloader_args)
     else:
-        dataloader = prepare_dataloader_with_batchsampler(
-            dataset,
-            batch_size=cfg.batch_size,
-            batch_size_bucket=dataset.batch_size_bucket,
-            bucket=dataset.bucket,
-            num_workers=cfg.num_workers,
-            shuffle=True,
-            drop_last=True,
-            pin_memory=True,
-            process_group=get_data_parallel_group(),
-        )
-        print(dataset.batch_size_bucket)
-    logger.info(f"Dataset contains {len(dataset):,} videos ({dataset.data_path})")
-
+        dataloader = prepare_variable_dataloader(bucket_config=cfg.bucket_config, **dataloader_args)
     total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
+    logger.info(f"Dataset contains {len(dataset):,} videos ({dataset.data_path})")
     logger.info(f"Total batch size: {total_batch_size}")
 
     # ======================================================
@@ -219,9 +201,8 @@ def main():
         ) as pbar:
             for step in pbar:
                 batch = next(dataloader_iter)
-                x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                y = batch["text"]
-
+                x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
+                y = batch.pop("text")
                 # Visual and text encoding
                 with torch.no_grad():
                     # Prepare visual inputs
@@ -237,8 +218,8 @@ def main():
                     mask = None
 
                 # Video info
-                if "num_frames" in batch:
-                    model_args["num_frames"] = batch["num_frames"].to(device, dtype)
+                for k, v in batch.items():
+                    model_args[k] = v.to(device, dtype)
 
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)

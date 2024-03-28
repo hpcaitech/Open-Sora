@@ -212,6 +212,7 @@ class STDiT2(nn.Module):
         # support dynamic input
         self.patch_size = patch_size
         self.input_size = input_size
+        self.base_size = (input_size[1] / patch_size[1] * input_size[2] / patch_size[2]) ** 0.5
 
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
@@ -280,7 +281,7 @@ class STDiT2(nn.Module):
         W = W // self.patch_size[2]
         return (T, H, W)
 
-    def forward(self, x, timestep, y, mask=None, x_mask=None, num_frames=None):
+    def forward(self, x, timestep, y, mask=None, x_mask=None, num_frames=None, height=None, width=None, ar=None):
         """
         Forward pass of STDiT.
         Args:
@@ -297,26 +298,38 @@ class STDiT2(nn.Module):
         timestep = timestep.to(self.dtype)
         y = y.to(self.dtype)
 
-        # TODO: hard-coded for now
-        hw = torch.tensor([self.input_size[1], self.input_size[2]], device=x.device, dtype=x.dtype).repeat(B, 1)
-        ar = torch.tensor([[self.input_size[1] / self.input_size[2]]], device=x.device, dtype=x.dtype).repeat(B, 1)
+        # === process data info ===
+        # 1. get dynamic size
+        if height is None or width is None:
+            hw = torch.tensor([self.input_size[1], self.input_size[2]], device=x.device, dtype=x.dtype).repeat(B, 1)
+        else:
+            hw = torch.cat([height[:, None], width[:, None]], dim=1)
+        csize = self.csize_embedder(hw, B)
+
+        # 2. get aspect ratio
+        if ar is None:
+            ar = torch.tensor([[self.input_size[1] / self.input_size[2]]], device=x.device, dtype=x.dtype).repeat(B, 1)
+        else:
+            ar = ar.unsqueeze(1)
+        ar = self.ar_embedder(ar, B)
+        data_info = torch.cat([csize, ar], dim=1)
+
+        # 3. get number of frames
         if num_frames is None:
             num_frames = torch.tensor([x.shape[2]], device=x.device, dtype=x.dtype)
         fl = num_frames.unsqueeze(1)
-        csize = self.csize_embedder(hw, B)
-        ar = self.ar_embedder(ar, B)
         fl = self.fl_embedder(fl, B)
-        data_info = torch.cat([csize, ar], dim=1)
 
-        # Dynamic
+        # === get dynamic shape size ===
         _, _, Tx, Hx, Wx = x.size()
         T, H, W = self.get_dynamic_size(x)
         S = H * W
+        pos_emb = self.get_spatial_pos_embed(H, W, self.base_size).to(x.device, x.dtype)
 
         # embedding
         x = self.x_embedder(x)  # [B, N, C]
         x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
-        x = x + self.get_spatial_pos_embed(H, W).to(x.device, x.dtype)
+        x = x + pos_emb
         x = rearrange(x, "B T S C -> B (T S) C")
 
         # shard over the sequence dim if sp is enabled
@@ -419,11 +432,12 @@ class STDiT2(nn.Module):
         imgs = x.reshape(shape=(x.shape[0], c, t * pt, h * ph, w * pw))
         return imgs
 
-    def get_spatial_pos_embed(self, H, W):
+    def get_spatial_pos_embed(self, H, W, base_size=None):
         pos_embed = get_2d_sincos_pos_embed(
             self.hidden_size,
             (H, W),
             scale=self.space_scale,
+            base_size=base_size,
         )
         pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
