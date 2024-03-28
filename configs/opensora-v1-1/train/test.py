@@ -1,18 +1,18 @@
 # Define dataset
 dataset = dict(
-    type="VideoTextDataset",
+    type="VariableVideoTextDataset",
     data_path=None,
-    num_frames=72,
+    num_frames=None,
     frame_interval=3,
-    image_size=(360, 480),
+    image_size=(None, None, None),
     transform_name="resize_crop",
 )
-# 72, bs=4, 8s/it
-# 48, bs=6, 8s/it
-# 24, bs=12, 8s/it
+bucket_config = {
+    "240p": {1: (1.0, 64)},
+}
 
 # Define acceleration
-num_workers = 4
+num_workers = 0
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
@@ -21,8 +21,8 @@ sp_size = 1
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    space_scale=0.5,
     from_pretrained="PixArt-XL-2-1024-MS.pth",
+    input_sq_size=512,  # pretrained model is trained on 512x512
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
@@ -52,6 +52,6 @@ log_every = 10
 ckpt_every = 1000
 load = None
 
-batch_size = 4
+batch_size = 10  # only for logging
 lr = 2e-5
 grad_clip = 1.0
