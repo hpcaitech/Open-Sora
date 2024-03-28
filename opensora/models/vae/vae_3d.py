@@ -321,6 +321,7 @@ class Decoder(nn.Module):
 
     def forward(
         self,
+        x,
         **kwargs,
     ):
 
