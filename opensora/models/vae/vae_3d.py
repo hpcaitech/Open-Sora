@@ -116,10 +116,10 @@ class Encoder(nn.Module):
         self.activate = self.activation_fn()
 
         self.conv_fn = functools.partial(
-            model_utils.Conv,
+            nn.Conv3d,
             dtype=self.dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
-            custom_padding=self.custom_conv_padding
+            # custom_padding=self.custom_conv_padding
         )
         
         # self.norm_fn = model_utils.get_norm_layer(
@@ -242,10 +242,11 @@ class Decoder(nn.Module):
         self.activate = self.activation_fn()
 
         self.conv_fn = functools.partial(
-            model_utils.Conv,
+            nn.Conv3d,
             dtype=self.dtype,
-            padding='VALID' if self.custom_conv_padding is not None else 'SAME',
-            custom_padding=self.custom_conv_padding)
+            padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
+            # custom_padding=self.custom_conv_padding
+        )
 
         self.conv_t_fn = functools.partial(nn.ConvTranspose3d, dtype=self.dtype)
 

@@ -37,43 +37,43 @@ import torch
 #   x = upsample(x)
 #   return x
 
-class Conv(nn.Conv3d):
-    """Convolution with custom padding.
+# class Conv(nn.Conv3d):
+#     """Convolution with custom padding.
 
-    Attributes:
-        custom_padding: padding mode accepted by jnp.pad. When using this, must set
-        padding=VALID to disable padding in nn.Conv.
-    """
+#     Attributes:
+#         custom_padding: padding mode accepted by jnp.pad. When using this, must set
+#         padding=VALID to disable padding in nn.Conv.
+#     """
 
-    def __init__(
-        self, 
-        in_channels,
-        out_channels,
-        kernel_size,
-        dtype = "bf16",
-        padding = "same",
-        use_bias=False,
-        custom_padding:Optional[str] = None,
-    ):
-        super(Conv, self).__init__(in_channels, out_channels, kernel_size, dtype=dtype, padding=padding)
-        self.custom_padding = custom_padding
+#     def __init__(
+#         self, 
+#         in_channels,
+#         out_channels,
+#         kernel_size,
+#         dtype = "bf16",
+#         padding = "same",
+#         use_bias=False,
+#         custom_padding:Optional[str] = None,
+#     ):
+#         super(Conv, self).__init__(in_channels, out_channels, kernel_size, dtype=dtype, padding=padding)
+#         self.custom_padding = custom_padding
 
-    def forward(self, x):
-        if self.custom_padding is not None:
-            assert self.padding == 'valid', 'Must use valid padding for raw Conv.'
-            assert self.dilation == 1, 'Kernel dilation not supported.'
-            pads = [((k - 1) // 2, k // 2) for k in self.kernel_size]
-            pads = [(0, 0)] + pads + [(0, 0)]
-            if self.custom_padding.startswith('reflect_') \
-                or self.custom_padding.startswith('symmetric_'):
-                custom_padding, reflect_type = self.custom_padding.split('_')
-                pad_kwargs = {'reflect_type': reflect_type}
-            else:
-                custom_padding = self.custom_padding
-                pad_kwargs = {}
+#     def forward(self, x):
+#         if self.custom_padding is not None:
+#             assert self.padding == 'valid', 'Must use valid padding for raw Conv.'
+#             assert self.dilation == 1, 'Kernel dilation not supported.'
+#             pads = [((k - 1) // 2, k // 2) for k in self.kernel_size]
+#             pads = [(0, 0)] + pads + [(0, 0)]
+#             if self.custom_padding.startswith('reflect_') \
+#                 or self.custom_padding.startswith('symmetric_'):
+#                 custom_padding, reflect_type = self.custom_padding.split('_')
+#                 pad_kwargs = {'reflect_type': reflect_type}
+#             else:
+#                 custom_padding = self.custom_padding
+#                 pad_kwargs = {}
  
-            x = np.pad(x, pads, mode=custom_padding, **pad_kwargs)
-            return super(Conv, self).__call__(x)
+#             x = np.pad(x, pads, mode=custom_padding, **pad_kwargs)
+#             return super(Conv, self).__call__(x)
         
 
 class DiagonalGaussianDistribution(object):
