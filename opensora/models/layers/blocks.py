@@ -23,7 +23,10 @@ import xformers.ops
 from einops import rearrange
 from timm.models.vision_transformer import Mlp
 
-from opensora.acceleration.communications import all_to_all, split_forward_gather_backward
+from opensora.acceleration.communications import (
+    all_to_all,
+    split_forward_gather_backward,
+)
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
 
 approx_gelu = lambda: nn.GELU(approximate="tanh")
@@ -564,7 +567,8 @@ class CaptionEmbedder(nn.Module):
         )
         self.register_buffer(
             "y_embedding",
-            nn.Parameter(torch.randn(token_num, in_channels) / in_channels**0.5),
+            torch.randn(token_num, in_channels) / in_channels**0.5,
+            persistent=False,
         )
         self.uncond_prob = uncond_prob
 
