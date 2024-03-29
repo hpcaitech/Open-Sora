@@ -131,7 +131,7 @@ def get_output_path(args, input_name):
         name += "_relpath"
     # caption filtering
     if args.remove_empty_caption:
-        name += "_rec"
+        name += "_noempty"
     if args.lang is not None:
         name += f"_{args.lang}"
     if args.remove_url:

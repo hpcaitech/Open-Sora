@@ -38,7 +38,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 ## 🎥 Latest Demo
 
 | **2s 512×512**                                                                                                                                                                 | **2s 512×512**                                                                                                                                                              | **2s 512×512**                                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
 | A serene night scene in a forested area. [...] The video is a time-lapse, capturing the transition from day to night, with the lake and forest serving as a constant backdrop. | A soaring drone footage captures the majestic beauty of a coastal cliff, [...] The water gently laps at the rock base and the greenery that clings to the top of the cliff. | The majestic beauty of a waterfall cascading down a cliff into a serene lake. [...] The camera angle provides a bird's eye view of the waterfall. |
 | [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
@@ -144,7 +144,7 @@ the config files.
 ## Model Weights
 
 | Resolution | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-|------------|--------|-------------|------------|-----------------|-----------------------------------------------------------------------------------------------|
+| ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
@@ -254,6 +254,9 @@ following [all-contributors](https://github.com/all-contributors/all-contributor
 
 If you wish to contribute to this project, you can refer to the [Contribution Guideline](./CONTRIBUTING.md).
 
+[Zangwei Zheng](https://github.com/zhengzangw) and [Xiangyu Peng](https://github.com/xyupeng) equally contributed to
+this work during their internship at [HPC-AI Tech](https://hpc-ai.com/).
+
 ## Acknowledgement
 
 * [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
@@ -271,7 +274,7 @@ If you wish to contribute to this project, you can refer to the [Contribution Gu
 
 We are grateful for their exceptional work and generous contribution to open source.
 
-## Citation
+<!-- ## Citation
 
 ```bibtex
 @software{opensora,
@@ -281,10 +284,7 @@ We are grateful for their exceptional work and generous contribution to open sou
   year = {2024},
   url = {https://github.com/hpcaitech/Open-Sora}
 }
-```
-
-[Zangwei Zheng](https://github.com/zhengzangw) and [Xiangyu Peng](https://github.com/xyupeng) equally contributed to
-this work during their internship at [HPC-AI Tech](https://hpc-ai.com/).
+``` -->
 
 ## Star History
 
