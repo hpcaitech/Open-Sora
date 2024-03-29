@@ -13,7 +13,7 @@ Open-Sora
 │   └── report_v1.md               -> Report for Open-Sora v1
 ├── scripts
 │   ├── train.py                   -> diffusion training script
-│   └── inference.py               -> Report for Open-Sora v1
+│   └── inference.py               -> Report for Open-Sora v1 (should be "inference script for something")
 ├── configs                        -> Configs for training & inference
 ├── opensora
 │   ├── __init__.py
