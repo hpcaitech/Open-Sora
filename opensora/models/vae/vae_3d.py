@@ -413,8 +413,11 @@ class VAE_3D(nn.Module):
 
         # self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
 
-        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, dtype=dtype, device=device)
-        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, dtype=dtype, device=device)
+        # self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, dtype=dtype, device=device)
+        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device)
+
+        # self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, dtype=dtype, device=device)
+        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device)
         self.dtype = dtype 
 
     def encode(
@@ -422,7 +425,7 @@ class VAE_3D(nn.Module):
         x,
     ):
         encoded_feature = self.encoder(x)
-        moments = self.quant_conv(encoded_feature)
+        moments = self.quant_conv(encoded_feature).to(x.dtype)
         posterior = model_utils.DiagonalGaussianDistribution(moments, dtype=self.dtype)
         return posterior
     
@@ -430,7 +433,8 @@ class VAE_3D(nn.Module):
         self,
         z,
     ):  
-        z = self.post_quant_conv(z)
+        dtype = z.dtype
+        z = self.post_quant_conv(z).to(dtype)
         dec = self.decoder(z)
         return dec
     
