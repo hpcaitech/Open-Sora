@@ -81,9 +81,7 @@ class DiagonalGaussianDistribution(object):
         self, 
         parameters, 
         deterministic=False,
-        dtype=torch.bfloat16,
     ):
-        self.dtype = dtype
         self.parameters = parameters
         self.mean, self.logvar = torch.chunk(parameters, 2, dim=1) # SCH: channels dim
         self.logvar = torch.clamp(self.logvar, -30.0, 20.0)

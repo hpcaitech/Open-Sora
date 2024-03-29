@@ -29,7 +29,6 @@ class ResBlock(nn.Module):
             filters, 
             # norm_fn, # SCH: removed, use GN
             conv_fn, 
-            dtype="fp16", 
             activation_fn=nn.ReLU, 
             use_conv_shortcut=False,
             num_groups=32,
@@ -37,14 +36,13 @@ class ResBlock(nn.Module):
     ):
         super().__init__()
         self.filters = filters
-        self.dtype = dtype
         self.activate = activation_fn()
         self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, dtype=dtype, device=device)
+        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, device=device)
         self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        self.norm2 = nn.GroupNorm(num_groups, self.filters, dtype=dtype, device=device)
+        self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if self.use_conv_shortcut:
             self.conv3 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
@@ -53,16 +51,17 @@ class ResBlock(nn.Module):
 
 
     def forward(self, x):
+        device, dtype = x.dtype
         input_dim = x.shape[1]
         residual = x
-        x = self.norm1(x)
+        x = self.norm1(x).to(dtype)
         x = self.activate(x)
-        x = self.conv1(x)
-        x = self.norm2(x)
+        x = self.conv1(x).to(dtype)
+        x = self.norm2(x).to(dtype)
         x = self.activate(x)
-        x = self.conv2(x)  
+        x = self.conv2(x).to(dtype)
         if input_dim != self.filters: # TODO: what does it do here
-            residual = self.conv3(residual)
+            residual = self.conv3(residual).to(dtype)
         return x + residual 
     
 def _get_selected_flags(total_len: int, select_len: int, suffix: bool):
@@ -88,11 +87,9 @@ class Encoder(nn.Module):
         conv_downsample = False, 
         custom_conv_padding = None,
         activation_fn = 'swish',
-        dtype=torch.bfloat16,
         device="cpu",
     ):
         super().__init__()
-        self.dtype = dtype
         self.filters = filters
         self.num_res_blocks = num_res_blocks
         self.channel_multipliers = channel_multipliers
@@ -119,7 +116,7 @@ class Encoder(nn.Module):
 
         self.conv_fn = functools.partial(
             nn.Conv3d,
-            dtype=self.dtype,
+            # dtype=self.dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
             # custom_padding=self.custom_conv_padding
             device=device,
@@ -131,7 +128,7 @@ class Encoder(nn.Module):
         self.block_args = dict(
             # norm_fn=self.norm_fn,
             conv_fn=self.conv_fn,
-            dtype=self.dtype,
+            # dtype=self.dtype,
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
             num_groups=self.num_groups,
@@ -174,19 +171,20 @@ class Encoder(nn.Module):
             prev_filters = filters # update in_channels
 
         # MAGVIT uses Group Normalization
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=device) # SCH: separate <prev_filters> channels into 32 groups
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device) # SCH: separate <prev_filters> channels into 32 groups
 
         self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1))
 
     def forward(self, x):
-        x = self.conv1(x)
+        dtype = x.dtype
+        x = self.conv1(x).to(dtype)
         for i in range(self.num_blocks):
             for j in range(self.num_res_blocks):
                 x = self.block_res_blocks[i][j](x)
 
             if i < self.num_blocks - 1:
                 if self.conv_downsample:
-                    x = self.conv_blocks[i](x)
+                    x = self.conv_blocks[i](x).to(dtype)
                 else:
                     if self.temporal_downsample[i]:
                         x = self.avg_pool_with_t(x)
@@ -196,9 +194,9 @@ class Encoder(nn.Module):
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
 
-        x = self.norm1(x)
+        x = self.norm1(x).to(dtype)
         x = self.activate(x)
-        x = self.conv2(x)
+        x = self.conv2(x).to(dtype)
         return x
     
 
@@ -216,7 +214,6 @@ class Decoder(nn.Module):
         upsample = "nearest+conv", # options: "deconv", "nearest+conv"
         custom_conv_padding = None,
         activation_fn = 'swish',
-        dtype=torch.bfloat16,
         device="cpu",
     ):
         super().__init__()
@@ -227,7 +224,6 @@ class Decoder(nn.Module):
         self.channel_multipliers = channel_multipliers
         self.temporal_downsample = temporal_downsample
         self.num_groups = num_groups
-        self.dtype = dtype
 
         if isinstance(self.temporal_downsample, int):
             self.temporal_downsample = _get_selected_flags(
@@ -248,21 +244,20 @@ class Decoder(nn.Module):
 
         self.conv_fn = functools.partial(
             nn.Conv3d,
-            dtype=self.dtype,
+            # dtype=dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
             # custom_padding=self.custom_conv_padding
             device=device,
         )
 
-        self.conv_t_fn = functools.partial(nn.ConvTranspose3d, dtype=self.dtype)
+        self.conv_t_fn = functools.partial(nn.ConvTranspose3d)
 
         # self.norm_fn = model_utils.get_norm_layer(
-        #     norm_type=self.norm_type, dtype=self.dtype)
+        #     norm_type=self.norm_type, dtype=dtype)
 
         self.block_args = dict(
             # norm_fn=self.norm_fn,
             conv_fn=self.conv_fn,
-            dtype=self.dtype,
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
             num_groups=self.num_groups,
@@ -315,7 +310,7 @@ class Decoder(nn.Module):
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
                 
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=device)
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device)
         self.conv2 = self.conv_fn(prev_filters, self.output_dim, kernel_size=(3, 3, 3))
 
 
@@ -324,8 +319,8 @@ class Decoder(nn.Module):
         x,
         **kwargs,
     ):
-
-        x = self.conv1(x)
+        dtype = x.dtype
+        x = self.conv1(x).to(dtype)
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
         for i in reversed(range(self.num_blocks)): # reverse here to make decoder symmetric with encoder
@@ -335,18 +330,18 @@ class Decoder(nn.Module):
             if i > 0:
                 if self.upsample == 'deconv':
                     assert self.custom_conv_padding is None, ('Custom padding not implemented for ConvTranspose')
-                    x = self.conv_blocks[i-1](x)
+                    x = self.conv_blocks[i-1](x).to(dtype)
                 elif self.upsample == 'nearest+conv':
                     if self.temporal_downsample[i - 1]:
                         x = self.upsampler_with_t(x)
                     else:
                         x = self.upsampler(x)
-                    x = self.conv_blocks[i-1](x)
+                    x = self.conv_blocks[i-1](x).to(dtype)
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
-        x = self.norm1(x)
+        x = self.norm1(x).to(dtype)
         x = self.activate(x)
-        x = self.conv2(x)
+        x = self.conv2(x).to(dtype)
         return x
     
 
@@ -369,18 +364,17 @@ class VAE_3D(nn.Module):
         in_out_channels = 4, 
         kl_embed_dim = 64,
         kl_weight = 0.000001,
-        dtype=torch.bfloat16,
         device="cpu",
         # precision: Any = jax.lax.Precision.DEFAULT
     ):
         super().__init__()
-        if type(dtype) == str:
-            if dtype == "bf16":
-                dtype = torch.bfloat16
-            elif dtype == "fp16":
-                dtype = torch.float16
-            else:
-                raise NotImplementedError(f'dtype: {dtype}')
+        # if type(dtype) == str:
+        #     if dtype == "bf16":
+        #         dtype = torch.bfloat16
+        #     elif dtype == "fp16":
+        #         dtype = torch.float16
+        #     else:
+        #         raise NotImplementedError(f'dtype: {dtype}')
 
         self.encoder = Encoder(
             filters=filters, 
@@ -393,7 +387,6 @@ class VAE_3D(nn.Module):
             conv_downsample = conv_downsample, 
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn, 
-            dtype=dtype,
             device=device,
         )
         self.decoder = Decoder(
@@ -407,18 +400,13 @@ class VAE_3D(nn.Module):
             upsample = upsample, # options: "deconv", "nearest+conv"
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn,
-            dtype=dtype,
             device=device,
         )
 
         # self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
 
-        # self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, dtype=dtype, device=device)
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device)
-
-        # self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, dtype=dtype, device=device)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device)
-        self.dtype = dtype 
 
     def encode(
         self,
@@ -426,7 +414,7 @@ class VAE_3D(nn.Module):
     ):
         encoded_feature = self.encoder(x)
         moments = self.quant_conv(encoded_feature).to(x.dtype)
-        posterior = model_utils.DiagonalGaussianDistribution(moments, dtype=self.dtype)
+        posterior = model_utils.DiagonalGaussianDistribution(moments)
         return posterior
     
     def decode(
