@@ -51,7 +51,7 @@ class ResBlock(nn.Module):
 
 
     def forward(self, x):
-        device, dtype = x.dtype
+        device, dtype = x.device, x.dtype
         input_dim = x.shape[1]
         residual = x
         x = self.norm1(x).to(dtype)
