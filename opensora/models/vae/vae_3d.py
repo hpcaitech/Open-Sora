@@ -54,10 +54,10 @@ class ResBlock(nn.Module):
         device, dtype = x.device, x.dtype
         input_dim = x.shape[1]
         residual = x
-        x = self.norm1(x).to(dtype)
+        x = self.norm1(x).to(device,dtype)
         x = self.activate(x)
         x = self.conv1(x).to(dtype)
-        x = self.norm2(x).to(dtype)
+        x = self.norm2(x).to(device, dtype)
         x = self.activate(x)
         x = self.conv2(x).to(dtype)
         if input_dim != self.filters: # TODO: what does it do here
