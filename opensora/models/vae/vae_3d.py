@@ -40,9 +40,9 @@ class ResBlock(nn.Module):
         self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, device=device)
+        self.norm1 = nn.GroupNorm(num_groups, in_out_channels)
         self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device)
+        self.norm2 = nn.GroupNorm(num_groups, self.filters)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if self.use_conv_shortcut:
             self.conv3 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
@@ -171,7 +171,7 @@ class Encoder(nn.Module):
             prev_filters = filters # update in_channels
 
         # MAGVIT uses Group Normalization
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device) # SCH: separate <prev_filters> channels into 32 groups
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters) # SCH: separate <prev_filters> channels into 32 groups
 
         self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1))
 
@@ -310,7 +310,7 @@ class Decoder(nn.Module):
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
                 
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device)
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters)
         self.conv2 = self.conv_fn(prev_filters, self.output_dim, kernel_size=(3, 3, 3))
 
 
@@ -405,8 +405,8 @@ class VAE_3D(nn.Module):
 
         # self.loss = model_utils.VEA3DLoss(kl_weight=kl_weight)
 
-        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device)
-        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device)
+        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1)
+        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
 
     def encode(
         self,
