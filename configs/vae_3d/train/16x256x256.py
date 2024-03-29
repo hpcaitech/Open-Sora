@@ -14,6 +14,9 @@ grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
+# Define Loss
+kl_weight = 0.000001
+
 # Define model
 
 model = dict(
@@ -30,7 +33,6 @@ model = dict(
     kl_embed_dim = 64,
     custom_conv_padding = None,
     activation_fn = 'swish',
-    kl_weight = 0.000001,
 )
 
 # TODO: check all these settings
