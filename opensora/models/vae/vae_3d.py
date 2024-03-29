@@ -57,12 +57,12 @@ class ResBlock(nn.Module):
         residual = x
         x = self.norm1(x)
         x = self.activate(x)
-        x = self.conv1(x).to(dtype)
+        x = self.conv1(x)
         x = self.norm2(x)
         x = self.activate(x)
-        x = self.conv2(x).to(dtype)
+        x = self.conv2(x)
         if input_dim != self.filters: # TODO: what does it do here
-            residual = self.conv3(residual).to(dtype)
+            residual = self.conv3(residual)
         return x + residual 
     
 def _get_selected_flags(total_len: int, select_len: int, suffix: bool):
@@ -118,7 +118,7 @@ class Encoder(nn.Module):
 
         self.conv_fn = functools.partial(
             nn.Conv3d,
-            # dtype=self.dtype,
+            dtype=dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
             # custom_padding=self.custom_conv_padding
             device=device,
@@ -179,14 +179,14 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         dtype = x.dtype
-        x = self.conv1(x).to(dtype)
+        x = self.conv1(x)
         for i in range(self.num_blocks):
             for j in range(self.num_res_blocks):
                 x = self.block_res_blocks[i][j](x)
 
             if i < self.num_blocks - 1:
                 if self.conv_downsample:
-                    x = self.conv_blocks[i](x).to(dtype)
+                    x = self.conv_blocks[i](x)
                 else:
                     if self.temporal_downsample[i]:
                         x = self.avg_pool_with_t(x)
@@ -247,13 +247,13 @@ class Decoder(nn.Module):
 
         self.conv_fn = functools.partial(
             nn.Conv3d,
-            # dtype=dtype,
+            dtype=dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
             # custom_padding=self.custom_conv_padding
             device=device,
         )
 
-        self.conv_t_fn = functools.partial(nn.ConvTranspose3d)
+        self.conv_t_fn = functools.partial(nn.ConvTranspose3d, dtype=dtype)
 
         # self.norm_fn = model_utils.get_norm_layer(
         #     norm_type=self.norm_type, dtype=dtype)
@@ -324,7 +324,7 @@ class Decoder(nn.Module):
         **kwargs,
     ):
         dtype = x.dtype
-        x = self.conv1(x).to(dtype)
+        x = self.conv1(x)
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
         for i in reversed(range(self.num_blocks)): # reverse here to make decoder symmetric with encoder
@@ -334,13 +334,13 @@ class Decoder(nn.Module):
             if i > 0:
                 if self.upsample == 'deconv':
                     assert self.custom_conv_padding is None, ('Custom padding not implemented for ConvTranspose')
-                    x = self.conv_blocks[i-1](x).to(dtype)
+                    x = self.conv_blocks[i-1](x)
                 elif self.upsample == 'nearest+conv':
                     if self.temporal_downsample[i - 1]:
                         x = self.upsampler_with_t(x)
                     else:
                         x = self.upsampler(x)
-                    x = self.conv_blocks[i-1](x).to(dtype)
+                    x = self.conv_blocks[i-1](x)
                 else:
                     raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
         x = self.norm1(x)
