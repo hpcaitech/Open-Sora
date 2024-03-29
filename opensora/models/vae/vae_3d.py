@@ -443,13 +443,3 @@ class VAE_3D(nn.Module):
             z = posterior.mode()
         dec = self.decode(z)
         return dec, posterior
-    
-    # def get_loss(
-    #     self,
-    #     batch, # [B, C, T, H, W]
-    #     optimizer_idx=None, # NOTE: to add GAN later
-    # ):
-    #     reconstructions, posterior = self(batch)
-    #     loss = self.loss(batch, reconstructions, posterior)
-
-    #     return loss 
