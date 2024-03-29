@@ -19,61 +19,6 @@ import torch
 #   else:
 #     raise NotImplementedError(f'norm_type: {norm_type}')
 #   return norm_fn
-
-## NOTE: not used since need to put nn.AvgPool3d in init
-# def downsample(x, include_t_dim: bool = True, factor: int = 2):
-#     """Downsample via average pooling."""
-#     t_factor = factor if include_t_dim else 1
-#     shape = (t_factor, factor, factor)
-#     average_pool = nn.AvgPool3d(shape) # x shape needs to be [N,C,D,H,W]
-#     x = average_pool(x)
-#     return x
-
-## NOTE: not used since need to put nn.Upsample in init
-# def upsample(x: jnp.ndarray, include_t_dim: bool = True, factor: int = 2):
-#   """Upsample via nearest interpolation."""
-#   n, t, h, w, c = x.shape
-#   upsample = nn.Upsample(scale_factor=(factor if include_t_dim else 1, factor, factor))
-#   x = upsample(x)
-#   return x
-
-# class Conv(nn.Conv3d):
-#     """Convolution with custom padding.
-
-#     Attributes:
-#         custom_padding: padding mode accepted by jnp.pad. When using this, must set
-#         padding=VALID to disable padding in nn.Conv.
-#     """
-
-#     def __init__(
-#         self, 
-#         in_channels,
-#         out_channels,
-#         kernel_size,
-#         dtype = "bf16",
-#         padding = "same",
-#         use_bias=False,
-#         custom_padding:Optional[str] = None,
-#     ):
-#         super(Conv, self).__init__(in_channels, out_channels, kernel_size, dtype=dtype, padding=padding)
-#         self.custom_padding = custom_padding
-
-#     def forward(self, x):
-#         if self.custom_padding is not None:
-#             assert self.padding == 'valid', 'Must use valid padding for raw Conv.'
-#             assert self.dilation == 1, 'Kernel dilation not supported.'
-#             pads = [((k - 1) // 2, k // 2) for k in self.kernel_size]
-#             pads = [(0, 0)] + pads + [(0, 0)]
-#             if self.custom_padding.startswith('reflect_') \
-#                 or self.custom_padding.startswith('symmetric_'):
-#                 custom_padding, reflect_type = self.custom_padding.split('_')
-#                 pad_kwargs = {'reflect_type': reflect_type}
-#             else:
-#                 custom_padding = self.custom_padding
-#                 pad_kwargs = {}
- 
-#             x = np.pad(x, pads, mode=custom_padding, **pad_kwargs)
-#             return super(Conv, self).__call__(x)
         
 
 class DiagonalGaussianDistribution(object):
