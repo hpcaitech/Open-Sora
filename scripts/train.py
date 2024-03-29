@@ -20,14 +20,26 @@ from opensora.acceleration.parallel_states import (
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
+from opensora.utils.ckpt_utils import (
+    create_logger,
+    load,
+    model_sharding,
+    record_model_param_shape,
+    save,
+)
 from opensora.utils.config_utils import (
     create_experiment_workspace,
     create_tensorboard_writer,
     parse_configs,
     save_training_config,
 )
-from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
+from opensora.utils.misc import (
+    all_reduce_mean,
+    format_numel_str,
+    get_model_numel,
+    requires_grad,
+    to_torch_dtype,
+)
 from opensora.utils.train_utils import MaskGenerator, update_ema
 
 
@@ -103,7 +115,9 @@ def main():
     if cfg.bucket_config is None:
         dataloader = prepare_dataloader(**dataloader_args)
     else:
-        dataloader = prepare_variable_dataloader(bucket_config=cfg.bucket_config, **dataloader_args)
+        dataloader = prepare_variable_dataloader(
+            bucket_config=cfg.bucket_config, **dataloader_args
+        )
     total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
     logger.info(f"Dataset contains {len(dataset):,} videos ({dataset.data_path})")
     logger.info(f"Total batch size: {total_batch_size}")
@@ -144,7 +158,10 @@ def main():
 
     # 4.5. setup optimizer
     optimizer = HybridAdam(
-        filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr=cfg.lr,
+        weight_decay=0,
+        adamw_mode=True,
     )
     lr_scheduler = None
 
@@ -162,7 +179,10 @@ def main():
     # =======================================================
     torch.set_default_dtype(dtype)
     model, optimizer, _, dataloader, lr_scheduler = booster.boost(
-        model=model, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
+        model=model,
+        optimizer=optimizer,
+        lr_scheduler=lr_scheduler,
+        dataloader=dataloader,
     )
     torch.set_default_dtype(torch.float)
     num_steps_per_epoch = len(dataloader)
@@ -173,13 +193,29 @@ def main():
     # =======================================================
     start_epoch = start_step = log_step = sampler_start_idx = 0
     running_loss = 0.0
-
+    sampler_to_io = (
+        dataloader.batch_sampler
+        if cfg.dataset.type == "VariableVideoTextDataset"
+        else None
+    )
     # 6.1. resume training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(booster, model, ema, optimizer, lr_scheduler, cfg.load)
-        logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
-    logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
+        start_epoch, start_step, sampler_start_idx = load(
+            booster,
+            model,
+            ema,
+            optimizer,
+            lr_scheduler,
+            cfg.load,
+            sampler=sampler_to_io,
+        )
+        logger.info(
+            f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}"
+        )
+    logger.info(
+        f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch"
+    )
 
     if cfg.dataset.type == "VideoTextDataset":
         dataloader.sampler.set_start_index(sampler_start_idx)
@@ -193,14 +229,13 @@ def main():
         logger.info(f"Beginning epoch {epoch}...")
 
         with tqdm(
-            range(start_step, num_steps_per_epoch),
+            enumerate(dataloader_iter, start=start_step),
             desc=f"Epoch {epoch}",
             disable=not coordinator.is_master(),
-            total=num_steps_per_epoch,
             initial=start_step,
+            total=num_steps_per_epoch,
         ) as pbar:
-            for step in pbar:
-                batch = next(dataloader_iter)
+            for step, batch in pbar:
                 x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
                 y = batch.pop("text")
                 # Visual and text encoding
@@ -222,8 +257,12 @@ def main():
                     model_args[k] = v.to(device, dtype)
 
                 # Diffusion
-                t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
-                loss_dict = scheduler.training_losses(model, x, t, model_args, mask=mask)
+                t = torch.randint(
+                    0, scheduler.num_timesteps, (x.shape[0],), device=device
+                )
+                loss_dict = scheduler.training_losses(
+                    model, x, t, model_args, mask=mask
+                )
 
                 # Backward & update
                 loss = loss_dict["loss"].mean()
@@ -243,7 +282,9 @@ def main():
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
                     avg_loss = running_loss / log_step
-                    pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step})
+                    pbar.set_postfix(
+                        {"loss": avg_loss, "step": step, "global_step": global_step}
+                    )
                     running_loss = 0
                     log_step = 0
                     writer.add_scalar("loss", loss.item(), global_step)
@@ -274,6 +315,7 @@ def main():
                         coordinator,
                         exp_dir,
                         ema_shape_dict,
+                        sampler=sampler_to_io,
                     )
                     logger.info(
                         f"Saved checkpoint at epoch {epoch} step {step + 1} global_step {global_step + 1} to {exp_dir}"
@@ -282,6 +324,8 @@ def main():
         # the continue epochs are not resumed, so we need to reset the sampler start index and start step
         if cfg.dataset.type == "VideoTextDataset":
             dataloader.sampler.set_start_index(0)
+        if cfg.dataset.type == "VariableVideoTextDataset":
+            dataloader.batch_sampler.set_epoch(epoch + 1)
         start_step = 0
 
 
