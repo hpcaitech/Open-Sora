@@ -1,5 +1,3 @@
-import numbers
-
 import numpy as np
 import torch
 import torchvision
@@ -146,8 +144,8 @@ def center_crop_arr(pil_image, image_size):
 
 
 def resize_crop_to_fill(pil_image, image_size):
-    w, h = pil_image.size # PIL is (W, H)
-    th, tw = image_size 
+    w, h = pil_image.size  # PIL is (W, H)
+    th, tw = image_size
     rh, rw = th / h, tw / w
     if rh > rw:
         sh, sw = th, int(w * rh)

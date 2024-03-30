@@ -60,7 +60,7 @@ head -n 10 DATA1.csv
 wc -l DATA1.csv
 ```
 
-Additionally, Ww provide `csvutils.py` to manage the CSV files. 
+Additionally, Ww provide `csvutils.py` to manage the CSV files.
 
 ### Requirement
 

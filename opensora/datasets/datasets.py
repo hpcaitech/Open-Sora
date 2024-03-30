@@ -39,6 +39,16 @@ class VideoTextDataset(torch.utils.data.Dataset):
             "video": get_transforms_video(transform_name, image_size),
         }
 
+    def _print_data_number(self):
+        num_videos = 0
+        num_images = 0
+        for path in self.data["path"]:
+            if self.get_type(path) == "video":
+                num_videos += 1
+            else:
+                num_images += 1
+        print(f"Dataset contains {num_videos} videos and {num_images} images.")
+
     def get_type(self, path):
         ext = os.path.splitext(path)[-1].lower()
         if ext.lower() in VID_EXTENSIONS:
@@ -148,7 +158,6 @@ class VariableVideoTextDataset(VideoTextDataset):
         return {"video": video, "text": text, "num_frames": num_frames, "height": height, "width": width, "ar": ar}
 
     def __getitem__(self, index):
-        return self.getitem(index)
         for _ in range(10):
             try:
                 return self.getitem(index)

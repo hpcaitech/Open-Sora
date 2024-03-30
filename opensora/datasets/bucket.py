@@ -33,19 +33,11 @@ class Bucket:
         # wrap config with OrderedDict
         bucket_probs = OrderedDict()
         bucket_bs = OrderedDict()
-        bucket_names = sorted(
-            bucket_config.keys(), key=lambda x: ASPECT_RATIOS[x][0], reverse=True
-        )
+        bucket_names = sorted(bucket_config.keys(), key=lambda x: ASPECT_RATIOS[x][0], reverse=True)
         for key in bucket_names:
-            bucket_time_names = sorted(
-                bucket_config[key].keys(), key=lambda x: x, reverse=True
-            )
-            bucket_probs[key] = OrderedDict(
-                {k: bucket_config[key][k][0] for k in bucket_time_names}
-            )
-            bucket_bs[key] = OrderedDict(
-                {k: bucket_config[key][k][1] for k in bucket_time_names}
-            )
+            bucket_time_names = sorted(bucket_config[key].keys(), key=lambda x: x, reverse=True)
+            bucket_probs[key] = OrderedDict({k: bucket_config[key][k][0] for k in bucket_time_names})
+            bucket_bs[key] = OrderedDict({k: bucket_config[key][k][1] for k in bucket_time_names})
 
         # first level: HW
         num_bucket = 0

@@ -8,7 +8,6 @@ from torch.distributed.distributed_c10d import _get_default_group
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 
-from .bucket import Bucket
 from .sampler import DistributedVariableVideoSampler, VariableVideoBatchSampler
 
 
@@ -96,38 +95,6 @@ def prepare_dataloader(
         num_workers=num_workers,
         **_kwargs,
     )
-
-
-class _VariableVideoBatchSampler(torch.utils.data.BatchSampler):
-    def __init__(self, sampler, batch_size, drop_last, dataset, buckect_config):
-        self.sampler = sampler
-        self.dataset = dataset
-        self.batch_size = batch_size
-        self.drop_last = drop_last
-        self.bucket = Bucket(buckect_config)
-        self.frame_interval = self.dataset.frame_interval
-        self.bucket.info_bucket(self.dataset, self.frame_interval)
-
-    def __iter__(self):
-        for idx in self.sampler:
-            T, H, W = self.dataset.get_data_info(idx)
-            bucket_id = self.bucket.get_bucket_id(T, H, W, self.frame_interval)
-            if bucket_id is None:
-                continue
-            rT, rH, rW = self.bucket.get_thw(bucket_id)
-            self.dataset.set_data_info(idx, rT, rH, rW)
-            buffer = self.bucket[bucket_id]
-            buffer.append(idx)
-            if len(buffer) >= self.bucket.get_batch_size(bucket_id):
-                yield buffer
-                self.bucket.set_empty(bucket_id)
-
-        for k1, v1 in self.bucket.bucket.items():
-            for k2, v2 in v1.items():
-                for k3, buffer in v2.items():
-                    if len(buffer) > 0 and not self.drop_last:
-                        yield buffer
-                        self.bucket.set_empty((k1, k2, k3))
 
 
 def prepare_variable_dataloader(
