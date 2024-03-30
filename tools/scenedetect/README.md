@@ -1,6 +1,6 @@
 # Scene Detection and Video Split
 
-Raw videos from the Internet may be too long for training. 
+Raw videos from the Internet may be too long for training.
 Thus, we detect scenes in raw videos and split them into short clips based on the scenes.
 First prepare the video processing packages.
 ```bash

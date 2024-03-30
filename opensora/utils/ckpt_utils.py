@@ -5,7 +5,6 @@ import operator
 import os
 from typing import Tuple
 
-import colossalai
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -55,9 +54,7 @@ def find_model(model_name):
         model = reparameter(model, model_name)
         return model
     else:  # Load a custom DiT checkpoint:
-        assert os.path.isfile(
-            model_name
-        ), f"Could not find DiT checkpoint at {model_name}"
+        assert os.path.isfile(model_name), f"Could not find DiT checkpoint at {model_name}"
         checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage)
         if "pos_embed_temporal" in checkpoint:
             del checkpoint["pos_embed_temporal"]
@@ -93,9 +90,7 @@ def model_sharding(model: torch.nn.Module):
     for _, param in model.named_parameters():
         padding_size = (world_size - param.numel() % world_size) % world_size
         if padding_size > 0:
-            padding_param = torch.nn.functional.pad(
-                param.data.view(-1), [0, padding_size]
-            )
+            padding_param = torch.nn.functional.pad(param.data.view(-1), [0, padding_size])
         else:
             padding_param = param.data.view(-1)
         splited_params = padding_param.split(padding_param.numel() // world_size)
@@ -125,9 +120,7 @@ def model_gathering(model: torch.nn.Module, model_shape_dict: dict):
         dist.all_gather(all_params, param.data, group=dist.group.WORLD)
         if int(global_rank) == 0:
             all_params = torch.cat(all_params)
-            param.data = remove_padding(all_params, model_shape_dict[name]).view(
-                model_shape_dict[name]
-            )
+            param.data = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name])
     dist.barrier()
 
 
@@ -164,9 +157,7 @@ def save(
         torch.save(ema.state_dict(), os.path.join(save_dir, "ema.pt"))
         model_sharding(ema)
 
-    booster.save_optimizer(
-        optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096
-    )
+    booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
     if lr_scheduler is not None:
         booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
     running_states = {
@@ -194,9 +185,7 @@ def load(
     booster.load_model(model, os.path.join(load_dir, "model"))
     # ema is not boosted, so we don't use booster.load_model
     # ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt")))
-    ema.load_state_dict(
-        torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu"))
-    )
+    ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")))
     booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
     if lr_scheduler is not None:
         booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))

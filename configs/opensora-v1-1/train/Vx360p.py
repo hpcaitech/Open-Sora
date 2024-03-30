@@ -15,7 +15,7 @@ bucket_config = {
 }
 
 # Define acceleration
-num_workers = 0
+num_workers = 4
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"

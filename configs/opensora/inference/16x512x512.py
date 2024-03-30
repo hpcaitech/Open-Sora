@@ -9,7 +9,7 @@ model = dict(
     time_scale=1.0,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
-    from_pretrained="PRETRAINED_MODEL"
+    from_pretrained="PRETRAINED_MODEL",
 )
 vae = dict(
     type="VideoAutoencoderKL",

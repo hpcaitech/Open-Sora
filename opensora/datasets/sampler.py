@@ -1,6 +1,7 @@
 import math
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from pprint import pprint
 from typing import Iterator, List, Optional, Tuple
 
 import torch
@@ -43,9 +44,7 @@ class DistributedVariableVideoSampler(DistributedSampler):
         # group by bucket
         for i in range(len(self.dataset)):
             t, h, w = self.dataset.get_data_info(i)
-            bucket_id = self.bucket.get_bucket_id(
-                t, h, w, self.dataset.frame_interval, g
-            )
+            bucket_id = self.bucket.get_bucket_id(t, h, w, self.dataset.frame_interval, g)
             if bucket_id is None:
                 continue
             real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
@@ -56,12 +55,8 @@ class DistributedVariableVideoSampler(DistributedSampler):
         # shuffle
         if self.shuffle:
             # sort buckets
-            bucket_indices = torch.randperm(
-                len(bucket_sample_dict), generator=g
-            ).tolist()
-            bucket_order = {
-                k: bucket_indices[i] for i, k in enumerate(bucket_sample_dict)
-            }
+            bucket_indices = torch.randperm(len(bucket_sample_dict), generator=g).tolist()
+            bucket_order = {k: bucket_indices[i] for i, k in enumerate(bucket_sample_dict)}
             # sort samples in each bucket
             for k, v in bucket_sample_dict.items():
                 sample_indices = torch.randperm(len(v), generator=g).tolist()
@@ -90,11 +85,7 @@ class DistributedVariableVideoSampler(DistributedSampler):
         if self.verbose:
             self._print_bucket_info(bucket_sample_dict)
         if self.shuffle:
-            bucket_sample_dict = OrderedDict(
-                sorted(
-                    bucket_sample_dict.items(), key=lambda item: bucket_order[item[0]]
-                )
-            )
+            bucket_sample_dict = OrderedDict(sorted(bucket_sample_dict.items(), key=lambda item: bucket_order[item[0]]))
         # iterate
         found_last_bucket = self.last_bucket_id is None
         for k, v in bucket_sample_dict.items():
@@ -126,13 +117,21 @@ class DistributedVariableVideoSampler(DistributedSampler):
     def _print_bucket_info(self, bucket_sample_dict: dict) -> None:
         total_samples = 0
         num_dict = {}
+        num_aspect_dict = defaultdict(int)
+        num_hwt_dict = defaultdict(int)
         for k, v in bucket_sample_dict.items():
             size = len(v) * self.num_replicas
             total_samples += size
             num_dict[k] = size
-        print(
-            f"Total training samples: {total_samples}, num buckets: {len(num_dict)}, bucket samples: {num_dict}"
-        )
+            num_aspect_dict[k[-1]] += size
+            num_hwt_dict[k[:-1]] += size
+        print(f"Total training samples: {total_samples}, num buckets: {len(num_dict)}")
+        print("Bucket samples:")
+        pprint(num_dict)
+        print("Bucket samples by HxWxT:")
+        pprint(num_hwt_dict)
+        print("Bucket samples by aspect ratio:")
+        pprint(num_aspect_dict)
 
     def state_dict(self) -> dict:
         # users must ensure bucket config is the same
@@ -175,9 +174,7 @@ class VariableVideoBatchSampler(Sampler[List[int]]):
                 cur_sample_indices = [sample_idx]
             else:
                 cur_sample_indices.append(sample_idx)
-        if len(cur_sample_indices) > 0 and (
-            not self.drop_last or len(cur_sample_indices) == cur_batch_size
-        ):
+        if len(cur_sample_indices) > 0 and (not self.drop_last or len(cur_sample_indices) == cur_batch_size):
             yield cur_sample_indices
 
     def state_dict(self) -> dict:

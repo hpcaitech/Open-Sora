@@ -1,6 +1,5 @@
 import math
 
-
 # Ours
 
 
