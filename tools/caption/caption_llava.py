@@ -7,6 +7,7 @@ import time
 import warnings
 
 import colossalai
+import pandas as pd
 import torch
 import torch.distributed as dist
 from colossalai.cluster import DistCoordinator, ProcessGroupMesh
@@ -21,7 +22,7 @@ from llava.utils import disable_torch_init
 from tqdm import tqdm
 
 from .acceleration.llava.policy import LlavaForCausalLMPolicy
-from .utils import Timer, extract_frames, prompts, read_video_list
+from .utils import Timer, extract_frames, prompts
 
 disable_torch_init()
 
@@ -269,11 +270,9 @@ def main(args):
     # ======================================================
     # 2. read video list
     # ======================================================
-    videos = read_video_list(args.video_folder, args.output_file)
-
-    if len(videos) == 0:
-        print("No videos are found or all videos have been processed.")
-        return
+    output_file = args.input.replace(".csv", "_caption.csv")
+    data_info = pd.read_csv(args.input)
+    videos = data_info["path"].tolist()
 
     # shard by DP
     dp_size = dist.get_world_size(dp_group)
@@ -288,13 +287,13 @@ def main(args):
     if has_main_writer:
         # we keep track of the processed videos in main file
         # so we use append mode
-        main_file = open(args.output_file, "a")
+        main_file = open(output_file, "a")
         main_writer = csv.writer(main_file)
 
     if has_dp_writter:
         # the dp writer takes care of the files processed on the current dp rank
         # so we use write mode
-        output_file_split = f"{args.output_file}.part{dp_rank}"
+        output_file_split = f"{output_file}.part{dp_rank}"
         dp_file = open(output_file_split, "w")
         dp_writer = csv.writer(dp_file)
 
@@ -458,7 +457,7 @@ def main(args):
     # merge files
     if has_main_writer:
         for i in range(dp_size):
-            output_file_split = f"{args.output_file}.part{i}"
+            output_file_split = f"{output_file}.part{i}"
             with open(output_file_split, "r") as f:
                 reader = csv.reader(f)
                 for row in reader:
@@ -472,8 +471,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("video_folder", type=str)
-    parser.add_argument("output_file", type=str)
+    parser.add_argument("input", type=str, help="Path to the input CSV file")
+
     parser.add_argument("--bs", type=int, default=32)
     parser.add_argument("--prompt", type=str, default="three_frames")
     parser.add_argument("--tp-size", type=int, default=1)

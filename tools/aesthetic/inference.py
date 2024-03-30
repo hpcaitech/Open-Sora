@@ -100,6 +100,7 @@ class AestheticScorer(nn.Module):
         return self.mlp(image_features)
 
 
+@torch.inference_mode()
 def main(args):
     output_file = args.input.replace(".csv", "_aes.csv")
 
