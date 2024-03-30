@@ -32,6 +32,8 @@ def get_video_info(path):
     ext = os.path.splitext(path)[1].lower()
     if ext in IMG_EXTENSIONS:
         im = cv2.imread(path)
+        if im is None:
+            return 0, 0, 0, np.nan, np.nan
         height, width = im.shape[:2]
         num_frames, fps = 1, np.nan
     else:

@@ -148,14 +148,15 @@ def resize_crop_to_fill(pil_image, image_size):
     th, tw = image_size
     rh, rw = th / h, tw / w
     if rh > rw:
-        sh, sw = th, int(w * rh)
+        sh, sw = th, round(w * rh)
         image = pil_image.resize((sw, sh), Image.BICUBIC)
         i = 0
         j = int(round((sw - tw) / 2.0))
     else:
-        sh, sw = int(h * rw), tw
+        sh, sw = round(h * rw), tw
         image = pil_image.resize((sw, sh), Image.BICUBIC)
         i = int(round((sh - th) / 2.0))
         j = 0
     arr = np.array(image)
+    assert i + th <= arr.shape[0] and j + tw <= arr.shape[1]
     return Image.fromarray(arr[i : i + th, j : j + tw])

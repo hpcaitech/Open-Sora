@@ -33,20 +33,20 @@ The columns are defined as follows:
 
 ## Dataset to CSV
 
-As a start point, `convert_dataset.py` is used to convert the dataset to a CSV file. You can use the following commands to convert the dataset to a CSV file:
+As a start point, `convert.py` is used to convert the dataset to a CSV file. You can use the following commands to convert the dataset to a CSV file:
 
 ```bash
-python -m tools.datasets.convert_dataset DATASET-TYPE DATA_FOLDER
+python -m tools.datasets.convert DATASET-TYPE DATA_FOLDER
 # general video folder
-python -m tools.datasets.convert_dataset video VIDEO_FOLDER
+python -m tools.datasets.convert video VIDEO_FOLDER
 # general image folder
-python -m tools.datasets.convert_dataset image IMAGE_FOLDER
+python -m tools.datasets.convert image IMAGE_FOLDER
 # imagenet
-python -m tools.datasets.convert_dataset imagenet IMAGENET_FOLDER --split train
+python -m tools.datasets.convert imagenet IMAGENET_FOLDER --split train
 # ucf101
-python -m tools.datasets.convert_dataset ucf101 UCF101_FOLDER --split videos
+python -m tools.datasets.convert ucf101 UCF101_FOLDER --split videos
 # vidprom
-python -m tools.datasets.convert_dataset vidprom VIDPROM_FOLDER --info VidProM_semantic_unique.csv
+python -m tools.datasets.convert vidprom VIDPROM_FOLDER --info VidProM_semantic_unique.csv
 ```
 
 ## Manage datasets
