@@ -1,7 +1,7 @@
 num_frames = 1
 fps = 1
 image_size = (1920, 512)
-multi_resolution = True
+multi_resolution = "PixArtMS"
 
 # Define model
 model = dict(

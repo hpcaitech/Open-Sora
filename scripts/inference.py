@@ -70,11 +70,21 @@ def main():
 
     # 3.4. support for multi-resolution
     model_args = dict()
-    if cfg.multi_resolution:
+    if cfg.multi_resolution == "PixArtMS":
         image_size = cfg.image_size
         hw = torch.tensor([image_size], device=device, dtype=dtype).repeat(cfg.batch_size, 1)
         ar = torch.tensor([[image_size[0] / image_size[1]]], device=device, dtype=dtype).repeat(cfg.batch_size, 1)
         model_args["data_info"] = dict(ar=ar, hw=hw)
+    elif cfg.multi_resolution == "STDiT2":
+        image_size = cfg.image_size
+        height = torch.tensor([image_size[0]], device=device, dtype=dtype).repeat(cfg.batch_size)
+        width = torch.tensor([image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
+        num_frames = torch.tensor([cfg.num_frames], device=device, dtype=dtype).repeat(cfg.batch_size)
+        ar = torch.tensor([image_size[0] / image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
+        model_args["height"] = height
+        model_args["width"] = width
+        model_args["num_frames"] = num_frames
+        model_args["ar"] = ar
 
     # ======================================================
     # 4. inference
