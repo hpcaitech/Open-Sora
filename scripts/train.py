@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pprint import pprint
 
 import colossalai
 import torch
@@ -20,26 +21,14 @@ from opensora.acceleration.parallel_states import (
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import (
-    create_logger,
-    load,
-    model_sharding,
-    record_model_param_shape,
-    save,
-)
+from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
     create_experiment_workspace,
     create_tensorboard_writer,
     parse_configs,
     save_training_config,
 )
-from opensora.utils.misc import (
-    all_reduce_mean,
-    format_numel_str,
-    get_model_numel,
-    requires_grad,
-    to_torch_dtype,
-)
+from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
 from opensora.utils.train_utils import MaskGenerator, update_ema
 
 
@@ -48,7 +37,8 @@ def main():
     # 1. args & cfg
     # ======================================================
     cfg = parse_configs(training=True)
-    print(cfg)
+    print("Training configuration:")
+    pprint(cfg._cfg_dict)
     exp_name, exp_dir = create_experiment_workspace(cfg)
     save_training_config(cfg._cfg_dict, exp_dir)
 
@@ -115,12 +105,10 @@ def main():
     if cfg.bucket_config is None:
         dataloader = prepare_dataloader(**dataloader_args)
     else:
-        dataloader = prepare_variable_dataloader(
-            bucket_config=cfg.bucket_config, **dataloader_args
-        )
-    total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
-    logger.info(f"Dataset contains {len(dataset):,} videos ({dataset.data_path})")
-    logger.info(f"Total batch size: {total_batch_size}")
+        dataloader = prepare_variable_dataloader(bucket_config=cfg.bucket_config, **dataloader_args)
+    if cfg.dataset.type == "VideoTextDataset":
+        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
+        logger.info(f"Total batch size: {total_batch_size}")
 
     # ======================================================
     # 4. build model
@@ -193,11 +181,7 @@ def main():
     # =======================================================
     start_epoch = start_step = log_step = sampler_start_idx = 0
     running_loss = 0.0
-    sampler_to_io = (
-        dataloader.batch_sampler
-        if cfg.dataset.type == "VariableVideoTextDataset"
-        else None
-    )
+    sampler_to_io = dataloader.batch_sampler if cfg.dataset.type == "VariableVideoTextDataset" else None
     # 6.1. resume training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
@@ -210,12 +194,8 @@ def main():
             cfg.load,
             sampler=sampler_to_io,
         )
-        logger.info(
-            f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}"
-        )
-    logger.info(
-        f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch"
-    )
+        logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
+    logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
     if cfg.dataset.type == "VideoTextDataset":
         dataloader.sampler.set_start_index(sampler_start_idx)
@@ -257,12 +237,8 @@ def main():
                     model_args[k] = v.to(device, dtype)
 
                 # Diffusion
-                t = torch.randint(
-                    0, scheduler.num_timesteps, (x.shape[0],), device=device
-                )
-                loss_dict = scheduler.training_losses(
-                    model, x, t, model_args, mask=mask
-                )
+                t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
+                loss_dict = scheduler.training_losses(model, x, t, model_args, mask=mask)
 
                 # Backward & update
                 loss = loss_dict["loss"].mean()
@@ -282,9 +258,7 @@ def main():
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
                     avg_loss = running_loss / log_step
-                    pbar.set_postfix(
-                        {"loss": avg_loss, "step": step, "global_step": global_step}
-                    )
+                    pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step})
                     running_loss = 0
                     log_step = 0
                     writer.add_scalar("loss", loss.item(), global_step)
@@ -292,7 +266,6 @@ def main():
                         wandb.log(
                             {
                                 "iter": global_step,
-                                "num_samples": global_step * total_batch_size,
                                 "epoch": epoch,
                                 "loss": loss.item(),
                                 "avg_loss": avg_loss,
