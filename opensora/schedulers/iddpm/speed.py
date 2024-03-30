@@ -48,15 +48,15 @@ class SpeeDiffusion(SpacedDiffusion):
         )
 
         self.cfg_scale = cfg_scale
-
-        grad = np.gradient(self.sqrt_one_minus_alphas_cumprod)
+        # we fallback to numpy here as argmax_cuda is not implemented for Bool
+        grad = np.gradient(self.sqrt_one_minus_alphas_cumprod.cpu())
         self.meaningful_steps = np.argmax(grad < 5e-5) + 1
 
         # p2 weighting from: Perception Prioritized Training of Diffusion Models
         self.p2_gamma = 1
         self.p2_k = 1
         self.snr = 1.0 / (1 - self.alphas_cumprod) - 1
-        sqrt_one_minus_alphas_bar = torch.from_numpy(self.sqrt_one_minus_alphas_cumprod)
+        sqrt_one_minus_alphas_bar = self.sqrt_one_minus_alphas_cumprod
         p = torch.tanh(1e6 * (torch.gradient(sqrt_one_minus_alphas_bar)[0] - 1e-4)) + 1.5
         self.p = F.normalize(p, p=1, dim=0)
         self.weights = 1 / (self.p2_k + self.snr) ** self.p2_gamma
