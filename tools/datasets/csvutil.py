@@ -23,17 +23,26 @@ def apply(df, func):
     return df.progress_apply(func)
 
 
+IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
+
+
 def get_video_info(path):
     import cv2
 
-    cap = cv2.VideoCapture(path)
-    num_frames, height, width, fps = (
-        int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
-        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-        float(cap.get(cv2.CAP_PROP_FPS)),
-    )
-    aspect_ratio = width / height if height > 0 else np.nan
+    ext = os.path.splitext(path)[1].lower()
+    if ext in IMG_EXTENSIONS:
+        im = cv2.imread(path)
+        height, width = im.shape[:2]
+        num_frames, fps = 1, np.nan
+    else:
+        cap = cv2.VideoCapture(path)
+        num_frames, height, width, fps = (
+            int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+            int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+            int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            float(cap.get(cv2.CAP_PROP_FPS)),
+        )
+    aspect_ratio = height / width if width > 0 else np.nan
     return num_frames, height, width, aspect_ratio, fps
 
 
@@ -122,7 +131,7 @@ def get_output_path(args, input_name):
         name += "_relpath"
     # caption filtering
     if args.remove_empty_caption:
-        name += "_rec"
+        name += "_noempty"
     if args.lang is not None:
         name += f"_{args.lang}"
     if args.remove_url:

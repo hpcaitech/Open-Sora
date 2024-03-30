@@ -9,7 +9,9 @@
 # MAE:    https://github.com/facebookresearch/mae/blob/main/models_mae.py
 # --------------------------------------------------------
 
+import functools
 import math
+from typing import Optional
 
 import numpy as np
 import torch
@@ -21,7 +23,10 @@ import xformers.ops
 from einops import rearrange
 from timm.models.vision_transformer import Mlp
 
-from opensora.acceleration.communications import all_to_all, split_forward_gather_backward
+from opensora.acceleration.communications import (
+    all_to_all,
+    split_forward_gather_backward,
+)
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
 
 approx_gelu = lambda: nn.GELU(approximate="tanh")
@@ -228,9 +233,21 @@ class SeqParallelAttention(Attention):
         qkv = all_to_all(qkv, sp_group, scatter_dim=3, gather_dim=1)
 
         if self.enable_flashattn:
-            qkv_permute_shape = (2, 0, 1, 3, 4)  # [3, B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]
+            qkv_permute_shape = (
+                2,
+                0,
+                1,
+                3,
+                4,
+            )  # [3, B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]
         else:
-            qkv_permute_shape = (2, 0, 3, 1, 4)  # [3, B, NUM_HEAD_PER_DEVICE, N, HEAD_DIM]
+            qkv_permute_shape = (
+                2,
+                0,
+                3,
+                1,
+                4,
+            )  # [3, B, NUM_HEAD_PER_DEVICE, N, HEAD_DIM]
         qkv = qkv.permute(qkv_permute_shape)
 
         q, k, v = qkv.unbind(0)
@@ -312,7 +329,12 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         attn_drop=0.0,
         proj_drop=0.0,
     ):
-        super().__init__(d_model=d_model, num_heads=num_heads, attn_drop=attn_drop, proj_drop=proj_drop)
+        super().__init__(
+            d_model=d_model,
+            num_heads=num_heads,
+            attn_drop=attn_drop,
+            proj_drop=proj_drop,
+        )
 
     def forward(self, x, cond, mask=None):
         # query/value: img tokens; key: condition; mask: if padding tokens
@@ -386,23 +408,27 @@ class T2IFinalLayer(nn.Module):
         self.d_t = d_t
         self.d_s = d_s
 
-    def t_mask_select(self, x_mask, x, masked_x):
+    def t_mask_select(self, x_mask, x, masked_x, T, S):
         # x: [B, (T, S), C]
         # mased_x: [B, (T, S), C]
         # x_mask: [B, T]
-        x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
-        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
+        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=T, S=S)
         x = torch.where(x_mask[:, :, None, None], x, masked_x)
         x = rearrange(x, "B T S C -> B (T S) C")
         return x
 
-    def forward(self, x, t, x_mask=None, t0=None):
+    def forward(self, x, t, x_mask=None, t0=None, T=None, S=None):
+        if T is None:
+            T = self.d_t
+        if S is None:
+            S = self.d_s
         shift, scale = (self.scale_shift_table[None] + t[:, None]).chunk(2, dim=1)
         x = t2i_modulate(self.norm_final(x), shift, scale)
         if x_mask is not None:
             shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(2, dim=1)
             x_zero = t2i_modulate(self.norm_final(x), shift_zero, scale_zero)
-            x = self.t_mask_select(x_mask, x, x_zero)
+            x = self.t_mask_select(x_mask, x, x_zero, T, S)
         x = self.linear(x)
         return x
 
@@ -523,12 +549,27 @@ class CaptionEmbedder(nn.Module):
     Embeds class labels into vector representations. Also handles label dropout for classifier-free guidance.
     """
 
-    def __init__(self, in_channels, hidden_size, uncond_prob, act_layer=nn.GELU(approximate="tanh"), token_num=120):
+    def __init__(
+        self,
+        in_channels,
+        hidden_size,
+        uncond_prob,
+        act_layer=nn.GELU(approximate="tanh"),
+        token_num=120,
+    ):
         super().__init__()
         self.y_proj = Mlp(
-            in_features=in_channels, hidden_features=hidden_size, out_features=hidden_size, act_layer=act_layer, drop=0
+            in_features=in_channels,
+            hidden_features=hidden_size,
+            out_features=hidden_size,
+            act_layer=act_layer,
+            drop=0,
         )
-        self.register_buffer("y_embedding", nn.Parameter(torch.randn(token_num, in_channels) / in_channels**0.5))
+        self.register_buffer(
+            "y_embedding",
+            torch.randn(token_num, in_channels) / in_channels**0.5,
+            persistent=False,
+        )
         self.uncond_prob = uncond_prob
 
     def token_drop(self, caption, force_drop_ids=None):
@@ -550,6 +591,53 @@ class CaptionEmbedder(nn.Module):
             caption = self.token_drop(caption, force_drop_ids)
         caption = self.y_proj(caption)
         return caption
+
+
+class PositionEmbedding2D(nn.Module):
+    def __init__(self, dim: int) -> None:
+        super().__init__()
+        self.dim = dim
+        assert dim % 4 == 0, "dim must be divisible by 4"
+        half_dim = dim // 2
+        inv_freq = 1.0 / (10000 ** (torch.arange(0, half_dim, 2).float() / half_dim))
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+
+    def _get_sin_cos_emb(self, t: torch.Tensor):
+        out = torch.einsum("i,d->id", t, self.inv_freq)
+        emb_cos = torch.cos(out)
+        emb_sin = torch.sin(out)
+        return torch.cat((emb_sin, emb_cos), dim=-1)
+
+    @functools.lru_cache(maxsize=512)
+    def _get_cached_emb(
+        self,
+        device: torch.device,
+        dtype: torch.dtype,
+        h: int,
+        w: int,
+        scale: float = 1.0,
+        base_size: Optional[int] = None,
+    ):
+        grid_h = torch.arange(h, device=device) / scale
+        grid_w = torch.arange(w, device=device) / scale
+        if base_size is not None:
+            grid_h *= base_size / h
+            grid_w *= base_size / w
+        grid_h, grid_w = torch.meshgrid(
+            grid_w,
+            grid_h,
+            indexing="ij",
+        )  # here w goes first
+        grid_h = grid_h.t().reshape(-1)
+        grid_w = grid_w.t().reshape(-1)
+        emb_h = self._get_sin_cos_emb(grid_h)
+        emb_w = self._get_sin_cos_emb(grid_w)
+        return torch.concat([emb_h, emb_w], dim=-1).unsqueeze(0).to(dtype)
+
+    def forward(
+        self, x: torch.Tensor, h: int, w: int, scale: Optional[float] = 1.0, base_size: Optional[int] = None
+    ) -> torch.Tensor:
+        return self._get_cached_emb(x.device, x.dtype, h, w, scale, base_size)
 
 
 # ===============================================

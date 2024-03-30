@@ -55,7 +55,9 @@ def find_model(model_name):
         model = reparameter(model, model_name)
         return model
     else:  # Load a custom DiT checkpoint:
-        assert os.path.isfile(model_name), f"Could not find DiT checkpoint at {model_name}"
+        assert os.path.isfile(
+            model_name
+        ), f"Could not find DiT checkpoint at {model_name}"
         checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage)
         if "pos_embed_temporal" in checkpoint:
             del checkpoint["pos_embed_temporal"]
@@ -84,13 +86,16 @@ def load_from_sharded_state_dict(model, ckpt_path):
     ckpt_io = GeneralCheckpointIO()
     ckpt_io.load_model(model, os.path.join(ckpt_path, "model"))
 
+
 def model_sharding(model: torch.nn.Module):
     global_rank = dist.get_rank()
     world_size = dist.get_world_size()
     for _, param in model.named_parameters():
         padding_size = (world_size - param.numel() % world_size) % world_size
         if padding_size > 0:
-            padding_param = torch.nn.functional.pad(param.data.view(-1), [0, padding_size])
+            padding_param = torch.nn.functional.pad(
+                param.data.view(-1), [0, padding_size]
+            )
         else:
             padding_param = param.data.view(-1)
         splited_params = padding_param.split(padding_param.numel() // world_size)
@@ -120,7 +125,9 @@ def model_gathering(model: torch.nn.Module, model_shape_dict: dict):
         dist.all_gather(all_params, param.data, group=dist.group.WORLD)
         if int(global_rank) == 0:
             all_params = torch.cat(all_params)
-            param.data = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name])
+            param.data = remove_padding(all_params, model_shape_dict[name]).view(
+                model_shape_dict[name]
+            )
     dist.barrier()
 
 
@@ -144,6 +151,7 @@ def save(
     coordinator: DistCoordinator,
     save_dir: str,
     shape_dict: dict,
+    sampler=None,
 ):
     save_dir = os.path.join(save_dir, f"epoch{epoch}-global_step{global_step}")
     os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
@@ -156,7 +164,9 @@ def save(
         torch.save(ema.state_dict(), os.path.join(save_dir, "ema.pt"))
         model_sharding(ema)
 
-    booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
+    booster.save_optimizer(
+        optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096
+    )
     if lr_scheduler is not None:
         booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
     running_states = {
@@ -167,22 +177,38 @@ def save(
     }
     if coordinator.is_master():
         save_json(running_states, os.path.join(save_dir, "running_states.json"))
+        if sampler is not None:
+            torch.save(sampler.state_dict(), os.path.join(save_dir, "sampler"))
     dist.barrier()
 
 
 def load(
-    booster: Booster, model: nn.Module, ema: nn.Module, optimizer: Optimizer, lr_scheduler: _LRScheduler, load_dir: str
+    booster: Booster,
+    model: nn.Module,
+    ema: nn.Module,
+    optimizer: Optimizer,
+    lr_scheduler: _LRScheduler,
+    load_dir: str,
+    sampler=None,
 ) -> Tuple[int, int, int]:
     booster.load_model(model, os.path.join(load_dir, "model"))
     # ema is not boosted, so we don't use booster.load_model
     # ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt")))
-    ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")))
+    ema.load_state_dict(
+        torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu"))
+    )
     booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
     if lr_scheduler is not None:
         booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
     running_states = load_json(os.path.join(load_dir, "running_states.json"))
+    if sampler is not None:
+        sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
     dist.barrier()
-    return running_states["epoch"], running_states["step"], running_states["sample_start_index"]
+    return (
+        running_states["epoch"],
+        running_states["step"],
+        running_states["sample_start_index"],
+    )
 
 
 def create_logger(logging_dir):
@@ -194,7 +220,10 @@ def create_logger(logging_dir):
             level=logging.INFO,
             format="[\033[34m%(asctime)s\033[0m] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
-            handlers=[logging.StreamHandler(), logging.FileHandler(f"{logging_dir}/log.txt")],
+            handlers=[
+                logging.StreamHandler(),
+                logging.FileHandler(f"{logging_dir}/log.txt"),
+            ],
         )
         logger = logging.getLogger(__name__)
     else:  # dummy logger (does nothing)

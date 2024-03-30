@@ -1,5 +1,6 @@
 # adapted from https://github.com/christophschuhmann/improved-aesthetic-predictor/blob/main/simple_inference.py
 import argparse
+import os
 
 import av
 import clip
@@ -9,10 +10,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+from PIL import Image
 from tqdm import tqdm
 
+IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
+VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
-def extract_frames(video_path, points=(0.0, 0.5, 0.9)):
+
+def is_video(filename):
+    ext = os.path.splitext(filename)[-1].lower()
+    return ext in VID_EXTENSIONS
+
+
+def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
     container = av.open(video_path)
     total_frames = container.streams.video[0].frames
     frames = []
@@ -25,6 +35,10 @@ def extract_frames(video_path, points=(0.0, 0.5, 0.9)):
     return frames
 
 
+def get_image(image_path):
+    return Image.open(image_path).convert("RGB")
+
+
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path, transform=None, points=(0.1, 0.5, 0.9)):
         self.csv_path = csv_path
@@ -34,7 +48,11 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def getitem(self, index):
         sample = self.data.iloc[index]
-        images = extract_frames(sample["path"], points=self.points)
+        path = sample["path"]
+        if not is_video(path):
+            images = [get_image(path)]
+        else:
+            images = extract_frames(sample["path"], points=self.points)
         images = [self.transform(img) for img in images]
         images = torch.stack(images)
 
@@ -117,6 +135,7 @@ def main(args):
         dataset.data.loc[index : index + len(scores_np) - 1, "aesthetic"] = scores_np
         index += len(images)
     dataset.data.to_csv(output_file, index=False)
+    print(f"Saved aesthetic scores to {output_file}.")
 
 
 if __name__ == "__main__":
@@ -126,4 +145,5 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=64, help="Number of workers")
     parser.add_argument("--prefetch_factor", type=int, default=8, help="Prefetch factor")
     args = parser.parse_args()
+
     main(args)
