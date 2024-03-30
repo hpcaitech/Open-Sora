@@ -47,14 +47,13 @@ def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
-    
 
     for k, v in vars(args).items():
         if k in cfg and v is not None:
             cfg[k] = v
 
     if not training:
-    # Inference only
+        # Inference only
         if "reference_path" not in cfg:
             cfg["reference_path"] = None
         if "loop" not in cfg:
@@ -63,7 +62,7 @@ def merge_args(cfg, args, training=False):
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
             cfg["prompt"] = load_prompts(cfg["prompt_path"])
     else:
-    # Training only
+        # Training only
         if args.data_path is not None:
             cfg.dataset["data_path"] = args.data_path
             args.data_path = None

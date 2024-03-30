@@ -4,7 +4,7 @@ The Open-Sora project welcomes any constructive contribution from the community 
 
 ## Development Environment Setup
 
-To contribute to Open-Sora, we would like to first guide you to set up a proper development environment so that you can better implement your code. You can install this library from source with the `editable` flag (`-e`, for development mode) so that your change to the source code will be reflected in runtime without re-installation. 
+To contribute to Open-Sora, we would like to first guide you to set up a proper development environment so that you can better implement your code. You can install this library from source with the `editable` flag (`-e`, for development mode) so that your change to the source code will be reflected in runtime without re-installation.
 
 You can refer to the [Installation Section](./README.md#installation) and replace `pip install -v .` with `pip install -v -e .`.
 

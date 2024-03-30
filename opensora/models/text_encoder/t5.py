@@ -23,14 +23,12 @@
 
 
 import html
-import os
 import re
 import urllib.parse as ul
 
 import ftfy
 import torch
 from bs4 import BeautifulSoup
-from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, T5EncoderModel
 
 from opensora.registry import MODELS
