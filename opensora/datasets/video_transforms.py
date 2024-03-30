@@ -111,15 +111,16 @@ def resize_crop_to_fill(clip, target_size):
     th, tw = target_size[0], target_size[1]
     rh, rw = th / h, tw / w
     if rh > rw:
-        sh, sw = th, int(w * rh)
+        sh, sw = th, round(w * rh)
         clip = resize(clip, (sh, sw), "bilinear")
         i = 0
         j = int(round(sw - tw) / 2.0)
     else:
-        sh, sw = int(h * rw), tw
+        sh, sw = round(h * rw), tw
         clip = resize(clip, (sh, sw), "bilinear")
         i = int(round(sh - th) / 2.0)
         j = 0
+    assert i + th <= clip.size(-2) and j + tw <= clip.size(-1)
     return crop(clip, i, j, th, tw)
 
 
