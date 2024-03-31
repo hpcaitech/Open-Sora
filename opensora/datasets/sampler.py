@@ -47,8 +47,6 @@ class DistributedVariableVideoSampler(DistributedSampler):
             bucket_id = self.bucket.get_bucket_id(t, h, w, self.dataset.frame_interval, g)
             if bucket_id is None:
                 continue
-            real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
-            self.dataset.set_data_info(i, real_t, real_h, real_w)
             if bucket_id not in bucket_sample_dict:
                 bucket_sample_dict[bucket_id] = []
             bucket_sample_dict[bucket_id].append(i)
@@ -94,9 +92,14 @@ class DistributedVariableVideoSampler(DistributedSampler):
             if not found_last_bucket:
                 continue
             self.last_bucket_id = k
+
+            real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
             for sample_idx in v:
                 self.last_bucket_comsumed_samples += self.num_replicas
-                yield k, sample_idx
+
+                # we return the (t, h, w) dimenisons for data processing
+                # in the dataset's getitem method
+                yield k, sample_idx, real_t, real_h, real_w
             self.last_bucket_comsumed_samples = 0
         self._reset()
 
@@ -156,13 +159,16 @@ class VariableVideoBatchSampler(Sampler[List[int]]):
         sampler_iter = iter(self.sampler)
         # init cur bucket
         try:
-            cur_bucket_id, sample_idx = next(sampler_iter)
+            cur_bucket_id, sample_idx, real_t, real_h, real_w = next(sampler_iter)
         except StopIteration:
             return
+
+        # we hack the getitem method to pass in the (time, height, width) info
         cur_batch_size = self.bucket.get_batch_size(cur_bucket_id)
-        cur_sample_indices = [sample_idx]
+        cur_sample_indices = [f"{sample_idx}-{real_t}-{real_h}-{real_w}"]
+
         # iterate the rest
-        for bucket_id, sample_idx in sampler_iter:
+        for bucket_id, sample_idx, real_t, real_h, real_w in sampler_iter:
             if len(cur_sample_indices) == cur_batch_size:
                 yield cur_sample_indices
                 cur_sample_indices = []
@@ -171,9 +177,9 @@ class VariableVideoBatchSampler(Sampler[List[int]]):
                     yield cur_sample_indices
                 cur_bucket_id = bucket_id
                 cur_batch_size = self.bucket.get_batch_size(cur_bucket_id)
-                cur_sample_indices = [sample_idx]
+                cur_sample_indices = [f"{sample_idx}-{real_t}-{real_h}-{real_w}"]
             else:
-                cur_sample_indices.append(sample_idx)
+                cur_sample_indices.append(f"{sample_idx}-{real_t}-{real_h}-{real_w}")
         if len(cur_sample_indices) > 0 and (not self.drop_last or len(cur_sample_indices) == cur_batch_size):
             yield cur_sample_indices
 

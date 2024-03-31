@@ -113,10 +113,6 @@ class VariableVideoTextDataset(VideoTextDataset):
     ):
         super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
         self.transform_name = transform_name
-        self.data_info = self.data[["num_frames", "height", "width"]].to_numpy().tolist()
-
-    def set_data_info(self, idx, T, H, W):
-        self.data_info[idx] = [T, H, W]
 
     def get_data_info(self, index):
         T = self.data.iloc[index]["num_frames"]
@@ -125,11 +121,13 @@ class VariableVideoTextDataset(VideoTextDataset):
         return T, H, W
 
     def getitem(self, index):
+        # a hack to pass in the (time, height, width) info from sampler
+        index, num_frames, height, width = [int(val) for val in index.split("-")]
+
         sample = self.data.iloc[index]
         path = sample["path"]
         text = sample["text"]
         file_type = self.get_type(path)
-        num_frames, height, width = self.data_info[index]
         ar = width / height
 
         if file_type == "video":
@@ -158,10 +156,4 @@ class VariableVideoTextDataset(VideoTextDataset):
         return {"video": video, "text": text, "num_frames": num_frames, "height": height, "width": width, "ar": ar}
 
     def __getitem__(self, index):
-        for _ in range(10):
-            try:
-                return self.getitem(index)
-            except Exception as e:
-                print(e)
-                index = np.random.randint(len(self))
-        raise RuntimeError("Too many bad data.")
+        return self.getitem(index)
