@@ -71,6 +71,8 @@ LLAVA_PREFIX = [
 
 def remove_caption_prefix(caption):
     for prefix in LLAVA_PREFIX:
+        if isinstance(caption, float):
+            breakpoint()
         if caption.startswith(prefix):
             caption = caption[len(prefix) :].strip()
             if caption[0].islower():
@@ -106,10 +108,13 @@ def parse_args():
     parser.add_argument("--sort-descending", type=str, default=None)
     parser.add_argument("--sort-ascending", type=str, default=None)
     parser.add_argument("--difference", type=str, default=None)
+    parser.add_argument("--intersection", type=str, default=None)
 
     # path processing
-    parser.add_argument("--abspath", type=str, default=None)
     parser.add_argument("--relpath", type=str, default=None)
+    parser.add_argument("--abspath", type=str, default=None)
+    # path filtering
+    parser.add_argument("--ext", action="store_true")
     # caption filtering
     parser.add_argument("--remove-empty-caption", action="store_true")
     parser.add_argument("--lang", type=str, default=None)
@@ -137,10 +142,13 @@ def get_output_path(args, input_name):
     dir_path = os.path.dirname(args.input[0])
 
     # path processing
-    if args.abspath is not None:
-        name += "_abspath"
     if args.relpath is not None:
         name += "_relpath"
+    if args.abspath is not None:
+        name += "_abspath"
+    # path filtering
+    if args.ext:
+        name += "_ext"
     # caption filtering
     if args.remove_empty_caption:
         name += "_noempty"
@@ -200,6 +208,14 @@ def main(args):
         input_name += f"-{os.path.basename(args.difference).split('.')[0]}"
         print(f"Filtered number of samples: {len(data)}.")
 
+    # make intersection
+    if args.intersection is not None:
+        data_int = pd.read_csv(args.intersection)
+        print(f"Intersection csv contains {len(data_int)} samples.")
+        data = data[data["path"].isin(data_int["path"])]
+        input_name += f"-{os.path.basename(args.intersection).split('.')[0]}"
+        print(f"Filtered number of samples: {len(data)}.")
+
     # get output path
     output_path = get_output_path(args, input_name)
 
@@ -208,12 +224,10 @@ def main(args):
         detect_lang = build_lang_detector(args.lang)
 
     # processing
-    if args.abspath is not None:
-        assert args.relpath is None
-        data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
     if args.relpath is not None:
-        assert args.abspath is None
         data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
+    if args.abspath is not None:
+        data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
     if args.remove_caption_prefix:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
@@ -225,9 +239,13 @@ def main(args):
         data["num_frames"], data["height"], data["width"], data["aspect_ratio"], data["fps"] = zip(*info)
 
     # filtering
+    if args.ext:
+        assert "path" in data.columns
+        data = data[apply(data["path"], os.path.exists)]
     if args.remove_empty_caption:
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
+        data = data[~data["text"].isna()]
     if args.remove_url:
         assert "text" in data.columns
         data = data[~data["text"].str.contains(r"(?P<url>https?://[^\s]+)", regex=True)]
@@ -258,9 +276,9 @@ def main(args):
     if args.shard is not None:
         sharded_data = np.array_split(data, args.shard)
         for i in range(args.shard):
-            output_path = output_path.replace(".csv", f"_{i}.csv")
-            sharded_data[i].to_csv(output_path, index=False)
-            print(f"Saved {len(sharded_data[i])} samples to {output_path}.")
+            output_path_s = output_path.replace(".csv", f"_{i}.csv")
+            sharded_data[i].to_csv(output_path_s, index=False)
+            print(f"Saved {len(sharded_data[i])} samples to {output_path_s}.")
     else:
         data.to_csv(output_path, index=False)
         print(f"Saved {len(data)} samples to {output_path}.")
