@@ -145,7 +145,7 @@ def main(args):
         output_file_split = output_file.replace(".csv", f"_part{dp_rank}.csv")
         dp_file = open(output_file_split, "w")
         dp_writer = csv.writer(dp_file)
-        dp_writer.writerow(["path", "caption", "num_frames"])
+        dp_writer.writerow(["path", "text", "num_frames"])
 
     # ======================================================
     # 5. generate captions

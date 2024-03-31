@@ -50,7 +50,7 @@ def main(args):
     output_file = os.path.splitext(args.input)[0] + "_caption.csv"
     f = open(output_file, "w")
     writer = csv.writer(f)
-    writer.writerow(["video", "caption"])
+    writer.writerow(["video", "text"])
 
     # ======================================================
     # 2. generate captions

@@ -29,7 +29,7 @@ pretrained_models = {
 }
 
 
-def reparameter(ckpt, name=None):
+def reparameter(ckpt, name=None, model=None):
     if "DiT" in name:
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
@@ -42,17 +42,23 @@ def reparameter(ckpt, name=None):
         ckpt = ckpt["state_dict"]
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
+
+        # different text length
+        if ckpt["y_embedder.y_embedding"].shape[0] != model.y_embedder.y_embedding.shape[0]:
+            additional_length = model.y_embedder.y_embedding.shape[0] - ckpt["y_embedder.y_embedding"].shape[0]
+            new_y_embedding = torch.randn(additional_length, model.y_embedder.y_embedding.shape[1])
+            ckpt["y_embedder.y_embedding"] = torch.cat([ckpt["y_embedder.y_embedding"], new_y_embedding], dim=0)
     return ckpt
 
 
-def find_model(model_name):
+def find_model(model_name, model=None):
     """
     Finds a pre-trained DiT model, downloading it if necessary. Alternatively, loads a model from a local path.
     """
     if model_name in pretrained_models:  # Find/download our pre-trained DiT checkpoints
-        model = download_model(model_name)
-        model = reparameter(model, model_name)
-        return model
+        model_ckpt = download_model(model_name)
+        model_ckpt = reparameter(model_ckpt, model_name, model=model)
+        return model_ckpt
     else:  # Load a custom DiT checkpoint:
         assert os.path.isfile(model_name), f"Could not find DiT checkpoint at {model_name}"
         checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage)
@@ -223,7 +229,7 @@ def create_logger(logging_dir):
 
 def load_checkpoint(model, ckpt_path, save_as_pt=True):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
-        state_dict = find_model(ckpt_path)
+        state_dict = find_model(ckpt_path, model=model)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
         print(f"Missing keys: {missing_keys}")
         print(f"Unexpected keys: {unexpected_keys}")
