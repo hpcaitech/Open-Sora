@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-from PIL import Image
+from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
 
 IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
@@ -35,10 +35,6 @@ def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
     return frames
 
 
-def get_image(image_path):
-    return Image.open(image_path).convert("RGB")
-
-
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path, transform=None, points=(0.1, 0.5, 0.9)):
         self.csv_path = csv_path
@@ -50,7 +46,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         sample = self.data.iloc[index]
         path = sample["path"]
         if not is_video(path):
-            images = [get_image(path)]
+            images = [pil_loader(path)]
         else:
             images = extract_frames(sample["path"], points=self.points)
         images = [self.transform(img) for img in images]
@@ -122,7 +118,7 @@ def main(args):
     )
 
     # compute aesthetic scores
-    dataset.data["aesthetic"] = np.nan
+    dataset.data["aesthetic_score"] = np.nan
     index = 0
     for batch in tqdm(dataloader):
         images = batch["image"].to(device)
@@ -133,7 +129,7 @@ def main(args):
         scores = rearrange(scores, "(b p) 1 -> b p", b=B)
         scores = scores.mean(dim=1)
         scores_np = scores.cpu().numpy()
-        dataset.data.loc[index : index + len(scores_np) - 1, "aesthetic"] = scores_np
+        dataset.data.loc[index : index + len(scores_np) - 1, "aesthetic_score"] = scores_np
         index += len(images)
     dataset.data.to_csv(output_file, index=False)
     print(f"Saved aesthetic scores to {output_file}.")
