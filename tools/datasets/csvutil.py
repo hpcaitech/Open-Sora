@@ -57,6 +57,15 @@ LLAVA_PREFIX = [
     "The video features",
     "The video is ",
     "In the video,",
+    "The image shows",
+    "The image captures",
+    "The image features",
+    "The image depicts",
+    "The image presents",
+    "The image features",
+    "The image is ",
+    "The image portrays",
+    "In the image,",
 ]
 
 
@@ -96,6 +105,7 @@ def parse_args():
     parser.add_argument("--shard", type=int, default=None)
     parser.add_argument("--sort-descending", type=str, default=None)
     parser.add_argument("--sort-ascending", type=str, default=None)
+    parser.add_argument("--difference", type=str, default=None)
 
     # path processing
     parser.add_argument("--abspath", type=str, default=None)
@@ -181,6 +191,14 @@ def main(args):
         print(f"Loaded {len(data[-1])} samples from {input_path}.")
     data = pd.concat(data, ignore_index=True, sort=False)
     print(f"Total number of samples: {len(data)}.")
+
+    # make difference
+    if args.difference is not None:
+        data_diff = pd.read_csv(args.difference)
+        print(f"Difference csv contains {len(data_diff)} samples.")
+        data = data[~data["path"].isin(data_diff["path"])]
+        input_name += f"-{os.path.basename(args.difference).split('.')[0]}"
+        print(f"Filtered number of samples: {len(data)}.")
 
     # get output path
     output_path = get_output_path(args, input_name)

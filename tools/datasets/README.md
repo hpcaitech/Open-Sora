@@ -7,7 +7,7 @@ After preparing the raw dataset according to the [instructions](/docs/datasets.m
 All dataset should be provided in a CSV file, which is used both for training and data preprocessing.. The CSV file should only contain the following columns (can be optional).
 
 ```csv
-path, text, num_frames, fps, width, height, aspect_ratio, aesthetic_score, clip_score
+path, text, num_frames, fps, width, height, aspect_ratio, aesthetic_score, clip_score, ...
 /absolute/path/to/image1.jpg, caption1, num_of_frames
 /absolute/path/to/video2.mp4, caption2, num_of_frames
 ```
