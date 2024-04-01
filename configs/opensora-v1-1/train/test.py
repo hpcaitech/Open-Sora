@@ -8,7 +8,7 @@ dataset = dict(
     transform_name="resize_crop",
 )
 bucket_config = {
-    "240p": {1: (1.0, 128)},
+    "256": {1: (1.0, 64)},  # 32 ok, 64 broken
 }
 
 # Define acceleration
