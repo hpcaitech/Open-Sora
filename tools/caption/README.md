@@ -77,7 +77,8 @@ Then use the output csv file to resume the process.
 Run the following command to generate captions for videos with GPT-4V:
 
 ```bash
-python -m tools.caption.caption_gpt4 FOLDER_WITH_VIDEOS output.csv --key $OPENAI_API_KEY
+# output: DATA_caption.csv
+python -m tools.caption.caption_gpt4 DATA.csv --key $OPENAI_API_KEY
 ```
 
-The cost is approximately $0.01 per video (3 frames per video). The output is a CSV file with path and caption.
+The cost is approximately $0.01 per video (3 frames per video).
