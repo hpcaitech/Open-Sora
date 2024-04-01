@@ -32,8 +32,8 @@ pip install -e .
 
 # install flash attention
 pip install flash-attn --no-build-isolation
-# install colossalai and pyav
-pip install colossalai pyav
+# install colossalai and decord
+pip install colossalai decord
 ```
 
 Since only the 34B model's performance is comparable to GPT-4V, we only provide the usage of the 34B model. The 34B model is available [here](https://huggingface.co/liuhaotian/llava-v1.6-vicuna-7b), or run our script and it will be downloaded automatically.
