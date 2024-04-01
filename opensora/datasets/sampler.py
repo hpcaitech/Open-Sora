@@ -1,17 +1,16 @@
-import math
 import warnings
 from collections import OrderedDict, defaultdict
 from pprint import pprint
-from typing import Iterator, List, Optional, Tuple
+from typing import Iterator, List, Optional
 
 import torch
-from torch.utils.data import DistributedSampler, Sampler
+from torch.utils.data import DistributedSampler
 
 from .bucket import Bucket
 from .datasets import VariableVideoTextDataset
 
 
-class DistributedVariableVideoSampler(DistributedSampler):
+class VariableVideoBatchSampler(DistributedSampler):
     def __init__(
         self,
         dataset: VariableVideoTextDataset,
@@ -23,25 +22,23 @@ class DistributedVariableVideoSampler(DistributedSampler):
         drop_last: bool = False,
         verbose: bool = False,
     ) -> None:
-        super().__init__(dataset, num_replicas, rank, shuffle, seed, drop_last)
+        super().__init__(
+            dataset=dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle, seed=seed, drop_last=drop_last
+        )
+        self.dataset = dataset
         self.bucket = Bucket(bucket_config)
-        self.last_bucket_id = None
-        self.last_bucket_comsumed_samples = 0
+        self.last_bucket_access_index = 0
+        self.bucket_last_consumed = OrderedDict()
         self.verbose = verbose
 
-    def _reset(self) -> None:
-        self.last_bucket_id = None
-        self.last_bucket_comsumed_samples = 0
-
-    def set_epoch(self, epoch: int) -> None:
-        super().set_epoch(epoch)
-        self._reset()
-
-    def __iter__(self) -> Iterator[Tuple[tuple, int]]:
+    def __iter__(self) -> Iterator[List[int]]:
         g = torch.Generator()
         g.manual_seed(self.seed + self.epoch)
         bucket_sample_dict = OrderedDict()
+        bucket_batch_count = OrderedDict()
+
         # group by bucket
+        # each data sample is put into a bucket with a similar image/video size
         for i in range(len(self.dataset)):
             t, h, w = self.dataset.get_data_info(i)
             bucket_id = self.bucket.get_bucket_id(t, h, w, self.dataset.frame_interval, g)
@@ -50,72 +47,97 @@ class DistributedVariableVideoSampler(DistributedSampler):
             if bucket_id not in bucket_sample_dict:
                 bucket_sample_dict[bucket_id] = []
             bucket_sample_dict[bucket_id].append(i)
-        # shuffle
-        if self.shuffle:
-            # sort buckets
-            bucket_indices = torch.randperm(len(bucket_sample_dict), generator=g).tolist()
-            bucket_order = {k: bucket_indices[i] for i, k in enumerate(bucket_sample_dict)}
-            # sort samples in each bucket
-            for k, v in bucket_sample_dict.items():
-                sample_indices = torch.randperm(len(v), generator=g).tolist()
-                samples_reordered = [v[i] for i in sample_indices]
-                bucket_sample_dict[k] = samples_reordered
-        # all random numbers should be generated before this line
-        # pad / slice each bucket
-        for k, v in bucket_sample_dict.items():
-            # skip last comsumed samples
-            if k == self.last_bucket_id:
-                v = v[self.last_bucket_comsumed_samples :]
-            total_size = self._get_real_total_size(len(v))
-            if not self.drop_last:
-                padding_size = total_size - len(v)
-                if padding_size <= len(v):
-                    v += v[:padding_size]
-                else:
-                    v += (v * math.ceil(padding_size / len(v)))[:padding_size]
-            else:
-                v = v[:total_size]
-            assert len(v) == total_size
-            # subsample
-            v = v[self.rank : total_size : self.num_replicas]
-            bucket_sample_dict[k] = v
-        # shuffle buckets after printing to keep the original order
+
+        # print bucket info
         if self.verbose:
             self._print_bucket_info(bucket_sample_dict)
+
+        # process the samples
+        for bucket_id, samples in bucket_sample_dict.items():
+            # handle droplast
+            bs_per_gpu = self.bucket.get_batch_size(bucket_id)
+            global_batch_size = self.num_replicas * bs_per_gpu
+            remainder = len(samples) % global_batch_size
+
+            if remainder > 0:
+                if not self.drop_last:
+                    # if there is remainder, we pad to make it divisible
+                    samples += samples[: global_batch_size - remainder]
+                else:
+                    # we just drop the remainder to make it divisible
+                    samples = samples[:-remainder]
+            bucket_sample_dict[bucket_id] = samples
+
+            # handle shuffle
+            if self.shuffle:
+                sample_indices = torch.randperm(len(samples), generator=g).tolist()
+                samples = [samples[i] for i in sample_indices]
+                bucket_sample_dict[bucket_id] = samples
+
+            # compute how many batches each bucket has
+            num_batches = len(samples) // global_batch_size
+            bucket_batch_count[bucket_id] = num_batches
+
+        # compute the bucket access order
+        # each bucket may have more than one batch of data
+        # thus bucket_id may appear more than 1 time
+        bucket_id_access_order = []
+        for bucket_id, num_batch in bucket_batch_count.items():
+            bucket_id_access_order.extend([bucket_id] * num_batch)
+
+        # randomize the access order
         if self.shuffle:
-            bucket_sample_dict = OrderedDict(sorted(bucket_sample_dict.items(), key=lambda item: bucket_order[item[0]]))
-        # iterate
-        found_last_bucket = self.last_bucket_id is None
-        for k, v in bucket_sample_dict.items():
-            if k == self.last_bucket_id:
-                found_last_bucket = True
-            if not found_last_bucket:
-                continue
-            self.last_bucket_id = k
+            bucket_id_access_order_indices = torch.randperm(len(bucket_id_access_order), generator=g).tolist()
+            bucket_id_access_order = [bucket_id_access_order[i] for i in bucket_id_access_order_indices]
 
-            real_t, real_h, real_w = self.bucket.get_thw(k)
-            for sample_idx in v:
-                self.last_bucket_comsumed_samples += self.num_replicas
+        # prepare each batch from its bucket
+        # according to the predefined bucket access order
+        for i in range(self.last_bucket_access_index, len(bucket_id_access_order)):
+            bucket_id = bucket_id_access_order[i]
+            samples = bucket_sample_dict[bucket_id]
 
-                # we return the (t, h, w) dimenisons for data processing
-                # in the dataset's getitem method
-                yield k, sample_idx, real_t, real_h, real_w
-            self.last_bucket_comsumed_samples = 0
+            # get the last consumed index
+            last_consumed_index = self.bucket_last_consumed.get(bucket_id, 0)
+
+            # get batch size per GPU
+            bs = self.bucket.get_batch_size(bucket_id)
+            total_bs = bs * self.num_replicas
+
+            # get the current batch
+            cur_batch = samples[last_consumed_index : last_consumed_index + total_bs]
+
+            # update state dict
+            if bucket_id in self.bucket_last_consumed:
+                self.bucket_last_consumed[bucket_id] += total_bs
+            else:
+                self.bucket_last_consumed[bucket_id] = total_bs
+            self.last_bucket_access_index = i
+
+            # shard by DP
+            cur_batch_on_this_rank = cur_batch[self.rank : len(cur_batch) : self.num_replicas]
+            real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
+
+            # encode t, h, w into the sample index
+            cur_batch_on_this_rank = [f"{idx}-{real_t}-{real_h}-{real_w}" for idx in cur_batch_on_this_rank]
+            yield cur_batch_on_this_rank
+
         self._reset()
 
-    def _get_real_total_size(self, size: int) -> int:
-        if self.drop_last and size % self.num_replicas != 0:
-            num_samples = math.ceil((size - self.num_replicas) / self.num_replicas)
-        else:
-            num_samples = math.ceil(size / self.num_replicas)
-        total_size = num_samples * self.num_replicas
-        return total_size
+    def _reset(self) -> None:
+        self.last_bucket_access_index = 0
+        self.bucket_last_consumed = OrderedDict()
 
-    def __len__(self) -> int:
-        warnings.warn(
-            "The length of DistributedVariableVideoSampler is dynamic and may not be accurate. Return the max value."
-        )
-        return len(self.dataset)
+    def state_dict(self) -> dict:
+        # users must ensure bucket config is the same
+        return {
+            "seed": self.seed,
+            "epoch": self.epoch,
+            "last_bucket_access_index": self.last_bucket_access_index,
+            "bucket_last_consumed": self.bucket_last_consumed,
+        }
+
+    def load_state_dict(self, state_dict: dict) -> None:
+        self.__dict__.update(state_dict)
 
     def _print_bucket_info(self, bucket_sample_dict: dict) -> None:
         total_samples = 0
@@ -123,7 +145,7 @@ class DistributedVariableVideoSampler(DistributedSampler):
         num_aspect_dict = defaultdict(int)
         num_hwt_dict = defaultdict(int)
         for k, v in bucket_sample_dict.items():
-            size = len(v) * self.num_replicas
+            size = len(v)
             total_samples += size
             num_dict[k] = size
             num_aspect_dict[k[-1]] += size
@@ -136,61 +158,8 @@ class DistributedVariableVideoSampler(DistributedSampler):
         print("Bucket samples by aspect ratio:")
         pprint(num_aspect_dict)
 
-    def state_dict(self) -> dict:
-        # users must ensure bucket config is the same
-        return {
-            "seed": self.seed,
-            "epoch": self.epoch,
-            "last_bucket_id": self.last_bucket_id,
-            "last_bucket_comsumed_samples": self.last_bucket_comsumed_samples,
-        }
-
-    def load_state_dict(self, state_dict) -> None:
-        self.__dict__.update(state_dict)
-
-
-class VariableVideoBatchSampler(Sampler[List[int]]):
-    def __init__(self, sampler: DistributedVariableVideoSampler) -> None:
-        self.sampler = sampler
-        self.drop_last = sampler.drop_last
-        self.bucket = sampler.bucket
-
-    def __iter__(self) -> Iterator[List[int]]:
-        sampler_iter = iter(self.sampler)
-        # init cur bucket
-        try:
-            cur_bucket_id, sample_idx, real_t, real_h, real_w = next(sampler_iter)
-        except StopIteration:
-            return
-
-        # we hack the getitem method to pass in the (time, height, width) info
-        cur_batch_size = self.bucket.get_batch_size(cur_bucket_id)
-        cur_sample_indices = [f"{sample_idx}-{real_t}-{real_h}-{real_w}"]
-
-        # iterate the rest
-        for bucket_id, sample_idx, real_t, real_h, real_w in sampler_iter:
-            if len(cur_sample_indices) == cur_batch_size:
-                yield cur_sample_indices
-                cur_sample_indices = []
-            if bucket_id != cur_bucket_id:
-                if len(cur_sample_indices) > 0 and not self.drop_last:
-                    yield cur_sample_indices
-                cur_bucket_id = bucket_id
-                cur_batch_size = self.bucket.get_batch_size(cur_bucket_id)
-                cur_sample_indices = [f"{sample_idx}-{real_t}-{real_h}-{real_w}"]
-            else:
-                cur_sample_indices.append(f"{sample_idx}-{real_t}-{real_h}-{real_w}")
-        if len(cur_sample_indices) > 0 and (not self.drop_last or len(cur_sample_indices) == cur_batch_size):
-            yield cur_sample_indices
-
-    def state_dict(self) -> dict:
-        return self.sampler.state_dict()
-
-    def load_state_dict(self, state_dict: dict) -> None:
-        self.sampler.load_state_dict(state_dict)
-
     def set_epoch(self, epoch: int) -> None:
-        self.sampler.set_epoch(epoch)
+        super().set_epoch(epoch)
 
     def __len__(self) -> int:
         warnings.warn(
@@ -202,6 +171,6 @@ class VariableVideoBatchSampler(Sampler[List[int]]):
                 if bs is not None and (min_batch_size is None or bs < min_batch_size):
                     min_batch_size = bs
         if self.drop_last:
-            return len(self.sampler) // min_batch_size
+            return len(self.dataset) // min_batch_size
         else:
-            return (len(self.sampler) + min_batch_size - 1) // min_batch_size
+            return (len(self.dataset) + min_batch_size - 1) // min_batch_size
