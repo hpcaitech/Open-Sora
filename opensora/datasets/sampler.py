@@ -93,7 +93,7 @@ class DistributedVariableVideoSampler(DistributedSampler):
                 continue
             self.last_bucket_id = k
 
-            real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
+            real_t, real_h, real_w = self.bucket.get_thw(k)
             for sample_idx in v:
                 self.last_bucket_comsumed_samples += self.num_replicas
 
