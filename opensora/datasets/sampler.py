@@ -27,15 +27,15 @@ class VariableVideoBatchSampler(DistributedSampler):
         )
         self.dataset = dataset
         self.bucket = Bucket(bucket_config)
-        self.last_bucket_access_index = 0
-        self.bucket_last_consumed = OrderedDict()
         self.verbose = verbose
+        self.last_micro_batch_access_index = 0
 
     def __iter__(self) -> Iterator[List[int]]:
         g = torch.Generator()
         g.manual_seed(self.seed + self.epoch)
         bucket_sample_dict = OrderedDict()
-        bucket_batch_count = OrderedDict()
+        bucket_micro_batch_count = OrderedDict()
+        bucket_last_consumed = OrderedDict()
 
         # group by bucket
         # each data sample is put into a bucket with a similar image/video size
@@ -53,88 +53,104 @@ class VariableVideoBatchSampler(DistributedSampler):
             self._print_bucket_info(bucket_sample_dict)
 
         # process the samples
-        for bucket_id, samples in bucket_sample_dict.items():
+        for bucket_id, data_list in bucket_sample_dict.items():
             # handle droplast
             bs_per_gpu = self.bucket.get_batch_size(bucket_id)
-            global_batch_size = self.num_replicas * bs_per_gpu
-            remainder = len(samples) % global_batch_size
+            remainder = len(data_list) % bs_per_gpu
 
             if remainder > 0:
                 if not self.drop_last:
                     # if there is remainder, we pad to make it divisible
-                    samples += samples[: global_batch_size - remainder]
+                    data_list += data_list[: bs_per_gpu - remainder]
                 else:
                     # we just drop the remainder to make it divisible
-                    samples = samples[:-remainder]
-            bucket_sample_dict[bucket_id] = samples
+                    data_list = data_list[:-remainder]
+            bucket_sample_dict[bucket_id] = data_list
 
             # handle shuffle
             if self.shuffle:
-                sample_indices = torch.randperm(len(samples), generator=g).tolist()
-                samples = [samples[i] for i in sample_indices]
-                bucket_sample_dict[bucket_id] = samples
+                data_indices = torch.randperm(len(data_list), generator=g).tolist()
+                data_list = [data_list[i] for i in data_indices]
+                bucket_sample_dict[bucket_id] = data_list
 
-            # compute how many batches each bucket has
-            num_batches = len(samples) // global_batch_size
-            bucket_batch_count[bucket_id] = num_batches
+            # compute how many micro-batches each bucket has
+            num_micro_batches = len(data_list) // bs_per_gpu
+            bucket_micro_batch_count[bucket_id] = num_micro_batches
 
         # compute the bucket access order
         # each bucket may have more than one batch of data
         # thus bucket_id may appear more than 1 time
         bucket_id_access_order = []
-        for bucket_id, num_batch in bucket_batch_count.items():
-            bucket_id_access_order.extend([bucket_id] * num_batch)
+        for bucket_id, num_micro_batch in bucket_micro_batch_count.items():
+            bucket_id_access_order.extend([bucket_id] * num_micro_batch)
 
         # randomize the access order
         if self.shuffle:
             bucket_id_access_order_indices = torch.randperm(len(bucket_id_access_order), generator=g).tolist()
             bucket_id_access_order = [bucket_id_access_order[i] for i in bucket_id_access_order_indices]
 
+        # make the number of bucket accesses divisible by dp size
+        remainder = len(bucket_id_access_order) % self.num_replicas
+        if remainder > 0:
+            if self.drop_last:
+                bucket_id_access_order = bucket_id_access_order[: len(bucket_id_access_order) - remainder]
+            else:
+                bucket_id_access_order += bucket_id_access_order[: self.num_replicas - remainder]
+
         # prepare each batch from its bucket
         # according to the predefined bucket access order
-        for i in range(self.last_bucket_access_index, len(bucket_id_access_order)):
+        num_iters = len(bucket_id_access_order) // self.num_replicas
+        start_iter_idx = self.last_micro_batch_access_index // self.num_replicas
+
+        # re-compute the micro-batch consumption
+        # this is useful when resuming from a state dict with a different number of GPUs
+        self.last_micro_batch_access_index = start_iter_idx * self.num_replicas
+        for i in range(self.last_micro_batch_access_index):
             bucket_id = bucket_id_access_order[i]
-            samples = bucket_sample_dict[bucket_id]
-
-            # get the last consumed index
-            last_consumed_index = self.bucket_last_consumed.get(bucket_id, 0)
-
-            # get batch size per GPU
-            bs = self.bucket.get_batch_size(bucket_id)
-            total_bs = bs * self.num_replicas
-
-            # get the current batch
-            cur_batch = samples[last_consumed_index : last_consumed_index + total_bs]
-
-            # update state dict
-            if bucket_id in self.bucket_last_consumed:
-                self.bucket_last_consumed[bucket_id] += total_bs
+            bucket_bs = self.bucket.get_batch_size(bucket_id)
+            if bucket_id in bucket_last_consumed:
+                bucket_last_consumed[bucket_id] += bucket_bs
             else:
-                self.bucket_last_consumed[bucket_id] = total_bs
-            self.last_bucket_access_index = i
+                bucket_last_consumed[bucket_id] = bucket_bs
 
-            # shard by DP
-            cur_batch_on_this_rank = cur_batch[self.rank : len(cur_batch) : self.num_replicas]
-            real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
+        for i in range(start_iter_idx, num_iters):
+            bucket_access_list = bucket_id_access_order[i * self.num_replicas : (i + 1) * self.num_replicas]
+            self.last_micro_batch_access_index += self.num_replicas
+
+            # comppute the data samples consumed by each access
+            bucket_access_boundaries = []
+            for bucket_id in bucket_access_list:
+                bucket_bs = self.bucket.get_batch_size(bucket_id)
+                last_consumed_index = bucket_last_consumed.get(bucket_id, 0)
+                bucket_access_boundaries.append([last_consumed_index, last_consumed_index + bucket_bs])
+
+                # update consumption
+                if bucket_id in bucket_last_consumed:
+                    bucket_last_consumed[bucket_id] += bucket_bs
+                else:
+                    bucket_last_consumed[bucket_id] = bucket_bs
+
+            # compute the range of data accessed by each GPU
+            bucket_id = bucket_access_list[self.rank]
+            boundary = bucket_access_boundaries[self.rank]
+            cur_micro_batch = bucket_sample_dict[bucket_id][boundary[0] : boundary[1]]
 
             # encode t, h, w into the sample index
-            cur_batch_on_this_rank = [f"{idx}-{real_t}-{real_h}-{real_w}" for idx in cur_batch_on_this_rank]
-            yield cur_batch_on_this_rank
+            real_t, real_h, real_w = self.bucket.get_thw(bucket_id)
+            cur_micro_batch = [f"{idx}-{real_t}-{real_h}-{real_w}" for idx in cur_micro_batch]
+            yield cur_micro_batch
 
         self._reset()
 
-    def _reset(self) -> None:
-        self.last_bucket_access_index = 0
-        self.bucket_last_consumed = OrderedDict()
+    def _reset(self):
+        self.last_micro_batch_access_index = 0
 
-    def state_dict(self) -> dict:
-        # users must ensure bucket config is the same
-        return {
-            "seed": self.seed,
-            "epoch": self.epoch,
-            "last_bucket_access_index": self.last_bucket_access_index,
-            "bucket_last_consumed": self.bucket_last_consumed,
-        }
+    def state_dict(self, num_steps: int) -> dict:
+        # the last_micro_batch_access_index in the __iter__ is often
+        # not accurate during multi-workers and data prefetching
+        # thus, we need the user to pass the actual steps which have been executed
+        # to calculate the correct last_micro_batch_access_index
+        return {"seed": self.seed, "epoch": self.epoch, "last_micro_batch_access_index": num_steps * self.num_replicas}
 
     def load_state_dict(self, state_dict: dict) -> None:
         self.__dict__.update(state_dict)

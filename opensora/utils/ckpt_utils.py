@@ -15,6 +15,8 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torchvision.datasets.utils import download_url
 
+from opensora.datasets.sampler import VariableVideoBatchSampler
+
 pretrained_models = {
     "DiT-XL-2-512x512.pt": "https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-512x512.pt",
     "DiT-XL-2-256x256.pt": "https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-256x256.pt",
@@ -175,7 +177,10 @@ def save(
     if coordinator.is_master():
         save_json(running_states, os.path.join(save_dir, "running_states.json"))
         if sampler is not None:
-            torch.save(sampler.state_dict(), os.path.join(save_dir, "sampler"))
+            if isinstance(sampler, VariableVideoBatchSampler):
+                torch.save(sampler.state_dict(step), os.path.join(save_dir, "sampler"))
+            else:
+                torch.save(sampler.state_dict(), os.path.join(save_dir, "sampler"))
     dist.barrier()
 
 
