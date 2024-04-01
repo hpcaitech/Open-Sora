@@ -6,7 +6,7 @@ import torch.nn as nn
 import numpy as np
 import torch
 from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
-
+from taming.modules.discriminator.model import NLayerDiscriminator, weights_init
 
 ## NOTE: not used since we only have 'GN'
 # def get_norm_layer(norm_type, dtype):
@@ -128,7 +128,8 @@ class VEA3DLossWithPerceptualLoss(nn.Module):
         assert disc_loss in ["hinge", "vanilla"]
         self.kl_weight = kl_weight
         self.pixel_weight = pixelloss_weight
-        self.perceptual_loss = LPIPS().eval()
+        self.perceptual_loss = LPIPS()
+        self.perceptual_loss.eval()
         self.perceptual_weight = perceptual_weight
         # output log variance
         self.logvar = nn.Parameter(torch.ones(size=()) * logvar_init)
