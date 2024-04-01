@@ -230,7 +230,7 @@ class DiagonalGaussianDistribution(object):
         
 #         return loss
 
-class VEA3DLossWithPerceptualLoss(nn.Module):
+class VEA3DLoss(nn.Module):
     def __init__(
         self,
         # disc_start, 
