@@ -191,12 +191,47 @@ To lower the memory usage, set a smaller `vae.micro_batch_size` in the config (s
 ## Data Processing
 
 High-quality Data is the key to high-quality models. Our used datasets and data collection plan
-is [here](/docs/datasets.md). We provide tools to process video data. Currently, our data processing pipeline includes
+is [here](/docs/datasets.md). We provide tools to process video data. Our data processing pipeline includes
 the following steps:
 
-1. Downloading datasets. [[docs](/tools/datasets/README.md)]
+1. Manage datasets. [[docs](/tools/datasets/README.md)]
 2. Split videos into clips. [[docs](/tools/scenedetect/README.md)]
 3. Generate video captions. [[docs](/tools/caption/README.md)]
+
+Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs.
+
+```bash
+# Suppose files under ~/dataset/
+# 1. Convert dataset to CSV
+# output: ~/dataset.csv
+python -m tools.dataset.convert video ~/dataset
+# filter out broken videos (broken ones num_frames=0)
+python -m tools.dataset.csvutil ~/dataset.csv --video-info --fmin 2 --output ~/dataset.csv
+
+# 2. Filter dataset by aesthetic scores
+# output: ~/dataset_aesthetic.csv
+python -m tools.aesthetic.inference ~/dataset.csv
+# sort and examine videos by aesthetic scores
+python -m tools.datasets.csvutil ~/dataset_aesthetic.csv --sort-descending aesthetic_score
+# bad videos (aesthetic_score < 5)
+tail ~/dataset_aesthetic.csv
+# filter videos by aesthetic scores
+# output: ~/dataset_aesthetic_aesmin_5.csv
+python -m tools.datasets.csvutil ~/dataset_aesthetic.csv --aesmin 5
+
+# 3. Caption dataset
+# output: ~/dataset_aesthetic_aesmin_5_caption.csv
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava ~/dataset_aesthetic_aesmin_5.csv --tp-size 2 --dp-size 4 --bs 16
+# remove empty captions and process captions (may need to re-caption lost ones)
+python -m tools.datasets.csvutil ~/dataset_aesthetic_aesmin_5_caption.csv --remove-caption-prefix --remove-empty-caption
+
+# 4. Sanity check & prepare for training
+# sanity check
+python -m tools.datasets.csvutil ~/dataset_aesthetic_aesmin_5_caption.csv --ext --video-info --output ~/dataset_ready.csv
+# filter out videos less than 48 frames
+# output: ~/dataset_ready_fmin_48.csv
+python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
+```
 
 ## Training
 
