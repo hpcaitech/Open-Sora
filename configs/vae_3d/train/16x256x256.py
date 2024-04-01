@@ -16,8 +16,7 @@ sp_size = 1
 
 # Define Loss
 kl_weight = 0.000001
-use_perceptual_loss = True 
-perceptual_weight = 1
+perceptual_weight = 1.0
 
 
 # Define model
