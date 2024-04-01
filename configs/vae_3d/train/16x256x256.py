@@ -16,6 +16,9 @@ sp_size = 1
 
 # Define Loss
 kl_weight = 0.000001
+use_perceptual_loss = True 
+perceptual_weight = 1
+
 
 # Define model
 
@@ -53,5 +56,5 @@ ckpt_every = 1000
 load = None
 
 batch_size = 8
-lr = 2e-5
+lr = 1e-4
 grad_clip = 1.0
