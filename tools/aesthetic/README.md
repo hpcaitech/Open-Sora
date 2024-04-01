@@ -11,6 +11,7 @@ For videos, we extract the first, last, and the middle frames for evaluation. Th
 ```bash
 # install clip
 pip install git+https://github.com/openai/CLIP.git
+pip install decord
 
 # get pretrained model
 wget https://github.com/christophschuhmann/improved-aesthetic-predictor/raw/main/sac+logos+ava1-l14-linearMSE.pth -O pretrained_models/aesthetic.pth

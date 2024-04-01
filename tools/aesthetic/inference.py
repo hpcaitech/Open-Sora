@@ -2,14 +2,15 @@
 import argparse
 import os
 
-import av
 import clip
+import decord
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+from PIL import Image
 from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
 
@@ -23,16 +24,13 @@ def is_video(filename):
 
 
 def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
-    container = av.open(video_path)
-    total_frames = container.streams.video[0].frames
-    frames = []
-    for point in points:
-        target_frame = total_frames * point
-        target_timestamp = int((target_frame * av.time_base) / container.streams.video[0].average_rate)
-        container.seek(target_timestamp)
-        frame = next(container.decode(video=0)).to_image()
-        frames.append(frame)
-    return frames
+    container = decord.VideoReader(video_path, num_threads=1)
+    total_frames = len(container)
+    frame_inds = (np.array(points) * total_frames).astype(np.int32)
+    frame_inds[frame_inds >= total_frames] = total_frames - 1
+    frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
+    frames_pil = [Image.fromarray(frame) for frame in frames]
+    return frames_pil
 
 
 class VideoTextDataset(torch.utils.data.Dataset):
@@ -107,14 +105,14 @@ def main(args):
     model = torch.nn.DataParallel(model)
 
     # build dataset
-    dataset = VideoTextDataset(args.input, transform=preprocess, points=(0.5,))
+    dataset = VideoTextDataset(args.input, transform=preprocess)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=args.bs,
         shuffle=False,
-        num_workers=args.num_workers,
+        num_workers=0,
         pin_memory=True,
-        prefetch_factor=args.prefetch_factor,
+        # prefetch_factor=args.prefetch_factor,
     )
 
     # compute aesthetic scores

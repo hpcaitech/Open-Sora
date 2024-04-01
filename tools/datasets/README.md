@@ -160,3 +160,15 @@ python -m tools.datasets.csvutil DATA.csv --aesmin 0.5
 # output: DATA_matchmin_0.5.csv
 python -m tools.datasets.csvutil DATA.csv --matchmin 0.5
 ```
+
+## Frame extraction speed
+
+We use three libraries to extract frames from videos: `opencv`, `pyav` and `decord`. Our benchmark results of loading 256 video's middle frames are as follows:
+
+| Library | Time (s) |
+| ------- | -------- |
+| opencv  | 33       |
+| decord  | 28       |
+| pyav    | 10       |
+
+Although `pyav` is the fastest, it can only extract the key frames instead of frames at any time. Therefore, we use `decord` as the default library for frame extraction. For dataset management, without a bottleneck on loading speed, we choose `opencv` as the default library for video information extraction.

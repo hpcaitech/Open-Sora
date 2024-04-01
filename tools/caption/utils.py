@@ -1,10 +1,12 @@
 import os
 import time
 
-import av
+import decord
+import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
+from PIL import Image
 from torchvision.datasets.folder import pil_loader
 
 PROMPTS = {
@@ -31,16 +33,13 @@ def is_video(filename):
 
 
 def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
-    container = av.open(video_path)
-    total_frames = container.streams.video[0].frames
-    frames = []
-    for point in points:
-        target_frame = total_frames * point
-        target_timestamp = int((target_frame * av.time_base) / container.streams.video[0].average_rate)
-        container.seek(target_timestamp)
-        frame = next(container.decode(video=0)).to_image()
-        frames.append(frame)
-    return frames, total_frames
+    container = decord.VideoReader(video_path, num_threads=1)
+    total_frames = len(container)
+    frame_inds = (np.array(points) * total_frames).astype(np.int32)
+    frame_inds[frame_inds >= total_frames] = total_frames - 1
+    frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
+    frames_pil = [Image.fromarray(frame) for frame in frames]
+    return frames_pil, total_frames
 
 
 class VideoTextDataset(torch.utils.data.Dataset):

@@ -198,7 +198,7 @@ the following steps:
 2. Split videos into clips. [[docs](/tools/scenedetect/README.md)]
 3. Generate video captions. [[docs](/tools/caption/README.md)]
 
-Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs.
+Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs. This pipeline applies to both image and video data.
 
 ```bash
 # Suppose files under ~/dataset/
