@@ -299,8 +299,8 @@ class VEA3DLossWithPerceptualLoss(nn.Module):
             permutated_rec = torch.permute(reconstructions, (0, 2, 1, 3, 4))
             data_shape = inputs.size()
             p_loss = self.perceptual_loss(
-                permutated_input.view(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous(), 
-                permutated_rec.view(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous()
+                permutated_input.reshape(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous(), 
+                permutated_rec.reshape(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous()
             )
             rec_loss = rec_loss + self.perceptual_weight * p_loss
 
