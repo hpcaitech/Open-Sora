@@ -124,12 +124,11 @@ class VEA3DLossWithPerceptualLoss(nn.Module):
         disc_loss="hinge",
 
     ):
-
+        super().__init__()
         assert disc_loss in ["hinge", "vanilla"]
         self.kl_weight = kl_weight
         self.pixel_weight = pixelloss_weight
-        self.perceptual_loss = LPIPS()
-        self.perceptual_loss.eval()
+        self.perceptual_loss = LPIPS().eval()
         self.perceptual_weight = perceptual_weight
         # output log variance
         self.logvar = nn.Parameter(torch.ones(size=()) * logvar_init)
