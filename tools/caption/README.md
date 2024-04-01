@@ -54,7 +54,7 @@ torchrun --nproc_per_node 2 --standalone -m tools.caption.caption_llava DATA.csv
 After running the script, with `dp-size=N`, you will get `N` parts of csv files. Run the following command to merge them:
 
 ```bash
-python -m tools.datasets.csvutil DATA_caption_part0.csv DATA_caption_part1.csv DATA_caption_part2.csv DATA_caption_part3.csv --output DATA_caption.csv
+python -m tools.datasets.csvutil DATA_caption_part*.csv --output DATA_caption.csv
 ```
 
 ### Resume
@@ -63,11 +63,9 @@ Sometimes the process may be interrupted. We can resume the process by running t
 
 ```bash
 # merge generated results
-# output: DATA_caption_part0+DATA_caption_part1+DATA_caption_part2+DATA_caption_part3.csv
-python -m tools.datasets.csvutil DATA_caption_part0.csv DATA_caption_part1.csv DATA_caption_part2.csv DATA_caption_part3.csv
+python -m tools.datasets.csvutil DATA_caption_part*.csv --output DATA_caption.csv
 # get the remaining videos
-# output: DATA-DATA_caption_part0+DATA_caption_part1+DATA_caption_part2+DATA_caption_part3.csv
-python -m tools.datasets.csvutil DATA.csv --difference DATA_caption_part0+DATA_caption_part1+DATA_caption_part2+DATA_caption_part3.csv
+python -m tools.datasets.csvutil DATA.csv --difference DATA_caption.csv --output DATA_remaining.csv
 ```
 
 Then use the output csv file to resume the process.
