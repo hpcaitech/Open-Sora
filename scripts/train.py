@@ -37,8 +37,6 @@ def main():
     # 1. args & cfg
     # ======================================================
     cfg = parse_configs(training=True)
-    print("Training configuration:")
-    pprint(cfg._cfg_dict)
     exp_name, exp_dir = create_experiment_workspace(cfg)
     save_training_config(cfg._cfg_dict, exp_dir)
 
@@ -58,6 +56,8 @@ def main():
     if not coordinator.is_master():
         logger = create_logger(None)
     else:
+        print("Training configuration:")
+        pprint(cfg._cfg_dict)
         logger = create_logger(exp_dir)
         logger.info(f"Experiment directory created at {exp_dir}")
 
@@ -173,13 +173,16 @@ def main():
         dataloader=dataloader,
     )
     torch.set_default_dtype(torch.float)
-    num_steps_per_epoch = len(dataloader)
     logger.info("Boost model for distributed training")
+    if cfg.dataset.type == "VariableVideoTextDataset":
+        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
+    else:
+        num_steps_per_epoch = len(dataloader)
 
     # =======================================================
     # 6. training loop
     # =======================================================
-    start_epoch = start_step = log_step = sampler_start_idx = 0
+    start_epoch = start_step = log_step = sampler_start_idx = acc_step = 0
     running_loss = 0.0
     sampler_to_io = dataloader.batch_sampler if cfg.dataset.type == "VariableVideoTextDataset" else None
     # 6.1. resume training
@@ -254,6 +257,7 @@ def main():
                 running_loss += loss.item()
                 global_step = epoch * num_steps_per_epoch + step
                 log_step += 1
+                acc_step += 1
 
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
@@ -269,6 +273,7 @@ def main():
                                 "epoch": epoch,
                                 "loss": loss.item(),
                                 "avg_loss": avg_loss,
+                                "acc_step": acc_step,
                             },
                             step=global_step,
                         )

@@ -1,6 +1,7 @@
-num_frames = 4
+num_frames = 1
 fps = 24 // 3
-image_size = (704, 1472)
+# image_size = (1358, 680)
+image_size = (2160, 3840)
 multi_resolution = "STDiT2"
 
 # Define model

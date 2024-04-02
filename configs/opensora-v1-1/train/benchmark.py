@@ -4,15 +4,22 @@ dataset = dict(
     data_path=None,
     num_frames=None,
     frame_interval=3,
-    image_size=(None, None, None),
+    image_size=(None, None),
     transform_name="resize_crop",
 )
 bucket_config = {
-    "256": {1: (1.0, 64)},  # 32 ok, 64 broken
+    # "256": {1: (1.0, 256)},  # 4.5s/it
+    # "512": {1: (1.0, 96)}, # 4.7s/it
+    # "512": {1: (1.0, 128)}, # 6.3s/it
+    # "480p": {1: (1.0, 50)},  # 4.0s/it
+    # "1024": {1: (1.0, 32)},  # 6.8s/it
+    # "1024": {1: (1.0, 20)}, # 4.3s/it
+    # "1080p": {1: (1.0, 16)}, # 8.6s/it
+    "1080p": {1: (1.0, 8)},  # 4.4s/it
 }
 
 # Define acceleration
-num_workers = 0
+num_workers = 4
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
