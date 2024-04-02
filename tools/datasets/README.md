@@ -27,9 +27,10 @@ The columns are defined as follows:
 - `fps`: the frame rate of the video. Optional.
 - `width`: the width of the video frame. Necessary for STDiT2.
 - `height`: the height of the video frame. Necessary for STDiT2.
+- `resolution`: height x width.
 - `aspect_ratio`: the aspect ratio of the video frame (height divided by width). Optional.
-- `aesthetic_score`: the aesthetic score by [asethetic scorer](/tools/aesthetic/README.md). Optional.
-- `clip_score`: the clip score by [clip scorer](/tools/clip/README.md). Optional.
+- `aes`: the aesthetic score by [asethetic scorer](/tools/aesthetic/README.md). Optional.
+- `match`: the clip score by [clip scorer](/tools/clip/README.md). Optional.
 
 ## Dataset to CSV
 
@@ -159,6 +160,19 @@ python -m tools.datasets.csvutil DATA.csv --aesmin 0.5
 # filter the dataset by clip score
 # output: DATA_matchmin_0.5.csv
 python -m tools.datasets.csvutil DATA.csv --matchmin 0.5
+```
+
+## Analyze datasets
+
+Since the dataset is provided in a CSV file, you can easily analyze the dataset using pandas (after applying `--info`). Here are some examples:
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+data = pd.read_csv('meta.csv')
+data.hist(column="resolution")
+plt.savefig('info.jpg')
 ```
 
 ## Frame extraction speed
