@@ -97,7 +97,7 @@ def main():
     )
     model.load_state_dict(ckpt['model'])
     model = model.to(device)
-    model = torch.nn.DataParallel(model)
+    # model = torch.nn.DataParallel(model)
 
     # build dataset
     dataset = VideoTextDataset(meta_path=meta_path, frame_inds=[0, 10, 20, 30])
