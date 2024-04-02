@@ -65,20 +65,24 @@ def process_vidprom(root, info):
     print(f"Saved {len(df)} samples to vidprom.csv.")
 
 
-def process_general_images(root):
+def process_general_images(root, output):
     root = os.path.expanduser(root)
     image_lists = get_filelist(root, IMG_EXTENSIONS)
     df = pd.DataFrame(dict(path=image_lists))
-    df.to_csv("images.csv", index=False)
-    print(f"Saved {len(df)} samples to images.csv.")
+    if output is None:
+        output = "images.csv"
+    df.to_csv(output, index=False)
+    print(f"Saved {len(df)} samples to {output}.")
 
 
-def process_general_videos(root):
+def process_general_videos(root, output):
     root = os.path.expanduser(root)
     video_lists = get_filelist(root, VID_EXTENSIONS)
     df = pd.DataFrame(dict(path=video_lists))
-    df.to_csv("videos.csv", index=False)
-    print(f"Saved {len(df)} samples to videos.csv.")
+    if output is None:
+        output = "videos.csv"
+    df.to_csv(output, index=False)
+    print(f"Saved {len(df)} samples to {output}.")
 
 
 if __name__ == "__main__":
@@ -87,6 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("root", type=str)
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--info", type=str, default=None)
+    parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
 
     if args.dataset == "imagenet":
@@ -96,8 +101,8 @@ if __name__ == "__main__":
     elif args.dataset == "vidprom":
         process_vidprom(args.root, args.info)
     elif args.dataset == "image":
-        process_general_images(args.root)
+        process_general_images(args.root, args.output)
     elif args.dataset == "video":
-        process_general_videos(args.root)
+        process_general_videos(args.root, args.output)
     else:
         raise ValueError("Invalid dataset")
