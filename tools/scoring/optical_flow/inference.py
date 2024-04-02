@@ -4,7 +4,6 @@ print(f'Current working directory: {os.getcwd()}')
 
 import argparse
 import av
-import decord
 import numpy as np
 import pandas as pd
 from einops import rearrange
@@ -16,6 +15,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torchvision.transforms.functional import pil_to_tensor
 
+import decord
 from unimatch import UniMatch
 
 
