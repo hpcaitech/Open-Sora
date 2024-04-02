@@ -124,7 +124,7 @@ def parse_args():
     parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--unescape", action="store_true")
     # num_frames processing
-    parser.add_argument("--video-info", action="store_true")
+    parser.add_argument("--info", action="store_true")
     # num_frames filtering
     parser.add_argument("--fmin", type=int, default=None)
     parser.add_argument("--fmax", type=int, default=None)
@@ -163,19 +163,19 @@ def get_output_path(args, input_name):
     if args.unescape:
         name += "_unescape"
     # num_frames processing
-    if args.video_info:
-        name += "_vinfo"
+    if args.info:
+        name += "_info"
     # num_frames filtering
     if args.fmin is not None:
-        name += f"_fmin_{args.fmin}"
+        name += f"_fmin{args.fmin}"
     if args.fmax is not None:
-        name += f"_fmax_{args.fmax}"
+        name += f"_fmax{args.fmax}"
     # aesthetic filtering
     if args.aesmin is not None:
-        name += f"_aesmin_{args.aesmin}"
+        name += f"_aesmin{args.aesmin}"
     # clip score filtering
     if args.matchmin is not None:
-        name += f"_matchmin_{args.matchmin}"
+        name += f"_matchmin{args.matchmin}"
     # sort
     if args.sort_descending is not None:
         assert args.sort_ascending is None
@@ -254,7 +254,7 @@ def main(args):
     if args.unescape:
         assert "text" in data.columns
         data["text"] = apply(data["text"], html.unescape)
-    if args.video_info:
+    if args.info:
         info = apply(data["path"], get_video_info)
         data["num_frames"], data["height"], data["width"], data["aspect_ratio"], data["fps"] = zip(*info)
 
@@ -266,11 +266,11 @@ def main(args):
         assert "num_frames" in data.columns
         data = data[data["num_frames"] <= args.fmax]
     if args.aesmin is not None:
-        assert "aesthetic_score" in data.columns
-        data = data[data["aesthetic_score"] >= args.aesmin]
+        assert "aes" in data.columns
+        data = data[data["aes"] >= args.aesmin]
     if args.matchmin is not None:
-        assert "clip_score" in data.columns
-        data = data[data["clip_score"] >= args.matchmin]
+        assert "match" in data.columns
+        data = data[data["match"] >= args.matchmin]
     print(f"Filtered number of samples: {len(data)}.")
 
     # sort
