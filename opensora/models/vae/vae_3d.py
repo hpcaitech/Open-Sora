@@ -159,12 +159,13 @@ class Encoder(nn.Module):
                 # conv blocks handling
                 if self.conv_downsample:
                     t_stride = 2 if self.temporal_downsample[i] else 1
-                    self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(4, 4, 4), strides=(t_stride, 2, 2))) # SCH: should be same in_channel and out_channel
+                    t_pad = 1 if self.temporal_downsample[i] else 0
+                    self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(4, 4, 4), strides=(t_stride, 2, 2)), padding=(t_pad,1,1)) # SCH: should be same in_channel and out_channel
                     prev_filters = filters # update in_channels
 
         # NOTE: downsample, dimensions T, H, W
-        self.avg_pool_with_t = nn.AvgPool3d((2,2,2))
-        self.avg_pool = nn.AvgPool3d((1,2,2))
+        self.avg_pool_with_t = nn.AvgPool3d((2,2,2), count_include_pad=False)
+        self.avg_pool = nn.AvgPool3d((1,2,2), count_include_pad=False)
 
         # last layer res block
         self.res_blocks = []
@@ -301,14 +302,15 @@ class Decoder(nn.Module):
             # conv blocks handling
             if i > 0:
                 t_stride = 2 if self.temporal_downsample[i - 1] else 1
+                t_kernel = 4 if self.temporal_downsample[i - 1] else 3 # SCH: hack to keep dimension same
                 if self.upsample == "deconv":
                     assert self.custom_conv_padding is None, ('Custom padding not implemented for ConvTranspose')
                     # SCH: append in front
-                    self.conv_blocks.insert(0, 
-                        self.conv_t_fn(prev_filters, filters, kernel_size=(4, 4, 4), strides=(t_stride, 2, 2)))
+                    self.conv_blocks.insert(0,  
+                        self.conv_t_fn(prev_filters, filters, kernel_size=(t_kernel, 4, 4), stride=(t_stride, 2, 2), padding=1))
                     prev_filters = filters # SCH: update in_channels
                 elif self.upsample == 'nearest+conv':
-                    # SCH: append in front
+                    # SCH: append in front 
                     self.conv_blocks.insert(0, self.conv_fn(prev_filters, filters, kernel_size=(3, 3, 3)))
                     prev_filters = filters # SCH: update in_channels
                 else:
