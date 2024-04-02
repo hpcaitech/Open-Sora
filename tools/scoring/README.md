@@ -15,7 +15,6 @@ wget https://github.com/christophschuhmann/improved-aesthetic-predictor/raw/main
 
 Then run:
 ```bash
-# output: DATA_aes.csv
 python -m tools.scoring.aesthetic.inference /path/to/meta.csv
 ```
 The output should be `/path/to/meta_aes.csv` with column `aes`. Aesthetic scores range from 1 to 10, with 10 being the best quality.
