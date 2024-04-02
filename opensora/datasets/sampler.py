@@ -4,6 +4,7 @@ from pprint import pprint
 from typing import Iterator, List, Optional
 
 import torch
+import torch.distributed as dist
 from torch.utils.data import DistributedSampler
 
 from .bucket import Bucket
@@ -29,6 +30,27 @@ class VariableVideoBatchSampler(DistributedSampler):
         self.bucket = Bucket(bucket_config)
         self.verbose = verbose
         self.last_micro_batch_access_index = 0
+        self.approximate_num_batch = None
+
+    def get_num_batch(self) -> int:
+        g = torch.Generator()
+        g.manual_seed(self.seed + self.epoch)
+        bucket_sample_dict = OrderedDict()
+
+        # group by bucket
+        # each data sample is put into a bucket with a similar image/video size
+        for i in range(len(self.dataset)):
+            t, h, w = self.dataset.get_data_info(i)
+            bucket_id = self.bucket.get_bucket_id(t, h, w, self.dataset.frame_interval, g)
+            if bucket_id is None:
+                continue
+            if bucket_id not in bucket_sample_dict:
+                bucket_sample_dict[bucket_id] = []
+            bucket_sample_dict[bucket_id].append(i)
+
+        # calculate the number of batches
+        self._print_bucket_info(bucket_sample_dict)
+        return self.approximate_num_batch
 
     def __iter__(self) -> Iterator[List[int]]:
         g = torch.Generator()
@@ -155,8 +177,9 @@ class VariableVideoBatchSampler(DistributedSampler):
     def load_state_dict(self, state_dict: dict) -> None:
         self.__dict__.update(state_dict)
 
-    def _print_bucket_info(self, bucket_sample_dict: dict) -> None:
+    def _print_bucket_info(self, bucket_sample_dict: dict, verbose=True) -> None:
         total_samples = 0
+        num_batch = 0
         num_dict = {}
         num_aspect_dict = defaultdict(int)
         num_hwt_dict = defaultdict(int)
@@ -166,13 +189,17 @@ class VariableVideoBatchSampler(DistributedSampler):
             num_dict[k] = size
             num_aspect_dict[k[-1]] += size
             num_hwt_dict[k[:-1]] += size
-        print(f"Total training samples: {total_samples}, num buckets: {len(num_dict)}")
-        print("Bucket samples:")
-        pprint(num_dict)
-        print("Bucket samples by HxWxT:")
-        pprint(num_hwt_dict)
-        print("Bucket samples by aspect ratio:")
-        pprint(num_aspect_dict)
+            num_batch += size // self.bucket.get_batch_size(k[:-1])
+        if dist.get_rank() == 0 and verbose:
+            print(f"Total training samples: {total_samples}, num buckets: {len(num_dict)}")
+            print("Bucket samples:")
+            pprint(num_dict)
+            print("Bucket samples by HxWxT:")
+            pprint(num_hwt_dict)
+            print("Bucket samples by aspect ratio:")
+            pprint(num_aspect_dict)
+            print(f"Number of batches: {num_batch}")
+        self.approximate_num_batch = num_batch
 
     def set_epoch(self, epoch: int) -> None:
         super().set_epoch(epoch)
