@@ -130,7 +130,7 @@ def main(args):
         dataset.data.loc[index : index + len(scores_np) - 1, "aes"] = scores_np
         index += len(images)
     dataset.data.to_csv(output_file, index=False)
-    print(f"New meta with aesthetic scores saved to \'{output_file}\'.")
+    print(f"New meta with aesthetic scores saved to '{output_file}'.")
 
 
 if __name__ == "__main__":

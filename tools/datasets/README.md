@@ -1,5 +1,15 @@
 # Dataset Management
 
+- [Dataset Management](#dataset-management)
+  - [Dataset Format](#dataset-format)
+  - [Dataset to CSV](#dataset-to-csv)
+  - [Manage datasets](#manage-datasets)
+    - [Requirement](#requirement)
+    - [Usage](#usage)
+  - [Analyze datasets](#analyze-datasets)
+  - [Frame extraction speed](#frame-extraction-speed)
+
+
 After preparing the raw dataset according to the [instructions](/docs/datasets.md), you can use the following commands to manage the dataset.
 
 ## Dataset Format
@@ -173,6 +183,14 @@ import matplotlib.pyplot as plt
 data = pd.read_csv('meta.csv')
 data.hist(column="resolution")
 plt.savefig('info.jpg')
+```
+
+## Resize datasets
+
+Sometimes you may need to resize the images or videos to a specific resolution. You can use the following commands to resize the dataset:
+
+```bash
+python -m tools.datasets.resize meta.csv /path/to/raw/data /path/to/new/data --length 2160
 ```
 
 ## Frame extraction speed
