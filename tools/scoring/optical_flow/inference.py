@@ -71,7 +71,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=4, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     args = parser.parse_args()
@@ -92,10 +92,10 @@ def main():
         reg_refine=True,
         task='flow',
     )
-    # ckpt = torch.load(
-    #     './checkpoints/pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth'
-    # )
-    # model.load_state_dict(ckpt['model'])
+    ckpt = torch.load(
+        './pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth'
+    )
+    model.load_state_dict(ckpt['model'])
     model = model.to(device)
     model = torch.nn.DataParallel(model)
 

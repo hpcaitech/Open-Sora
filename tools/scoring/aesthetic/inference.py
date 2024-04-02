@@ -116,7 +116,7 @@ def main(args):
     )
 
     # compute aesthetic scores
-    dataset.data["aesthetic_score"] = np.nan
+    dataset.data["aes"] = np.nan
     index = 0
     for batch in tqdm(dataloader):
         images = batch["image"].to(device)
@@ -127,10 +127,10 @@ def main(args):
         scores = rearrange(scores, "(b p) 1 -> b p", b=B)
         scores = scores.mean(dim=1)
         scores_np = scores.cpu().numpy()
-        dataset.data.loc[index : index + len(scores_np) - 1, "aesthetic_score"] = scores_np
+        dataset.data.loc[index : index + len(scores_np) - 1, "aes"] = scores_np
         index += len(images)
     dataset.data.to_csv(output_file, index=False)
-    print(f"Saved aesthetic scores to {output_file}.")
+    print(f"New meta with aesthetic scores saved to \'{output_file}\'.")
 
 
 if __name__ == "__main__":
