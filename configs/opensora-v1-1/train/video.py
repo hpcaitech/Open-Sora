@@ -7,16 +7,14 @@ dataset = dict(
     image_size=(None, None),
     transform_name="resize_crop",
 )
-bucket_config = {
+bucket_config = {  # 6s/it
     "240p": {16: (1.0, 16)},
-    # "256": {1: (1.0, 256)},  # 4.5s/it
-    # "512": {1: (1.0, 96)}, # 4.7s/it
-    # "512": {1: (1.0, 128)}, # 6.3s/it
-    # "480p": {1: (1.0, 50)},  # 4.0s/it
-    # "1024": {1: (1.0, 32)},  # 6.8s/it
-    # "1024": {1: (1.0, 20)}, # 4.3s/it
-    # "1080p": {1: (1.0, 16)}, # 8.6s/it
-    # "1080p": {1: (1.0, 8)},  # 4.4s/it
+    "256": {1: (1.0, 256)},
+    "512": {1: (1.0, 80)},
+    "480p": {1: (1.0, 52), 16: (1.0, 4)},
+    "720p": {16: (1.0, 2)},
+    "1024": {1: (1.0, 20)},
+    "1080p": {1: (1.0, 8)},
 }
 
 # Define acceleration
@@ -57,7 +55,7 @@ wandb = False
 
 epochs = 1000
 log_every = 10
-ckpt_every = 1000
+ckpt_every = 500
 load = None
 
 batch_size = 10  # only for logging
