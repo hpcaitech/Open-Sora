@@ -47,6 +47,8 @@ With `meta.csv` containing the paths to the videos, run the following command:
 
 ```bash
 python -m tools.scoring.optical_flow.inference /path/to/meta.csv
+# or run in parallel
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.optical_flow.inference_parallel /path/to/meta.csv
 ```
 
 The output should be `/path/to/meta_flow.csv` with column `flow`. Higher optical flow scores indicate larger movement.
