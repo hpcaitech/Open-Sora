@@ -66,7 +66,7 @@ def main():
 
         writer = create_tensorboard_writer(exp_dir)
         if cfg.wandb:
-            wandb.init(project="minisora", name=exp_name, config=cfg._cfg_dict)
+            wandb.init(project="opensora-vae", name=exp_name, config=cfg._cfg_dict)
 
     # 2.3. initialize ColossalAI booster
     if cfg.plugin == "zero2":
