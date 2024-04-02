@@ -149,6 +149,8 @@ the config files.
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 
+Training orders: 16x256x256 $\rightarrow$ 16x256x256 HQ $\rightarrow$ 16x512x512 HQ.
+
 Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of
 parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about
 the dataset can be found in [datasets.md](/docs/datasets.md). HQ means high quality.
@@ -203,33 +205,35 @@ Below is an example workflow to process data. However, we recommend you to read 
 ```bash
 # Suppose files under ~/dataset/
 # 1. Convert dataset to CSV
-# output: ~/dataset.csv
-python -m tools.dataset.convert video ~/dataset
+python -m tools.datasets.convert video ~/dataset --output ~/dataset/meta.csv
 # filter out broken videos (broken ones num_frames=0)
-python -m tools.dataset.csvutil ~/dataset.csv --video-info --fmin 2 --output ~/dataset.csv
+python -m tools.datasets.csvutil ~/dataset.csv --info --fmin 1 --output ~/dataset/meta.csv
 
 # 2. Filter dataset by aesthetic scores
-# output: ~/dataset_aesthetic.csv
-python -m tools.aesthetic.inference ~/dataset.csv
+# output: ~/dataset/meta_aes.csv
+python -m tools.aesthetic.inference ~/dataset/meta.csv
 # sort and examine videos by aesthetic scores
-python -m tools.datasets.csvutil ~/dataset_aesthetic.csv --sort-descending aesthetic_score
+# output: ~/dataset/meta_aes_sort.csv
+python -m tools.datasets.csvutil ~/dataset/meta_aes.csv --sort-descending aes
 # bad videos (aesthetic_score < 5)
-tail ~/dataset_aesthetic.csv
+tail ~/dataset/meta_aes_sort.csv
 # filter videos by aesthetic scores
-# output: ~/dataset_aesthetic_aesmin_5.csv
-python -m tools.datasets.csvutil ~/dataset_aesthetic.csv --aesmin 5
+# output: ~/dataset/meta_aes_aesmin5.csv
+python -m tools.datasets.csvutil ~/dataset/meta_aes.csv --aesmin 5
 
 # 3. Caption dataset
-# output: ~/dataset_aesthetic_aesmin_5_caption.csv
-torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava ~/dataset_aesthetic_aesmin_5.csv --tp-size 2 --dp-size 4 --bs 16
+# output: ~/dataset/meta_aes_aesmin5_caption_parti.csv
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava ~/dataset/meta_aes_aesmin5.csv --tp-size 2 --dp-size 4 --bs 16
+# merge generated results
+python -m tools.datasets.csvutil ~/dataset/meta_aes_aesmin5_caption_part*.csv --output ~/dataset/meta_caption.csv
 # remove empty captions and process captions (may need to re-caption lost ones)
-python -m tools.datasets.csvutil ~/dataset_aesthetic_aesmin_5_caption.csv --remove-caption-prefix --remove-empty-caption
+python -m tools.datasets.csvutil ~/dataset/meta_caption.csv --remove-caption-prefix --remove-empty-caption --output ~/dataset/meta_caption_processed.csv
 
 # 4. Sanity check & prepare for training
 # sanity check
-python -m tools.datasets.csvutil ~/dataset_aesthetic_aesmin_5_caption.csv --ext --video-info --output ~/dataset_ready.csv
+python -m tools.datasets.csvutil ~/dataset/meta_caption_processed.csv --ext --video-info --output ~/dataset/meta_ready.csv
 # filter out videos less than 48 frames
-# output: ~/dataset_ready_fmin_48.csv
+# output: ~/dataset/meta_ready_fmin48.csv
 python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
 ```
 

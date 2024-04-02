@@ -1,22 +1,17 @@
-import os
-# os.chdir('../..')
-print(f'Current working directory: {os.getcwd()}')
-
 import argparse
+import os
+
 import av
 import numpy as np
 import pandas as pd
+import torch
+import torch.nn.functional as F
 from einops import rearrange
 from tqdm import tqdm
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset
-from torchvision.transforms.functional import pil_to_tensor
+from .unimatch import UniMatch
 
-import decord
-from unimatch import UniMatch
+import decord  # isort: skip
 
 
 def extract_frames_av(video_path, frame_inds=[0, 10, 20, 30]):
@@ -57,11 +52,11 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
         # transform
         images = torch.from_numpy(images).float()
-        images = rearrange(images, 'N H W C -> N C H W')
+        images = rearrange(images, "N H W C -> N C H W")
         H, W = images.shape[-2:]
         if H > W:
-            images = rearrange(images, 'N C H W -> N C W H')
-        images = F.interpolate(images, size=(320, 576), mode='bilinear', align_corners=True)
+            images = rearrange(images, "N C H W -> N C W H")
+        images = F.interpolate(images, size=(320, 576), mode="bilinear", align_corners=True)
 
         return images
 
@@ -78,7 +73,7 @@ def main():
 
     meta_path = args.meta_path
     wo_ext, ext = os.path.splitext(meta_path)
-    out_path = f'{wo_ext}_flow{ext}'
+    out_path = f"{wo_ext}_flow{ext}"
 
     # build model
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -90,12 +85,10 @@ def main():
         ffn_dim_expansion=4,
         num_transformer_layers=6,
         reg_refine=True,
-        task='flow',
+        task="flow",
     )
-    ckpt = torch.load(
-        './pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth'
-    )
-    model.load_state_dict(ckpt['model'])
+    ckpt = torch.load("./pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth")
+    model.load_state_dict(ckpt["model"])
     model = model.to(device)
     # model = torch.nn.DataParallel(model)
 
@@ -115,30 +108,31 @@ def main():
         images = images.to(device)
         B = images.shape[0]
 
-        batch_0 = rearrange(images[:, :-1], 'B N C H W -> (B N) C H W').contiguous()
-        batch_1 = rearrange(images[:, 1:], 'B N C H W -> (B N) C H W').contiguous()
+        batch_0 = rearrange(images[:, :-1], "B N C H W -> (B N) C H W").contiguous()
+        batch_1 = rearrange(images[:, 1:], "B N C H W -> (B N) C H W").contiguous()
 
         with torch.no_grad():
             res = model(
-                batch_0, batch_1,
-                attn_type='swin',
+                batch_0,
+                batch_1,
+                attn_type="swin",
                 attn_splits_list=[2, 8],
                 corr_radius_list=[-1, 4],
                 prop_radius_list=[-1, 1],
                 num_reg_refine=6,
-                task='flow',
+                task="flow",
                 pred_bidir_flow=False,
             )
-            flow_maps = res['flow_preds'][-1].cpu()  # [B * (N-1), 2, H, W]
-            flow_maps = rearrange(flow_maps, '(B N) C H W -> B N H W C', B=B)
+            flow_maps = res["flow_preds"][-1].cpu()  # [B * (N-1), 2, H, W]
+            flow_maps = rearrange(flow_maps, "(B N) C H W -> B N H W C", B=B)
             flow_scores = flow_maps.abs().mean(dim=[1, 2, 3, 4])
             flow_scores_np = flow_scores.numpy()
 
-        dataset.meta.loc[index: index + B - 1, "flow"] = flow_scores_np
+        dataset.meta.loc[index : index + B - 1, "flow"] = flow_scores_np
         index += B
 
     dataset.meta.to_csv(out_path, index=False)
-    print(f"New meta with optical flow scores saved to \'{out_path}\'.")
+    print(f"New meta with optical flow scores saved to '{out_path}'.")
 
 
 if __name__ == "__main__":
