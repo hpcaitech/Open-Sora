@@ -7,7 +7,6 @@
   - [Optical Flow Score](#optical-flow-score)
   - [Matching Score](#matching-score)
 
-
 ## Aesthetic Scoring
 
 To evaluate the aesthetic quality of videos, we use a pretrained model from [CLIP+MLP Aesthetic Score Predictor](https://github.com/christophschuhmann/improved-aesthetic-predictor). This model is trained on 176K SAC (Simulacra Aesthetic Captions) pairs, 15K LAION-Logos (Logos) pairs, and 250K AVA (The Aesthetic Visual Analysis) image-text pairs.
@@ -32,8 +31,8 @@ wget https://github.com/christophschuhmann/improved-aesthetic-predictor/raw/main
 With `meta.csv` containing the paths to the videos, run the following command:
 
 ```bash
-# output: DATA_aes.csv
-python -m tools.aesthetic.inference meta.csv
+# output: meta_aes.csv
+python -m tools.scoring.aesthetic.inference meta.csv
 ```
 
 ## Optical Flow Score

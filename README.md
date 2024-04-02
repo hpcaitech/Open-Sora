@@ -197,8 +197,9 @@ is [here](/docs/datasets.md). We provide tools to process video data. Our data p
 the following steps:
 
 1. Manage datasets. [[docs](/tools/datasets/README.md)]
-2. Split videos into clips. [[docs](/tools/scenedetect/README.md)]
-3. Generate video captions. [[docs](/tools/caption/README.md)]
+2. Scene detection and video splitting. [[docs](/tools/scenedetect/README.md)]
+3. Score and filter videos. [[docs](/tools/scoring/README.md)]
+4. Generate video captions. [[docs](/tools/caption/README.md)]
 
 Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs. This pipeline applies to both image and video data.
 
@@ -211,7 +212,7 @@ python -m tools.datasets.csvutil ~/dataset.csv --info --fmin 1 --output ~/datase
 
 # 2. Filter dataset by aesthetic scores
 # output: ~/dataset/meta_aes.csv
-python -m tools.aesthetic.inference ~/dataset/meta.csv
+python -m tools.scoring.aesthetic.inference ~/dataset/meta.csv
 # sort and examine videos by aesthetic scores
 # output: ~/dataset/meta_aes_sort.csv
 python -m tools.datasets.csvutil ~/dataset/meta_aes.csv --sort-descending aes
@@ -227,11 +228,11 @@ torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava ~/datase
 # merge generated results
 python -m tools.datasets.csvutil ~/dataset/meta_aes_aesmin5_caption_part*.csv --output ~/dataset/meta_caption.csv
 # remove empty captions and process captions (may need to re-caption lost ones)
-python -m tools.datasets.csvutil ~/dataset/meta_caption.csv --remove-caption-prefix --remove-empty-caption --output ~/dataset/meta_caption_processed.csv
+python -m tools.datasets.csvutil ~/dataset/meta_caption.csv --clean-caption --remove-caption-prefix --remove-empty-caption --output ~/dataset/meta_caption_processed.csv
 
 # 4. Sanity check & prepare for training
 # sanity check
-python -m tools.datasets.csvutil ~/dataset/meta_caption_processed.csv --ext --video-info --output ~/dataset/meta_ready.csv
+python -m tools.datasets.csvutil ~/dataset/meta_caption_processed.csv --ext --info --output ~/dataset/meta_ready.csv
 # filter out videos less than 48 frames
 # output: ~/dataset/meta_ready_fmin48.csv
 python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48

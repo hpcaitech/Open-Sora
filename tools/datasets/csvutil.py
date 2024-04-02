@@ -57,8 +57,9 @@ def get_video_info(path):
             int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
             float(cap.get(cv2.CAP_PROP_FPS)),
         )
+    hw = height * width
     aspect_ratio = height / width if width > 0 else np.nan
-    return num_frames, height, width, aspect_ratio, fps
+    return num_frames, height, width, aspect_ratio, fps, hw
 
 
 LLAVA_PREFIX = [
@@ -99,11 +100,7 @@ def build_lang_detector(lang_to_detect):
     lang_dict = dict(en=Language.ENGLISH)
     assert lang_to_detect in lang_dict
     valid_lang = lang_dict[lang_to_detect]
-    detector = (
-        LanguageDetectorBuilder.from_all_spoken_languages()
-        .with_low_accuracy_mode()
-        .build()
-    )
+    detector = LanguageDetectorBuilder.from_all_spoken_languages().with_low_accuracy_mode().build()
 
     def detect_lang(caption):
         confidence_values = detector.compute_language_confidence_values(caption)
@@ -124,19 +121,7 @@ def basic_clean(text):
 
 
 BAD_PUNCT_REGEX = re.compile(
-    r"["
-    + "#®•©™&@·º½¾¿¡§~"
-    + "\)"
-    + "\("
-    + "\]"
-    + "\["
-    + "\}"
-    + "\{"
-    + "\|"
-    + "\\"
-    + "\/"
-    + "\*"
-    + r"]{1,}"
+    r"[" + "#®•©™&@·º½¾¿¡§~" + "\)" + "\(" + "\]" + "\[" + "\}" + "\{" + "\|" + "\\" + "\/" + "\*" + r"]{1,}"
 )  # noqa
 
 
@@ -237,14 +222,10 @@ def clean_caption(caption):
     caption = re.sub(r"(worldwide\s+)?(free\s+)?shipping", "", caption)
     caption = re.sub(r"(free\s)?download(\sfree)?", "", caption)
     caption = re.sub(r"\bclick\b\s(?:for|on)\s\w+", "", caption)
-    caption = re.sub(
-        r"\b(?:png|jpg|jpeg|bmp|webp|eps|pdf|apk|mp4)(\simage[s]?)?", "", caption
-    )
+    caption = re.sub(r"\b(?:png|jpg|jpeg|bmp|webp|eps|pdf|apk|mp4)(\simage[s]?)?", "", caption)
     caption = re.sub(r"\bpage\s+\d+\b", "", caption)
 
-    caption = re.sub(
-        r"\b\d*[a-zA-Z]+\d+[a-zA-Z]+\d+[a-zA-Z\d]*\b", r" ", caption
-    )  # j2d1a2a...
+    caption = re.sub(r"\b\d*[a-zA-Z]+\d+[a-zA-Z]+\d+[a-zA-Z\d]*\b", r" ", caption)  # j2d1a2a...
 
     caption = re.sub(r"\b\d+\.?\d*[xх×]\d+\.?\d*\b", "", caption)
 
@@ -430,10 +411,11 @@ def main(args):
     if args.unescape:
         assert "text" in data.columns
         data["text"] = apply(data["text"], html.unescape)
-    if "text" in data.columns:
+    if args.clean_caption:
+        assert "text" in data.columns
         data["text"] = apply(
             data["text"],
-            partial(text_preprocessing, use_text_preprocessing=args.clean_caption),
+            partial(text_preprocessing, use_text_preprocessing=True),
         )
     if args.info:
         info = apply(data["path"], get_video_info)
@@ -443,6 +425,7 @@ def main(args):
             data["width"],
             data["aspect_ratio"],
             data["fps"],
+            data["resolution"],
         ) = zip(*info)
 
     # filtering
