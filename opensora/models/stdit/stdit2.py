@@ -90,7 +90,7 @@ class STDiT2Block(nn.Module):
         # x: [B, (T, S), C]
         # mased_x: [B, (T, S), C]
         # x_mask: [B, T]
-        x = rearrange(x, "B (T S) C -> B T S C", T=self.T, S=self.S)
+        x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
         masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=T, S=S)
         x = torch.where(x_mask[:, :, None, None], x, masked_x)
         x = rearrange(x, "B T S C -> B (T S) C")
