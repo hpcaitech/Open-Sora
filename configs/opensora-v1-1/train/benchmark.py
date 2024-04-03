@@ -8,7 +8,7 @@ dataset = dict(
     transform_name="resize_crop",
 )
 bucket_config = {
-    "240p": {16: (1.0, 16)},
+    "240p": {16: (1.0, 16)},  # 4.6s/it
     # "256": {1: (1.0, 256)},  # 4.5s/it
     # "512": {1: (1.0, 96)}, # 4.7s/it
     # "512": {1: (1.0, 128)}, # 6.3s/it
@@ -17,6 +17,10 @@ bucket_config = {
     # "1024": {1: (1.0, 20)}, # 4.3s/it
     # "1080p": {1: (1.0, 16)}, # 8.6s/it
     # "1080p": {1: (1.0, 8)},  # 4.4s/it
+}
+mask_ratios = {
+    "mask_no": 0.0,
+    "mask_random": 1.0,
 }
 
 # Define acceleration

@@ -395,6 +395,10 @@ def main(args):
     if args.lang is not None:
         assert "text" in data.columns
         data = data[data["text"].progress_apply(detect_lang)]  # cannot parallelize
+    if args.remove_empty_caption:
+        assert "text" in data.columns
+        data = data[data["text"].str.len() > 0]
+        data = data[~data["text"].isna()]
 
     # processing
     if args.relpath is not None:

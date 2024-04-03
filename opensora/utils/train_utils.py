@@ -34,36 +34,55 @@ def update_ema(
 
 
 class MaskGenerator:
-    def __init__(self, mask_ratios, condition_frames=4):
-        self.mask_name = ["mask_no", "mask_random", "mask_head", "mask_tail", "mask_head_tail"]
-        assert len(mask_ratios) == len(self.mask_name)
-        assert math.isclose(sum(mask_ratios), 1.0, abs_tol=1e-6)
-        self.mask_prob = mask_ratios
-        print(self.mask_prob)
-        self.mask_acc_prob = [sum(self.mask_prob[: i + 1]) for i in range(len(self.mask_prob))]
-        self.condition_frames = condition_frames
+    def __init__(self, mask_ratios):
+        valid_mask_names = ["mask_no", "mask_random", "mask_head", "mask_tail", "mask_head_tail"]
+        assert all(
+            mask_name in valid_mask_names for mask_name in mask_ratios.keys()
+        ), f"mask_name should be one of {valid_mask_names}, got {mask_ratios.keys()}"
+        assert all(
+            mask_ratio >= 0 for mask_ratio in mask_ratios.values()
+        ), f"mask_ratio should be greater than or equal to 0, got {mask_ratios.values()}"
+        assert all(
+            mask_ratio <= 1 for mask_ratio in mask_ratios.values()
+        ), f"mask_ratio should be less than or equal to 1, got {mask_ratios.values()}"
+        # sum of mask_ratios should be 1
+        assert math.isclose(
+            sum(mask_ratios.values()), 1.0, abs_tol=1e-6
+        ), f"sum of mask_ratios should be 1, got {sum(mask_ratios.values())}"
+        print(f"mask ratios: {mask_ratios}")
+        self.mask_ratios = mask_ratios
 
     def get_mask(self, x):
         mask_type = random.random()
-        for i, acc_prob in enumerate(self.mask_acc_prob):
-            if mask_type <= acc_prob:
-                mask_name = self.mask_name[i]
+        mask_name = None
+        prob_acc = 0.0
+        for mask, mask_ratio in self.mask_ratios.items():
+            prob_acc += mask_ratio
+            if mask_type < prob_acc:
+                mask_name = mask
                 break
 
-        mask = torch.ones(x.shape[2], dtype=torch.bool, device=x.device)
+        num_frames = x.shape[2]
+        # Hardcoded condition_frames
+        condition_frames_max = num_frames // 4
+
+        mask = torch.ones(num_frames, dtype=torch.bool, device=x.device)
+        if num_frames <= 1:
+            return mask
+
         if mask_name == "mask_random":
-            random_size = random.randint(1, self.condition_frames)
+            random_size = random.randint(1, condition_frames_max)
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
             return mask
         elif mask_name == "mask_head":
-            random_size = random.randint(1, self.condition_frames)
+            random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
         elif mask_name == "mask_tail":
-            random_size = random.randint(1, self.condition_frames)
+            random_size = random.randint(1, condition_frames_max)
             mask[-random_size:] = 0
         elif mask_name == "mask_head_tail":
-            random_size = random.randint(1, self.condition_frames)
+            random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
             mask[-random_size:] = 0
 
