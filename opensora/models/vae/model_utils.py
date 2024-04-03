@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
 from taming.modules.discriminator.model import NLayerDiscriminator, weights_init
-
+from einops import rearrange
 
 """Stripped version of https://github.com/richzhang/PerceptualSimilarity/tree/master/models"""
 
@@ -105,16 +105,22 @@ class VEA3DLoss(nn.Module):
         if self.perceptual_weight > 0: # NOTE: need in_channels == 3 in order to use!
             assert inputs.size(1) == 3, f"using vgg16 that requires 3 input channels but got {inputs.size(1)}"
             # SCH: transform to [(B,T), C, H, W] shape for percetual loss over each frame
-            permutated_input = torch.permute(inputs, (0, 2, 1, 3, 4)) # [B, C, T, H, W] --> [B, T, C, H, W]
-            permutated_rec = torch.permute(reconstructions, (0, 2, 1, 3, 4))
-            data_shape = permutated_input.size()
-            p_loss = self.perceptual_loss(
-                permutated_input.reshape(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous(), 
-                permutated_rec.reshape(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous()
-            )
+            B = inputs.shape[0]
+            inputs = rearrange(inputs,"B C T H W -> (B T) C H W")
+            reconstructions = rearrange(reconstructions, "B C T H W -> (B T) C H W")
+            # permutated_input = torch.permute(inputs, (0, 2, 1, 3, 4)) # [B, C, T, H, W] --> [B, T, C, H, W]
+            # permutated_rec = torch.permute(reconstructions, (0, 2, 1, 3, 4))
+            # data_shape = permutated_input.size()
+            # p_loss = self.perceptual_loss(
+            #     permutated_input.reshape(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous(), 
+            #     permutated_rec.reshape(-1, data_shape[-3], data_shape[-2],data_shape[-1]).contiguous()
+            # )
+            p_loss = self.perceptual_loss(inputs.contiguous(), reconstructions.contiguous())
             # SCH: shape back p_loss
-            permuted_p_loss = torch.permute(p_loss.reshape(data_shape[0], data_shape[1], 1, 1, 1), (0,2,1,3,4))
-            rec_loss = rec_loss + self.perceptual_weight * permuted_p_loss
+            # permuted_p_loss = torch.permute(p_loss.reshape(data_shape[0], data_shape[1], 1, 1, 1), (0,2,1,3,4))
+            # rec_loss = rec_loss + self.perceptual_weight * permuted_p_loss
+            p_loss = rearrange(p_loss, "(B T) C H W -> B C T H W", B=B)
+            rec_loss = rec_loss + self.perceptual_weight * p_loss
 
         nll_loss = rec_loss / torch.exp(self.logvar) + self.logvar
         weighted_nll_loss = nll_loss

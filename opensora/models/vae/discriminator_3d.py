@@ -6,7 +6,6 @@ from typing import Any
 
 import torch
 import torch.nn as nn
-import ml_collections
 
 # TODO: torch.nn.init.xavier_uniform_
 # default_kernel_init = nn.initializers.xavier_uniform()
@@ -19,7 +18,6 @@ class ResBlock(nn.Module):
         in_channels,
         filters,
         activation_fn,
-        input_dim, # x.shape[-1], TODO
         num_groups=32,
         device="cpu",
         dtype=torch.bfloat16,
@@ -29,13 +27,12 @@ class ResBlock(nn.Module):
         self.filters = filters
         self.activation_fn = activation_fn
 
-        # TODO: figure out the input_dim
-
-        self.conv1 = nn.Conv3d(in_channels, self.filters, (3,3,3)) # need to init to xavier_uniform
-        self.norm1 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
-        self.avg_pool_with_t = nn.AvgPool3d((2,2,2))
+        # SCH: NOTE: although paper says conv (X->Y, Y->Y), original code implementation is (X->X, X->Y), we follow code
+        self.conv1 = nn.Conv3d(in_channels, in_channels, (3,3,3)) # TODO: need to init to xavier_uniform
+        self.norm1 = nn.GroupNorm(num_groups, in_channels, device=device, dtype=dtype)
+        self.avg_pool_with_t = nn.AvgPool3d((2,2,2),count_include_pad=False)
         self.conv2 = nn.Conv3d(in_channels, self.filters,(1,1,1), use_bias=False) # need to init to xavier_uniform
-        self.conv3 = nn.Conv3d(input_dim, self.filters, (3,3,3)) # need to init to xavier_uniform
+        self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3)) # need to init to xavier_uniform
         self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
 
     def forward(self, x):
@@ -59,7 +56,7 @@ class StyleGANDiscriminator(nn.Module):
         self,
         config,
         image_size,
-        input_dim, # x.shape[-1]
+        num_frames,
         discriminator_in_channels = 3,
         discriminator_filters = 64,
         discriminator_channel_multipliers = (2,4,4,4,4),
@@ -69,15 +66,10 @@ class StyleGANDiscriminator(nn.Module):
     ):
         self.config = config
         self.dtype = dtype
-
         self.input_size = image_size
         self.filters = discriminator_filters
-
         self.activation_fn = nn.LeakyReLu(negative_slope=0.2)
-        
         self.channel_multipliers = discriminator_channel_multipliers
-
-
 
         self.conv1 = nn.Conv3d(discriminator_in_channels, self.filters, (3, 3, 3)) # need to init to xavier_uniform
         
@@ -86,7 +78,7 @@ class StyleGANDiscriminator(nn.Module):
         self.res_block_list = []
         for i in range(self.num_blocks):
             filters = self.filters * self.channel_multipliers[i]
-            self.res_block_list.append(ResBlock(prev_filters, filters, self.activation_fn)) # TODO
+            self.res_block_list.append(ResBlock(prev_filters, filters, self.activation_fn))
             prev_filters = filters # update in_channels 
 
         self.conv2 = nn.Conv3d(prev_filters, prev_filters, (3,3,3)) # need to init to xavier_uniform
@@ -94,6 +86,10 @@ class StyleGANDiscriminator(nn.Module):
         self.norm1 = nn.GroupNorm(num_groups, prev_filters, dtype=dtype, device=device)
 
         # TODO: what is the in_features
+        scale_factor = 2 ** len(self.num_blocks)
+        time_scaled = num_frames / scale_factor
+        image_scaled = image_size / scale_factor
+        in_features = prev_filters * time_scaled * image_scaled * image_scaled  # (C*T*W*H)
         self.linear1 = nn.Linear(in_features, prev_filters, device=device, dtype=dtype) # need to init to xavier_uniform
         self.linear2 = nn.Linear(prev_filters, 1, device=device, dtype=dtype) # need to init to xavier_uniform
 

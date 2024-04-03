@@ -18,10 +18,6 @@ sp_size = 1
 kl_weight = 0.000001
 perceptual_weight = 1.0
 
-
-# training
-wandb = True 
-
 # Define model
 
 model = dict(
