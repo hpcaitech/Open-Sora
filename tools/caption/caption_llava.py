@@ -159,6 +159,7 @@ def main(args):
         encode_time = []
         frame_extraction_time = []
         generate_time = []
+        output_length = []
         total_time = []
 
     for i, batch in enumerate(pbar):
@@ -210,11 +211,16 @@ def main(args):
                 max_new_tokens=args.max_tokens,
                 use_cache=True,
             )
+
+            # skip warmup and add profiling data
+            if args.profile and i >= args.profile_warmup:
+                output_length.append(output_ids.size(0) * output_ids.size(1))
+
             outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
             outputs = [output.replace("\n", " ").strip() for output in outputs]
 
-        # warmup for 1 iter
-        if args.profile and i < args.profile_warmup:
+        # skip warmup and add profiling data
+        if args.profile and i >= args.profile_warmup:
             # measure time
             torch.cuda.synchronize()
             time_taken = time.time() - start_time
@@ -231,11 +237,13 @@ def main(args):
 
     # display profiling info
     if args.profile:
+        print(output_length)
         num_samples_after_warmup = total_num_videos - args.bs * args.profile_warmup * dp_size
-        print(f"throughput (video/s): {num_samples_after_warmup / sum(total_time)}")
+        print(f"throughput (samples/s): {num_samples_after_warmup / sum(total_time)}")
         print(f"average frame extraction time per sample: {sum(frame_extraction_time) / num_samples_after_warmup}")
         print(f"average encode time per sample: {sum(encode_time) / num_samples_after_warmup}")
         print(f"average generate time per sample: {sum(generate_time) / num_samples_after_warmup}")
+        print(f"average number of tokens characters per sample: {sum(output_length) / num_samples_after_warmup}")
         print(f"Max GPU allocated / GB: {torch.cuda.max_memory_allocated() / 1024**3}")
         print(f"Max GPU reserved / GB: {torch.cuda.max_memory_reserved() / 1024**3}")
 
