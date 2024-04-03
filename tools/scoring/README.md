@@ -46,7 +46,7 @@ wget https://s3.eu-central-1.amazonaws.com/avg-projects/unimatch/pretrained/gmfl
 
 Then run:
 ```
-python tools/scoring/optical_flow/inference.py /path/to/meta.csv
+torchrun --standalone --nproc_per_node 8 tools/scoring/optical_flow/inference_parallel.py /path/to/meta.csv
 ```
 The output should be `/path/to/meta_flow.csv` with column `flow`.
 
@@ -57,6 +57,6 @@ For videos, we compute the matching score of the middle frame and the caption.
 **Make sure** meta files contain the column `text`, which is the caption of the sample. Then run:
 
 ```
-python tools/scoring/matching/inference.py /path/to/meta.csv
+torchrun --standalone --nproc_per_node 8 tools/scoring/matching/inference_parallel.py /path/to/meta.csv
 ```
 The output should be `/path/to/meta_match.csv` with column `match`. Higher matching scores indicate better image-text/video-text alignment.
