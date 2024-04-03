@@ -415,6 +415,16 @@ class VAE_3D(nn.Module):
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
 
+        image_down = 2 ** len(temporal_downsample)
+        t_down = 2 ** len([x for x in temporal_downsample if x == True])
+        self.patch_size = (t_down, image_down, image_down)
+
+    def get_latent_size(self, input_size):
+        for i in range(len(input_size)):
+            assert input_size[i] % self.patch_size[i] == 0, "Input size must be divisible by patch size"
+        input_size = [input_size[i] // self.patch_size[i] for i in range(3)]
+        return input_size
+    
     def encode(
         self,
         x,
