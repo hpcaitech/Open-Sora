@@ -100,11 +100,7 @@ def build_lang_detector(lang_to_detect):
     lang_dict = dict(en=Language.ENGLISH)
     assert lang_to_detect in lang_dict
     valid_lang = lang_dict[lang_to_detect]
-    detector = (
-        LanguageDetectorBuilder.from_all_spoken_languages()
-        .with_low_accuracy_mode()
-        .build()
-    )
+    detector = LanguageDetectorBuilder.from_all_spoken_languages().with_low_accuracy_mode().build()
 
     def detect_lang(caption):
         confidence_values = detector.compute_language_confidence_values(caption)
@@ -125,19 +121,7 @@ def basic_clean(text):
 
 
 BAD_PUNCT_REGEX = re.compile(
-    r"["
-    + "#®•©™&@·º½¾¿¡§~"
-    + "\)"
-    + "\("
-    + "\]"
-    + "\["
-    + "\}"
-    + "\{"
-    + "\|"
-    + "\\"
-    + "\/"
-    + "\*"
-    + r"]{1,}"
+    r"[" + "#®•©™&@·º½¾¿¡§~" + "\)" + "\(" + "\]" + "\[" + "\}" + "\{" + "\|" + "\\" + "\/" + "\*" + r"]{1,}"
 )  # noqa
 
 
@@ -238,14 +222,10 @@ def clean_caption(caption):
     caption = re.sub(r"(worldwide\s+)?(free\s+)?shipping", "", caption)
     caption = re.sub(r"(free\s)?download(\sfree)?", "", caption)
     caption = re.sub(r"\bclick\b\s(?:for|on)\s\w+", "", caption)
-    caption = re.sub(
-        r"\b(?:png|jpg|jpeg|bmp|webp|eps|pdf|apk|mp4)(\simage[s]?)?", "", caption
-    )
+    caption = re.sub(r"\b(?:png|jpg|jpeg|bmp|webp|eps|pdf|apk|mp4)(\simage[s]?)?", "", caption)
     caption = re.sub(r"\bpage\s+\d+\b", "", caption)
 
-    caption = re.sub(
-        r"\b\d*[a-zA-Z]+\d+[a-zA-Z]+\d+[a-zA-Z\d]*\b", r" ", caption
-    )  # j2d1a2a...
+    caption = re.sub(r"\b\d*[a-zA-Z]+\d+[a-zA-Z]+\d+[a-zA-Z\d]*\b", r" ", caption)  # j2d1a2a...
 
     caption = re.sub(r"\b\d+\.?\d*[xх×]\d+\.?\d*\b", "", caption)
 
@@ -433,11 +413,6 @@ def main(args):
             data["text"],
             partial(text_preprocessing, use_text_preprocessing=True),
         )
-    # this should be the last step of caption processing
-    if args.remove_empty_caption:
-        assert "text" in data.columns
-        data = data[data["text"].str.len() > 0]
-        data = data[~data["text"].isna()]
     if args.info:
         info = apply(data["path"], get_video_info)
         (
@@ -450,6 +425,10 @@ def main(args):
         ) = zip(*info)
 
     # filtering
+    if args.remove_empty_caption:
+        assert "text" in data.columns
+        data = data[data["text"].str.len() > 0]
+        data = data[~data["text"].isna()]
     if args.fmin is not None:
         assert "num_frames" in data.columns
         data = data[data["num_frames"] >= args.fmin]
