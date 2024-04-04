@@ -140,9 +140,6 @@ def main(args):
 
     with tqdm(dataloader, position=rank, desc=f"Data Parallel Rank {rank}") as t:
         for idx, batch in enumerate(t):
-            if idx == 12:
-                break
-
             image_indices = batch["index"]
             images = batch["images"].to(device, non_blocking=True)
             B = images.shape[0]
