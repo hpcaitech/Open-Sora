@@ -5,7 +5,7 @@ image_size = (256, 256)
 
 # Define dataset
 root = None
-data_path = "CSV_PATH"
+data_path = "/home/shenchenhui/data/pexels/inference.csv"
 use_image_transform = False
 num_workers = 4
 
