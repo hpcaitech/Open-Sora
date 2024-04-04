@@ -358,7 +358,6 @@ class VAE_3D(nn.Module):
         self, 
         latent_embed_dim = 256,
         filters = 64,
-        output_dim: int = 4,
         num_res_blocks = 2,
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
@@ -387,7 +386,7 @@ class VAE_3D(nn.Module):
         # Model Initialization 
 
         if from_pretrained is None:
-            self.encoder = Encoder(
+            self.module.encoder = Encoder(
                 filters=filters, 
                 num_res_blocks=num_res_blocks, 
                 channel_multipliers=channel_multipliers, 
@@ -401,7 +400,7 @@ class VAE_3D(nn.Module):
                 device=device,
                 dtype=dtype,
             )
-            self.decoder = Decoder(
+            self.module.decoder = Decoder(
                 latent_embed_dim = latent_embed_dim,
                 filters = filters,
                 in_out_channels = in_out_channels, 
@@ -415,13 +414,13 @@ class VAE_3D(nn.Module):
                 device=device,
                 dtype=dtype,
             )
+
+            self.module.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1)
+            self.module.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
         else:
             # TODO: add appropriate function and renaming
             self.module = VAE_3D.from_pretrained(from_pretrained)
-            
 
-        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1)
-        self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
 
         image_down = 2 ** len(temporal_downsample)
         t_down = 2 ** len([x for x in temporal_downsample if x == True])
@@ -437,8 +436,8 @@ class VAE_3D(nn.Module):
         self,
         x,
     ):
-        encoded_feature = self.encoder(x)
-        moments = self.quant_conv(encoded_feature).to(x.dtype)
+        encoded_feature = self.module.encoder(x)
+        moments = self.module.quant_conv(encoded_feature).to(x.dtype)
         posterior = model_utils.DiagonalGaussianDistribution(moments)
         return posterior
     
@@ -447,8 +446,8 @@ class VAE_3D(nn.Module):
         z,
     ):  
         dtype = z.dtype
-        z = self.post_quant_conv(z).to(dtype)
-        dec = self.decoder(z)
+        z = self.module.post_quant_conv(z).to(dtype)
+        dec = self.module.decoder(z)
         return dec
     
     def forward(
