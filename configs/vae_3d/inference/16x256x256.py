@@ -2,6 +2,7 @@ num_frames = 16
 frame_interval = 3
 fps = 24 // 3
 image_size = (256, 256)
+is_vae = True
 
 # Define dataset
 root = None
