@@ -1,4 +1,6 @@
-# Open-Sora v1 Report
+# Open-Sora 1.0 Report
+
+> Zangwei Zheng*, Xiangyu Peng*, Shenggui Li, Hongxing Liu, Yang You
 
 OpenAI's Sora is amazing at generating one minutes high quality videos. However, it reveals almost no information about its details. To make AI more "open", we are dedicated to build an open-source version of Sora. This report describes our first attempt to train a transformer-based video diffusion model.
 
