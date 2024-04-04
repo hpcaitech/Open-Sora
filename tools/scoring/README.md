@@ -32,8 +32,10 @@ With `meta.csv` containing the paths to the videos, run the following command:
 
 ```bash
 # output: meta_aes.csv
-python -m tools.scoring.aesthetic.inference meta.csv
+torchrun --nproc_per_node 8  -m tools.scoring.aesthetic.inference meta.csv --bs 1024 --num_workers 16
 ```
+
+This will generate multiple part files, you can use `python -m tools.datasets.csvutil DATA1.csv DATA2.csv` to merge these part files.
 
 ## Optical Flow Score
 Optical flow scores are used to assess the motion of a video. Higher optical flow scores indicate larger movement.
