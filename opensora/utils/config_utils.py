@@ -60,7 +60,7 @@ def merge_args(cfg, args, training=False):
             cfg["reference_path"] = None
         if "loop" not in cfg:
             cfg["loop"] = 1
-        if not cfg.vae and ("prompt" not in cfg or cfg["prompt"] is None):
+        if not cfg.vae_only and ("prompt" not in cfg or cfg["prompt"] is None):
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
             cfg["prompt"] = load_prompts(cfg["prompt_path"])
     else:
