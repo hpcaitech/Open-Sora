@@ -253,6 +253,16 @@ def text_preprocessing(text, use_text_preprocessing: bool = True):
         return text.lower().strip()
 
 
+def is_video_valid(path):
+    import decord
+
+    try:
+        decord.VideoReader(path, num_threads=1)
+        return True
+    except:
+        return False
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, nargs="+")
@@ -268,21 +278,28 @@ def parse_args():
     # path processing
     parser.add_argument("--relpath", type=str, default=None)
     parser.add_argument("--abspath", type=str, default=None)
+
     # path filtering
     parser.add_argument("--ext", action="store_true")
+
     # caption filtering
     parser.add_argument("--remove-empty-caption", action="store_true")
     parser.add_argument("--lang", type=str, default=None)
     parser.add_argument("--remove-url", action="store_true")
+    parser.add_argument("--remove-corrupted", action="store_true")
+
     # caption processing
     parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--unescape", action="store_true")
     parser.add_argument("--clean-caption", action="store_true")
+
     # num_frames processing
     parser.add_argument("--info", action="store_true")
+
     # num_frames filtering
     parser.add_argument("--fmin", type=int, default=None)
     parser.add_argument("--fmax", type=int, default=None)
+
     # aesthetic filtering
     parser.add_argument("--aesmin", type=float, default=None)
     parser.add_argument("--matchmin", type=float, default=None)
@@ -340,6 +357,8 @@ def get_output_path(args, input_name):
     if args.sort_ascending is not None:
         assert args.sort_descending is None
         name += "_sort"
+    if args.remove_corrupted:
+        name += "_remove_corrupted"
 
     output_path = os.path.join(dir_path, f"{name}.csv")
     return output_path
@@ -399,6 +418,9 @@ def main(args):
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
         data = data[~data["text"].isna()]
+    if args.remove_corrupted:
+        assert "path" in data.columns
+        data = data[apply(data["path"], is_video_valid)]
 
     # processing
     if args.relpath is not None:

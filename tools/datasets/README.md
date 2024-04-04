@@ -101,14 +101,20 @@ You can use the following commands to process the CSV files. The output csv file
 # csvutil takes multiple CSV files as input and merge them into one CSV file
 # output: DATA1+DATA2.csv
 python -m tools.datasets.csvutil DATA1.csv DATA2.csv
+
 # shard CSV files into multiple CSV files
 # output: DATA1_0.csv, DATA1_1.csv, ...
 python -m tools.datasets.csvutil DATA1.csv --shard 10
+
 # filter frames between 128 and 256, with captions
 # output: DATA1_fmin_128_fmax_256.csv
 python -m tools.datasets.csvutil DATA.csv --fmin 128 --fmax 256
+
 # Disable parallel processing
 python -m tools.datasets.csvutil DATA.csv --fmin 128 --fmax 256 --disable-parallel
+
+# Remove corrupted video from the csv
+python -m tools.datasets.csvutil DATA.csv --remove-corrupted
 ```
 
 Here are more examples:
@@ -117,6 +123,7 @@ Here are more examples:
 # modify the path to absolute path by root given
 # output: DATA_abspath.csv
 python -m tools.datasets.csvutil DATA.csv --abspath /absolute/path/to/dataset
+
 # modify the path to relative path by root given
 # output: DATA_relpath.csv
 python -m tools.datasets.csvutil DATA.csv --relpath /relative/path/to/dataset
@@ -124,15 +131,19 @@ python -m tools.datasets.csvutil DATA.csv --relpath /relative/path/to/dataset
 # remove the rows with empty captions
 # output: DATA_noempty.csv
 python -m tools.datasets.csvutil DATA.csv --remove-empty-caption
+
 # remove the rows with urls
 # output: DATA_nourl.csv
 python -m tools.datasets.csvutil DATA.csv --remove-url
+
 # unescape the caption
 # output: DATA_unescape.csv
 python -m tools.datasets.csvutil DATA.csv --unescape
+
 # modify LLaVA caption
 # output: DATA_rcp.csv
 python -m tools.datasets.csvutil DATA.csv --remove-caption-prefix
+
 # keep only the rows with english captions
 # output: DATA_en.csv
 python -m tools.datasets.csvutil DATA.csv --lang en
