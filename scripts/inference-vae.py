@@ -47,7 +47,6 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = to_torch_dtype(cfg.dtype)
     set_random_seed(seed=cfg.seed)
-    prompts = cfg.prompt
 
 
     # ======================================================
