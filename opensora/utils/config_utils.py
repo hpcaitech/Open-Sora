@@ -32,7 +32,7 @@ def parse_args(training=False):
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
         parser.add_argument("--save-dir", default=None, type=str, help="path to save generated samples")
         parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
-        parser.add_argument("--vae_only", default=False, type=bool, help="if inference on the vae only")
+        parser.add_argument("--vae-only", default=False, type=bool, help="if inference on the vae only")
 
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
@@ -60,7 +60,7 @@ def merge_args(cfg, args, training=False):
             cfg["reference_path"] = None
         if "loop" not in cfg:
             cfg["loop"] = 1
-        if not cfg.vae_only and ("prompt" not in cfg or cfg["prompt"] is None):
+        if not cfg["vae-only"] and ("prompt" not in cfg or cfg["prompt"] is None):
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
             cfg["prompt"] = load_prompts(cfg["prompt_path"])
     else:
