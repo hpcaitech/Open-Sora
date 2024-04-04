@@ -371,6 +371,7 @@ class VAE_3D(nn.Module):
         kl_embed_dim = 64,
         device="cpu",
         dtype="bf16",
+        from_pretrained=None,
         # precision: Any = jax.lax.Precision.DEFAULT
     ):
         super().__init__()
@@ -383,34 +384,41 @@ class VAE_3D(nn.Module):
             else:
                 raise NotImplementedError(f'dtype: {dtype}')
 
-        self.encoder = Encoder(
-            filters=filters, 
-            num_res_blocks=num_res_blocks, 
-            channel_multipliers=channel_multipliers, 
-            temporal_downsample=temporal_downsample,
-            num_groups = num_groups, # for nn.GroupNorm
-            in_out_channels = in_out_channels,
-            latent_embed_dim = latent_embed_dim, 
-            conv_downsample = conv_downsample, 
-            custom_conv_padding = custom_conv_padding,
-            activation_fn = activation_fn, 
-            device=device,
-            dtype=dtype,
-        )
-        self.decoder = Decoder(
-            latent_embed_dim = latent_embed_dim,
-            filters = filters,
-            in_out_channels = in_out_channels, 
-            num_res_blocks = num_res_blocks,
-            channel_multipliers = channel_multipliers,
-            temporal_downsample = temporal_downsample,
-            num_groups = num_groups, # for nn.GroupNorm
-            upsample = upsample, # options: "deconv", "nearest+conv"
-            custom_conv_padding = custom_conv_padding,
-            activation_fn = activation_fn,
-            device=device,
-            dtype=dtype,
-        )
+        # Model Initialization 
+
+        if from_pretrained is None:
+            self.encoder = Encoder(
+                filters=filters, 
+                num_res_blocks=num_res_blocks, 
+                channel_multipliers=channel_multipliers, 
+                temporal_downsample=temporal_downsample,
+                num_groups = num_groups, # for nn.GroupNorm
+                in_out_channels = in_out_channels,
+                latent_embed_dim = latent_embed_dim, 
+                conv_downsample = conv_downsample, 
+                custom_conv_padding = custom_conv_padding,
+                activation_fn = activation_fn, 
+                device=device,
+                dtype=dtype,
+            )
+            self.decoder = Decoder(
+                latent_embed_dim = latent_embed_dim,
+                filters = filters,
+                in_out_channels = in_out_channels, 
+                num_res_blocks = num_res_blocks,
+                channel_multipliers = channel_multipliers,
+                temporal_downsample = temporal_downsample,
+                num_groups = num_groups, # for nn.GroupNorm
+                upsample = upsample, # options: "deconv", "nearest+conv"
+                custom_conv_padding = custom_conv_padding,
+                activation_fn = activation_fn,
+                device=device,
+                dtype=dtype,
+            )
+        else:
+            # TODO: add appropriate function and renaming
+            self.module = VAE_3D.from_pretrained(from_pretrained)
+            
 
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1)
