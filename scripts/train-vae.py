@@ -170,8 +170,6 @@ def main():
     start_epoch = start_step = log_step = sampler_start_idx = 0
     running_loss = 0.0
 
-    # TODO: allow resume training without ema
-
 
     # 6.1. resume training
     if cfg.load is not None:
@@ -247,7 +245,7 @@ def main():
                 if cfg.ckpt_every > 0 and (global_step + 1) % cfg.ckpt_every == 0:
                     save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
                     os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
-
+                    # TODO: save in model?
                     booster.save_model(vae, os.path.join(save_dir, "vae"), shard=True)
                     booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
                     if lr_scheduler is not None:

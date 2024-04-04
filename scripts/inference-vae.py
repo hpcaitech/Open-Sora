@@ -11,6 +11,14 @@ from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
+from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
+from opensora.acceleration.parallel_states import (
+    get_data_parallel_group,
+    set_data_parallel_group,
+    set_sequence_parallel_group,
+)
+from tqdm import tqdm
+from opensora.models.vae.model_utils import VEA3DLoss
 
 
 def main():
@@ -41,13 +49,44 @@ def main():
     set_random_seed(seed=cfg.seed)
     prompts = cfg.prompt
 
+
     # ======================================================
-    # 3. build model & load weights
+    # 3. build dataset and dataloader
+    # ======================================================
+    dataset = DatasetFromCSV(
+        cfg.data_path,
+        # TODO: change transforms
+        transform=(
+            get_transforms_video(cfg.image_size[0])
+            if not cfg.use_image_transform
+            else get_transforms_image(cfg.image_size[0])
+        ),
+        num_frames=cfg.num_frames,
+        frame_interval=cfg.frame_interval,
+        root=cfg.root,
+    )
+
+    dataloader = prepare_dataloader(
+        dataset,
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        shuffle=True,
+        drop_last=True,
+        pin_memory=True,
+        process_group=get_data_parallel_group(),
+    )
+    print(f"Dataset contains {len(dataset):,} videos ({cfg.data_path})")
+
+    total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
+    print(f"Total batch size: {total_batch_size}")
+
+    # ======================================================
+    # 4. build model & load weights
     # ======================================================
     # 3.1. build model
-    input_size = (cfg.num_frames, *cfg.image_size)
-    vae = build_module(cfg.vae, MODELS)
-    latent_size = vae.get_latent_size(input_size)
+    # input_size = (cfg.num_frames, *cfg.image_size)
+    vae = build_module(cfg.model, MODELS)
+    # latent_size = vae.get_latent_size(input_size)
 
     # 3.2. move to device & eval
     vae = vae.to(device, dtype).eval()
@@ -66,40 +105,43 @@ def main():
     # ======================================================
     # 4. inference
     # ======================================================
-    sample_idx = 0
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
 
 
     # 4.1. batch generation
     
-    # TODO: read input, sample, then decode ???  =========
-    for i in range(0, len(prompts), cfg.batch_size):
-        # 4.2 sample in hidden space
-
-        z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
-
-        # 4.3. diffusion sampling
-        samples = scheduler.sample(
-            model,
-            text_encoder,
-            z=z,
-            prompts=batch_prompts,
-            device=device,
-            additional_args=model_args,
-        )
+    # define loss function
+    loss_function = VEA3DLoss(kl_weight=cfg.kl_weight, perceptual_weight=cfg.perceptual_weight).to(device, dtype)
+    running_loss = 0.0
+    loss_steps = 0
 
 
-        samples = vae.decode(samples.to(dtype))
+    total_steps = len(dataloader)
+    dataloader_iter = iter(dataloader)
 
-        if coordinator.is_master():
-            for idx, sample in enumerate(samples):
-                print(f"Prompt: {batch_prompts[idx]}")
-                save_path = os.path.join(save_dir, f"sample_{sample_idx}")
-                save_sample(sample, fps=cfg.fps, save_path=save_path)
-                sample_idx += 1
+    with tqdm(
+            range(total_steps),
+            desc=f"Avg Loss: {running_loss}",
+            disable=not coordinator.is_master(),
+            total=total_steps,
+            initial=0,
+        ) as pbar:
+            for step in pbar:
+                batch = next(dataloader_iter)
+                x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
+                reconstructions, posterior = vae(x)
+                loss = loss_function(x, reconstructions, posterior)
+                loss_steps += 1
+                running_loss = loss.item()/ loss_steps + running_loss * (loss_steps - 1 / loss_steps)
 
-    # TODO: read input, sample, then decode ???  =========
+            if coordinator.is_master():
+                for idx, sample in enumerate(reconstructions):
+                    save_path = os.path.join(save_dir, f"sample_{idx}")
+                    save_sample(sample, fps=cfg.fps, save_path=save_path)
+
+    print("test loss:", running_loss)
+    
 
 if __name__ == "__main__":
     main()
