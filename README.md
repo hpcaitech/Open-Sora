@@ -63,9 +63,9 @@ our [gallery](https://hpcaitech.github.io/Open-Sora/).
   at [datasets.md](docs/datasets.md).
 * ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a
   better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in
-  the time dimension deteriorates the quality. See our **[report](docs/report_v1.md)** for more discussions.
+  the time dimension deteriorates the quality. See our **[report](docs/report_01.md)** for more discussions.
 * ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our **STDiT** achieves a better
-  trade-off between quality and speed. See our **[report](docs/report_v1.md)** for more discussions.
+  trade-off between quality and speed. See our **[report](docs/report_01.md)** for more discussions.
 * ✅ Support clip and T5 text conditioning.
 * ✅ By viewing images as one-frame videos, our project supports training DiT on both images and videos (e.g., ImageNet &
   UCF101). See [commands.md](docs/commands.md) for more instructions.
@@ -152,7 +152,7 @@ the config files.
 Training orders: 16x256x256 $\rightarrow$ 16x256x256 HQ $\rightarrow$ 16x512x512 HQ.
 
 Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of
-parameters is 724M. More information about training can be found in our **[report](/docs/report_v1.md)**. More about
+parameters is 724M. More information about training can be found in our **[report](/docs/report_01.md)**. More about
 the dataset can be found in [datasets.md](/docs/datasets.md). HQ means high quality.
 
 :warning: **LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor.
@@ -197,7 +197,7 @@ is [here](/docs/datasets.md). We provide tools to process video data. Our data p
 the following steps:
 
 1. Manage datasets. [[docs](/tools/datasets/README.md)]
-2. Scene detection and video splitting. [[docs](/tools/scenedetect/README.md)]
+2. Scene detection and video splitting. [[docs](/tools/splitting/README.md)]
 3. Score and filter videos. [[docs](/tools/scoring/README.md)]
 4. Generate video captions. [[docs](/tools/caption/README.md)]
 
