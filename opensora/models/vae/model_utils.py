@@ -42,6 +42,7 @@ class DiagonalGaussianDistribution(object):
             self.var = self.std = torch.zeros_like(self.mean).to(device=self.parameters.device, dtype=self.mean.dtype)
 
     def sample(self):
+        # torch.randn: standard normal distribution
         x = self.mean + self.std * torch.randn(self.mean.shape).to(device=self.parameters.device, dtype=self.mean.dtype)
         return x
 
@@ -49,17 +50,17 @@ class DiagonalGaussianDistribution(object):
         if self.deterministic:
             return torch.Tensor([0.])
         else:
-            if other is None:
+            if other is None: # SCH: assumes other is a standard normal distribution
                 return 0.5 * torch.sum(torch.pow(self.mean, 2)
                                        + self.var - 1.0 - self.logvar,
-                                       dim=[1, 2, 3, 4]) # TODO: check dimensions
+                                       dim=[1, 2, 3, 4]) 
             else:
                 return 0.5 * torch.sum(
                     torch.pow(self.mean - other.mean, 2) / other.var
                     + self.var / other.var - 1.0 - self.logvar + other.logvar,
-                    dim=[1, 2, 3, 4]) # TODO: check dimensions
+                    dim=[1, 2, 3, 4])
 
-    def nll(self, sample, dims=[1,2,3,4]): # TODO: check dimensions
+    def nll(self, sample, dims=[1,2,3,4]): # TODO: what does this do?
         if self.deterministic:
             return torch.Tensor([0.])
         logtwopi = np.log(2.0 * np.pi)
@@ -67,7 +68,7 @@ class DiagonalGaussianDistribution(object):
             logtwopi + self.logvar + torch.pow(sample - self.mean, 2) / self.var,
             dim=dims)
 
-    def mode(self):
+    def mode(self): # SCH: used for vae inference?
         return self.mean
     
 
