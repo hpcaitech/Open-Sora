@@ -20,10 +20,10 @@ except ImportError:
     pandas_has_parallel = False
 
 
-def apply(df, func):
+def apply(df, func, **kwargs):
     if pandas_has_parallel:
-        return df.parallel_apply(func)
-    return df.progress_apply(func)
+        return df.parallel_apply(func, **kwargs)
+    return df.progress_apply(func, **kwargs)
 
 
 IMG_EXTENSIONS = (

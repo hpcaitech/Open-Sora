@@ -177,3 +177,38 @@ batch_size = 4
 lr = 2e-5
 grad_clip = 1.0                 # gradient clipping
 ```
+
+## Bucket Configs
+
+To enable dynamic training (for STDiT2), use `VariableVideoText` dataset, and set the `bucket_config` in the config. An example is:
+
+```python
+bucket_config = {
+    "240p": {16: (1.0, 16), 32: (1.0, 8), 64: (1.0, 4), 128: (1.0, 2)},
+    "256": {1: (1.0, 256)},
+    "512": {1: (1.0, 80)},
+    "480p": {1: (1.0, 52), 16: (0.5, 4), 32: (0.0, None)},
+    "720p": {16: (1.0, 2), 32: (0.0, None)},
+    "1024": {1: (1.0, 20)},
+    "1080p": {1: (1.0, 8)},
+}
+```
+
+This looks a bit difficult to understand at the first glance. Let's understand this config step by step.
+
+### Why bucket?
+
+Dynamic training needs to support training on different resolution (HxW), different aspect ratio (H/W), and different frame length. There are several possible ways to achieve this:
+
+- NaViT: support dynamic size within the same batch by masking, without efficiency loss. However, the system is a bit complex to implement, and may not benefit from optimized kernels such as flash attention.
+- FiT: support dynamic size within the same batch by padding. However, padding different resolutions to the same size is not efficient.
+- PixArt: support dynamic size in different batches by bucketing, but the size must be the same within the same batch, and only a fixed number of size can be applied. With the same size in a batch, we do not need to implement complex masking or padding.
+
+Bucketing means we pre-define some fixed resolution, and allocate different samples to different bucket. The concern for bucketing is listed below. But we can see that the concern is not a big issue in our case.
+
+- The bucket size is limited to a fixed number: First, in real-world applications, only a few aspect ratios (9:16, 3:4) and resolutions (240p, 1080p) are commonly used. Second, we find trained models can generalize well to unseen resolutions.
+- The size in each batch is the same, breaks the i.i.d. assumption: Since we are using multiple GPUs, the local batches on different GPUs have different sizes. We did not see a significant performance drop due to this issue.
+- The may not be enough samples to fill each bucket and the distribution may be biased: First, our dataset is large enough to fill each bucket when local batch size is not too large. Second, we should analyze the data's distribution on sizes and define the bucket size accordingly. Third, an unbalanced distribution did not affect the training process significantly.
+- Different resolutions and frame lengths may have different processing speed: Different from PixArt, which only deals with aspect ratios of similar resolutions (similar token numbers), we need to consider the processing speed of different resolutions and frame lengths. We can use the `bucket_config` to define the batch size for each bucket to ensure the processing speed is similar.
+
+### Three-level bucket
