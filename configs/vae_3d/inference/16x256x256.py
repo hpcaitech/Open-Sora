@@ -43,4 +43,5 @@ model = dict(
 # Others
 seed = 42
 save_dir = "outputs/samples"
+batch_size = 8
 
