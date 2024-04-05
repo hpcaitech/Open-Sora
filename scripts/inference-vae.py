@@ -32,11 +32,11 @@ def main():
     colossalai.launch_from_torch({})
     coordinator = DistCoordinator()
 
-    if coordinator.world_size > 1:
-        set_sequence_parallel_group(dist.group.WORLD)
-        enable_sequence_parallelism = True
-    else:
-        enable_sequence_parallelism = False
+    # if coordinator.world_size > 1:
+    #     set_sequence_parallel_group(dist.group.WORLD)
+    #     enable_sequence_parallelism = True
+    # else:
+    #     enable_sequence_parallelism = False
 
     # ======================================================
     # 2. runtime variables

@@ -56,14 +56,14 @@ class ResBlock(nn.Module):
         device, dtype = x.device, x.dtype
         input_dim = x.shape[1]
         residual = x
-        x = self.norm1(x)
+        x = self.norm1.to(device,dtype)(x)
         x = self.activate(x)
-        x = self.conv1(x)
-        x = self.norm2(x)
+        x = self.conv1.to(device,dtype)(x)
+        x = self.norm2.to(device, dtype)(x)
         x = self.activate(x)
-        x = self.conv2(x)
+        x = self.conv2.to(device, dtype)(x)
         if input_dim != self.filters: # TODO: what does it do here
-            residual = self.conv3(residual)
+            residual = self.conv3.to(device, dtype)(residual)
         return x + residual 
     
 def _get_selected_flags(total_len: int, select_len: int, suffix: bool):
