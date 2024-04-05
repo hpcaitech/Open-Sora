@@ -286,6 +286,7 @@ def parse_args():
 
     # caption filtering
     parser.add_argument("--remove-empty-caption", action="store_true")
+    parser.add_argument("--remove-duplicate-path", action="store_true")
     parser.add_argument("--lang", type=str, default=None)
     parser.add_argument("--remove-url", action="store_true")
     parser.add_argument("--remove-corrupted", action="store_true")
@@ -328,6 +329,8 @@ def get_output_path(args, input_name):
     # caption filtering
     if args.remove_empty_caption:
         name += "_noempty"
+    if args.remove_duplicate_path:
+        name += "_noduppath"
     if args.lang is not None:
         name += f"_{args.lang}"
     if args.remove_url:
@@ -430,6 +433,9 @@ def main(args):
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
         data = data[~data["text"].isna()]
+    if args.remove_duplicate_path:
+        assert "path" in data.columns
+        data = data.drop_duplicates(subset=['path'])
     if args.remove_corrupted:
         assert "path" in data.columns
         data = data[apply(data["path"], is_video_valid)]
