@@ -1,6 +1,7 @@
 import argparse
 import html
 import os
+import random
 import re
 from functools import partial
 from glob import glob
@@ -85,13 +86,46 @@ LLAVA_PREFIX = [
 
 def remove_caption_prefix(caption):
     for prefix in LLAVA_PREFIX:
-        if isinstance(caption, float):
-            breakpoint()
         if caption.startswith(prefix):
             caption = caption[len(prefix) :].strip()
             if caption[0].islower():
                 caption = caption[0].upper() + caption[1:]
             return caption
+
+
+CMOTION_TEXT = {
+    "static": "The camera is static.",
+    "dynamic": "The camera is moving.",
+    "unknown": None,
+    "zoom in": "The camera is zooming in.",
+    "zoom out": "The camera is zooming out.",
+    "pan left": "The camera is panning left.",
+    "pan right": "The camera is panning right.",
+    "tilt up": "The camera is tilting up.",
+    "tilt down": "The camera is tilting down.",
+    "pan/tilt": "The camera is panning.",
+}
+CMOTION_PROBS = {
+    # hard-coded probabilities
+    "static": 0.1,
+    "dynamic": 0.25,
+    "unknown": 0.0,
+    "zoom in": 0.8,
+    "zoom out": 1.0,
+    "pan left": 1.0,
+    "pan right": 0.1,
+    "tilt up": 1.0,
+    "tilt down": 1.0,
+    "pan/tilt": 1.0,
+}
+
+
+def merge_cmotion(caption, cmotion):
+    text = CMOTION_TEXT[cmotion]
+    prob = CMOTION_PROBS[cmotion]
+    if text is not None and random.random() < prob:
+        caption = f"{caption} {text}"
+    return caption
 
 
 def build_lang_detector(lang_to_detect):
@@ -251,9 +285,11 @@ def text_preprocessing(text, use_text_preprocessing: bool = True):
         return text
     else:
         return text.lower().strip()
-    
+
+
 def get_key_val_given_path(path, key, df):
-    return df.loc[df["path"]==path, key].item()
+    return df.loc[df["path"] == path, key].item()
+
 
 def is_video_valid(path):
     import decord
@@ -270,6 +306,7 @@ def parse_args():
     parser.add_argument("input", type=str, nargs="+")
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--disable-parallel", action="store_true")
+    parser.add_argument("--seed", type=int, default=None)
     # special case
     parser.add_argument("--shard", type=int, default=None)
     parser.add_argument("--sort-descending", type=str, default=None)
@@ -295,6 +332,8 @@ def parse_args():
     parser.add_argument("--remove-caption-prefix", action="store_true")
     parser.add_argument("--unescape", action="store_true")
     parser.add_argument("--clean-caption", action="store_true")
+    parser.add_argument("--merge-cmotion", action="store_true")
+    parser.add_argument("--count-text-token", type=str, choices=["t5"], default=None)
 
     # num_frames processing
     parser.add_argument("--info", action="store_true")
@@ -342,6 +381,10 @@ def get_output_path(args, input_name):
         name += "_unescape"
     if args.clean_caption:
         name += "_clean"
+    if args.merge_cmotion:
+        name += "_cmcaption"
+    if args.count_text_token:
+        name += "_textlen"
     # num_frames processing
     if args.info:
         name += "_info"
@@ -403,12 +446,12 @@ def main(args):
         print(f"Intersection csv contains {len(data_int)} samples.")
         data = data[data["path"].isin(data_int["path"])]
         input_name += f"-{os.path.basename(args.intersection).split('.')[0]}"
-        # get additional data column from intersection 
+        # get additional data column from intersection
         int_new_keys = [k for k in data_int.keys() if not k in data]
         for k in int_new_keys:
-            # get corresponding values 
-            data[k] = apply(data['path'], lambda x: get_key_val_given_path(x, k, data_int))
-        
+            # get corresponding values
+            data[k] = apply(data["path"], lambda x: get_key_val_given_path(x, k, data_int))
+
         print(f"added {len(int_new_keys)} keys from {args.intersection}: {int_new_keys}")
         print(f"Filtered number of samples: {len(data)}.")
 
@@ -418,6 +461,10 @@ def main(args):
     # preparation
     if args.lang is not None:
         detect_lang = build_lang_detector(args.lang)
+    if args.count_text_token == "t5":
+        from transformers import AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained("DeepFloyd/t5-v1_1-xxl")
 
     # filtering
     if args.ext:
@@ -457,6 +504,11 @@ def main(args):
             data["text"],
             partial(text_preprocessing, use_text_preprocessing=True),
         )
+    if args.merge_cmotion:
+        data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
+    if args.count_text_token is not None:
+        assert "text" in data.columns
+        data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
     if args.info:
         info = apply(data["path"], get_video_info)
         (
@@ -512,4 +564,7 @@ if __name__ == "__main__":
     args = parse_args()
     if args.disable_parallel:
         pandas_has_parallel = False
+    if args.seed is not None:
+        random.seed(args.seed)
+        np.random.seed(args.seed)
     main(args)

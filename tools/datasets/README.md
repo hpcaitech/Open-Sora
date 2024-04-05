@@ -44,6 +44,7 @@ The columns are defined as follows:
 - `aspect_ratio`: the aspect ratio of the video frame (height divided by width). Optional.
 - `aes`: the aesthetic score by [asethetic scorer](/tools/aesthetic/README.md). Optional.
 - `match`: the clip score by [clip scorer](/tools/clip/README.md). Optional.
+- `cmotion`: the camera motion
 
 ## Dataset to CSV
 
