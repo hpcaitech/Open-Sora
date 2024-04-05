@@ -38,27 +38,33 @@ torchrun --nproc_per_node 8  -m tools.scoring.aesthetic.inference meta.csv --bs 
 This will generate multiple part files, you can use `python -m tools.datasets.csvutil DATA1.csv DATA2.csv` to merge these part files.
 
 ## Optical Flow Score
+
 Optical flow scores are used to assess the motion of a video. Higher optical flow scores indicate larger movement.
 TODO: acknowledge UniMatch.
 
 First get the pretrained model.
+
 ```bash
 wget https://s3.eu-central-1.amazonaws.com/avg-projects/unimatch/pretrained/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth -P pretrained_models/unimatch
 ```
 
 Then run:
-```
+
+```bash
 torchrun --standalone --nproc_per_node 8 tools/scoring/optical_flow/inference_parallel.py /path/to/meta.csv
 ```
+
 The output should be `/path/to/meta_flow.csv` with column `flow`.
 
 ## Matching Score
+
 Matching scores are calculated to evaluate the alignment between an image/video and its caption.
 For videos, we compute the matching score of the middle frame and the caption.
 
 **Make sure** meta files contain the column `text`, which is the caption of the sample. Then run:
 
-```
+```bash
 torchrun --standalone --nproc_per_node 8 tools/scoring/matching/inference_parallel.py /path/to/meta.csv
 ```
+
 The output should be `/path/to/meta_match.csv` with column `match`. Higher matching scores indicate better image-text/video-text alignment.
