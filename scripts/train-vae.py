@@ -246,7 +246,7 @@ def main():
                     save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
                     os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
                     # TODO: save in model?
-                    booster.save_model(vae, os.path.join(save_dir, "vae"), shard=True)
+                    booster.save_model(vae, os.path.join(save_dir, "model"), shard=True)
                     booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
                     if lr_scheduler is not None:
                         booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
