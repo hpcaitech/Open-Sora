@@ -17,10 +17,24 @@ After preparing the raw dataset according to the [instructions](/docs/datasets.m
 
 ## Dataset Format
 
-All dataset should be provided in a CSV file, which is used both for training and data preprocessing.. The CSV file should only contain the following columns (can be optional).
+All dataset should be provided in a CSV file, which is used both for training and data preprocessing. The CSV file should only contain the following columns (some are optional).
 
+- `path`: the relative/absolute path or url to the image or video file. The only required column.
+- `text`: the caption or description of the image or video. Necessary for training.
+- `num_frames`: the number of frames in the video. Necessary for training.
+- `fps`: the frame rate of the video (optional)
+- `width`: the width of the video frame. Necessary for STDiT2.
+- `height`: the height of the video frame. Necessary for STDiT2.
+- `resolution`: height x width (optional)
+- `aspect_ratio`: the aspect ratio of the video frame (height / width) (optional)
+- `aes`: aesthetic score calculated by [asethetic scorer](/tools/aesthetic/README.md) (optional)
+- `flow`: optical flow score calculated by [UniMatch](/tools/scoring/README.md) (optional)
+- `match`: matching score of a image-text/video-text pair calculated with [clip](/tools/scoring/README.md) (optional)
+- `cmotion`: the camera motion (optional)
+
+Example:
 ```csv
-path, text, num_frames, fps, width, height, aspect_ratio, aesthetic_score, clip_score, ...
+path, text, num_frames, fps, width, height, aspect_ratio, aes, flow, match, ...
 /absolute/path/to/image1.jpg, caption1, num_of_frames
 /absolute/path/to/video2.mp4, caption2, num_of_frames
 ```
@@ -31,20 +45,6 @@ We use pandas to manage the CSV files. The following code is for reading and wri
 df = pd.read_csv(input_path)
 df = df.to_csv(output_path, index=False)
 ```
-
-The columns are defined as follows:
-
-- `path`: the relative/absolute path or url to the image or video file. The only required column.
-- `text`: the caption or description of the image or video. Necessary for training.
-- `num_frames`: the number of frames in the video. Necessary for training.
-- `fps`: the frame rate of the video. Optional.
-- `width`: the width of the video frame. Necessary for STDiT2.
-- `height`: the height of the video frame. Necessary for STDiT2.
-- `resolution`: height x width.
-- `aspect_ratio`: the aspect ratio of the video frame (height divided by width). Optional.
-- `aes`: the aesthetic score by [asethetic scorer](/tools/aesthetic/README.md). Optional.
-- `match`: the clip score by [clip scorer](/tools/clip/README.md). Optional.
-- `cmotion`: the camera motion
 
 ## Dataset to CSV
 
