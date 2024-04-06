@@ -44,7 +44,7 @@ def main(args):
     # ======================================================
     # 2. load model
     # ======================================================
-    model_path = "liuhaotian/llava-v1.6-34b"
+    model_path = args.model_path
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Pytorch non-meta copying warning fills out the console
         tokenizer, model, image_processor, context_len = load_pretrained_model(
@@ -85,6 +85,9 @@ def main(args):
             query_text = query.format(text)
             conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + query_text)
             prompt = conv.get_prompt()
+            # add num_frames images
+            t = prompt.split("<image>")
+            prompt = t[0] + "<image>" * args.num_frames + t[1]
             input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
             input_ids = input_ids.unsqueeze(0)
             return input_ids
@@ -93,6 +96,9 @@ def main(args):
         conv = conv_templates["chatml_direct"].copy()
         conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + query)
         prompt = conv.get_prompt()
+        # add num_frames images
+        t = prompt.split("<image>")
+        prompt = t[0] + "<image>" * args.num_frames + t[1]
         input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
         input_ids = input_ids.unsqueeze(0)
 
@@ -262,9 +268,10 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Path to the input CSV file")
-    parser.add_argument("--prompt", type=str, default="video-f3-detail-3ex")
+    parser.add_argument("--model-path", type=str, default="liuhaotian/llava-v1.6-34b")
+    parser.add_argument("--prompt", type=str, default="video-f1-detail-3ex")
     parser.add_argument("--resize", type=int, default=336)
-    parser.add_argument("--num-frames", type=int, default=3)
+    parser.add_argument("--num-frames", type=int, default=1)
     parser.add_argument("--max-tokens", type=int, default=300)
     # speed related
     parser.add_argument("--bs", type=int, default=16)
