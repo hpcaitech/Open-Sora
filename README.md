@@ -118,7 +118,7 @@ conda create -n opensora python=3.10
 conda activate opensora
 
 # install torch
-# the command below is for CUDA 12.1, choose install commands from 
+# the command below is for CUDA 12.1, choose install commands from
 # https://pytorch.org/get-started/locally/ based on your own CUDA version
 pip install torch torchvision
 
@@ -161,14 +161,14 @@ on improving the quality and text alignment.
 
 ## Inference
 
-We have provided a Gradio application in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
+We have provided a [Gradio application](./gradio) in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
 
 ```bash
-pip install gradio
-python scripts/demo.py
+pip install gradio spaces
+python gradio/app.py
 ```
 
-This will launch a Gradio application on your localhost.
+This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [README file](./gradio/README.md).
 
 Besides, we have also provided an offline inference script. Run the following commands to generate samples, the required model weights will be automatically downloaded. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
