@@ -29,7 +29,7 @@ All dataset should be provided in a CSV file, which is used both for training an
 - `aspect_ratio`: the aspect ratio of the video frame (height / width) (optional)
 - `aes`: aesthetic score calculated by [asethetic scorer](/tools/aesthetic/README.md) (optional)
 - `flow`: optical flow score calculated by [UniMatch](/tools/scoring/README.md) (optional)
-- `match`: matching score of a image-text/video-text pair calculated with [clip](/tools/scoring/README.md) (optional)
+- `match`: matching score of a image-text/video-text pair calculated by [CLIP](/tools/scoring/README.md) (optional)
 - `cmotion`: the camera motion (optional)
 
 Example:
