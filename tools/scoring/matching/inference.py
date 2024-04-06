@@ -8,6 +8,10 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torchvision.datasets.folder import pil_loader
+<<<<<<< HEAD
+
+=======
+>>>>>>> dev/v1.0.1
 from tqdm import tqdm
 
 IMG_EXTENSIONS = (
@@ -21,6 +25,15 @@ IMG_EXTENSIONS = (
     ".tiff",
     ".webp",
 )
+VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
+
+
+def is_video(filename):
+    ext = os.path.splitext(filename)[-1].lower()
+    return ext in VID_EXTENSIONS
+
+
+IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
 
@@ -52,13 +65,12 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         row = self.meta.iloc[index]
-        path = row["path"]
+        path = row['path']
 
         if is_video(path):
             img = extract_frames(path, points=[0.5])[0]
         else:
             img = pil_loader(path)
-
         img = self.transform(img)
 
         text = row["text"]
