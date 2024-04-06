@@ -11,10 +11,11 @@ import importlib
 import os
 import subprocess
 import sys
-from functools import partial
+
+import spaces
+import torch
 
 import gradio as gr
-import torch
 
 MODEL_TYPES = ["v1-16x256x256", "v1-HQ-16x256x256", "v1-HQ-16x512x512"]
 CONFIG_MAP = {
@@ -29,7 +30,7 @@ HF_STDIT_MAP = {
 }
 
 
-def install_dependencies():
+def install_dependencies(enable_optimization=False):
     """
     Install the required dependencies for the demo if they are not already installed.
     """
@@ -41,7 +42,9 @@ def install_dependencies():
         except (ImportError, ModuleNotFoundError):
             return False
 
-    # install flash attention
+    # flash attention is needed no matter optimization is enabled or not
+    # because Hugging Face transformers detects flash_attn is a dependency in STDiT
+    # thus, we need to install it no matter what
     if not _is_package_available("flash_attn"):
         subprocess.run(
             f"{sys.executable} -m pip install flash-attn --no-build-isolation",
@@ -49,44 +52,24 @@ def install_dependencies():
             shell=True,
         )
 
-    # install apex
-    if not _is_package_available("apex"):
-        subprocess.run(
-            f'{sys.executable} -m pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git',
-            shell=True,
-        )
+    if enable_optimization:
+        # install apex for fused layernorm
+        if not _is_package_available("apex"):
+            subprocess.run(
+                f'{sys.executable} -m pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git',
+                shell=True,
+            )
 
-    # install ninja
-    if not _is_package_available("ninja"):
-        subprocess.run(f"{sys.executable} -m pip install ninja", shell=True)
+        # install ninja
+        if not _is_package_available("ninja"):
+            subprocess.run(f"{sys.executable} -m pip install ninja", shell=True)
 
-    # install xformers
-    if not _is_package_available("xformers"):
-        subprocess.run(
-            f"{sys.executable} -m pip install -v -U git+https://github.com/facebookresearch/xformers.git@main#egg=xformers",
-            shell=True,
-        )
-
-    # install opensora
-    if not _is_package_available("opensora"):
-        subprocess.run(f"{sys.executable} -m pip install git+https://github.com/hpcaitech/Open-Sora.git", shell=True)
-
-
-def set_up_torch():
-    """
-    Configure PyTorch for the demo.
-    """
-    torch.set_grad_enabled(False)
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-
-
-def get_device():
-    """
-    Get the default device to run the model. Hugging Face space might provide CPU only, so we need to check for that.
-    """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    return device
+        # install xformers
+        if not _is_package_available("xformers"):
+            subprocess.run(
+                f"{sys.executable} -m pip install -v -U git+https://github.com/facebookresearch/xformers.git@main#egg=xformers",
+                shell=True,
+            )
 
 
 def read_config(config_path):
@@ -105,10 +88,11 @@ def build_models(model_type, config):
     # build vae
     from opensora.registry import MODELS, build_module
 
-    vae = build_module(config.vae, MODELS)
+    vae = build_module(config.vae, MODELS).cuda()
 
     # build text encoder
-    text_encoder = build_module(config.text_encoder, MODELS, device=get_device())  # T5 must be fp32
+    text_encoder = build_module(config.text_encoder, MODELS)  # T5 must be fp32
+    text_encoder.t5.model = text_encoder.t5.model.cuda()
 
     # build stdit
     # we load model from HuggingFace directly so that we don't need to
@@ -116,8 +100,11 @@ def build_models(model_type, config):
     from transformers import AutoModel
 
     stdit = AutoModel.from_pretrained(
-        HF_STDIT_MAP[model_type], enable_flash_attn=True, enable_layernorm_kernel=True, trust_remote_code=True
-    )
+        HF_STDIT_MAP[model_type],
+        enable_flash_attn=False,
+        enable_layernorm_kernel=False,
+        trust_remote_code=True,
+    ).cuda()
 
     # build scheduler
     from opensora.registry import SCHEDULERS
@@ -128,10 +115,9 @@ def build_models(model_type, config):
     text_encoder.y_embedder = stdit.y_embedder
 
     # move modelst to device
-    vae = vae.to(get_device()).to(torch.float16).eval()
-    text_encoder.t5.model = text_encoder.t5.model.to(get_device()).eval()  # t5 must be in fp32
-    stdit = stdit.to(get_device()).to(torch.float16).eval()
-
+    vae = vae.to(torch.float16).eval()
+    text_encoder.t5.model = text_encoder.t5.model.eval()  # t5 must be in fp32
+    stdit = stdit.to(torch.float16).eval()
     return vae, text_encoder, stdit, scheduler
 
 
@@ -141,65 +127,72 @@ def get_latent_size(config, vae):
     return latent_size
 
 
-# @spaces.GPU(duration=200)
-def run_inference(prompt_text, config, scheduler, vae, text_encoder, stdit, latent_size, output):
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--model-type",
+        default="v1-HQ-16x256x256",
+        choices=MODEL_TYPES,
+        help=f"The type of model to run for the Gradio App, can only be {MODEL_TYPES}",
+    )
+    parser.add_argument("--output", default="./outputs", type=str, help="The path to the output folder")
+    parser.add_argument("--port", default=None, type=int, help="The port to run the Gradio App on.")
+    parser.add_argument("--host", default=None, type=str, help="The host to run the Gradio App on.")
+    parser.add_argument("--share", action="store_true", help="Whether to share this gradio demo.")
+    parser.add_argument(
+        "--enable-optimization",
+        action="store_true",
+        help="Whether to enable optimization such as flash attention and fused layernorm",
+    )
+    return parser.parse_args()
+
+
+# ============================
+# Main Gradio Script
+# ============================
+# as `run_inference` needs to be wrapped by `spaces.GPU` and the input can only be the prompt text
+# so we can't pass the models to `run_inference` as arguments.
+# instead, we need to define them globally so that we can access these models inside `run_inference`
+
+# read config
+args = parse_args()
+config = read_config(CONFIG_MAP[args.model_type])
+
+# make outputs dir
+os.makedirs(args.output, exist_ok=True)
+
+# disable torch jit as it can cause failure in gradio SDK
+# gradio sdk uses torch with cuda 11.3
+torch.jit._state.disable()
+
+# set up
+install_dependencies(enable_optimization=args.enable_optimization)
+
+# build model
+vae, text_encoder, stdit, scheduler = build_models(args.model_type, config)
+
+
+@spaces.GPU(duration=200)
+def run_inference(prompt_text):
     from opensora.datasets import save_sample
 
+    latent_size = get_latent_size(config, vae)
     samples = scheduler.sample(
         stdit,
         text_encoder,
         z_size=(vae.out_channels, *latent_size),
         prompts=[prompt_text],
-        device=get_device(),
+        device="cuda",
     )
+
     samples = vae.decode(samples.to(torch.float16))
-    filename = f"{output}/sample"
+    filename = f"{args.output}/sample"
     saved_path = save_sample(samples[0], fps=config.fps, save_path=filename)
     return saved_path
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model-type",
-        default="v1-HQ-16x512x512",
-        choices=MODEL_TYPES,
-        help=f"The type of model to run for the Gradio App, can only be {MODEL_TYPES}",
-    )
-    parser.add_argument("--output", default="./outputs", type=str, help="The path to the output folder")
-    parser.add_argument("--port", default=8000, type=int, help="The port to run the Gradio App on.")
-    parser.add_argument("--host", default="127.0.0.1", type=str, help="The host to run the Gradio App on.")
-    parser.add_argument("--share", action="store_true", help="Whether to share this gradio demo.")
-    return parser.parse_args()
-
-
 def main():
-    # read config
-    args = parse_args()
-    config = read_config(CONFIG_MAP[args.model_type])
-
-    # set up
-    set_up_torch()
-    install_dependencies()
-
-    # build model
-    vae, text_encoder, stdit, scheduler = build_models(args.model_type, config)
-
-    # wrap inference function to accept 1 input only
-    run_inference_func = partial(
-        run_inference,
-        config=config,
-        scheduler=scheduler,
-        vae=vae,
-        text_encoder=text_encoder,
-        stdit=stdit,
-        latent_size=get_latent_size(config, vae),
-        output=args.output,
-    )
-
-    # make outputs dir
-    os.makedirs(args.output, exist_ok=True)
-
+    # create demo
     with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column():
@@ -231,7 +224,7 @@ def main():
             with gr.Column():
                 output_video = gr.Video()
 
-        submit_button.click(fn=run_inference_func, inputs=[prompt_text], outputs=output_video)
+        submit_button.click(fn=run_inference, inputs=[prompt_text], outputs=output_video)
 
         gr.Examples(
             examples=[
@@ -239,7 +232,7 @@ def main():
                     "The video captures the majestic beauty of a waterfall cascading down a cliff into a serene lake. The waterfall, with its powerful flow, is the central focus of the video. The surrounding landscape is lush and green, with trees and foliage adding to the natural beauty of the scene. The camera angle provides a bird's eye view of the waterfall, allowing viewers to appreciate the full height and grandeur of the waterfall. The video is a stunning representation of nature's power and beauty.",
                 ],
             ],
-            fn=run_inference_func,
+            fn=run_inference,
             inputs=[
                 prompt_text,
             ],
@@ -247,6 +240,7 @@ def main():
             cache_examples=True,
         )
 
+    # launch
     demo.launch(server_port=args.port, server_name=args.host, share=args.share)
 
 
