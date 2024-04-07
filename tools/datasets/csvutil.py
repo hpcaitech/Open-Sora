@@ -91,6 +91,7 @@ def remove_caption_prefix(caption):
             if caption[0].islower():
                 caption = caption[0].upper() + caption[1:]
             return caption
+    return caption
 
 
 CMOTION_TEXT = {
@@ -309,7 +310,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=None)
     # special case
     parser.add_argument("--shard", type=int, default=None)
-    parser.add_argument("--sort-descending", type=str, default=None)
+    parser.add_argument("--sort", type=str, default=None)
     parser.add_argument("--sort-ascending", type=str, default=None)
     parser.add_argument("--difference", type=str, default=None)
     parser.add_argument("--intersection", type=str, default=None)
@@ -327,6 +328,7 @@ def parse_args():
     parser.add_argument("--lang", type=str, default=None)
     parser.add_argument("--remove-url", action="store_true")
     parser.add_argument("--remove-corrupted", action="store_true")
+    parser.add_argument("--remove-text-duplication", action="store_true")
 
     # caption processing
     parser.add_argument("--remove-caption-prefix", action="store_true")
@@ -402,14 +404,16 @@ def get_output_path(args, input_name):
     if args.flowmin is not None:
         name += f"_flowmin{args.flowmin}"
     # sort
-    if args.sort_descending is not None:
+    if args.sort is not None:
         assert args.sort_ascending is None
         name += "_sort"
     if args.sort_ascending is not None:
-        assert args.sort_descending is None
+        assert args.sort is None
         name += "_sort"
     if args.remove_corrupted:
         name += "_remove_corrupted"
+    if args.remove_text_duplication:
+        name += "_notd"
 
     output_path = os.path.join(dir_path, f"{name}.csv")
     return output_path
@@ -482,7 +486,7 @@ def main(args):
         data = data[~data["text"].isna()]
     if args.remove_duplicate_path:
         assert "path" in data.columns
-        data = data.drop_duplicates(subset=['path'])
+        data = data.drop_duplicates(subset=["path"])
     if args.remove_corrupted:
         assert "path" in data.columns
         data = data[apply(data["path"], is_video_valid)]
@@ -520,6 +524,12 @@ def main(args):
             data["resolution"],
         ) = zip(*info)
 
+    # sort
+    if args.sort is not None:
+        data = data.sort_values(by=args.sort, ascending=False)
+    if args.sort_ascending is not None:
+        data = data.sort_values(by=args.sort_ascending, ascending=True)
+
     # filtering
     if args.remove_empty_caption:
         assert "text" in data.columns
@@ -540,13 +550,9 @@ def main(args):
     if args.flowmin is not None:
         assert "flow" in data.columns
         data = data[data["flow"] >= args.flowmin]
+    if args.remove_text_duplication:
+        data = data.drop_duplicates(subset=["text"], keep="first")
     print(f"Filtered number of samples: {len(data)}.")
-
-    # sort
-    if args.sort_descending is not None:
-        data = data.sort_values(by=args.sort_descending, ascending=False)
-    if args.sort_ascending is not None:
-        data = data.sort_values(by=args.sort_ascending, ascending=True)
 
     # shard data
     if args.shard is not None:

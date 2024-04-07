@@ -33,6 +33,7 @@ All dataset should be provided in a CSV file, which is used both for training an
 - `cmotion`: the camera motion (optional)
 
 Example:
+
 ```csv
 path, text, num_frames, fps, width, height, aspect_ratio, aes, flow, match, ...
 /absolute/path/to/image1.jpg, caption1, num_of_frames
@@ -75,7 +76,7 @@ head -n 10 DATA1.csv
 wc -l DATA1.csv
 ```
 
-Additionally, Ww provide `csvutils.py` to manage the CSV files.
+Additionally, Ww provide `csvutil.py` to manage the CSV files.
 
 ### Requirement
 
@@ -229,7 +230,7 @@ import matplotlib.pyplot as plt
 
 data = pd.read_csv('meta.csv')
 data.hist(column="resolution")
-plt.savefig('info.jpg')
+plt.savefig('outputs/samples/info.jpg')
 ```
 
 ## Frame extraction speed

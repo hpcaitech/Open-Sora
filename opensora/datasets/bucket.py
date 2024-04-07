@@ -96,10 +96,10 @@ class Bucket:
                 prob = self.get_prob((hw_id, T_id))
                 if torch.rand(1, generator=generator).item() < prob:
                     break
-            hw_id = list(self.hw_criteria.keys()).index(hw_id)
-            if hw_id == len(self.hw_criteria) - 1:
+            hw_id_index = list(self.hw_criteria.keys()).index(hw_id)
+            hw_id = list(self.hw_criteria.keys())[hw_id_index + 1]
+            if hw_id_index == len(self.hw_criteria) - 1:
                 break
-            hw_id = list(self.hw_criteria.keys())[hw_id + 1]
         if T_id is None:
             return None
 
