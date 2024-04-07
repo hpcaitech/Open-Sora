@@ -7,7 +7,7 @@ from io import BytesIO
 import requests
 import tqdm
 
-from .utils import PROMPTS, VideoTextDataset
+from .utils import IMG_EXTENSIONS, PROMPTS, VID_EXTENSIONS, VideoTextDataset
 
 
 def to_base64(image):
@@ -52,11 +52,25 @@ def main(args):
     writer = csv.writer(f)
     writer.writerow(["video", "text"])
 
+    # make sure that the prompt type matches the data type
+    data_extension = dataset.data["path"].iloc[0].split(".")[-1]
+    prompt_type = PROMPTS[args.prompt]["type"]
+    if prompt_type == "image":
+        assert (
+            data_extension.lower() in IMG_EXTENSIONS
+        ), "The prompt is suitable for an image dataset but the data is not image."
+    elif prompt_type == "video":
+        assert (
+            data_extension.lower() in VID_EXTENSIONS
+        ), "The prompt is suitable for a video dataset but the data is not video."
+    else:
+        raise ValueError(f"Found invalid prompt type {prompt_type}")
+
     # ======================================================
     # 2. generate captions
     # ======================================================
     for sample in tqdm.tqdm(dataset):
-        prompt = PROMPTS[args.prompt]
+        prompt = PROMPTS[args.prompt]["text"]
         if "text" in args.prompt:
             prompt = prompt.format(sample["text"])
         frames = sample["image"]
