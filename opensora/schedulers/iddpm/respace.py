@@ -12,6 +12,7 @@
 
 
 import torch
+from colossalai.utils import get_current_device
 
 from .gaussian_diffusion import GaussianDiffusion
 
@@ -41,7 +42,9 @@ def space_timesteps(num_timesteps, section_counts):
             for i in range(1, num_timesteps):
                 if len(range(0, num_timesteps, i)) == desired_count:
                     return set(range(0, num_timesteps, i))
-            raise ValueError(f"cannot create exactly {num_timesteps} steps with an integer stride")
+            raise ValueError(
+                f"cannot create exactly {num_timesteps} steps with an integer stride"
+            )
         section_counts = [int(x) for x in section_counts.split(",")]
     size_per = num_timesteps // len(section_counts)
     extra = num_timesteps % len(section_counts)
@@ -50,7 +53,9 @@ def space_timesteps(num_timesteps, section_counts):
     for i, section_count in enumerate(section_counts):
         size = size_per + (1 if i < extra else 0)
         if size < section_count:
-            raise ValueError(f"cannot divide section of {size} steps into {section_count}")
+            raise ValueError(
+                f"cannot divide section of {size} steps into {section_count}"
+            )
         if section_count <= 1:
             frac_stride = 1
         else:
@@ -88,11 +93,16 @@ class SpacedDiffusion(GaussianDiffusion):
                 self.timestep_map.append(i)
         kwargs["betas"] = torch.FloatTensor(new_betas)
         super().__init__(**kwargs)
+        self.map_tensor = torch.tensor(self.timestep_map, device=get_current_device())
 
-    def p_mean_variance(self, model, *args, **kwargs):  # pylint: disable=signature-differs
+    def p_mean_variance(
+        self, model, *args, **kwargs
+    ):  # pylint: disable=signature-differs
         return super().p_mean_variance(self._wrap_model(model), *args, **kwargs)
 
-    def training_losses(self, model, *args, **kwargs):  # pylint: disable=signature-differs
+    def training_losses(
+        self, model, *args, **kwargs
+    ):  # pylint: disable=signature-differs
         return super().training_losses(self._wrap_model(model), *args, **kwargs)
 
     def condition_mean(self, cond_fn, *args, **kwargs):
@@ -104,7 +114,7 @@ class SpacedDiffusion(GaussianDiffusion):
     def _wrap_model(self, model):
         if isinstance(model, _WrappedModel):
             return model
-        return _WrappedModel(model, self.timestep_map, self.original_num_steps)
+        return _WrappedModel(model, self.map_tensor, self.original_num_steps)
 
     def _scale_timesteps(self, t):
         # Scaling is done by the wrapped model.
@@ -112,15 +122,14 @@ class SpacedDiffusion(GaussianDiffusion):
 
 
 class _WrappedModel:
-    def __init__(self, model, timestep_map, original_num_steps):
+    def __init__(self, model, map_tensor, original_num_steps):
         self.model = model
-        self.timestep_map = timestep_map
+        self.map_tensor = map_tensor
         # self.rescale_timesteps = rescale_timesteps
         self.original_num_steps = original_num_steps
 
     def __call__(self, x, ts, **kwargs):
-        map_tensor = torch.tensor(self.timestep_map, device=ts.device, dtype=ts.dtype)
-        new_ts = map_tensor[ts]
+        new_ts = self.map_tensor[ts].to(device=ts.device, dtype=ts.dtype)
         # if self.rescale_timesteps:
         #     new_ts = new_ts.float() * (1000.0 / self.original_num_steps)
         return self.model(x, new_ts, **kwargs)
