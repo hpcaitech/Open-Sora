@@ -17,7 +17,7 @@ from llava.utils import disable_torch_init
 from tqdm import tqdm
 
 from .acceleration.llava.policy import LlavaForCausalLMPolicy
-from .utils import PROMPTS, Timer, VideoTextDataset, collate_fn
+from .utils import IMG_EXTENSIONS, PROMPTS, VID_EXTENSIONS, Timer, VideoTextDataset, collate_fn
 
 disable_torch_init()
 
@@ -74,7 +74,7 @@ def main(args):
     # 4. Prepare dataloader
     # ======================================================
     # prepare prompt
-    query = PROMPTS[args.prompt]
+    query = PROMPTS[args.prompt]["text"]
     if dist.get_rank() == 0:
         print(f"Prompt: {query}")
 
@@ -118,6 +118,21 @@ def main(args):
         get_text_input_ids=get_text_input_ids,
         resize=args.resize,
     )
+
+    # make sure that the prompt type matches the data type
+    data_extension = dataset.data["path"].iloc[0].split(".")[-1]
+    prompt_type = PROMPTS[args.prompt]["type"]
+    if prompt_type == "image":
+        assert (
+            data_extension.lower() in IMG_EXTENSIONS
+        ), "The prompt is suitable for an image dataset but the data is not image."
+    elif prompt_type == "video":
+        assert (
+            data_extension.lower() in VID_EXTENSIONS
+        ), "The prompt is suitable for a video dataset but the data is not video."
+    else:
+        raise ValueError(f"Found invalid prompt type {prompt_type}")
+
     total_num_videos = len(dataset)
 
     # build sampler
