@@ -102,7 +102,7 @@ class Bucket:
                 break
             hw_id = list(self.hw_criteria.keys())[hw_id_index]
 
-        if T_id is None or hw_id_index >= len(self.hw_criteria) - 1:
+        if T_id is None or hw_id_index > len(self.hw_criteria) - 1:
             return None
 
         # ar
