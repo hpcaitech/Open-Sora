@@ -32,7 +32,8 @@ model = dict(
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sd-vae-ft-ema",
+    # from_pretrained="stabilityai/sd-vae-ft-ema",
+    from_pretrained="stabilityai/sdxl-vae",
     micro_batch_size=4,
 )
 text_encoder = dict(
