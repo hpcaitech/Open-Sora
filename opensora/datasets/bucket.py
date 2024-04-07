@@ -87,6 +87,7 @@ class Bucket:
         hw_id = find_approximate_hw(hw, self.hw_criteria)
         if hw_id is None:
             return None
+        hw_id_index = list(self.hw_criteria.keys()).index(hw_id)
 
         # hw drops by probablity
         while True:
@@ -96,11 +97,12 @@ class Bucket:
                 prob = self.get_prob((hw_id, T_id))
                 if torch.rand(1, generator=generator).item() < prob:
                     break
-            hw_id_index = list(self.hw_criteria.keys()).index(hw_id)
-            hw_id = list(self.hw_criteria.keys())[hw_id_index + 1]
-            if hw_id_index == len(self.hw_criteria) - 1:
+            hw_id_index += 1
+            if hw_id_index >= len(self.hw_criteria) - 1:
                 break
-        if T_id is None:
+            hw_id = list(self.hw_criteria.keys())[hw_id_index + 1]
+
+        if T_id is None or hw_id_index >= len(self.hw_criteria) - 1:
             return None
 
         # ar
