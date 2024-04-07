@@ -3,7 +3,7 @@ dataset = dict(
     type="VariableVideoTextDataset",
     data_path=None,
     num_frames=None,
-    frame_interval=1,
+    frame_interval=3,
     image_size=(None, None),
     transform_name="resize_crop",
 )
@@ -11,18 +11,18 @@ bucket_config = {  # 6s/it
     "240p": {16: (1.0, 16), 32: (1.0, 8), 64: (1.0, 4), 128: (1.0, 2)},
     "256": {1: (1.0, 256)},
     "512": {1: (1.0, 80)},
-    "480p": {1: (0.5, 52), 16: (0.5, 4), 32: (0.0, None)},
-    "720p": {16: (1.0, 2), 32: (0.0, None)},  # No examples now
-    "1024": {1: (1.0, 20)},
-    "1080p": {1: (1.0, 8)},
+    "480p": {1: (0.4, 52), 16: (0.4, 4), 32: (0.0, None)},
+    "720p": {16: (0.1, 2), 32: (0.0, None)},  # No examples now
+    "1024": {1: (0.3, 20)},
+    "1080p": {1: (0.3, 8)},
 }
-mask_ratios = {
-    "mask_no": 0.9,
-    "mask_random": 0.06,
-    "mask_head": 0.01,
-    "mask_tail": 0.01,
-    "mask_head_tail": 0.02,
-}
+# mask_ratios = {
+#     "mask_no": 0.9,
+#     "mask_random": 0.06,
+#     "mask_head": 0.01,
+#     "mask_tail": 0.01,
+#     "mask_head_tail": 0.02,
+# }
 
 # Define acceleration
 num_workers = 4
