@@ -154,8 +154,8 @@ def main():
 
     ###  TODO: DEBUG, USE booster
     torch.set_default_dtype(dtype)
-    vae, _, _, dataloader, _ = booster.boost(
-        model=vae, dataloader=dataloader
+    vae, optimizer, _, dataloader, lr_scheduler = booster.boost(
+        model=vae, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
     )
     torch.set_default_dtype(torch.float)
 
