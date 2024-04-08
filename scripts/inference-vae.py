@@ -52,7 +52,7 @@ def main():
     torch.backends.cudnn.allow_tf32 = True
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = to_torch_dtype(cfg.dtype)
-    set_random_seed(seed=cfg.seed)
+    # set_random_seed(seed=cfg.seed)
 
 
     # # 2.3 DEBUG: USE BOOSTER

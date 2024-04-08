@@ -55,7 +55,11 @@ def main():
     # device = "cuda" if torch.cuda.is_available() else "cpu"
     device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
-    set_random_seed(seed=cfg.seed)
+    # set_random_seed(seed=cfg.seed) # Issue is this line !!!!!!!
+
+
+
+
 
     # 2.3 DEBUG: USE BOOSTER
     # 2.3. initialize ColossalAI booster
