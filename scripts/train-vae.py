@@ -328,7 +328,7 @@ def main():
                 for idx, sample in enumerate(reconstructions):
                     pos = step * cfg.batch_size + idx
                     save_path = os.path.join("outputs/debug", f"sample_{pos}")
-                    save_sample(sample, fps=cfg.fps, save_path=save_path)
+                    save_sample(sample, fps=8, save_path=save_path)
 
     print("test loss:", running_loss)
 
