@@ -181,10 +181,10 @@ def main():
         # running_states = load_json(os.path.join(cfg.load, "running_states.json"))
         dist.barrier()
         # start_epoch, start_step, sampler_start_idx = running_states["epoch"], running_states["step"], running_states["sample_start_index"]
-        logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
-    logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
+    #     logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
+    # logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
-    dataloader.sampler.set_start_index(sampler_start_idx)
+    # dataloader.sampler.set_start_index(sampler_start_idx)
 
     # # define loss function
     # loss_function = VEA3DLoss(kl_weight=cfg.kl_weight, perceptual_weight=cfg.perceptual_weight).to(device, dtype)
