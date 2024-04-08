@@ -20,10 +20,10 @@ from opensora.acceleration.parallel_states import (
 from tqdm import tqdm
 from opensora.models.vae.model_utils import VEA3DLoss
 
-# DEBUG
-from colossalai.booster import Booster
-from colossalai.booster.plugin import LowLevelZeroPlugin
-from opensora.acceleration.plugin import ZeroSeqParallelPlugin
+# # DEBUG
+# from colossalai.booster import Booster
+# from colossalai.booster.plugin import LowLevelZeroPlugin
+# from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 
 
 
@@ -55,29 +55,29 @@ def main():
     set_random_seed(seed=cfg.seed)
 
 
-    # 2.3 DEBUG: USE BOOSTER
-    # 2.3. initialize ColossalAI booster
-    if cfg.plugin == "zero2":
-        plugin = LowLevelZeroPlugin(
-            stage=2,
-            precision=cfg.dtype,
-            initial_scale=2**16,
-            max_norm=cfg.grad_clip,
-        )
-        set_data_parallel_group(dist.group.WORLD)
-    elif cfg.plugin == "zero2-seq":
-        plugin = ZeroSeqParallelPlugin(
-            sp_size=cfg.sp_size,
-            stage=2,
-            precision=cfg.dtype,
-            initial_scale=2**16,
-            max_norm=cfg.grad_clip,
-        )
-        set_sequence_parallel_group(plugin.sp_group)
-        set_data_parallel_group(plugin.dp_group)
-    else:
-        raise ValueError(f"Unknown plugin {cfg.plugin}")
-    booster = Booster(plugin=plugin)
+    # # 2.3 DEBUG: USE BOOSTER
+    # # 2.3. initialize ColossalAI booster
+    # if cfg.plugin == "zero2":
+    #     plugin = LowLevelZeroPlugin(
+    #         stage=2,
+    #         precision=cfg.dtype,
+    #         initial_scale=2**16,
+    #         max_norm=cfg.grad_clip,
+    #     )
+    #     set_data_parallel_group(dist.group.WORLD)
+    # elif cfg.plugin == "zero2-seq":
+    #     plugin = ZeroSeqParallelPlugin(
+    #         sp_size=cfg.sp_size,
+    #         stage=2,
+    #         precision=cfg.dtype,
+    #         initial_scale=2**16,
+    #         max_norm=cfg.grad_clip,
+    #     )
+    #     set_sequence_parallel_group(plugin.sp_group)
+    #     set_data_parallel_group(plugin.dp_group)
+    # else:
+    #     raise ValueError(f"Unknown plugin {cfg.plugin}")
+    # booster = Booster(plugin=plugin)
 
 
     # ======================================================
