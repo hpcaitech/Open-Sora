@@ -186,8 +186,8 @@ def main():
 
     dataloader.sampler.set_start_index(sampler_start_idx)
 
-    # define loss function
-    loss_function = VEA3DLoss(kl_weight=cfg.kl_weight, perceptual_weight=cfg.perceptual_weight).to(device, dtype)
+    # # define loss function
+    # loss_function = VEA3DLoss(kl_weight=cfg.kl_weight, perceptual_weight=cfg.perceptual_weight).to(device, dtype)
 
 
     # # 6.2. training loop
