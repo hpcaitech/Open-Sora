@@ -100,7 +100,7 @@ def read_from_path(path, image_size):
     if ext.lower() in VID_EXTENSIONS:
         return read_video_from_path(path, image_size=image_size)
     else:
-        assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
+        assert ext.lower() in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
         return read_image_from_path(path, image_size=image_size)
 
 
