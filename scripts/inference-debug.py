@@ -125,11 +125,11 @@ def main():
     # 3.2. move to device & eval
     vae = vae.to(device, dtype).eval()
 
-    # 4.5. setup optimizer
-    optimizer = HybridAdam(
-        filter(lambda p: p.requires_grad, vae.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
-    )
-    lr_scheduler = None
+    # # 4.5. setup optimizer
+    # optimizer = HybridAdam(
+    #     filter(lambda p: p.requires_grad, vae.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
+    # )
+    # lr_scheduler = None
 
     # # 4.6. prepare for training
     # if cfg.grad_checkpoint:
