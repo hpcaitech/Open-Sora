@@ -144,6 +144,7 @@ def main():
     vae, _, _, dataloader, _ = booster.boost(
         model=vae, dataloader=dataloader
     )
+    torch.set_default_dtype(torch.float)
     # load model using booster
     booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
 
