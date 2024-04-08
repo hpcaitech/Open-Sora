@@ -10,7 +10,7 @@ dataset = dict(
 bucket_config = {  # 6s/it
     "240p": {16: (1.0, 16), 32: (1.0, 8), 64: (1.0, 4), 128: (1.0, 2)},
     "256": {1: (1.0, 256)},
-    "512": {1: (1.0, 80)},
+    "512": {1: (0.5, 80)},
     "480p": {1: (0.4, 52), 16: (0.4, 4), 32: (0.0, None)},
     "720p": {16: (0.1, 2), 32: (0.0, None)},  # No examples now
     "1024": {1: (0.3, 20)},
@@ -34,20 +34,21 @@ sp_size = 1
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    from_pretrained="PixArt-XL-2-1024-MS.pth",
+    # from_pretrained="PixArt-XL-2-1024-MS.pth",
+    from_pretrained="/home/zhaowangbo/zangwei/opensora/outputs/422-STDiT2-XL-2/epoch9-global_step192500/model_ckpt.pt",
     input_sq_size=512,  # pretrained model is trained on 512x512
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sd-vae-ft-ema",
+    from_pretrained="stabilityai/sdxl-vae",
     micro_batch_size=4,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
-    model_max_length=300,
+    model_max_length=200,
     shardformer=True,
 )
 scheduler = dict(

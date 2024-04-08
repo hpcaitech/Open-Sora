@@ -1,7 +1,7 @@
 num_frames = 1
 fps = 24 // 3
 # image_size = (1358, 680)
-image_size = (2160, 3840)
+image_size = (256, 256)
 multi_resolution = "STDiT2"
 
 # Define model
@@ -14,13 +14,13 @@ model = dict(
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sd-vae-ft-ema",
+    from_pretrained="stabilityai/sdxl-vae",
     micro_batch_size=4,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
-    model_max_length=120,
+    model_max_length=200,
 )
 scheduler = dict(
     type="iddpm",
@@ -28,7 +28,7 @@ scheduler = dict(
     cfg_scale=7.0,
     cfg_channel=3,  # or None
 )
-dtype = "fp16"
+dtype = "bf16"
 
 # Condition
 prompt_path = "./assets/texts/t2v_samples.txt"
