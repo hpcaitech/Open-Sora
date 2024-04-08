@@ -153,16 +153,16 @@ def main(args):
     )
 
     # make sure that the prompt type matches the data type
-    data_extension = dataset.data["path"].iloc[0].split(".")[-1]
+    data_extension = "." + dataset.data["path"].iloc[0].split(".")[-1]
     prompt_type = PROMPTS[args.prompt]["type"]
     if prompt_type == "image":
         assert (
             data_extension.lower() in IMG_EXTENSIONS
-        ), "The prompt is suitable for an image dataset but the data is not image."
+        ), f"The prompt is suitable for an image dataset but the data is not image. The first data is of format {data_extension}"
     elif prompt_type == "video":
         assert (
             data_extension.lower() in VID_EXTENSIONS
-        ), "The prompt is suitable for a video dataset but the data is not video."
+        ), f"The prompt is suitable for a video dataset but the data is not video. The first data is of format {data_extension}"
     else:
         raise ValueError(f"Found invalid prompt type {prompt_type}")
 
