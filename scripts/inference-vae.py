@@ -132,7 +132,7 @@ def main():
                 reconstructions, posterior = vae(x)
                 loss = loss_function(x, reconstructions, posterior)
                 loss_steps += 1
-                running_loss = loss.item()/ loss_steps + running_loss * (loss_steps - 1 / loss_steps)
+                running_loss = loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
 
             if coordinator.is_master():
                 for idx, sample in enumerate(reconstructions):
