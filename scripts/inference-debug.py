@@ -49,7 +49,7 @@ def main():
     # ======================================================
     # 2. runtime variables
     # ======================================================
-    # torch.set_grad_enabled(False)
+    torch.set_grad_enabled(False)
     # torch.backends.cuda.matmul.allow_tf32 = True
     # torch.backends.cudnn.allow_tf32 = True
     # device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -58,30 +58,6 @@ def main():
     # set_random_seed(seed=cfg.seed) # Issue is this line !!!!!!!
 
 
-
-    # # 2.3 DEBUG: USE BOOSTER
-    # # 2.3. initialize ColossalAI booster
-    # if cfg.plugin == "zero2":
-    #     plugin = LowLevelZeroPlugin(
-    #         stage=2,
-    #         precision=cfg.dtype,
-    #         initial_scale=2**16,
-    #         max_norm=cfg.grad_clip,
-    #     )
-    #     set_data_parallel_group(dist.group.WORLD)
-    # elif cfg.plugin == "zero2-seq":
-    #     plugin = ZeroSeqParallelPlugin(
-    #         sp_size=cfg.sp_size,
-    #         stage=2,
-    #         precision=cfg.dtype,
-    #         initial_scale=2**16,
-    #         max_norm=cfg.grad_clip,
-    #     )
-    #     set_sequence_parallel_group(plugin.sp_group)
-    #     set_data_parallel_group(plugin.dp_group)
-    # else:
-    #     raise ValueError(f"Unknown plugin {cfg.plugin}")
-    # booster = Booster(plugin=plugin)
 
 
     # ======================================================
@@ -125,19 +101,6 @@ def main():
     # 3.2. move to device & eval
     vae = vae.to(device, dtype).eval()
 
-    # # 4.5. setup optimizer
-    # optimizer = HybridAdam(
-    #     filter(lambda p: p.requires_grad, vae.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
-    # )
-    # lr_scheduler = None
-
-    # # 4.6. prepare for training
-    # if cfg.grad_checkpoint:
-    #     set_grad_checkpoint(vae)
-    # vae.train()
-
-    # # 3.3. build scheduler
-    # scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
     # 3.4. support for multi-resolution
     model_args = dict()
@@ -152,30 +115,6 @@ def main():
     # ======================================================
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
-
-
-    # ###  TODO: DEBUG, USE booster
-    # torch.set_default_dtype(dtype)
-    # # vae, optimizer, _, dataloader, lr_scheduler = booster.boost(
-    # #     model=vae, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
-    # # )
-    # vae, _, _, dataloader, _ = booster.boost(
-    #     model=vae, dataloader=dataloader
-    # )
-    # torch.set_default_dtype(torch.float)
-
-
-    # load model using booster
-    # print("loading:", cfg.model["from_pretrained"])
-    # booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
-    # booster.load_optimizer(optimizer, os.path.join(cfg.model["from_pretrained"], "optimizer"))
-    # if lr_scheduler is not None:
-    #     booster.load_lr_scheduler(lr_scheduler, os.path.join(cfg.model["from_pretrained"], "lr_scheduler"))
-    # running_states = load_json(os.path.join(cfg.load, "running_states.json"))
-    # dist.barrier()
-    # start_epoch, start_step, sampler_start_idx = running_states["epoch"], running_states["step"], running_states["sample_start_index"]
-#     logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
-    # logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
 
     # 4.1. batch generation
@@ -204,11 +143,11 @@ def main():
             loss_steps += 1
             running_loss = loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
 
-            # if coordinator.is_master():
-            #     for idx, sample in enumerate(reconstructions):
-            #         pos = step * cfg.batch_size + idx
-            #         save_path = os.path.join(save_dir, f"sample_{pos}")
-            #         save_sample(sample, fps=cfg.fps, save_path=save_path)
+            if coordinator.is_master():
+                for idx, sample in enumerate(reconstructions):
+                    pos = step * cfg.batch_size + idx
+                    save_path = os.path.join(save_dir, f"sample_{pos}")
+                    save_sample(sample, fps=cfg.fps, save_path=save_path)
 
     print("test loss:", running_loss)
     
