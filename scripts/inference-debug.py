@@ -121,7 +121,7 @@ def main():
     # latent_size = vae.get_latent_size(input_size)
 
     # 3.2. move to device & eval
-    vae = vae.to(device, dtype)
+    vae = vae.to(device, dtype).eval()
 
     # # 4.5. setup optimizer
     # optimizer = HybridAdam(
