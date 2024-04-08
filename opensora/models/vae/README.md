@@ -11,5 +11,13 @@ WANDB_API_KEY=<wandb_api_key> CUDA_VISIBLE_DEVICES=<n> torchrun --master_port=<p
 ### 2. Inference 
 
 ```yaml
-CUDA_VISIBLE_DEVICES=<n> torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference-vae.py configs/vae_3d/inference/16x256x256.py --ckpt-path /home/shenchenhui/Open-Sora-dev/outputs/028-F16S3-VAE_3D/epoch3-global_step20000/ --data-path /home/shenchenhui/data/pexels/test.csv
+CUDA_VISIBLE_DEVICES=7 torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference-vae.py configs/vae_3d/inference/16x256x256.py --ckpt-path /home/shenchenhui/Open-Sora-dev/outputs/028-F16S3-VAE_3D/epoch3-global_step20000/ --data-path /home/shenchenhui/data/pexels/test.csv
+```
+
+```yaml
+scp  -P 31081 shenchenhui@211.102.192.108:/home/shenchenhui/Open-Sora-dev/outputs/samples/sample_0.mp4 /Users/shenchenhui/Desktop
+
+scp  -P 31081 shenchenhui@211.102.192.108:/home/shenchenhui/data/pexels/test.csv /Users/shenchenhui/Desktop
+
+
 ```
