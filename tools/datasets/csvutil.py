@@ -343,6 +343,7 @@ def parse_args():
     # num_frames filtering
     parser.add_argument("--fmin", type=int, default=None)
     parser.add_argument("--fmax", type=int, default=None)
+    parser.add_argument("--hwmax", type=int, default=None)
 
     # aesthetic filtering
     parser.add_argument("--aesmin", type=float, default=None)
@@ -395,6 +396,8 @@ def get_output_path(args, input_name):
         name += f"_fmin{args.fmin}"
     if args.fmax is not None:
         name += f"_fmax{args.fmax}"
+    if args.hwmax is not None:
+        name += f"_hwmax{args.hwmax}"
     # aesthetic filtering
     if args.aesmin is not None:
         name += f"_aesmin{args.aesmin}"
@@ -541,6 +544,9 @@ def main(args):
     if args.fmax is not None:
         assert "num_frames" in data.columns
         data = data[data["num_frames"] <= args.fmax]
+    if args.hwmax is not None:
+        assert "resolution" in data.columns
+        data = data[data["resolution"] <= args.hwmax]
     if args.aesmin is not None:
         assert "aes" in data.columns
         data = data[data["aes"] >= args.aesmin]
