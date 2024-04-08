@@ -46,4 +46,3 @@ save_dir = "outputs/samples"
 batch_size = 8
 
 grad_clip = 1.0
-
