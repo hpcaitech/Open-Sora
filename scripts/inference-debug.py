@@ -21,12 +21,7 @@ from tqdm import tqdm
 from opensora.models.vae.model_utils import VEA3DLoss
 
 # DEBUG
-from colossalai.booster import Booster
-from colossalai.booster.plugin import LowLevelZeroPlugin
-from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from colossalai.utils import get_current_device
-from colossalai.nn.optimizer import HybridAdam
-from opensora.acceleration.checkpoint import set_grad_checkpoint
 
 
 def main():

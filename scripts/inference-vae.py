@@ -19,6 +19,7 @@ from opensora.acceleration.parallel_states import (
 )
 from tqdm import tqdm
 from opensora.models.vae.model_utils import VEA3DLoss
+from colossalai.utils import get_current_device
 
 
 def main():
@@ -45,6 +46,7 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
     # set_random_seed(seed=cfg.seed)
 
