@@ -163,9 +163,9 @@ def main():
     # load model using booster
     print("loading:", cfg.model["from_pretrained"])
     booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
-    booster.load_optimizer(optimizer, os.path.join(cfg.load, "optimizer"))
+    booster.load_optimizer(optimizer, os.path.join(cfg.model["from_pretrained"], "optimizer"))
     if lr_scheduler is not None:
-        booster.load_lr_scheduler(lr_scheduler, os.path.join(cfg.load, "lr_scheduler"))
+        booster.load_lr_scheduler(lr_scheduler, os.path.join(cfg.model["from_pretrained"], "lr_scheduler"))
     # running_states = load_json(os.path.join(cfg.load, "running_states.json"))
     dist.barrier()
     # start_epoch, start_step, sampler_start_idx = running_states["epoch"], running_states["step"], running_states["sample_start_index"]
