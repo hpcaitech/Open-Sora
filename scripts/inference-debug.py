@@ -50,8 +50,8 @@ def main():
     torch.set_grad_enabled(False)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    # device = get_current_device()
+    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
     set_random_seed(seed=cfg.seed)
 
@@ -115,8 +115,7 @@ def main():
     # ======================================================
     # 3.1. build model
     # input_size = (cfg.num_frames, *cfg.image_size)
-    # vae = build_module(cfg.model, MODELS, device=device)
-    vae = build_module(cfg.model, MODELS)
+    vae = build_module(cfg.model, MODELS, device=device)
     # latent_size = vae.get_latent_size(input_size)
 
     # 3.2. move to device & eval
