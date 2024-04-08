@@ -278,8 +278,36 @@ def main():
 
     from opensora.datasets import save_sample
 
+    # get data again
+    print("loading test data...")
+    dataset = DatasetFromCSV(
+        cfg.data_path,
+        # TODO: change transforms
+        transform=(
+            get_transforms_video(cfg.image_size[0])
+            if not cfg.use_image_transform
+            else get_transforms_image(cfg.image_size[0])
+        ),
+        num_frames=cfg.num_frames,
+        frame_interval=cfg.frame_interval,
+        root=cfg.root,
+    )
+
+    dataloader = prepare_dataloader(
+        dataset,
+        batch_size=cfg.batch_size,
+        num_workers=cfg.num_workers,
+        shuffle=False,
+        drop_last=True,
+        pin_memory=True,
+        process_group=get_data_parallel_group(),
+    )
+    print(f"Dataset contains {len(dataset):,} videos ({cfg.data_path})")
+
     total_steps = len(dataloader)
     dataloader_iter = iter(dataloader)
+
+    print("total steps:", total_steps)
 
     with tqdm(
         range(total_steps),
