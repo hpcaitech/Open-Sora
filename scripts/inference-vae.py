@@ -86,14 +86,12 @@ def main():
     # ======================================================
     # 3.1. build model
     # input_size = (cfg.num_frames, *cfg.image_size)
-    vae = build_module(cfg.model, MODELS)
+    vae = build_module(cfg.model, MODELS, device=device)
     # latent_size = vae.get_latent_size(input_size)
 
     # 3.2. move to device & eval
     vae = vae.to(device, dtype).eval()
 
-    # # 3.3. build scheduler
-    # scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
     # 3.4. support for multi-resolution
     model_args = dict()
