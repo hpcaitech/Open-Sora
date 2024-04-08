@@ -69,7 +69,7 @@ def main():
         dataset,
         batch_size=cfg.batch_size,
         num_workers=cfg.num_workers,
-        shuffle=True,
+        shuffle=False,
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
@@ -120,23 +120,24 @@ def main():
     dataloader_iter = iter(dataloader)
 
     with tqdm(
-            range(total_steps),
-            # desc=f"Avg Loss: {running_loss}",
-            disable=not coordinator.is_master(),
-            total=total_steps,
-            initial=0,
-        ) as pbar:
-            for step in pbar:
-                batch = next(dataloader_iter)
-                x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                reconstructions, posterior = vae(x)
-                loss = loss_function(x, reconstructions, posterior)
-                loss_steps += 1
-                running_loss = loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
+        range(total_steps),
+        # desc=f"Avg Loss: {running_loss}",
+        disable=not coordinator.is_master(),
+        total=total_steps,
+        initial=0,
+    ) as pbar:
+        for step in pbar:
+            batch = next(dataloader_iter)
+            x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
+            reconstructions, posterior = vae(x)
+            loss = loss_function(x, reconstructions, posterior)
+            loss_steps += 1
+            running_loss = loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
 
             if coordinator.is_master():
                 for idx, sample in enumerate(reconstructions):
-                    save_path = os.path.join(save_dir, f"sample_{idx}")
+                    pos = step * cfg.batch_size + idx
+                    save_path = os.path.join(save_dir, f"sample_{pos}")
                     save_sample(sample, fps=cfg.fps, save_path=save_path)
 
     print("test loss:", running_loss)
