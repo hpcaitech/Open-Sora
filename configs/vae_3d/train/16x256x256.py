@@ -39,6 +39,7 @@ model = dict(
 # Others
 seed = 42
 outputs = "outputs"
+wandb = False
 
 # Training
 ''' NOTE: 
