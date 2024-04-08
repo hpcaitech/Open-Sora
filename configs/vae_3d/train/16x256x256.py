@@ -16,7 +16,7 @@ sp_size = 1
 
 # Define Loss
 kl_weight = 0.000001
-perceptual_weight = 1.0 # TODO: need to change this to 0.1 !!! according to MAGVIT paper
+perceptual_weight = 0.1 # TODO: need to change this to 0.1 !!! according to MAGVIT paper
 
 # Define model
 
@@ -47,7 +47,7 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 3-6 epochs for pexel, from pexel observation its correct
 '''
 
-epochs = 3
+epochs = 5
 log_every = 1
 ckpt_every = 1000
 load = None

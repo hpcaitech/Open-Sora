@@ -11,7 +11,7 @@ use_image_transform = False
 num_workers = 4
 
 # Define acceleration
-dtype = "fp16"
+dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
