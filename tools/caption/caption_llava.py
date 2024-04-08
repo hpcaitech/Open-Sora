@@ -17,7 +17,7 @@ from llava.utils import disable_torch_init
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-from .acceleration.llava.policy import LlavaForCausalLMPolicy
+from .acceleration.llava.policies import LlavaLlamaForCausalLMPolicy, LlavaMistralForCausalLMPolicy
 from .utils import IMG_EXTENSIONS, PROMPTS, VID_EXTENSIONS, Timer, VideoTextDataset, collate_fn
 
 disable_torch_init()
@@ -93,14 +93,22 @@ def main(args):
     # ======================================================
     # 3. Apply system optimization
     # ======================================================
-    # create huggingface model as normal
     tp_size = dist.get_world_size(tp_group)
     shard_config = ShardConfig(
         tensor_parallel_process_group=tp_group if tp_size > 1 else None,
         enable_tensor_parallelism=True if tp_size > 1 else False,
     )
     shard_former = ShardFormer(shard_config=shard_config)
-    model = shard_former.optimize(model, policy=LlavaForCausalLMPolicy())[0].cuda()
+
+    # check the model type
+    model_name = model.__class__.__name__
+    print(model_name)
+    if model_name == "LlavaLlamaForCausalLM":
+        model = shard_former.optimize(model, policy=LlavaLlamaForCausalLMPolicy())[0].cuda()
+    elif model_name == "LlavaMistralForCausalLM":
+        model = shard_former.optimize(model, policy=LlavaMistralForCausalLMPolicy())[0].cuda()
+    else:
+        print(f"The shardformer policy for {model_name} is not implemented, skip")
     torch.cuda.empty_cache()
 
     # ======================================================
@@ -209,7 +217,6 @@ def main(args):
 
     if args.profile:
         encode_time = []
-        frame_extraction_time = []
         generate_time = []
         output_length = []
         total_time = []
@@ -292,7 +299,6 @@ def main(args):
         print(output_length)
         num_samples_after_warmup = total_num_videos - args.bs * args.profile_warmup * dp_size
         print(f"throughput (samples/s): {num_samples_after_warmup / sum(total_time)}")
-        print(f"average frame extraction time per sample: {sum(frame_extraction_time) / num_samples_after_warmup}")
         print(f"average encode time per sample: {sum(encode_time) / num_samples_after_warmup}")
         print(f"average generate time per sample: {sum(generate_time) / num_samples_after_warmup}")
         print(f"average number of tokens characters per sample: {sum(output_length) / num_samples_after_warmup}")
