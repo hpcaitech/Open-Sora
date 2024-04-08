@@ -43,7 +43,14 @@ model = dict(
 # Others
 seed = 42
 save_dir = "outputs/samples"
-batch_size = 8
+wandb = False
 
+
+epochs = 5
+log_every = 1
+ckpt_every = 1000
+load = None
+
+batch_size = 8
 grad_clip = 1.0
-grad_checkpoint = True
+lr = 1e-4
