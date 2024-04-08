@@ -59,8 +59,6 @@ def main():
 
 
 
-
-
     # 2.3 DEBUG: USE BOOSTER
     # 2.3. initialize ColossalAI booster
     if cfg.plugin == "zero2":
@@ -158,8 +156,11 @@ def main():
 
     ###  TODO: DEBUG, USE booster
     torch.set_default_dtype(dtype)
-    vae, optimizer, _, dataloader, lr_scheduler = booster.boost(
-        model=vae, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
+    # vae, optimizer, _, dataloader, lr_scheduler = booster.boost(
+    #     model=vae, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
+    # )
+    vae, _, _, dataloader, _ = booster.boost(
+        model=vae, dataloader=dataloader
     )
     torch.set_default_dtype(torch.float)
 
@@ -167,9 +168,9 @@ def main():
     # load model using booster
     print("loading:", cfg.model["from_pretrained"])
     booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
-    booster.load_optimizer(optimizer, os.path.join(cfg.model["from_pretrained"], "optimizer"))
-    if lr_scheduler is not None:
-        booster.load_lr_scheduler(lr_scheduler, os.path.join(cfg.model["from_pretrained"], "lr_scheduler"))
+    # booster.load_optimizer(optimizer, os.path.join(cfg.model["from_pretrained"], "optimizer"))
+    # if lr_scheduler is not None:
+    #     booster.load_lr_scheduler(lr_scheduler, os.path.join(cfg.model["from_pretrained"], "lr_scheduler"))
     # running_states = load_json(os.path.join(cfg.load, "running_states.json"))
     dist.barrier()
     # start_epoch, start_step, sampler_start_idx = running_states["epoch"], running_states["step"], running_states["sample_start_index"]
