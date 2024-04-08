@@ -53,7 +53,7 @@ def main(args):
     writer.writerow(["video", "text"])
 
     # make sure that the prompt type matches the data type
-    data_extension = dataset.data["path"].iloc[0].split(".")[-1]
+    data_extension = "." + dataset.data["path"].iloc[0].split(".")[-1]
     prompt_type = PROMPTS[args.prompt]["type"]
     if prompt_type == "image":
         assert (
