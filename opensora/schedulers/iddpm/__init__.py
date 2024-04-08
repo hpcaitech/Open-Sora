@@ -22,6 +22,7 @@ class IDDPM(SpacedDiffusion):
         rescale_learned_sigmas=False,
         diffusion_steps=1000,
         cfg_scale=4.0,
+        cfg_channel=None,
     ):
         betas = gd.get_named_beta_schedule(noise_schedule, diffusion_steps)
         if use_kl:
@@ -49,6 +50,7 @@ class IDDPM(SpacedDiffusion):
         )
 
         self.cfg_scale = cfg_scale
+        self.cfg_channel = cfg_channel
 
     def sample(
         self,
@@ -68,7 +70,7 @@ class IDDPM(SpacedDiffusion):
         if additional_args is not None:
             model_args.update(additional_args)
 
-        forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)
+        forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale, cfg_channel=self.cfg_channel)
         samples = self.p_sample_loop(
             forward,
             z.shape,
@@ -82,13 +84,15 @@ class IDDPM(SpacedDiffusion):
         return samples
 
 
-def forward_with_cfg(model, x, timestep, y, cfg_scale, **kwargs):
+def forward_with_cfg(model, x, timestep, y, cfg_scale, cfg_channel=None, **kwargs):
     # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
     half = x[: len(x) // 2]
     combined = torch.cat([half, half], dim=0)
     model_out = model.forward(combined, timestep, y, **kwargs)
     model_out = model_out["x"] if isinstance(model_out, dict) else model_out
-    eps, rest = model_out[:, :3], model_out[:, 3:]
+    if cfg_channel is None:
+        cfg_channel = model_out.shape[1] // 2
+    eps, rest = model_out[:, :cfg_channel], model_out[:, cfg_channel:]
     cond_eps, uncond_eps = torch.split(eps, len(eps) // 2, dim=0)
     half_eps = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
     eps = torch.cat([half_eps, half_eps], dim=0)

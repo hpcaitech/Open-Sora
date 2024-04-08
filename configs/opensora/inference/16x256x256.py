@@ -14,21 +14,23 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
+    micro_batch_size=4,
 )
 text_encoder = dict(
     type="t5",
-    from_pretrained="./pretrained_models/t5_ckpts",
+    from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=120,
 )
 scheduler = dict(
     type="iddpm",
     num_sampling_steps=100,
     cfg_scale=7.0,
+    cfg_channel=3, # or None
 )
 dtype = "fp16"
 
 # Others
-batch_size = 2
+batch_size = 1
 seed = 42
 prompt_path = "./assets/texts/t2v_samples.txt"
 save_dir = "./outputs/samples/"

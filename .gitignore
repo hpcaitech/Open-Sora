@@ -175,6 +175,7 @@ pretrained_models/
 
 # Secret files
 hostfile
+gradio_cached_examples/
 
 # cog demo files
 output*.mp4
