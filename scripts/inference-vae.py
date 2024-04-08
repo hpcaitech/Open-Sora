@@ -121,7 +121,7 @@ def main():
 
     with tqdm(
             range(total_steps),
-            desc=f"Avg Loss: {running_loss}",
+            # desc=f"Avg Loss: {running_loss}",
             disable=not coordinator.is_master(),
             total=total_steps,
             initial=0,
