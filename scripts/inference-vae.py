@@ -139,13 +139,13 @@ def main():
     os.makedirs(save_dir, exist_ok=True)
 
 
-    ###  TODO: DEBUG, USE booster
-    torch.set_default_dtype(dtype)
-    vae, _, _, dataloader, _ = booster.boost(
-        model=vae, dataloader=dataloader
-    )
-    # load model using booster
-    booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
+    # ###  TODO: DEBUG, USE booster
+    # torch.set_default_dtype(dtype)
+    # vae, _, _, dataloader, _ = booster.boost(
+    #     model=vae, dataloader=dataloader
+    # )
+    # # load model using booster
+    # booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
 
 
     # 4.1. batch generation
