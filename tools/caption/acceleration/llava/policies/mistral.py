@@ -2,13 +2,13 @@ import warnings
 from typing import Dict, Union
 
 import torch.nn as nn
-from colossalai.shardformer.layer import Linear1D_Col, Linear1D_Row
+from colossalai.shardformer.layer import Linear1D_Col, Linear1D_Row, VocabParallelEmbedding1D
 from colossalai.shardformer.policies.base_policy import ModulePolicyDescription, Policy, SubModuleReplacementDescription
 
-__all__ = ["LlavaPolicy", "LlavaForCausalLMPolicy"]
+__all__ = ["LlavaMistralPolicy", "LlavaMistralForCausalLMPolicy"]
 
 
-class LlavaPolicy(Policy):
+class LlavaMistralPolicy(Policy):
     def config_sanity_check(self):
         pass
 
@@ -25,25 +25,25 @@ class LlavaPolicy(Policy):
         return self.model
 
     def module_policy(self) -> Dict[Union[str, nn.Module], ModulePolicyDescription]:
-        from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+        from transformers.models.mistral.modeling_mistral import MistralDecoderLayer, MistralModel
 
         policy = {}
 
         if self.shard_config.enable_sequence_parallelism:
             self.shard_config.enable_sequence_parallelism = False
-            warnings.warn("Llama doesn't support sequence parallelism now, will ignore the sequence parallelism flag.")
+            warnings.warn(
+                "Mistral doesn't support sequence parallelism now, will ignore the sequence parallelism flag."
+            )
 
         if self.shard_config.enable_tensor_parallelism:
             decoder_attribute_replacement = {
                 "self_attn.hidden_size": self.model.config.hidden_size // self.shard_config.tensor_parallel_size,
                 "self_attn.num_heads": self.model.config.num_attention_heads // self.shard_config.tensor_parallel_size,
+                "self_attn.num_key_value_heads": self.model.config.num_key_value_heads
+                // self.shard_config.tensor_parallel_size,
             }
-            if getattr(self.model.config, "num_key_value_heads", False):
-                decoder_attribute_replacement["self_attn.num_key_value_heads"] = (
-                    self.model.config.num_key_value_heads // self.shard_config.tensor_parallel_size
-                )
 
-            policy[LlamaDecoderLayer] = ModulePolicyDescription(
+            policy[MistralDecoderLayer] = ModulePolicyDescription(
                 attribute_replacement=decoder_attribute_replacement,
                 sub_module_replacement=[
                     SubModuleReplacementDescription(
@@ -77,26 +77,36 @@ class LlavaPolicy(Policy):
                 ],
             )
 
+            self.append_or_create_submodule_replacement(
+                description=SubModuleReplacementDescription(
+                    suffix="embed_tokens",
+                    target_module=VocabParallelEmbedding1D,
+                ),
+                policy=policy,
+                target_key=MistralModel,
+            )
+
         return policy
 
     def postprocess(self):
         return self.model
 
 
-class LlavaForCausalLMPolicy(LlavaPolicy):
+class LlavaMistralForCausalLMPolicy(LlavaMistralPolicy):
     def module_policy(self):
-        from transformers import LlamaForCausalLM
+        from transformers import MistralForCausalLM
 
         policy = super().module_policy()
+
         if self.shard_config.enable_tensor_parallelism:
             # add a new item for casual lm
             new_item = {
-                LlamaForCausalLM: ModulePolicyDescription(
+                MistralForCausalLM: ModulePolicyDescription(
                     sub_module_replacement=[
                         SubModuleReplacementDescription(
-                            suffix="lm_head", target_module=Linear1D_Col, kwargs={"gather_output": True}
+                            suffix="lm_head", target_module=Linear1D_Col, kwargs=dict(gather_output=True)
                         )
-                    ],
+                    ]
                 )
             }
             policy.update(new_item)
