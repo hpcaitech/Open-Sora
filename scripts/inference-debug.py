@@ -161,6 +161,7 @@ def main():
 
 
     # load model using booster
+    print("loading:", cfg.model["from_pretrained"])
     booster.load_model(vae, os.path.join(cfg.model["from_pretrained"], "model"))
     # booster.load_optimizer(optimizer, os.path.join(cfg.load, "optimizer"))
     # if lr_scheduler is not None:
