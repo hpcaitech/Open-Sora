@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 import torchvision
@@ -94,7 +96,7 @@ def read_video_from_path(path, transform=None, image_size=(256, 256)):
 
 
 def read_from_path(path, image_size):
-    ext = path.split(".")[-1]
+    ext = os.path.splitext(path)[-1].lower()
     if ext.lower() in VID_EXTENSIONS:
         return read_video_from_path(path, image_size=image_size)
     else:
