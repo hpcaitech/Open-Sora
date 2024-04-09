@@ -349,7 +349,7 @@ class Decoder(nn.Module):
     
 
 @MODELS.register_module()
-class VAE_3D(nn.Module):
+class VAE_3D_V2(nn.Module):
     """The 3D VAE """
     def __init__(
         self, 
@@ -456,9 +456,9 @@ class VAE_3D(nn.Module):
         return dec, posterior
     
 
-@MODELS.register_module("VAE_3D_B")
-def VAE_3D_B(from_pretrained=None, **kwargs):
-    model = VAE_3D(**kwargs)
+@MODELS.register_module("VAE_MAGVIT_V2")
+def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
+    model = VAE_3D_V2(**kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
