@@ -61,8 +61,12 @@ class CausalConv3d(nn.Module):
         self.time_causal_padding = (width_pad, width_pad, height_pad, height_pad, time_pad, 0)
 
         stride = strides if strides is not None else (stride, 1, 1)
+        padding = kwargs.pop('padding', 0)
+
+        if padding == "same" and not all([pad == 1 for pad in padding]):
+            padding = "valid"
         dilation = (dilation, 1, 1)
-        self.conv = nn.Conv3d(chan_in, chan_out, kernel_size, stride = stride, dilation = dilation, **kwargs)
+        self.conv = nn.Conv3d(chan_in, chan_out, kernel_size, stride = stride, dilation = dilation, padding=padding, **kwargs)
 
     def forward(self, x):
         pad_mode = self.pad_mode if self.time_pad < x.shape[2] else 'constant'
@@ -153,8 +157,8 @@ class Encoder(nn.Module):
 
         self.conv_fn = functools.partial(
             CausalConv3d,
-            dtype=dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
+            dtype=dtype,
             device=device,
         )
         
