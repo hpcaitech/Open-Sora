@@ -1,6 +1,6 @@
 num_frames = 16
 frame_interval = 3
-image_size = (256, 256)
+image_size = (128, 128)
 
 # Define dataset
 root = None
@@ -23,11 +23,11 @@ perceptual_weight = 0.1 # TODO: need to change this to 0.1 !!! according to MAGV
 model = dict(
     type="VAE_3D_B",
     in_out_channels = 3,
-    latent_embed_dim = 256,
-    filters = 64,
-    num_res_blocks = 2,
+    latent_embed_dim = 16,
+    filters = 128,
+    num_res_blocks = 4,
     channel_multipliers = (1, 2, 2, 4),
-    temporal_downsample = (True, True, False),
+    temporal_downsample = (False, True, True),
     num_groups = 32, # for nn.GroupNorm
     conv_downsample = False,
     upsample = "nearest+conv", # options: "deconv", "nearest+conv"
