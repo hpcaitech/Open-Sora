@@ -52,10 +52,16 @@ torchrun --nproc_per_node 2 --standalone -m tools.caption.caption_llava DATA.csv
 # can also caption images
 torchrun --nproc_per_node 2 --standalone -m tools.caption.caption_llava DATA.csv --tp-size 2 --dp-size 1 --bs 16 --prompt image-3ex
 
+# caption with llava-34B
+# NOTE: remember to enable flash attention for this model
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava DATA.csv --dp-size 4 --tp-size 2 --model-path liuhaotian/llava-v1.6-34b --prompt image-3ex --flash-attention
+
 # caption with mistral-7B
 torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava DATA.csv --dp-size 8 --tp-size 1 --model-path liuhaotian/llava-v1.6-mistral-7b --prompt video
 # bs can be 48
 ```
+
+Please note that you should add the `--flash-attention` flag when running with Llama-based Llava models as it provides speedup but do turn it off for mistral-based ones. Reasons can be found in [this issue](https://discuss.huggingface.co/t/flash-attention-has-no-effect-on-inference/73453).
 
 After running the script, with `dp-size=N`, you will get `N` parts of csv files. Run the following command to merge them:
 
