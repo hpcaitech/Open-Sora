@@ -9,6 +9,7 @@ from opensora.models.vae import model_utils
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
 from einops import rearrange
+import torch.nn.functional as F
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -71,7 +72,7 @@ class CausalConv3d(nn.Module):
     def forward(self, x):
         pad_mode = self.pad_mode if self.time_pad < x.shape[2] else 'constant'
 
-        x = nn.F.pad(x, self.time_causal_padding, mode = pad_mode)
+        x = F.pad(x, self.time_causal_padding, mode = pad_mode)
         return self.conv(x)
 
 
