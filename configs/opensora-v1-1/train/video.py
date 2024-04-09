@@ -34,7 +34,7 @@ sp_size = 1
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    from_pretrained="PixArt-XL-2-1024-MS.pth",
+    from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
     enable_flashattn=True,
     enable_layernorm_kernel=True,

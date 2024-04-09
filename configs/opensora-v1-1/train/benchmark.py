@@ -13,7 +13,7 @@ bucket_config = {
     # "240p": {32: (1.0, 8)},  # 4.6s/it
     # "240p": {16: (1.0, 16)},  # 4.6s/it
     # "480p": {16: (1.0, 4)},  # 4.6s/it
-    "720p": {16: (1.0, 2)},
+    "720p": {16: (1.0, 2)},  # 5.89s/it
     # "256": {1: (1.0, 256)},  # 4.5s/it
     # "512": {1: (1.0, 96)}, # 4.7s/it
     # "512": {1: (1.0, 128)}, # 6.3s/it
@@ -38,7 +38,7 @@ sp_size = 1
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    from_pretrained="PixArt-XL-2-1024-MS.pth",
+    from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
     enable_flashattn=True,
     enable_layernorm_kernel=True,
@@ -51,7 +51,7 @@ vae = dict(
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
-    model_max_length=300,
+    model_max_length=200,
     shardformer=True,
 )
 scheduler = dict(

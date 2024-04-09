@@ -32,7 +32,7 @@ pretrained_models = {
 
 
 def reparameter(ckpt, name=None, model=None):
-    if "DiT" in name:
+    if "DiT-XL" in name and "STDiT" not in name:
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
     elif "Latte" in name:
@@ -47,12 +47,16 @@ def reparameter(ckpt, name=None, model=None):
 
     # different text length
     if "y_embedder.y_embedding" in ckpt:
-        if ckpt["y_embedder.y_embedding"].shape[0] > model.y_embedder.y_embedding.shape[0]:
+        if ckpt["y_embedder.y_embedding"].shape[0] < model.y_embedder.y_embedding.shape[0]:
             additional_length = model.y_embedder.y_embedding.shape[0] - ckpt["y_embedder.y_embedding"].shape[0]
             new_y_embedding = torch.randn(additional_length, model.y_embedder.y_embedding.shape[1])
             ckpt["y_embedder.y_embedding"] = torch.cat([ckpt["y_embedder.y_embedding"], new_y_embedding], dim=0)
-        elif ckpt["y_embedder.y_embedding"].shape[0] < model.y_embedder.y_embedding.shape[0]:
+        elif ckpt["y_embedder.y_embedding"].shape[0] > model.y_embedder.y_embedding.shape[0]:
             ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
+    if "pos_embed_temporal" in ckpt:
+        del ckpt["pos_embed_temporal"]
+    if "pos_embed" in ckpt:
+        del ckpt["pos_embed"]
     return ckpt
 
 
@@ -63,17 +67,11 @@ def find_model(model_name, model=None):
     if model_name in pretrained_models:  # Find/download our pre-trained DiT checkpoints
         model_ckpt = download_model(model_name)
         model_ckpt = reparameter(model_ckpt, model_name, model=model)
-        return model_ckpt
     else:  # Load a custom DiT checkpoint:
         assert os.path.isfile(model_name), f"Could not find DiT checkpoint at {model_name}"
-        checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage)
-        if "pos_embed_temporal" in checkpoint:
-            del checkpoint["pos_embed_temporal"]
-        if "pos_embed" in checkpoint:
-            del checkpoint["pos_embed"]
-        if "ema" in checkpoint:  # supports checkpoints from train.py
-            checkpoint = checkpoint["ema"]
-        return checkpoint
+        model_ckpt = torch.load(model_name, map_location=lambda storage, loc: storage)
+        model_ckpt = reparameter(model_ckpt, model_name, model=model)
+    return model_ckpt
 
 
 def download_model(model_name):
