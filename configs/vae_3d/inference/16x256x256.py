@@ -46,7 +46,7 @@ save_dir = "outputs/samples"
 wandb = False
 
 
-epochs = 5
+epochs = 10
 log_every = 1
 ckpt_every = 1000
 load = None
