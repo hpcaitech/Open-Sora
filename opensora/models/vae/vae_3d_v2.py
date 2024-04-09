@@ -8,7 +8,6 @@ from numpy import typing as nptyping
 from opensora.models.vae import model_utils 
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
-from einops.layers.torch import Rearrange # NOTE: this is a torch module
 from einops import rearrange
 
 """Encoder and Decoder stuctures with 3D CNNs."""
