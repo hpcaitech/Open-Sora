@@ -449,18 +449,10 @@ def main(args):
 
     # make intersection
     if args.intersection is not None:
-        data_int = pd.read_csv(args.intersection)
-        print(f"Intersection csv contains {len(data_int)} samples.")
-        data = data[data["path"].isin(data_int["path"])]
-        input_name += f"-{os.path.basename(args.intersection).split('.')[0]}"
-        # get additional data column from intersection
-        int_new_keys = [k for k in data_int.keys() if not k in data]
-        for k in int_new_keys:
-            # get corresponding values
-            data[k] = apply(data["path"], lambda x: get_key_val_given_path(x, k, data_int))
-
-        print(f"added {len(int_new_keys)} keys from {args.intersection}: {int_new_keys}")
-        print(f"Filtered number of samples: {len(data)}.")
+        data_new = pd.read_csv(args.intersection)
+        print(f"Intersection csv contains {len(data_new)} samples.")
+        data = pd.merge(data, data_new, on="path", how="inner")
+        print(f"Intersection number of samples: {len(data)}.")
 
     # get output path
     output_path = get_output_path(args, input_name)
