@@ -21,7 +21,7 @@ perceptual_weight = 0.1 # TODO: need to change this to 0.1 !!! according to MAGV
 # Define model
 
 model = dict(
-    type="VAE_3D_B",
+    type="VAE_MAGVIT_V2",
     in_out_channels = 3,
     latent_embed_dim = 16,
     filters = 128,
