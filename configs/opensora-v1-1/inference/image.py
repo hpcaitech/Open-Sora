@@ -1,7 +1,7 @@
 num_frames = 1
 fps = 24 // 3
-# image_size = (1358, 680)
-image_size = (256, 256)
+image_size = (1358, 680)
+# image_size = (256, 256)
 multi_resolution = "STDiT2"
 
 # Define model
@@ -14,7 +14,7 @@ model = dict(
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sdxl-vae",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
     micro_batch_size=4,
 )
 text_encoder = dict(
