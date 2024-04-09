@@ -135,6 +135,7 @@ def main():
             running_loss = loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
 
             if coordinator.is_master():
+                pbar.set_postfix({"loss": loss, "running_loss": running_loss, "step": step})
                 for idx, sample in enumerate(reconstructions):
                     pos = step * cfg.batch_size + idx
                     save_path = os.path.join(save_dir, f"sample_{pos}")

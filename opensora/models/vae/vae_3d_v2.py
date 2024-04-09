@@ -8,6 +8,8 @@ from numpy import typing as nptyping
 from opensora.models.vae import model_utils 
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
+from einops.layers.torch import Rearrange # NOTE: this is a torch module
+from einops import rearrange
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -22,70 +24,109 @@ NOTE:
 TODO:
     check data dimensions format
 """
+def cast_tuple(t, length = 1):
+    return t if isinstance(t, tuple) else ((t,) * length)
+
+def divisible_by(num, den):
+    return (num % den) == 0
+
+def is_odd(n):
+    return not divisible_by(n, 2)
+
+class CausalConv3d(nn.Module):
+    def __init__(
+        self,
+        chan_in,
+        chan_out,
+        kernel_size: Union[int, Tuple[int, int, int]],
+        pad_mode = 'constant',
+        **kwargs
+    ):
+        super().__init__()
+        kernel_size = cast_tuple(kernel_size, 3)
+
+        time_kernel_size, height_kernel_size, width_kernel_size = kernel_size
+
+        assert is_odd(height_kernel_size) and is_odd(width_kernel_size)
+
+        dilation = kwargs.pop('dilation', 1)
+        stride = kwargs.pop('stride', 1)
+
+        self.pad_mode = pad_mode
+        time_pad = dilation * (time_kernel_size - 1) + (1 - stride)
+        height_pad = height_kernel_size // 2
+        width_pad = width_kernel_size // 2
+
+        self.time_pad = time_pad
+        self.time_causal_padding = (width_pad, width_pad, height_pad, height_pad, time_pad, 0)
+
+        stride = (stride, 1, 1)
+        dilation = (dilation, 1, 1)
+        self.conv = nn.Conv3d(chan_in, chan_out, kernel_size, stride = stride, dilation = dilation, **kwargs)
+
+    def forward(self, x):
+        pad_mode = self.pad_mode if self.time_pad < x.shape[2] else 'constant'
+
+        x = nn.F.pad(x, self.time_causal_padding, mode = pad_mode)
+        return self.conv(x)
+
+# TODO: CausalConvTranspose3d
 
 class ResBlock(nn.Module):
     def __init__(
             self, 
-            in_out_channels, # SCH: added
+            in_channels, # SCH: added
             filters, 
-            # norm_fn, # SCH: removed, use GN
-            conv_fn, 
-            activation_fn=nn.ReLU, 
+            conv_fn,
+            activation_fn=nn.SiLU, 
             use_conv_shortcut=False,
             num_groups=32,
             device="cpu",
             dtype=torch.bfloat16,
     ):
         super().__init__()
+        self.in_channels = in_channels
         self.filters = filters
         self.activate = activation_fn()
         self.use_conv_shortcut = use_conv_shortcut
         
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_out_channels, device=device, dtype=dtype)
-        self.conv1 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
+        self.norm1 = nn.GroupNorm(num_groups, in_channels, device=device, dtype=dtype)
+        self.conv1 = conv_fn(in_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
         self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
-        if self.use_conv_shortcut:
-            self.conv3 = conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        else:
-            self.conv3 = conv_fn(in_out_channels, self.filters, kernel_size=(1, 1, 1), bias=False)
+        if in_channels != filters:
+            if self.use_conv_shortcut:
+                self.conv3 = conv_fn(in_channels, self.filters, kernel_size=(3, 3, 3), bias=False) 
+            else:
+                self.conv3 = conv_fn(in_channels, self.filters, kernel_size=(1, 1, 1), bias=False)
 
 
     def forward(self, x):
-        device, dtype = x.device, x.dtype
-        input_dim = x.shape[1]
+        # device, dtype = x.device, x.dtype
+        # input_dim = x.shape[1]
         residual = x
-        x = self.norm1.to(device,dtype)(x)
+        x = self.norm1(x)
         x = self.activate(x)
-        x = self.conv1.to(device,dtype)(x)
-        x = self.norm2.to(device, dtype)(x)
+        x = self.conv1(x)
+        x = self.norm2(x)
         x = self.activate(x)
-        x = self.conv2.to(device, dtype)(x)
-        if input_dim != self.filters: # TODO: what does it do here
-            residual = self.conv3.to(device, dtype)(residual)
+        x = self.conv2(x)
+        if self.in_channels != self.filters: # SCH: ResBlock X->Y
+            residual = self.conv3(residual)
         return x + residual 
-    
-def _get_selected_flags(total_len: int, select_len: int, suffix: bool):
-    assert select_len <= total_len
-    selected = np.zeros(total_len, dtype=bool)
-    if not suffix:
-        selected[:select_len] = True
-    else:
-        selected[-select_len:] = True
-    return selected
 
 
 class Encoder(nn.Module):
     """Encoder Blocks."""
     def __init__(self, 
-        filters = 64,
-        num_res_blocks = 2,
+        filters = 128,
+        num_res_blocks = 4,
         channel_multipliers = (1, 2, 2, 4),
-        temporal_downsample = (True, True, False),
+        temporal_downsample = (False, True, True),
         num_groups = 32, # for nn.GroupNorm
         in_out_channels = 3, # SCH: added, in_channels at the start
-        latent_embed_dim = 256, # num channels for latent vector
+        latent_embed_dim = 512, # num channels for latent vector
         conv_downsample = False, 
         custom_conv_padding = None,
         activation_fn = 'swish',
@@ -98,16 +139,10 @@ class Encoder(nn.Module):
         self.channel_multipliers = channel_multipliers
         self.temporal_downsample = temporal_downsample
         self.num_groups = num_groups
-
-        if isinstance(self.temporal_downsample, int):
-            self.temporal_downsample = _get_selected_flags(
-                len(self.channel_multipliers) - 1, self.temporal_downsample, False)
             
         self.embedding_dim = latent_embed_dim
         self.conv_downsample = conv_downsample
         self.custom_conv_padding = custom_conv_padding
-        # self.norm_type = self.config.vqvae.norm_type
-        # self.num_remat_block = self.config.vqvae.get('num_enc_remat_blocks', 0)
 
         if activation_fn == 'relu':
             self.activation_fn = nn.ReLU
@@ -118,18 +153,13 @@ class Encoder(nn.Module):
         self.activate = self.activation_fn()
 
         self.conv_fn = functools.partial(
-            nn.Conv3d,
+            CausalConv3d,
             dtype=dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
-            # custom_padding=self.custom_conv_padding
             device=device,
         )
         
-        # self.norm_fn = model_utils.get_norm_layer(
-        #     norm_type=self.norm_type, dtype=self.dtype)
-        
         self.block_args = dict(
-            # norm_fn=self.norm_fn,
             conv_fn=self.conv_fn,
             dtype=dtype,
             activation_fn=self.activation_fn,
@@ -156,17 +186,11 @@ class Encoder(nn.Module):
                 prev_filters = filters # update in_channels
             self.block_res_blocks.append(block_items)
             
-            if i < self.num_blocks - 1:
-                # conv blocks handling
-                if self.conv_downsample:
-                    t_stride = 2 if self.temporal_downsample[i] else 1
-                    t_pad = 1 if self.temporal_downsample[i] else 0
-                    self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(4, 4, 4), strides=(t_stride, 2, 2)), padding=(t_pad,1,1)) # SCH: should be same in_channel and out_channel
-                    prev_filters = filters # update in_channels
+            if i < self.num_blocks - 1: # SCH: T-Causal Conv 3x3x3, 128->128, stride t x 2 x 2
+                t_stride = 2 if self.temporal_downsample[i] else 1
+                self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(3, 3, 3), strides=(t_stride, 2, 2))) # SCH: should be same in_channel and out_channel
+                prev_filters = filters # update in_channels
 
-        # NOTE: downsample, dimensions T, H, W
-        self.avg_pool_with_t = nn.AvgPool3d((2,2,2), count_include_pad=False)
-        self.avg_pool = nn.AvgPool3d((1,2,2), count_include_pad=False)
 
         # last layer res block
         self.res_blocks = []
@@ -177,30 +201,26 @@ class Encoder(nn.Module):
         # MAGVIT uses Group Normalization
         self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, dtype=dtype, device=device) # SCH: separate <prev_filters> channels into 32 groups
 
-        self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1))
+        # TODO: check if this is correct ??
+        self.conv2 = nn.Conv3d(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1), dtype=dtype, device=device, padding="same")
 
     def forward(self, x):
-        dtype, device = x.dtype, x.device
-        x = self.conv1.to(device, dtype)(x)
+        # dtype, device = x.dtype, x.device
+        x = self.conv1(x)
         for i in range(self.num_blocks):
             for j in range(self.num_res_blocks):
                 x = self.block_res_blocks[i][j](x)
 
             if i < self.num_blocks - 1:
-                if self.conv_downsample:
-                    x = self.conv_blocks[i].to(device, dtype)(x)
-                else:
-                    if self.temporal_downsample[i]:
-                        x = self.avg_pool_with_t(x)
-                    else:
-                        x = self.avg_pool(x)
+                x = self.conv_blocks[i](x)
+                
 
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
 
-        x = self.norm1.to(device, dtype)(x)
+        x = self.norm1(x)
         x = self.activate(x)
-        x = self.conv2.to(device, dtype)(x)
+        x = self.conv2(x)
         return x
     
 
@@ -208,14 +228,14 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """Decoder Blocks."""
     def __init__(self, 
-        latent_embed_dim = 256,
-        filters = 64,
+        latent_embed_dim = 512,
+        filters = 128,
         in_out_channels = 4,
-        num_res_blocks = 2,
+        num_res_blocks = 4,
         channel_multipliers = (1, 2, 2, 4),
-        temporal_downsample = (True, True, False),
+        temporal_downsample = (False, True, True),
         num_groups = 32, # for nn.GroupNorm
-        upsample = "nearest+conv", # options: "deconv", "nearest+conv"
+        # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
         custom_conv_padding = None,
         activation_fn = 'swish',
         device="cpu",
@@ -229,12 +249,8 @@ class Decoder(nn.Module):
         self.channel_multipliers = channel_multipliers
         self.temporal_downsample = temporal_downsample
         self.num_groups = num_groups
-
-        if isinstance(self.temporal_downsample, int):
-            self.temporal_downsample = _get_selected_flags(
-                len(self.channel_multipliers) - 1, self.temporal_downsample, False)
             
-        self.upsample = upsample
+        # self.upsample = upsample
         self.custom_conv_padding = custom_conv_padding
         # self.norm_type = self.config.vqvae.norm_type
         # self.num_remat_block = self.config.vqvae.get('num_dec_remat_blocks', 0)
@@ -248,20 +264,13 @@ class Decoder(nn.Module):
         self.activate = self.activation_fn()
 
         self.conv_fn = functools.partial(
-            nn.Conv3d,
+            CausalConv3d,
             dtype=dtype,
             padding='valid' if self.custom_conv_padding is not None else 'same', # SCH: lower letter for pytorch
-            # custom_padding=self.custom_conv_padding
             device=device,
         )
 
-        self.conv_t_fn = functools.partial(nn.ConvTranspose3d, dtype=dtype)
-
-        # self.norm_fn = model_utils.get_norm_layer(
-        #     norm_type=self.norm_type, dtype=dtype)
-
         self.block_args = dict(
-            # norm_fn=self.norm_fn,
             conv_fn=self.conv_fn,
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
@@ -280,10 +289,11 @@ class Decoder(nn.Module):
         for _ in range(self.num_res_blocks):
             self.res_blocks.append(ResBlock(filters, filters, **self.block_args))
 
+        # TODO: do I need to add adaptive GroupNorm in between each block?
 
-        # NOTE: upsample, dimensions T, H, W
-        self.upsampler_with_t = nn.Upsample(scale_factor=(2,2,2))
-        self.upsampler = nn.Upsample(scale_factor=(1,2,2))
+        # # NOTE: upsample, dimensions T, H, W
+        # self.upsampler_with_t = nn.Upsample(scale_factor=(2,2,2))
+        # self.upsampler = nn.Upsample(scale_factor=(1,2,2))
 
         # ResBlocks and conv upsample
         prev_filters = filters # SCH: in_channels
@@ -300,22 +310,13 @@ class Decoder(nn.Module):
                 prev_filters = filters # SCH: update in_channels
             self.block_res_blocks.insert(0, block_items) # SCH: append in front
             
-            # conv blocks handling
+            # conv blocks with upsampling
             if i > 0:
                 t_stride = 2 if self.temporal_downsample[i - 1] else 1
-                t_kernel = 4 if self.temporal_downsample[i - 1] else 3 # SCH: hack to keep dimension same
-                if self.upsample == "deconv":
-                    assert self.custom_conv_padding is None, ('Custom padding not implemented for ConvTranspose')
-                    # SCH: append in front
-                    self.conv_blocks.insert(0,  
-                        self.conv_t_fn(prev_filters, filters, kernel_size=(t_kernel, 4, 4), stride=(t_stride, 2, 2), padding=1))
-                    prev_filters = filters # SCH: update in_channels
-                elif self.upsample == 'nearest+conv':
-                    # SCH: append in front 
-                    self.conv_blocks.insert(0, self.conv_fn(prev_filters, filters, kernel_size=(3, 3, 3)))
-                    prev_filters = filters # SCH: update in_channels
-                else:
-                    raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
+                # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
+                self.conv_blocks.insert(0, 
+                    self.conv_fn(prev_filters, prev_filters * t_stride * 4, kernel_size=(3,3,3))
+                )
                 
         self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device, dtype=dtype)
         self.conv2 = self.conv_fn(prev_filters, self.output_dim, kernel_size=(3, 3, 3))
@@ -327,7 +328,7 @@ class Decoder(nn.Module):
         **kwargs,
     ):
         dtype, device = x.dtype, x.device
-        x = self.conv1.to(device, dtype)(x)
+        x = self.conv1(x)
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
         for i in reversed(range(self.num_blocks)): # reverse here to make decoder symmetric with encoder
@@ -335,20 +336,15 @@ class Decoder(nn.Module):
                 x = self.block_res_blocks[i][j](x)
 
             if i > 0:
-                if self.upsample == 'deconv':
-                    assert self.custom_conv_padding is None, ('Custom padding not implemented for ConvTranspose')
-                    x = self.conv_blocks[i-1].to(device, dtype)(x)
-                elif self.upsample == 'nearest+conv':
-                    if self.temporal_downsample[i - 1]:
-                        x = self.upsampler_with_t(x)
-                    else:
-                        x = self.upsampler(x)
-                    x = self.conv_blocks[i-1].to(device, dtype)(x)
-                else:
-                    raise NotImplementedError(f'Unknown upsampler: {self.upsample}')
-        x = self.norm1.to(device, dtype)(x)
+                t_stride = 2 if self.temporal_downsample[i - 1] else 1
+                # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
+                x = self.conv_blocks[i-1](x)
+                x = rearrange(x, "B (C ts hs ws) T H W -> B C (T ts) (H hs) (W ws)", ts=t_stride, hs=2, ws=2)
+
+
+        x = self.norm1(x)
         x = self.activate(x)
-        x = self.conv2.to(device, dtype)(x)
+        x = self.conv2(x)
         return x
     
 
