@@ -161,7 +161,7 @@ class Encoder(nn.Module):
                 if self.conv_downsample:
                     t_stride = 2 if self.temporal_downsample[i] else 1
                     t_pad = 1 if self.temporal_downsample[i] else 0
-                    self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(4, 4, 4), strides=(t_stride, 2, 2)), padding=(t_pad,1,1)) # SCH: should be same in_channel and out_channel
+                    self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(4, 4, 4), stride=(t_stride, 2, 2)), padding=(t_pad,1,1)) # SCH: should be same in_channel and out_channel
                     prev_filters = filters # update in_channels
 
         # NOTE: downsample, dimensions T, H, W
