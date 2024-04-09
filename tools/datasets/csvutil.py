@@ -451,7 +451,9 @@ def main(args):
     if args.intersection is not None:
         data_new = pd.read_csv(args.intersection)
         print(f"Intersection csv contains {len(data_new)} samples.")
-        data = pd.merge(data, data_new, on="path", how="inner")
+        cols_to_use = data_new.columns.difference(data.columns)
+        cols_to_use = cols_to_use.insert(0, "path")
+        data = pd.merge(data, data_new[cols_to_use], on="path", how="inner")
         print(f"Intersection number of samples: {len(data)}.")
 
     # get output path
