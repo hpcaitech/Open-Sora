@@ -130,7 +130,7 @@ class Encoder(nn.Module):
         num_groups = 32, # for nn.GroupNorm
         in_out_channels = 3, # SCH: added, in_channels at the start
         latent_embed_dim = 512, # num channels for latent vector
-        conv_downsample = False, 
+        # conv_downsample = False, 
         custom_conv_padding = None,
         activation_fn = 'swish',
         device="cpu",
@@ -144,7 +144,7 @@ class Encoder(nn.Module):
         self.num_groups = num_groups
             
         self.embedding_dim = latent_embed_dim
-        self.conv_downsample = conv_downsample
+        # self.conv_downsample = conv_downsample
         self.custom_conv_padding = custom_conv_padding
 
         if activation_fn == 'relu':
@@ -362,8 +362,8 @@ class VAE_3D_V2(nn.Module):
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
         num_groups = 32, # for nn.GroupNorm
-        conv_downsample = False,
-        upsample = "nearest+conv", # options: "deconv", "nearest+conv"
+        # conv_downsample = False,
+        # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
         custom_conv_padding = None,
         activation_fn = 'swish',
         in_out_channels = 4, 
@@ -393,7 +393,7 @@ class VAE_3D_V2(nn.Module):
             num_groups = num_groups, # for nn.GroupNorm
             in_out_channels = in_out_channels,
             latent_embed_dim = latent_embed_dim, 
-            conv_downsample = conv_downsample, 
+            # conv_downsample = conv_downsample, 
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn, 
             device=device,
@@ -407,7 +407,7 @@ class VAE_3D_V2(nn.Module):
             channel_multipliers = channel_multipliers,
             temporal_downsample = temporal_downsample,
             num_groups = num_groups, # for nn.GroupNorm
-            upsample = upsample, # options: "deconv", "nearest+conv"
+            # upsample = upsample, # options: "deconv", "nearest+conv"
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn,
             device=device,
