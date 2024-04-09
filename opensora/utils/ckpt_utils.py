@@ -45,11 +45,14 @@ def reparameter(ckpt, name=None, model=None):
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
 
-        # different text length
-        if ckpt["y_embedder.y_embedding"].shape[0] != model.y_embedder.y_embedding.shape[0]:
+    # different text length
+    if "y_embedder.y_embedding" in ckpt:
+        if ckpt["y_embedder.y_embedding"].shape[0] > model.y_embedder.y_embedding.shape[0]:
             additional_length = model.y_embedder.y_embedding.shape[0] - ckpt["y_embedder.y_embedding"].shape[0]
             new_y_embedding = torch.randn(additional_length, model.y_embedder.y_embedding.shape[1])
             ckpt["y_embedder.y_embedding"] = torch.cat([ckpt["y_embedder.y_embedding"], new_y_embedding], dim=0)
+        elif ckpt["y_embedder.y_embedding"].shape[0] < model.y_embedder.y_embedding.shape[0]:
+            ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
     return ckpt
 
 

@@ -34,15 +34,14 @@ sp_size = 1
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    # from_pretrained="PixArt-XL-2-1024-MS.pth",
-    from_pretrained="/home/zhaowangbo/zangwei/opensora/outputs/422-STDiT2-XL-2/epoch9-global_step192500/model_ckpt.pt",
+    from_pretrained="PixArt-XL-2-1024-MS.pth",
     input_sq_size=512,  # pretrained model is trained on 512x512
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
     type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sdxl-vae",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
     micro_batch_size=4,
 )
 text_encoder = dict(
