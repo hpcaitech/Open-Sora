@@ -419,7 +419,7 @@ class VAE_3D_V2(nn.Module):
         if separate_first_frame_encoding:
             self.conv_in_first_frame = SameConv2d(in_out_channels, filters, (3,3))
             self.conv_out_first_frame = SameConv2d(filters, in_out_channels, (3,3))
-        self.conv_out = CausalConv3d(filters, in_out_channels, (3,3), dtype=dtype, device=device)
+        self.conv_out = CausalConv3d(filters, in_out_channels, 3, dtype=dtype, device=device)
 
 
         self.encoder = Encoder(
