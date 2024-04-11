@@ -1,4 +1,3 @@
-num_frames = 17
 frame_interval = 3
 image_size = (128, 128)
 
@@ -34,6 +33,7 @@ model = dict(
     image_size = image_size,
     separate_first_frame_encoding = False,
     perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
+    num_frames = 17,
 )
 
 # Others

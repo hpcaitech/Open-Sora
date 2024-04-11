@@ -9,10 +9,15 @@ from opensora.models.vae import model_utils
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
 from einops import rearrange, repeat, pack, unpack
+from einops.layers.torch import Rearrange
 import torch.nn.functional as F
 import torchvision
 from torchvision.models import VGG16_Weights
 from collections import namedtuple
+from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
+from torch import nn, einsum, Tensor
+from kornia.filters import filter3d
+import math
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -53,6 +58,18 @@ def pick_video_frame(video, frame_indices):
 
 def exists(v):
     return v is not None
+
+def hinge_discr_loss(fake, real):
+    return (F.relu(1 + fake) + F.relu(1 - real)).mean()
+
+def hinge_gen_loss(fake):
+    return -fake.mean()
+
+def xavier_uniform_weight_init(m):
+    if isinstance(m, nn.Conv3d) or isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain('relu'))
+        nn.init.zeros_(m.bias)
+        print("initialized module to xavier_uniform:", m)
 
 def Sequential(*modules):
     modules = [*filter(exists, modules)]
@@ -154,7 +171,161 @@ class ResBlock(nn.Module):
             residual = self.conv3(residual)
         return x + residual 
 
+# discriminator with anti-aliased downsampling (blurpool Zhang et al.)
+class Blur(nn.Module):
+    def __init__(self):
+        super().__init__()
+        f = torch.Tensor([1, 2, 1])
+        self.register_buffer('f', f)
 
+    def forward(
+        self,
+        x,
+        space_only = False,
+        time_only = False
+    ):
+        assert not (space_only and time_only)
+
+        f = self.f
+
+        if space_only:
+            f = einsum('i, j -> i j', f, f)
+            f = rearrange(f, '... -> 1 1 ...')
+        elif time_only:
+            f = rearrange(f, 'f -> 1 f 1 1')
+        else:
+            f = einsum('i, j, k -> i j k', f, f, f)
+            f = rearrange(f, '... -> 1 ...')
+
+        is_images = x.ndim == 4
+
+        if is_images:
+            x = rearrange(x, 'b c h w -> b c 1 h w')
+
+        out = filter3d(x, f, normalized = True)
+
+        if is_images:
+            out = rearrange(out, 'b c 1 h w -> b c h w')
+
+        return out
+    
+class ResBlockDown(nn.Module):
+    """3D StyleGAN ResBlock for D."""
+
+    def __init__(
+        self,
+        in_channels,
+        filters,
+        activation_fn,
+        num_groups=32,
+        device="cpu",
+        dtype=torch.bfloat16,
+    ):
+        super().__init__()
+
+        self.filters = filters
+        self.activation_fn = activation_fn
+
+        # SCH: NOTE: although paper says conv (X->Y, Y->Y), original code implementation is (X->X, X->Y), we follow code
+        self.conv1 = nn.Conv3d(in_channels, in_channels, (3,3,3)) # NOTE: init to xavier_uniform 
+        self.norm1 = nn.GroupNorm(num_groups, in_channels, device=device, dtype=dtype)
+
+        # SCH: NOTE: use blur pooling instead, pooling bias is False following enc dec conv pool
+        self.blur = Blur()
+        self.conv_pool_residual = nn.Conv3d(in_channels * 8, in_channels, 3, use_bias=False) # NOTE: init to xavier_uniform 
+        self.conv_pool_input = nn.Conv3d(in_channels * 8, in_channels, 3, use_bias=False) # NOTE: init to xavier_uniform 
+
+        self.conv2 = nn.Conv3d(in_channels, self.filters,(1,1,1), use_bias=False) # NOTE: init to xavier_uniform 
+        self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3)) # NOTE: init to xavier_uniform 
+        self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
+
+    def forward(self, x):
+        residual = x
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.activation_fn(x)
+
+        residual = self.blur(residual)
+        residual = rearrange(residual, 'b c (t pt) (h ph) (w pw) -> b (c pt ph pw) t h w', pt = 2, ph = 2, pw = 2)
+        residual = self.conv_pool_residual(residual)
+        residual = self.conv2(residual)
+
+        x = self.blur(x)
+        x = rearrange(x, 'b c (t pt) (h ph) (w pw) -> b (c pt ph pw) t h w', pt = 2, ph = 2, pw = 2)
+        x = self.conv_pool_input(x)
+        x = self.conv3(x)
+        x = self.norm2(x)
+        x = self.activation_fn(x)
+        out = (residual + x) / math.sqrt(2)
+        return out
+
+class StyleGANDiscriminator(nn.Module):
+    """StyleGAN Discriminator."""
+    """
+    SCH: NOTE: 
+        this discriminator requries the num_frames to be fixed during training;
+        in case we pre-train with image then train on video, this disciminator's Linear layer would have to be re-trained! 
+    """
+    def __init__(
+        self,
+        image_size = (128, 128),
+        num_frames = 17,
+        discriminator_in_channels = 3,
+        discriminator_filters = 128,
+        discriminator_channel_multipliers = (2,4,4,4,4),
+        num_groups=32,
+        dtype = torch.bfloat16,
+        device="cpu",
+    ):
+        self.dtype = dtype
+        self.input_size = cast_tuple(image_size, 2)
+        self.filters = discriminator_filters
+        self.activation_fn = nn.LeakyReLu(negative_slope=0.2)
+        self.channel_multipliers = discriminator_channel_multipliers
+
+        self.conv1 = nn.Conv3d(discriminator_in_channels, self.filters, (3, 3, 3)) # NOTE: init to xavier_uniform 
+
+        prev_filters = self.filters # record in_channels
+        self.num_blocks = len(self.channel_multipliers)
+        self.res_block_list = []
+        for i in range(self.num_blocks):
+            filters = self.filters * self.channel_multipliers[i]
+            self.res_block_list.append(ResBlockDown(prev_filters, filters, self.activation_fn))
+            prev_filters = filters # update in_channels 
+
+        self.conv2 = nn.Conv3d(prev_filters, prev_filters, (3,3,3)) # NOTE: init to xavier_uniform 
+        torch.nn.init.xavier_uniform(self.conv2.weight)
+
+        self.norm1 = nn.GroupNorm(num_groups, prev_filters, dtype=dtype, device=device)
+
+        scale_factor = 2 ** len(self.num_blocks)
+        if num_frames % scale_factor != 0: # SCH: NOTE: has first frame which would be padded before usage
+            time_scaled = num_frames // scale_factor + 1
+        else:
+            time_scaled = num_frames / scale_factor
+        w_scaled, h_scaled = self.input_size[0] / scale_factor, self.input_size[1] / scale_factor
+        in_features = prev_filters * time_scaled * w_scaled * h_scaled  # (C*T*W*H)
+        self.linear1 = nn.Linear(in_features, prev_filters, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
+        self.linear2 = nn.Linear(prev_filters, 1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
+
+    def forward(self, x):
+
+        x = self.conv1(x)
+        x = self.activation_fn(x)
+        
+        for i in range(self.num_blocks):
+            x = self.res_block_list[i](x)
+
+        x = self.conv2(x)
+        x = self.norm1(x)
+        x = self.activation_fn(x)
+        x = x.reshape((x.shape[0], -1)) # SCH: [B, (C * T * W * H)] ? 
+
+        x = self.linear1(x)
+        x = self.activation_fn(x)
+        x = self.linear2(x)
+        return x
+    
 class Encoder(nn.Module):
     """Encoder Blocks."""
     def __init__(self, 
@@ -227,7 +398,6 @@ class Encoder(nn.Module):
             
             if i < self.num_blocks - 1: # SCH: T-Causal Conv 3x3x3, 128->128, stride t x 2 x 2
                 t_stride = 2 if self.temporal_downsample[i] else 1
-                # TODO: conv_fn usess default stride t x 1 x 1, cannot 
                 self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(3, 3, 3), strides=(t_stride, 2, 2))) # SCH: should be same in_channel and out_channel
                 prev_filters = filters # update in_channels
 
@@ -265,8 +435,6 @@ class Encoder(nn.Module):
         x = self.conv2(x)
         return x
     
-
-
 class Decoder(nn.Module):
     """Decoder Blocks."""
     def __init__(self, 
@@ -392,7 +560,6 @@ class Decoder(nn.Module):
         # x = self.conv2(x) 
         return x
 
-
 LossBreakdown = namedtuple('LossBreakdown', [
     'recon_loss',
     'perceptual_loss',
@@ -417,10 +584,15 @@ class VAE_3D_V2(nn.Module):
         image_size = (128, 128),
         separate_first_frame_encoding = False,
         perceptual_loss_weight = 0.1,
+        adversarial_loss_weight = None,
         vgg = None,
         vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
+        num_frames = 17,
+        discriminator_in_channels = 3,
+        discriminator_filters = 128,
+        discriminator_channel_multipliers = (2,4,4,4,4),
         num_groups = 32, # for nn.GroupNorm
         # conv_downsample = False,
         # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
@@ -466,7 +638,7 @@ class VAE_3D_V2(nn.Module):
         self.conv_out = CausalConv3d(filters, in_out_channels, 3, dtype=dtype, device=device)
 
         self.encoder = Encoder(
-            filters=filters, 
+            filters = filters, 
             num_res_blocks=num_res_blocks, 
             channel_multipliers=channel_multipliers, 
             temporal_downsample=temporal_downsample,
@@ -476,8 +648,8 @@ class VAE_3D_V2(nn.Module):
             # conv_downsample = conv_downsample, 
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn, 
-            device=device,
-            dtype=dtype,
+            device = device,
+            dtype = dtype,
         )
         self.decoder = Decoder(
             latent_embed_dim = latent_embed_dim,
@@ -490,22 +662,41 @@ class VAE_3D_V2(nn.Module):
             # upsample = upsample, # options: "deconv", "nearest+conv"
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn,
-            device=device,
-            dtype=dtype,
+            device = device,
+            dtype = dtype,
         )
 
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device, dtype=dtype)
         
         # Perceptual Loss
+        self.vgg = None
+        self.perceptual_loss_weight = perceptual_loss_weight
         if perceptual_loss_weight is not None and perceptual_loss_weight > 0:
+            # self.lpips = LPIPS().eval()
             if not exists(vgg):
                 vgg = torchvision.models.vgg16(
-                        weights = vgg_weights
-                    )
+                    weights = vgg_weights
+                )
                 vgg.classifier = Sequential(*vgg.classifier[:-2])
             self.vgg = vgg
-            self.perceptual_loss_weight = perceptual_loss_weight
+        
+        # Adversarial Loss
+        self.adversarial_loss_weight = adversarial_loss_weight
+        self.disc = None
+        if adversarial_loss_weight is not None and adversarial_loss_weight > 0:
+            self.disc = StyleGANDiscriminator(
+                image_size = image_size,
+                num_frames = num_frames,
+                discriminator_in_channels = discriminator_in_channels,
+                discriminator_filters = discriminator_filters,
+                discriminator_channel_multipliers = discriminator_channel_multipliers,
+                num_groups = num_groups,
+                dtype = dtype,
+                device = device,
+            )
+            self.disc.apply(xavier_uniform_weight_init)
+        
 
     def get_latent_size(self, input_size):
         for i in range(len(input_size)):
@@ -603,12 +794,22 @@ class VAE_3D_V2(nn.Module):
 
         recon_loss = F.mse_loss(video, recon_video)
 
-        # TODO: add adversarial loss
+        # TODO: DOUBLE add more sophisticated discrminator loss 
+        if self.adversarial_loss_weight is not None and self.adversarial_loss_weight > 0:
+            if video_contains_first_frame:
+                # video_len = video.shape[2]
+                # real_video = pad_at_dim(video, (self.time_padding, 0), value = 0., dim = 2)
+                # video_packed_shape = [torch.Size([self.time_padding]), torch.Size([]), torch.Size([video_len - 1])]
+                fake_video = pad_at_dim(recon_video, (self.time_padding, 0), value = 0., dim = 2)
+            # real_logits = self.discr(real_video)
+            fake_logits = self.discr(fake_video.detach())
+            # dsicr_loss = hinge_discr_loss(fake_logits, real_logits)
+            gen_loss = hinge_gen_loss(fake_logits)
 
-        # TODO: add perceptual loss
+
 
         # perceptual loss
-
+        # SCH: NOTE: if mse can pick single frame, if use sum of errors, need to calc for all frames!
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0:
             frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
 
@@ -626,18 +827,20 @@ class VAE_3D_V2(nn.Module):
             input_vgg_feats = self.vgg(input_vgg_input)
             recon_vgg_feats = self.vgg(recon_vgg_input)
             perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
-            
+            # perceptual_loss = self.lpips(input_vgg_input.contiguous(), recon_vgg_input.contiguous())
         else:
             perceptual_loss = self.zero
 
 
         total_loss = recon_loss \
-            + perceptual_loss * self.perceptual_loss_weight 
+            + perceptual_loss * self.perceptual_loss_weight \
+            + gen_loss * self.adversarial_loss_weight
 
         # loss breakdown
         loss_breakdown = LossBreakdown(
             recon_loss,
             perceptual_loss,
+            gen_loss
         )
 
         return total_loss, recon_video

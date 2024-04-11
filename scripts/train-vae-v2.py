@@ -102,7 +102,7 @@ def main():
             if not cfg.use_image_transform
             else get_transforms_image(cfg.image_size[0])
         ),
-        num_frames=cfg.num_frames,
+        num_frames=cfg.model.num_frames,
         frame_interval=cfg.frame_interval,
         root=cfg.root,
     )
