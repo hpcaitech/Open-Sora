@@ -41,4 +41,9 @@ CUDA_VISIBLE_DEVICES=5 torchrun --master_port=29530 --nnodes=1 --nproc_per_node=
 'x-transformers'
 ```
 
+### 2.2 Train
+
+```yaml
+CUDA_VISIBLE_DEVICES7 torchrun --master_port=29510 --nnodes=1 --nproc_per_node=1 scripts/train-vae-v2.py configs/vae_magvit_v2/train/17x128x128.py --data-path /home/shenchenhui/data/pexels/train.csv
+```
 
