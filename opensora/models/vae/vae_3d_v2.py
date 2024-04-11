@@ -814,7 +814,7 @@ class VAE_3D_V2(nn.Module):
         kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
 
         # TODO: DOUBLE add more sophisticated discrminator loss 
-        gen_loss = self.zero
+        gen_loss = 0
         if self.adversarial_loss_weight is not None and self.adversarial_loss_weight > 0:
             if video_contains_first_frame:
                 # video_len = video.shape[2]
@@ -830,7 +830,7 @@ class VAE_3D_V2(nn.Module):
 
         # perceptual loss
         # SCH: NOTE: if mse can pick single frame, if use sum of errors, need to calc for all frames!
-        perceptual_loss = self.zero
+        perceptual_loss = 0
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0:
             frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
 
