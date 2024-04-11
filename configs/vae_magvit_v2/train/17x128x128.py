@@ -1,3 +1,4 @@
+num_frames = 17
 frame_interval = 3
 image_size = (128, 128)
 
@@ -18,6 +19,7 @@ sp_size = 1
 
 model = dict(
     type="VAE_MAGVIT_V2",
+    num_frames = num_frames,
     in_out_channels = 3,
     latent_embed_dim = 256,
     filters = 128,
@@ -32,7 +34,6 @@ model = dict(
     separate_first_frame_encoding = False,
     kl_loss_weight = 0.000001,
     perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
-    num_frames = 17,
     adversarial_loss_weight = 1.0,
     discriminator_in_channels = 3,
     discriminator_filters = 128,
