@@ -70,7 +70,7 @@ def xavier_uniform_weight_init(m):
         nn.init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain('relu'))
         if m.bias is not None:
             nn.init.zeros_(m.bias)
-        print("initialized module to xavier_uniform:", m)
+        # print("initialized module to xavier_uniform:", m)
 
 def Sequential(*modules):
     modules = [*filter(exists, modules)]
@@ -228,20 +228,20 @@ class ResBlockDown(nn.Module):
         self.activation_fn = activation_fn
 
         # SCH: NOTE: although paper says conv (X->Y, Y->Y), original code implementation is (X->X, X->Y), we follow code
-        self.conv1 = nn.Conv3d(in_channels, in_channels, (3,3,3)) # NOTE: init to xavier_uniform 
+        self.conv1 = nn.Conv3d(in_channels, in_channels, (3,3,3), device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.norm1 = nn.GroupNorm(num_groups, in_channels, device=device, dtype=dtype)
 
         # SCH: NOTE: use blur pooling instead, pooling bias is False following enc dec conv pool
         self.blur = Blur()
-        self.conv_pool_residual = nn.Conv3d(in_channels * 8, in_channels, 3, bias=False) # NOTE: init to xavier_uniform 
-        self.conv_pool_input = nn.Conv3d(in_channels * 8, in_channels, 3, bias=False) # NOTE: init to xavier_uniform 
+        self.conv_pool_residual = nn.Conv3d(in_channels * 8, in_channels, 3, bias=False, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
+        self.conv_pool_input = nn.Conv3d(in_channels * 8, in_channels, 3, bias=False, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
 
-        self.conv2 = nn.Conv3d(in_channels, self.filters,(1,1,1), bias=False) # NOTE: init to xavier_uniform 
-        self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3)) # NOTE: init to xavier_uniform 
+        self.conv2 = nn.Conv3d(in_channels, self.filters,(1,1,1), bias=False, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
+        self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3), device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
 
         self.apply(xavier_uniform_weight_init)
-        self.to(device, dtype)
+        # self.to(device, dtype)
 
     def forward(self, x):
         residual = x
@@ -289,17 +289,17 @@ class StyleGANDiscriminator(nn.Module):
         self.activation_fn = nn.LeakyReLU(negative_slope=0.2)
         self.channel_multipliers = discriminator_channel_multipliers
 
-        self.conv1 = nn.Conv3d(discriminator_in_channels, self.filters, (3, 3, 3)) # NOTE: init to xavier_uniform 
+        self.conv1 = nn.Conv3d(discriminator_in_channels, self.filters, (3, 3, 3), device=device, dtype=dtype) # NOTE: init to xavier_uniform 
 
         prev_filters = self.filters # record in_channels
         self.num_blocks = len(self.channel_multipliers)
         self.res_block_list = []
         for i in range(self.num_blocks):
             filters = self.filters * self.channel_multipliers[i]
-            self.res_block_list.append(ResBlockDown(prev_filters, filters, self.activation_fn))
+            self.res_block_list.append(ResBlockDown(prev_filters, filters, self.activation_fn, device=device, dtype=dtype))
             prev_filters = filters # update in_channels 
 
-        self.conv2 = nn.Conv3d(prev_filters, prev_filters, (3,3,3)) # NOTE: init to xavier_uniform 
+        self.conv2 = nn.Conv3d(prev_filters, prev_filters, (3,3,3), device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         torch.nn.init.xavier_uniform(self.conv2.weight)
 
         self.norm1 = nn.GroupNorm(num_groups, prev_filters, dtype=dtype, device=device)
@@ -317,7 +317,7 @@ class StyleGANDiscriminator(nn.Module):
         self.linear2 = nn.Linear(prev_filters, 1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
 
         self.apply(xavier_uniform_weight_init)
-        self.to(device, dtype)
+        # self.to(device, dtype)
 
     def forward(self, x):
 
