@@ -79,7 +79,7 @@ class VEA3DLoss(nn.Module):
         logvar_init=0.0, 
         kl_weight=1.0, 
         pixelloss_weight=1.0,
-        perceptual_weight=1.0, 
+        perceptual_weight=0.1, 
         disc_loss="hinge",
 
     ):
