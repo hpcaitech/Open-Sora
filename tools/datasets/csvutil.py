@@ -21,12 +21,6 @@ except ImportError:
     pandas_has_parallel = False
 
 
-def apply(df, func, **kwargs):
-    if pandas_has_parallel:
-        return df.parallel_apply(func, **kwargs)
-    return df.progress_apply(func, **kwargs)
-
-
 IMG_EXTENSIONS = (
     ".jpg",
     ".jpeg",
@@ -40,7 +34,18 @@ IMG_EXTENSIONS = (
 )
 
 
-def get_video_info(path):
+def apply(df, func, **kwargs):
+    if pandas_has_parallel:
+        return df.parallel_apply(func, **kwargs)
+    return df.progress_apply(func, **kwargs)
+
+
+# ======================================================
+# --info
+# ======================================================
+
+
+def get_info(path):
     import cv2
 
     ext = os.path.splitext(path)[1].lower()
@@ -62,6 +67,25 @@ def get_video_info(path):
     aspect_ratio = height / width if width > 0 else np.nan
     return num_frames, height, width, aspect_ratio, fps, hw
 
+
+# ======================================================
+# --remove-corrupted
+# ======================================================
+
+
+def is_video_valid(path):
+    import decord
+
+    try:
+        decord.VideoReader(path, num_threads=1)
+        return True
+    except:
+        return False
+
+
+# ======================================================
+# --refine-llm-caption
+# ======================================================
 
 LLAVA_PREFIX = [
     "The video shows",
@@ -86,13 +110,17 @@ LLAVA_PREFIX = [
 
 def remove_caption_prefix(caption):
     for prefix in LLAVA_PREFIX:
-        if caption.startswith(prefix):
+        if caption.startswith(prefix) or caption.startswith(prefix.lower()):
             caption = caption[len(prefix) :].strip()
             if caption[0].islower():
                 caption = caption[0].upper() + caption[1:]
             return caption
     return caption
 
+
+# ======================================================
+# --merge-cmotion
+# ======================================================
 
 CMOTION_TEXT = {
     "static": "The camera is static.",
@@ -129,6 +157,11 @@ def merge_cmotion(caption, cmotion):
     return caption
 
 
+# ======================================================
+# --lang
+# ======================================================
+
+
 def build_lang_detector(lang_to_detect):
     from lingua import Language, LanguageDetectorBuilder
 
@@ -145,6 +178,11 @@ def build_lang_detector(lang_to_detect):
         return True
 
     return detect_lang
+
+
+# ======================================================
+# --clean-caption
+# ======================================================
 
 
 def basic_clean(text):
@@ -288,156 +326,56 @@ def text_preprocessing(text, use_text_preprocessing: bool = True):
         return text.lower().strip()
 
 
-def get_key_val_given_path(path, key, df):
-    return df.loc[df["path"] == path, key].item()
+# ======================================================
+# read & write
+# ======================================================
 
 
-def is_video_valid(path):
-    import decord
-
-    try:
-        decord.VideoReader(path, num_threads=1)
-        return True
-    except:
-        return False
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input", type=str, nargs="+")
-    parser.add_argument("--output", type=str, default=None)
-    parser.add_argument("--disable-parallel", action="store_true")
-    parser.add_argument("--seed", type=int, default=None)
-    # special case
-    parser.add_argument("--shard", type=int, default=None)
-    parser.add_argument("--sort", type=str, default=None)
-    parser.add_argument("--sort-ascending", type=str, default=None)
-    parser.add_argument("--difference", type=str, default=None)
-    parser.add_argument("--intersection", type=str, default=None)
-
-    # path processing
-    parser.add_argument("--relpath", type=str, default=None)
-    parser.add_argument("--abspath", type=str, default=None)
-
-    # path filtering
-    parser.add_argument("--ext", action="store_true")
-
-    # caption filtering
-    parser.add_argument("--remove-empty-caption", action="store_true")
-    parser.add_argument("--remove-duplicate-path", action="store_true")
-    parser.add_argument("--lang", type=str, default=None)
-    parser.add_argument("--remove-url", action="store_true")
-    parser.add_argument("--remove-corrupted", action="store_true")
-    parser.add_argument("--remove-text-duplication", action="store_true")
-
-    # caption processing
-    parser.add_argument("--remove-caption-prefix", action="store_true")
-    parser.add_argument("--unescape", action="store_true")
-    parser.add_argument("--clean-caption", action="store_true")
-    parser.add_argument("--merge-cmotion", action="store_true")
-    parser.add_argument("--count-text-token", type=str, choices=["t5"], default=None)
-
-    # num_frames processing
-    parser.add_argument("--info", action="store_true")
-
-    # num_frames filtering
-    parser.add_argument("--fmin", type=int, default=None)
-    parser.add_argument("--fmax", type=int, default=None)
-    parser.add_argument("--hwmax", type=int, default=None)
-
-    # aesthetic filtering
-    parser.add_argument("--aesmin", type=float, default=None)
-    parser.add_argument("--matchmin", type=float, default=None)
-    parser.add_argument("--flowmin", type=float, default=None)
-
-    return parser.parse_args()
+def read_file(input_path):
+    if input_path.endswith(".csv"):
+        return pd.read_csv(input_path)
+    elif input_path.endswith(".parquet"):
+        return pd.read_parquet(input_path)
+    else:
+        raise NotImplementedError(f"Unsupported file format: {input_path}")
 
 
-def get_output_path(args, input_name):
-    if args.output is not None:
-        return args.output
-
-    name = input_name
-    dir_path = os.path.dirname(args.input[0])
-
-    # path processing
-    if args.relpath is not None:
-        name += "_relpath"
-    if args.abspath is not None:
-        name += "_abspath"
-    # path filtering
-    if args.ext:
-        name += "_ext"
-    # caption filtering
-    if args.remove_empty_caption:
-        name += "_noempty"
-    if args.remove_duplicate_path:
-        name += "_noduppath"
-    if args.lang is not None:
-        name += f"_{args.lang}"
-    if args.remove_url:
-        name += "_nourl"
-    # caption processing
-    if args.remove_caption_prefix:
-        name += "_rcp"
-    if args.unescape:
-        name += "_unescape"
-    if args.clean_caption:
-        name += "_clean"
-    if args.merge_cmotion:
-        name += "_cmcaption"
-    if args.count_text_token:
-        name += "_textlen"
-    # num_frames processing
-    if args.info:
-        name += "_info"
-    # num_frames filtering
-    if args.fmin is not None:
-        name += f"_fmin{args.fmin}"
-    if args.fmax is not None:
-        name += f"_fmax{args.fmax}"
-    if args.hwmax is not None:
-        name += f"_hwmax{args.hwmax}"
-    # aesthetic filtering
-    if args.aesmin is not None:
-        name += f"_aesmin{args.aesmin}"
-    # clip score filtering
-    if args.matchmin is not None:
-        name += f"_matchmin{args.matchmin}"
-    if args.flowmin is not None:
-        name += f"_flowmin{args.flowmin}"
-    # sort
-    if args.sort is not None:
-        assert args.sort_ascending is None
-        name += "_sort"
-    if args.sort_ascending is not None:
-        assert args.sort is None
-        name += "_sort"
-    if args.remove_corrupted:
-        name += "_remove_corrupted"
-    if args.remove_text_duplication:
-        name += "_notd"
-
-    output_path = os.path.join(dir_path, f"{name}.csv")
-    return output_path
+def save_file(data, output_path):
+    if output_path.endswith(".csv"):
+        return data.to_csv(output_path, index=False)
+    elif output_path.endswith(".parquet"):
+        return data.to_parquet(output_path, index=False)
+    else:
+        raise NotImplementedError(f"Unsupported file format: {output_path}")
 
 
-def main(args):
-    # reading data
+def read_data(input_paths):
     data = []
     input_name = ""
     input_list = []
-    for input_path in args.input:
+    for input_path in input_paths:
         input_list.extend(glob(input_path))
     print("Input files:", input_list)
     for i, input_path in enumerate(input_list):
-        data.append(pd.read_csv(input_path))
+        data.append(read_file(input_path))
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(input_list) - 1:
             input_name += "+"
         print(f"Loaded {len(data[-1])} samples from {input_path}.")
     data = pd.concat(data, ignore_index=True, sort=False)
     print(f"Total number of samples: {len(data)}.")
+    return data, input_name
+
+
+# ======================================================
+# main
+# ======================================================
+# To add a new method, register it in the main, parse_args, and get_output_path functions, and update the doc at /tools/datasets/README.md#documentation
+
+
+def main(args):
+    # reading data
+    data, input_name = read_data(args.input)
 
     # make difference
     if args.difference is not None:
@@ -462,7 +400,7 @@ def main(args):
     # preparation
     if args.lang is not None:
         detect_lang = build_lang_detector(args.lang)
-    if args.count_text_token == "t5":
+    if args.count_num_token == "t5":
         from transformers import AutoTokenizer
 
         tokenizer = AutoTokenizer.from_pretrained("DeepFloyd/t5-v1_1-xxl")
@@ -481,7 +419,7 @@ def main(args):
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
         data = data[~data["text"].isna()]
-    if args.remove_duplicate_path:
+    if args.remove_path_duplication:
         assert "path" in data.columns
         data = data.drop_duplicates(subset=["path"])
     if args.remove_corrupted:
@@ -493,7 +431,7 @@ def main(args):
         data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
     if args.abspath is not None:
         data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
-    if args.remove_caption_prefix:
+    if args.refine_llm_caption:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
     if args.unescape:
@@ -507,11 +445,11 @@ def main(args):
         )
     if args.merge_cmotion:
         data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
-    if args.count_text_token is not None:
+    if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
     if args.info:
-        info = apply(data["path"], get_video_info)
+        info = apply(data["path"], get_info)
         (
             data["num_frames"],
             data["height"],
@@ -558,12 +496,143 @@ def main(args):
     if args.shard is not None:
         sharded_data = np.array_split(data, args.shard)
         for i in range(args.shard):
-            output_path_s = output_path.replace(".csv", f"_{i}.csv")
-            sharded_data[i].to_csv(output_path_s, index=False)
+            output_path_part = output_path.split(".")
+            output_path_s = ".".join(output_path_part[:-1]) + f"_{i}." + output_path_part[-1]
+            save_file(sharded_data[i], output_path_s)
             print(f"Saved {len(sharded_data[i])} samples to {output_path_s}.")
     else:
-        data.to_csv(output_path, index=False)
+        save_file(data, output_path)
         print(f"Saved {len(data)} samples to {output_path}.")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=str, nargs="+")
+    parser.add_argument("--output", type=str, default=None, help="output path")
+    parser.add_argument("--format", type=str, default="csv", help="output format", choices=["csv", "parquet"])
+    parser.add_argument("--disable-parallel", action="store_true", help="disable parallel processing")
+    parser.add_argument("--seed", type=int, default=None, help="random seed")
+
+    # special case
+    parser.add_argument("--shard", type=int, default=None, help="shard the dataset")
+    parser.add_argument("--sort", type=str, default=None, help="sort by column")
+    parser.add_argument("--sort-ascending", type=str, default=None, help="sort by column (ascending order)")
+    parser.add_argument("--difference", type=str, default=None, help="remove the paths in csv from the dataset")
+    parser.add_argument(
+        "--intersection", type=str, default=None, help="keep the paths in csv from the dataset and merge columns"
+    )
+
+    # IO-related
+    parser.add_argument("--info", action="store_true", help="get the basic information of each video and image")
+    parser.add_argument("--ext", action="store_true", help="check if the file exists")
+    parser.add_argument("--remove-corrupted", action="store_true", help="remove the corrupted video and image")
+
+    # path processing
+    parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
+    parser.add_argument("--abspath", type=str, default=None, help="modify the path to absolute path by root given")
+
+    # caption filtering
+    parser.add_argument(
+        "--remove-empty-caption",
+        action="store_true",
+        help="remove the empty caption",
+        help="remove rows with empty caption",
+    )
+    parser.add_argument("--remove-url", action="store_true", help="remove rows with url in caption")
+    parser.add_argument("--lang", type=str, default=None, help="remove rows with other language")
+    parser.add_argument("--remove-path-duplication", action="store_true", help="remove rows with duplicated path")
+    parser.add_argument("--remove-text-duplication", action="store_true", help="remove rows with duplicated caption")
+
+    # caption processing
+    parser.add_argument("--refine-llm-caption", action="store_true", help="modify the caption generated by LLM")
+    parser.add_argument(
+        "--clean-caption", action="store_true", help="modify the caption according to T5 pipeline to suit training"
+    )
+    parser.add_argument("--unescape", action="store_true", help="unescape the caption")
+    parser.add_argument("--merge-cmotion", action="store_true", help="merge the camera motion to the caption")
+    parser.add_argument(
+        "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
+    )
+
+    # score filtering
+    parser.add_argument("--fmin", type=int, default=None, help="filter the dataset by minimum number of frames")
+    parser.add_argument("--fmax", type=int, default=None, help="filter the dataset by maximum number of frames")
+    parser.add_argument("--hwmax", type=int, default=None, help="filter the dataset by maximum resolution")
+    parser.add_argument("--aesmin", type=float, default=None, help="filter the dataset by minimum aes score")
+    parser.add_argument("--matchmin", type=float, default=None, help="filter the dataset by minimum match score")
+    parser.add_argument("--flowmin", type=float, default=None, help="filter the dataset by minimum flow score")
+
+    return parser.parse_args()
+
+
+def get_output_path(args, input_name):
+    if args.output is not None:
+        return args.output
+    name = input_name
+    dir_path = os.path.dirname(args.input[0])
+
+    # sort
+    if args.sort is not None:
+        assert args.sort_ascending is None
+        name += "_sort"
+    if args.sort_ascending is not None:
+        assert args.sort is None
+        name += "_sort"
+
+    # IO-related
+    if args.info:
+        name += "_info"
+    if args.ext:
+        name += "_ext"
+    if args.remove_corrupted:
+        name += "_nocorrupted"
+
+    # path processing
+    if args.relpath is not None:
+        name += "_relpath"
+    if args.abspath is not None:
+        name += "_abspath"
+
+    # caption filtering
+    if args.remove_empty_caption:
+        name += "_noempty"
+    if args.remove_url:
+        name += "_nourl"
+    if args.lang is not None:
+        name += f"_{args.lang}"
+    if args.remove_path_duplication:
+        name += "_noduppath"
+    if args.remove_text_duplication:
+        name += "_noduptext"
+
+    # caption processing
+    if args.refine_llm_caption:
+        name += "_llm"
+    if args.unescape:
+        name += "_unescape"
+    if args.clean_caption:
+        name += "_clean"
+    if args.merge_cmotion:
+        name += "_cmcaption"
+    if args.count_num_token:
+        name += "_ntoken"
+
+    # score filtering
+    if args.fmin is not None:
+        name += f"_fmin{args.fmin}"
+    if args.fmax is not None:
+        name += f"_fmax{args.fmax}"
+    if args.hwmax is not None:
+        name += f"_hwmax{args.hwmax}"
+    if args.aesmin is not None:
+        name += f"_aesmin{args.aesmin}"
+    if args.matchmin is not None:
+        name += f"_matchmin{args.matchmin}"
+    if args.flowmin is not None:
+        name += f"_flowmin{args.flowmin}"
+
+    output_path = os.path.join(dir_path, f"{name}.{args.format}")
+    return output_path
 
 
 if __name__ == "__main__":

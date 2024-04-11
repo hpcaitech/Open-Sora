@@ -6,6 +6,7 @@ gdown
 mmengine
 pandas
 pre-commit
+pyarrow
 pyav
 tensorboard
 timm
