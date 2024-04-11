@@ -13,8 +13,6 @@ grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
 
-# Define Loss
-kl_weight = 0.000001
 
 # Define model
 
@@ -32,8 +30,13 @@ model = dict(
     activation_fn = 'swish',
     image_size = image_size,
     separate_first_frame_encoding = False,
+    kl_loss_weight = 0.000001,
     perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
     num_frames = 17,
+    adversarial_loss_weight = 1.0,
+    discriminator_in_channels = 3,
+    discriminator_filters = 128,
+    discriminator_channel_multipliers = (2,4,4,4,4),
 )
 
 # Others
