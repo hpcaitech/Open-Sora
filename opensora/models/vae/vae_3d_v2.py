@@ -276,7 +276,9 @@ class StyleGANDiscriminator(nn.Module):
         num_groups=32,
         dtype = torch.bfloat16,
         device="cpu",
-    ):
+    ):  
+        super().__init__()
+        
         self.dtype = dtype
         self.input_size = cast_tuple(image_size, 2)
         self.filters = discriminator_filters
