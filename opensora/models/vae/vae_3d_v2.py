@@ -239,6 +239,9 @@ class ResBlockDown(nn.Module):
         self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3)) # NOTE: init to xavier_uniform 
         self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
 
+        self.apply(xavier_uniform_weight_init)
+        self.to(device, dtype)
+
     def forward(self, x):
         residual = x
         x = self.conv1(x)
@@ -312,7 +315,8 @@ class StyleGANDiscriminator(nn.Module):
         self.linear1 = nn.Linear(in_features, prev_filters, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.linear2 = nn.Linear(prev_filters, 1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
 
-        self.apply(xavier_uniform_weight_init) # TODO: DOUBLE CHECK IF RESBLOCK GETS XAVIER_UNIFORM
+        self.apply(xavier_uniform_weight_init)
+        self.to(device, dtype)
 
     def forward(self, x):
 
@@ -706,7 +710,6 @@ class VAE_3D_V2(nn.Module):
                 dtype = dtype,
                 device = device,
             )
-            self.disc.apply(xavier_uniform_weight_init)
         
 
     def get_latent_size(self, input_size):
