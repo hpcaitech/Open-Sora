@@ -16,7 +16,6 @@ sp_size = 1
 
 # Define Loss
 kl_weight = 0.000001
-perceptual_weight = 0.1 # TODO: need to change this to 0.1 !!! according to MAGVIT paper
 
 # Define model
 
@@ -34,6 +33,7 @@ model = dict(
     activation_fn = 'swish',
     image_size = image_size,
     separate_first_frame_encoding = False,
+    perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
 )
 
 # Others
