@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -12,6 +13,15 @@ from torchvision.utils import save_image
 from . import video_transforms
 
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
+
+
+def read_file(input_path):
+    if input_path.endswith(".csv"):
+        return pd.read_csv(input_path)
+    elif input_path.endswith(".parquet"):
+        return pd.read_parquet(input_path)
+    else:
+        raise NotImplementedError(f"Unsupported file format: {input_path}")
 
 
 def temporal_random_crop(vframes, num_frames, frame_interval):

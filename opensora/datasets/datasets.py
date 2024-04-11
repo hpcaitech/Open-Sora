@@ -1,14 +1,13 @@
 import os
 
 import numpy as np
-import pandas as pd
 import torch
 import torchvision
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
 from opensora.registry import DATASETS
 
-from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, temporal_random_crop
+from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, read_file, temporal_random_crop
 
 
 @DATASETS.register_module()
@@ -30,7 +29,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         transform_name="center",
     ):
         self.data_path = data_path
-        self.data = pd.read_csv(data_path)
+        self.data = read_file(data_path)
         self.num_frames = num_frames
         self.frame_interval = frame_interval
         self.image_size = image_size
