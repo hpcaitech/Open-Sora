@@ -86,7 +86,7 @@ def main(args):
             model_name=get_model_name_from_path(model_path),
             device=get_current_device(),
             torch_dtype=torch.float16,
-            attn_implementation="flash_attention_2",
+            attn_implementation="flash_attention_2" if args.flash_attention else "eager",
         )
         dist.barrier()
 
@@ -331,6 +331,11 @@ if __name__ == "__main__":
     parser.add_argument("--dp-size", type=int, default=4)
     parser.add_argument("--num-workers", type=int, default=8)
     parser.add_argument("--prefetch-factor", type=int, default=8, help="Prefetch factor")
+    parser.add_argument(
+        "--flash-attention",
+        action="store_true",
+        help="Whether to use flash attention. You can turn on this flag for llama model and off for mistral model.",
+    )
     # debug related
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--profile-warmup", type=int, default=1)
