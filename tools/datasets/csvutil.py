@@ -43,24 +43,27 @@ IMG_EXTENSIONS = (
 def get_video_info(path):
     import cv2
 
-    ext = os.path.splitext(path)[1].lower()
-    if ext in IMG_EXTENSIONS:
-        im = cv2.imread(path)
-        if im is None:
-            return 0, 0, 0, np.nan, np.nan
-        height, width = im.shape[:2]
-        num_frames, fps = 1, np.nan
-    else:
-        cap = cv2.VideoCapture(path)
-        num_frames, height, width, fps = (
-            int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
-            int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-            int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            float(cap.get(cv2.CAP_PROP_FPS)),
-        )
-    hw = height * width
-    aspect_ratio = height / width if width > 0 else np.nan
-    return num_frames, height, width, aspect_ratio, fps, hw
+    try:
+        ext = os.path.splitext(path)[1].lower()
+        if ext in IMG_EXTENSIONS:
+            im = cv2.imread(path)
+            if im is None:
+                return 0, 0, 0, np.nan, np.nan
+            height, width = im.shape[:2]
+            num_frames, fps = 1, np.nan
+        else:
+            cap = cv2.VideoCapture(path)
+            num_frames, height, width, fps = (
+                int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+                int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                float(cap.get(cv2.CAP_PROP_FPS)),
+            )
+        hw = height * width
+        aspect_ratio = height / width if width > 0 else np.nan
+        return num_frames, height, width, aspect_ratio, fps, hw
+    except:
+        return 0, 0, 0, np.nan, np.nan, np.nan
 
 
 LLAVA_PREFIX = [
