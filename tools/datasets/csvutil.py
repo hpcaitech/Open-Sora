@@ -1,5 +1,6 @@
 import argparse
 import html
+import json
 import os
 import random
 import re
@@ -330,6 +331,20 @@ def text_preprocessing(text, use_text_preprocessing: bool = True):
 
 
 # ======================================================
+# load caption
+# ======================================================
+
+
+def load_caption(path, ext):
+    assert ext in ["json"]
+    json_path = path.split(".")[0] + ".json"
+    with open(json_path, "r") as f:
+        data = json.load(f)
+    caption = data["caption"]
+    return caption
+
+
+# ======================================================
 # read & write
 # ======================================================
 
@@ -461,6 +476,9 @@ def main(args):
             data["fps"],
             data["resolution"],
         ) = zip(*info)
+    if args.load_caption is not None:
+        assert "path" in data.columns
+        data["text"] = apply(data["path"], load_caption, ext=args.load_caption)
 
     # sort
     if args.sort is not None:
@@ -520,7 +538,7 @@ def parse_args():
     parser.add_argument("--shard", type=int, default=None, help="shard the dataset")
     parser.add_argument("--sort", type=str, default=None, help="sort by column")
     parser.add_argument("--sort-ascending", type=str, default=None, help="sort by column (ascending order)")
-    parser.add_argument("--difference", type=str, default=None, help="remove the paths in csv from the dataset")
+    parser.add_argument("--difference", type=str, default=None, help="get difference from the dataset")
     parser.add_argument(
         "--intersection", type=str, default=None, help="keep the paths in csv from the dataset and merge columns"
     )
@@ -538,7 +556,6 @@ def parse_args():
     parser.add_argument(
         "--remove-empty-caption",
         action="store_true",
-        help="remove the empty caption",
         help="remove rows with empty caption",
     )
     parser.add_argument("--remove-url", action="store_true", help="remove rows with url in caption")
@@ -555,6 +572,9 @@ def parse_args():
     parser.add_argument("--merge-cmotion", action="store_true", help="merge the camera motion to the caption")
     parser.add_argument(
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
+    )
+    parser.add_argument(
+        "--load-caption", type=str, default=None, choices=["json", "txt"], help="load the caption from json or txt"
     )
 
     # score filtering
@@ -619,6 +639,8 @@ def get_output_path(args, input_name):
         name += "_cmcaption"
     if args.count_num_token:
         name += "_ntoken"
+    if args.load_caption:
+        name += f"_load{args.load_caption}"
 
     # score filtering
     if args.fmin is not None:
