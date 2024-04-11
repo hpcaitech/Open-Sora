@@ -63,7 +63,7 @@ def get_video_info(path):
         aspect_ratio = height / width if width > 0 else np.nan
         return num_frames, height, width, aspect_ratio, fps, hw
     except:
-        return 0, 0, 0, np.nan, np.nan
+        return 0, 0, 0, np.nan, np.nan, np.nan
 
 
 LLAVA_PREFIX = [
