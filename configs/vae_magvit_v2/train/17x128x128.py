@@ -32,6 +32,8 @@ model = dict(
     kl_embed_dim = 64,
     custom_conv_padding = None,
     activation_fn = 'swish',
+    image_size = image_size,
+    separate_first_frame_encoding = False,
 )
 
 # Others
