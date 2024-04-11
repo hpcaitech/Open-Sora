@@ -8,8 +8,11 @@ from numpy import typing as nptyping
 from opensora.models.vae import model_utils 
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
-from einops import rearrange, pack, unpack
+from einops import rearrange, repeat, pack, unpack
 import torch.nn.functional as F
+import torchvision
+from torchvision.models import VGG16_Weights
+from collections import namedtuple
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -37,6 +40,27 @@ def pad_at_dim(t, pad, dim = -1, value = 0.):
     dims_from_right = (- dim - 1) if dim < 0 else (t.ndim - dim - 1)
     zeros = ((0, 0) * dims_from_right)
     return F.pad(t, (*zeros, *pad), value = value)
+
+def pick_video_frame(video, frame_indices):
+    """get frame_indices from the video of [B, C, T, H, W] and return images of [B, C, H, W]"""
+    batch, device = video.shape[0], video.device
+    video = rearrange(video, 'b c f ... -> b f c ...')
+    batch_indices = torch.arange(batch, device = device)
+    batch_indices = rearrange(batch_indices, 'b -> b 1')
+    images = video[batch_indices, frame_indices]
+    images = rearrange(images, 'b 1 c ... -> b c ...')
+    return images
+
+def exists(v):
+    return v is not None
+
+def Sequential(*modules):
+    modules = [*filter(exists, modules)]
+
+    if len(modules) == 0:
+        return nn.Identity()
+
+    return nn.Sequential(*modules)
 
 def SameConv2d(dim_in, dim_out, kernel_size):
     kernel_size = cast_tuple(kernel_size, 2)
@@ -367,7 +391,20 @@ class Decoder(nn.Module):
         # NOTE: moved to VAE for separate first frame processing
         # x = self.conv2(x) 
         return x
-    
+
+
+LossBreakdown = namedtuple('LossBreakdown', [
+    'recon_loss',
+    'perceptual_loss',
+    # 'adversarial_gen_loss',
+    # 'adaptive_adversarial_weight',
+])
+
+DiscrLossBreakdown = namedtuple('DiscrLossBreakdown', [
+    'discr_loss',
+    'multiscale_discr_losses',
+    'gradient_penalty'
+])
 
 @MODELS.register_module()
 class VAE_3D_V2(nn.Module):
@@ -379,6 +416,9 @@ class VAE_3D_V2(nn.Module):
         num_res_blocks = 2,
         image_size = (128, 128),
         separate_first_frame_encoding = False,
+        perceptual_loss_weight = 0.1,
+        vgg = None,
+        vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
         num_groups = 32, # for nn.GroupNorm
@@ -409,6 +449,10 @@ class VAE_3D_V2(nn.Module):
         self.time_padding = self.time_downsample_factor - 1
         self.separate_first_frame_encoding = separate_first_frame_encoding
 
+        image_down = 2 ** len(temporal_downsample)
+        t_down = 2 ** len([x for x in temporal_downsample if x == True])
+        self.patch_size = (t_down, image_down, image_down)
+
         # ==== Model Initialization ====
 
         # encoder & decoder first and last conv layer
@@ -420,7 +464,6 @@ class VAE_3D_V2(nn.Module):
             self.conv_in_first_frame = SameConv2d(in_out_channels, filters, (3,3))
             self.conv_out_first_frame = SameConv2d(filters, in_out_channels, (3,3))
         self.conv_out = CausalConv3d(filters, in_out_channels, 3, dtype=dtype, device=device)
-
 
         self.encoder = Encoder(
             filters=filters, 
@@ -454,9 +497,15 @@ class VAE_3D_V2(nn.Module):
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device, dtype=dtype)
         
-        image_down = 2 ** len(temporal_downsample)
-        t_down = 2 ** len([x for x in temporal_downsample if x == True])
-        self.patch_size = (t_down, image_down, image_down)
+        # Perceptual Loss
+        if perceptual_loss_weight is not None and perceptual_loss_weight > 0:
+            if not exists(vgg):
+                vgg = torchvision.models.vgg16(
+                        weights = vgg_weights
+                    )
+                vgg.classifier = Sequential(*vgg.classifier[:-2])
+            self.vgg = vgg
+            self.perceptual_loss_weight = perceptual_loss_weight
 
     def get_latent_size(self, input_size):
         for i in range(len(input_size)):
@@ -554,11 +603,45 @@ class VAE_3D_V2(nn.Module):
 
         recon_loss = F.mse_loss(video, recon_video)
 
-        # TODO: add perceptual loss
-
         # TODO: add adversarial loss
 
-        return recon_loss, recon_video
+        # TODO: add perceptual loss
+
+        # perceptual loss
+
+        if self.use_vgg:
+
+            frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
+
+            input_vgg_input = pick_video_frame(video, frame_indices)
+            recon_vgg_input = pick_video_frame(recon_video, frame_indices)
+
+            if channels == 1:
+                input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
+                recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
+
+            elif channels == 4: # SCH: take the first 3 for perceptual loss calc
+                input_vgg_input = input_vgg_input[:, :3]
+                recon_vgg_input = recon_vgg_input[:, :3]
+
+            input_vgg_feats = self.vgg(input_vgg_input)
+            recon_vgg_feats = self.vgg(recon_vgg_input)
+
+            perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
+        else:
+            perceptual_loss = self.zero
+
+
+        total_loss = recon_loss \
+            + perceptual_loss * self.perceptual_loss_weight 
+
+        # loss breakdown
+        loss_breakdown = LossBreakdown(
+            recon_loss,
+            perceptual_loss,
+        )
+
+        return total_loss, recon_video
     
 
 @MODELS.register_module("VAE_MAGVIT_V2")
