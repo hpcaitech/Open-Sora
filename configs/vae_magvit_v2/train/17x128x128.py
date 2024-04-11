@@ -1,4 +1,4 @@
-num_frames = 16
+num_frames = 17
 frame_interval = 3
 image_size = (128, 128)
 
