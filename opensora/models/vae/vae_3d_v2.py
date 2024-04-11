@@ -562,8 +562,9 @@ class Decoder(nn.Module):
 
 LossBreakdown = namedtuple('LossBreakdown', [
     'recon_loss',
+    'kl_loss',
     'perceptual_loss',
-    # 'adversarial_gen_loss',
+    'adversarial_gen_loss',
     # 'adaptive_adversarial_weight',
 ])
 
@@ -583,13 +584,14 @@ class VAE_3D_V2(nn.Module):
         num_res_blocks = 2,
         image_size = (128, 128),
         separate_first_frame_encoding = False,
+        kl_loss_weight = 0.000001,
         perceptual_loss_weight = 0.1,
-        adversarial_loss_weight = None,
         vgg = None,
         vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
         num_frames = 17,
+        adversarial_loss_weight = None,
         discriminator_in_channels = 3,
         discriminator_filters = 128,
         discriminator_channel_multipliers = (2,4,4,4,4),
@@ -668,7 +670,10 @@ class VAE_3D_V2(nn.Module):
 
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device, dtype=dtype)
-        
+
+        # KL Loss
+        self.kl_loss_weight = kl_loss_weight
+
         # Perceptual Loss
         self.vgg = None
         self.perceptual_loss_weight = perceptual_loss_weight
@@ -794,6 +799,10 @@ class VAE_3D_V2(nn.Module):
 
         recon_loss = F.mse_loss(video, recon_video)
 
+        kl_loss = posterior.kl()
+        # NOTE: since we use MSE, here use mean as well, else use sum
+        kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
+
         # TODO: DOUBLE add more sophisticated discrminator loss 
         if self.adversarial_loss_weight is not None and self.adversarial_loss_weight > 0:
             if video_contains_first_frame:
@@ -833,12 +842,14 @@ class VAE_3D_V2(nn.Module):
 
 
         total_loss = recon_loss \
+            + kl_loss * self.kl_loss_weight \
             + perceptual_loss * self.perceptual_loss_weight \
             + gen_loss * self.adversarial_loss_weight
 
         # loss breakdown
         loss_breakdown = LossBreakdown(
             recon_loss,
+            kl_loss,
             perceptual_loss,
             gen_loss
         )
