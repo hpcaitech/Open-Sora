@@ -5,7 +5,9 @@
   - [Dataset to CSV](#dataset-to-csv)
   - [Manage datasets](#manage-datasets)
     - [Requirement](#requirement)
-    - [Usage](#usage)
+    - [Basic Usage](#basic-usage)
+    - [Score filtering](#score-filtering)
+    - [Documentation](#documentation)
   - [Transform datasets](#transform-datasets)
     - [Resize](#resize)
     - [Frame extraction](#frame-extraction)
@@ -17,27 +19,29 @@ After preparing the raw dataset according to the [instructions](/docs/datasets.m
 
 ## Dataset Format
 
-All dataset should be provided in a CSV file, which is used both for training and data preprocessing. The CSV file should only contain the following columns (some are optional).
+All dataset should be provided in a `.csv` file (or `parquet.gzip` to save space), which is used for both training and data preprocessing. The columns should follow the words below:
 
-- `path`: the relative/absolute path or url to the image or video file. The only required column.
-- `text`: the caption or description of the image or video. Necessary for training.
-- `num_frames`: the number of frames in the video. Necessary for training.
-- `fps`: the frame rate of the video (optional)
-- `width`: the width of the video frame. Necessary for STDiT2.
-- `height`: the height of the video frame. Necessary for STDiT2.
-- `resolution`: height x width (optional)
-- `aspect_ratio`: the aspect ratio of the video frame (height / width) (optional)
-- `aes`: aesthetic score calculated by [asethetic scorer](/tools/aesthetic/README.md) (optional)
-- `flow`: optical flow score calculated by [UniMatch](/tools/scoring/README.md) (optional)
-- `match`: matching score of a image-text/video-text pair calculated by [CLIP](/tools/scoring/README.md) (optional)
-- `cmotion`: the camera motion (optional)
+- `path`: the relative/absolute path or url to the image or video file. Required.
+- `text`: the caption or description of the image or video. Required for training.
+- `num_frames`: the number of frames in the video. Required for training.
+- `width`: the width of the video frame. Required for dynamic bucket.
+- `height`: the height of the video frame. Required for dynamic bucket.
+- `aspect_ratio`: the aspect ratio of the video frame (height / width). Required for dynamic bucket.
+- `resolution`: height x width. For analysis.
+- `text_len`: the number of tokens in the text. For analysis.
+- `aes`: aesthetic score calculated by [asethetic scorer](/tools/aesthetic/README.md). For filtering.
+- `flow`: optical flow score calculated by [UniMatch](/tools/scoring/README.md). For filtering.
+- `match`: matching score of a image-text/video-text pair calculated by [CLIP](/tools/scoring/README.md). For filtering.
+- `fps`: the frame rate of the video. Optional.
+- `cmotion`: the camera motion.
 
-Example:
+An example ready for training:
 
 ```csv
-path, text, num_frames, fps, width, height, aspect_ratio, aes, flow, match, ...
-/absolute/path/to/image1.jpg, caption1, num_of_frames
-/absolute/path/to/video2.mp4, caption2, num_of_frames
+path, text, num_frames, width, height, aspect_ratio
+/absolute/path/to/image1.jpg, caption, 1, 720, 1280, 0.5625
+/absolute/path/to/video1.mp4, caption, 120, 720, 1280, 0.5625
+/absolute/path/to/video2.mp4, caption, 20, 256, 256, 1
 ```
 
 We use pandas to manage the CSV files. The following code is for reading and writing the CSV files:
@@ -53,10 +57,11 @@ As a start point, `convert.py` is used to convert the dataset to a CSV file. You
 
 ```bash
 python -m tools.datasets.convert DATASET-TYPE DATA_FOLDER
+
 # general video folder
-python -m tools.datasets.convert video VIDEO_FOLDER
+python -m tools.datasets.convert video VIDEO_FOLDER --output video.csv
 # general image folder
-python -m tools.datasets.convert image IMAGE_FOLDER
+python -m tools.datasets.convert image IMAGE_FOLDER --output image.csv
 # imagenet
 python -m tools.datasets.convert imagenet IMAGENET_FOLDER --split train
 # ucf101
@@ -98,9 +103,9 @@ To filter a specific language, you need to install [lingua](https://github.com/p
 pip install lingua-language-detector
 ```
 
-### Usage
+### Basic Usage
 
-You can use the following commands to process the CSV files. The output csv file will be saved in the same directory as the input csv file, with different suffixes indicating the processing method.
+You can use the following commands to process the CSV files. The output csv file will be saved in the same directory as the input csv file, with different suffixes indicating the processed method.
 
 ```bash
 # csvutil takes multiple CSV files as input and merge them into one CSV file
@@ -120,57 +125,23 @@ python -m tools.datasets.csvutil DATA.csv --fmin 128 --fmax 256 --disable-parall
 
 # Remove corrupted video from the csv
 python -m tools.datasets.csvutil DATA.csv --remove-corrupted
-```
 
-Here are more examples:
-
-```bash
-# modify the path to absolute path by root given
-# output: DATA_abspath.csv
-python -m tools.datasets.csvutil DATA.csv --abspath /absolute/path/to/dataset
-
-# modify the path to relative path by root given
-# output: DATA_relpath.csv
-python -m tools.datasets.csvutil DATA.csv --relpath /relative/path/to/dataset
-
-# remove the rows with empty captions
-# output: DATA_noempty.csv
-python -m tools.datasets.csvutil DATA.csv --remove-empty-caption
-
-# remove the rows with urls
-# output: DATA_nourl.csv
-python -m tools.datasets.csvutil DATA.csv --remove-url
-
-# unescape the caption
-# output: DATA_unescape.csv
-python -m tools.datasets.csvutil DATA.csv --unescape
-
-# modify LLaVA caption
-# output: DATA_rcp.csv
-python -m tools.datasets.csvutil DATA.csv --remove-caption-prefix
-
-# keep only the rows with english captions
-# output: DATA_en.csv
-python -m tools.datasets.csvutil DATA.csv --lang en
-
-# compute num_frames, height, width, fps, aspect_ratio for videos or images
+# Compute num_frames, height, width, fps, aspect_ratio for videos or images
 # output: IMG_DATA+VID_DATA_vinfo.csv
-python -m tools.datasets.csvutil IMG_DATA.csv VID_DATA --video-info
-```
+python -m tools.datasets.csvutil IMG_DATA.csv VID_DATA.csv --video-info
 
-You can apply multiple operations at the same time:
-
-```bash
-# output: DATA_vinfo_noempty_nourl_en.csv
+# You can run multiple operations at the same time.
 python -m tools.datasets.csvutil DATA.csv --video-info --remove-empty-caption --remove-url --lang en
 ```
+
+### Score filtering
 
 To examine and filter the quality of the dataset by aesthetic score and clip score, you can use the following commands:
 
 ```bash
 # sort the dataset by aesthetic score
 # output: DATA_sort.csv
-python -m tools.datasets.csvutil DATA.csv --sort-descending aesthetic_score
+python -m tools.datasets.csvutil DATA.csv --sort aesthetic_score
 # View examples of high aesthetic score
 head -n 10 DATA_sort.csv
 # View examples of low aesthetic score
@@ -178,7 +149,7 @@ tail -n 10 DATA_sort.csv
 
 # sort the dataset by clip score
 # output: DATA_sort.csv
-python -m tools.datasets.csvutil DATA.csv --sort-descending clip_score
+python -m tools.datasets.csvutil DATA.csv --sort clip_score
 
 # filter the dataset by aesthetic score
 # output: DATA_aesmin_0.5.csv
@@ -187,6 +158,43 @@ python -m tools.datasets.csvutil DATA.csv --aesmin 0.5
 # output: DATA_matchmin_0.5.csv
 python -m tools.datasets.csvutil DATA.csv --matchmin 0.5
 ```
+
+### Documentation
+
+You can also use `python -m tools.datasets.csvutil --help` to see usage.
+
+| Args                        | File suffix    | Description                                                   |
+| --------------------------- | -------------- | ------------------------------------------------------------- |
+| `--output OUTPUT`           |                | Output path                                                   |
+| `--format FORMAT`           |                | Output format (csv, parquet, parquet.gzip)                    |
+| `--disable-parallel`        |                | Disable `pandarallel`                                         |
+| `--seed SEED`               |                | Random seed                                                   |
+| `--shard SHARD`             | `_0`,`_1`      | Shard the dataset                                             |
+| `--sort KEY`                | `_sort`        | Sort the dataset by KEY                                       |
+| `--sort-descending KEY`     | `_sort`        | Sort the dataset by KEY in descending order                   |
+| `--difference DATA.csv`     |                | Remove the paths in DATA.csv from the dataset                 |
+| `--intersection DATA.csv`   |                | Keep the paths in DATA.csv from the dataset and merge columns |
+| `--info`                    | `_info`        | Get the basic information of each video and image             |
+| `--ext`                     | `_ext`         | Remove rows if the file does not exist                        |
+| `--remove-corrupted`        | `_nocorrupted` | Remove the corrupted video and image                          |
+| `--relpath`                 | `_relpath`     | Modify the path to relative path by root given                |
+| `--abspath`                 | `_abspath`     | Modify the path to absolute path by root given                |
+| `--remove-empty-caption`    | `_noempty`     | Remove rows with empty caption                                |
+| `--remove-url`              | `_nourl`       | Remove rows with url in caption                               |
+| `--lang LANG`               | `_lang`        | Remove rows with other language                               |
+| `--remove-path-duplication` | `_noduppath`   | Remove rows with duplicated path                              |
+| `--remove-text-duplication` | `_noduptext`   | Remove rows with duplicated caption                           |
+| `--refine-llm-caption`      | `_llm`         | Modify the caption generated by LLM                           |
+| `--clean-caption MODEL`     | `_clean`       | Modify the caption according to T5 pipeline to suit training  |
+| `--unescape`                | `_unescape`    | Unescape the caption                                          |
+| `--merge-cmotion`           | `_cmotion`     | Merge the camera motion to the caption                        |
+| `--count-num-token`         | `_ntoken`      | Count the number of tokens in the caption                     |
+| `--fmin FMIN`               | `_fmin`        | Filter the dataset by minimum number of frames                |
+| `--fmax FMAX`               | `_fmax`        | Filter the dataset by maximum number of frames                |
+| `--hwmax HWMAX`             | `_hwmax`       | Filter the dataset by maximum height x width                  |
+| `--aesmin AESMIN`           | `_aesmin`      | Filter the dataset by minimum aesthetic score                 |
+| `--matchmin MATCHMIN`       | `_matchmin`    | Filter the dataset by minimum clip score                      |
+| `--flowmin FLOWMIN`         | `_flowmin`     | Filter the dataset by minimum optical flow score              |
 
 ## Transform datasets
 
