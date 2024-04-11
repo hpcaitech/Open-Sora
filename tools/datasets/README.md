@@ -84,10 +84,16 @@ To accelerate processing speed, you can install [pandarallel](https://github.com
 pip install pandarallel
 ```
 
-To get video information, you need to install [opencv-python](https://github.com/opencv/opencv-python):
+To get image and video information, you need to install [opencv-python](https://github.com/opencv/opencv-python):
 
 ```bash
 pip install opencv-python
+```
+
+Or to get video information, you can install ffmpeg and ffmpeg-python:
+
+```bash
+pip install ffmpeg-python
 ```
 
 To filter a specific language, you need to install [lingua](https://github.com/pemistahl/lingua-py):
@@ -167,7 +173,8 @@ You can also use `python -m tools.datasets.csvutil --help` to see usage.
 | `--sort-descending KEY`     | `_sort`        | Sort the dataset by KEY in descending order                   |
 | `--difference DATA.csv`     |                | Remove the paths in DATA.csv from the dataset                 |
 | `--intersection DATA.csv`   |                | Keep the paths in DATA.csv from the dataset and merge columns |
-| `--info`                    | `_info`        | Get the basic information of each video and image             |
+| `--info`                    | `_info`        | Get the basic information of each video and image (cv2)       |
+| `--video-info`              | `_vinfo`       | Get the basic information of each video (ffmpeg)              |
 | `--ext`                     | `_ext`         | Remove rows if the file does not exist                        |
 | `--remove-corrupted`        | `_nocorrupted` | Remove the corrupted video and image                          |
 | `--relpath`                 | `_relpath`     | Modify the path to relative path by root given                |

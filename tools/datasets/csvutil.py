@@ -46,7 +46,7 @@ def apply(df, func, **kwargs):
 # ======================================================
 
 
-def get_info_cv2(path):
+def get_info(path):
     import cv2
 
     try:
@@ -72,11 +72,25 @@ def get_info_cv2(path):
         return 0, 0, 0, np.nan, np.nan, np.nan
 
 
-def get_info_ffmpeg(path):
+# ======================================================
+# --video-info
+# ======================================================
+
+
+def get_video_info(path):
     import ffmpeg
 
-    ffmpeg.probe(path)
-    breakpoint()
+    try:
+        info = ffmpeg.probe(path)["streams"][0]
+        height = int(info["height"])
+        width = int(info["width"])
+        num_frames = int(info["nb_frames"])
+        aspect_ratio = height / width
+        hw = height * width
+        fps = np.nan
+        return num_frames, height, width, aspect_ratio, fps, hw
+    except:
+        return 0, 0, 0, np.nan, np.nan, np.nan
 
 
 # ======================================================
@@ -474,7 +488,18 @@ def main(args):
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
     if args.info:
-        info = apply(data["path"], get_info_ffmpeg)
+        info = apply(data["path"], get_info)
+        (
+            data["num_frames"],
+            data["height"],
+            data["width"],
+            data["aspect_ratio"],
+            data["fps"],
+            data["resolution"],
+        ) = zip(*info)
+    if args.video_info:
+        assert "path" in data.columns
+        info = apply(data["path"], get_video_info)
         (
             data["num_frames"],
             data["height"],
@@ -552,6 +577,7 @@ def parse_args():
 
     # IO-related
     parser.add_argument("--info", action="store_true", help="get the basic information of each video and image")
+    parser.add_argument("--video-info", action="store_true", help="get the basic information of each video")
     parser.add_argument("--ext", action="store_true", help="check if the file exists")
     parser.add_argument("--remove-corrupted", action="store_true", help="remove the corrupted video and image")
 
@@ -612,6 +638,8 @@ def get_output_path(args, input_name):
     # IO-related
     if args.info:
         name += "_info"
+    if args.video_info:
+        name += "_vinfo"
     if args.ext:
         name += "_ext"
     if args.remove_corrupted:
