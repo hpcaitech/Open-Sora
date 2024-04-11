@@ -809,12 +809,23 @@ class VAE_3D_V2(nn.Module):
 
         recon_loss = F.mse_loss(video, recon_video)
 
-        kl_loss = posterior.kl()
-        # NOTE: since we use MSE, here use mean as well, else use sum
-        kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
+        total_loss = recon_loss 
 
+        # KL Loss
+        kl_loss = 0
+
+        if self.kl_loss_weight is not None and self.kl_loss_weight > 0:
+            kl_loss = posterior.kl()
+            # NOTE: since we use MSE, here use mean as well, else use sum
+            kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
+            kl_loss = kl_loss * self.kl_loss_weight
+            total_loss += kl_loss
+
+
+        # Adversarial Loss
         # TODO: DOUBLE add more sophisticated discrminator loss 
         gen_loss = 0
+
         if self.adversarial_loss_weight is not None and self.adversarial_loss_weight > 0:
             if video_contains_first_frame:
                 # video_len = video.shape[2]
@@ -825,13 +836,17 @@ class VAE_3D_V2(nn.Module):
             fake_logits = self.disc(fake_video.detach())
             # dsicr_loss = hinge_discr_loss(fake_logits, real_logits)
             gen_loss = hinge_gen_loss(fake_logits)
+            gen_loss = gen_loss * self.adversarial_loss_weight
+            total_loss += gen_loss
 
 
 
-        # perceptual loss
+        # Perceptual Loss
         # SCH: NOTE: if mse can pick single frame, if use sum of errors, need to calc for all frames!
         perceptual_loss = 0
+
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0:
+
             frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
 
             input_vgg_input = pick_video_frame(video, frame_indices)
@@ -850,12 +865,9 @@ class VAE_3D_V2(nn.Module):
             perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
             # perceptual_loss = self.lpips(input_vgg_input.contiguous(), recon_vgg_input.contiguous())
             
+            perceptual_loss = perceptual_loss * self.perceptual_loss_weight
+            total_loss += perceptual_loss
 
-
-        total_loss = recon_loss \
-            + kl_loss * self.kl_loss_weight \
-            + perceptual_loss * self.perceptual_loss_weight \
-            + gen_loss * self.adversarial_loss_weight
 
         # loss breakdown
         loss_breakdown = LossBreakdown(
