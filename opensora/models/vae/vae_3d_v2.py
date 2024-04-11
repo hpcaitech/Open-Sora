@@ -300,7 +300,7 @@ class StyleGANDiscriminator(nn.Module):
 
         self.norm1 = nn.GroupNorm(num_groups, prev_filters, dtype=dtype, device=device)
 
-        scale_factor = 2 ** len(self.num_blocks)
+        scale_factor = 2 ** self.num_blocks
         if num_frames % scale_factor != 0: # SCH: NOTE: has first frame which would be padded before usage
             time_scaled = num_frames // scale_factor + 1
         else:
