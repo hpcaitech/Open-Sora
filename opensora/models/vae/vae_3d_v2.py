@@ -68,7 +68,8 @@ def hinge_gen_loss(fake):
 def xavier_uniform_weight_init(m):
     if isinstance(m, nn.Conv3d) or isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain('relu'))
-        nn.init.zeros_(m.bias)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
         print("initialized module to xavier_uniform:", m)
 
 def Sequential(*modules):
