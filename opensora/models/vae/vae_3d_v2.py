@@ -280,7 +280,7 @@ class StyleGANDiscriminator(nn.Module):
         self.dtype = dtype
         self.input_size = cast_tuple(image_size, 2)
         self.filters = discriminator_filters
-        self.activation_fn = nn.LeakyReLu(negative_slope=0.2)
+        self.activation_fn = nn.LeakyReLU(negative_slope=0.2)
         self.channel_multipliers = discriminator_channel_multipliers
 
         self.conv1 = nn.Conv3d(discriminator_in_channels, self.filters, (3, 3, 3)) # NOTE: init to xavier_uniform 
