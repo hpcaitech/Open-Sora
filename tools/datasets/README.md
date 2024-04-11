@@ -13,7 +13,6 @@
     - [Frame extraction](#frame-extraction)
     - [Crop Midjourney 4 grid](#crop-midjourney-4-grid)
   - [Analyze datasets](#analyze-datasets)
-  - [Frame extraction speed](#frame-extraction-speed)
 
 After preparing the raw dataset according to the [instructions](/docs/datasets.md), you can use the following commands to manage the dataset.
 
@@ -44,11 +43,14 @@ path, text, num_frames, width, height, aspect_ratio
 /absolute/path/to/video2.mp4, caption, 20, 256, 256, 1
 ```
 
-We use pandas to manage the CSV files. The following code is for reading and writing the CSV files:
+We use pandas to manage the `.csv` or `.parquet` files. The following code is for reading and writing files:
 
 ```python
 df = pd.read_csv(input_path)
 df = df.to_csv(output_path, index=False)
+# or use parquet, which is smaller
+df = pd.read_parquet(input_path)
+df = df.to_parquet(output_path, index=False)
 ```
 
 ## Dataset to CSV
@@ -72,16 +74,7 @@ python -m tools.datasets.convert vidprom VIDPROM_FOLDER --info VidProM_semantic_
 
 ## Manage datasets
 
-You can easily get basic information about the dataset by using the following commands:
-
-```bash
-# examine the first 10 rows of the CSV file
-head -n 10 DATA1.csv
-# count the number of data in the CSV file (approximately)
-wc -l DATA1.csv
-```
-
-Additionally, Ww provide `csvutil.py` to manage the CSV files.
+Use `csvutil` to manage the dataset.
 
 ### Requirement
 
@@ -105,7 +98,7 @@ pip install lingua-language-detector
 
 ### Basic Usage
 
-You can use the following commands to process the CSV files. The output csv file will be saved in the same directory as the input csv file, with different suffixes indicating the processed method.
+You can use the following commands to process the `csv` or `parquet` files. The output file will be saved in the same directory as the input, with different suffixes indicating the processed method.
 
 ```bash
 # csvutil takes multiple CSV files as input and merge them into one CSV file
@@ -169,7 +162,7 @@ You can also use `python -m tools.datasets.csvutil --help` to see usage.
 | `--format FORMAT`           |                | Output format (csv, parquet, parquet.gzip)                    |
 | `--disable-parallel`        |                | Disable `pandarallel`                                         |
 | `--seed SEED`               |                | Random seed                                                   |
-| `--shard SHARD`             | `_0`,`_1`      | Shard the dataset                                             |
+| `--shard SHARD`             | `_0`,`_1`, ... | Shard the dataset                                             |
 | `--sort KEY`                | `_sort`        | Sort the dataset by KEY                                       |
 | `--sort-descending KEY`     | `_sort`        | Sort the dataset by KEY in descending order                   |
 | `--difference DATA.csv`     |                | Remove the paths in DATA.csv from the dataset                 |
@@ -189,6 +182,7 @@ You can also use `python -m tools.datasets.csvutil --help` to see usage.
 | `--unescape`                | `_unescape`    | Unescape the caption                                          |
 | `--merge-cmotion`           | `_cmotion`     | Merge the camera motion to the caption                        |
 | `--count-num-token`         | `_ntoken`      | Count the number of tokens in the caption                     |
+| `--load-caption EXT`        | `_load`        | Load the caption from the file                                |
 | `--fmin FMIN`               | `_fmin`        | Filter the dataset by minimum number of frames                |
 | `--fmax FMAX`               | `_fmax`        | Filter the dataset by maximum number of frames                |
 | `--hwmax HWMAX`             | `_hwmax`       | Filter the dataset by maximum height x width                  |
@@ -230,25 +224,17 @@ python -m tools.datasets.transform img_rand_crop meta.csv /path/to/raw/data /pat
 
 ## Analyze datasets
 
-Since the dataset is provided in a CSV file, you can easily analyze the dataset using pandas (after applying `--info`). Here are some examples:
+You can easily get basic information about a `.csv` dataset by using the following commands:
 
-```python
-import pandas as pd
-import matplotlib.pyplot as plt
-
-data = pd.read_csv('meta.csv')
-data.hist(column="resolution")
-plt.savefig('outputs/samples/info.jpg')
+```bash
+# examine the first 10 rows of the CSV file
+head -n 10 DATA1.csv
+# count the number of data in the CSV file (approximately)
+wc -l DATA1.csv
 ```
 
-## Frame extraction speed
+For the dataset provided in a `.csv` or `.parquet` file, you can easily analyze the dataset using the following commands. Plots will be automatically saved.
 
-We use three libraries to extract frames from videos: `opencv`, `pyav` and `decord`. Our benchmark results of loading 256 video's middle frames are as follows:
-
-| Library | Time (s) |
-| ------- | -------- |
-| opencv  | 33       |
-| decord  | 28       |
-| pyav    | 10       |
-
-Although `pyav` is the fastest, it can only extract the key frames instead of frames at any time. Therefore, we use `decord` as the default library for frame extraction. For dataset management, without a bottleneck on loading speed, we choose `opencv` as the default library for video information extraction.
+```python
+pyhton -m tools.datasets.analyze DATA_info.csv
+```

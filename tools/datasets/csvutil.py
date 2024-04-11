@@ -46,7 +46,7 @@ def apply(df, func, **kwargs):
 # ======================================================
 
 
-def get_info(path):
+def get_info_cv2(path):
     import cv2
 
     try:
@@ -70,6 +70,13 @@ def get_info(path):
         return num_frames, height, width, aspect_ratio, fps, hw
     except:
         return 0, 0, 0, np.nan, np.nan, np.nan
+
+
+def get_info_ffmpeg(path):
+    import ffmpeg
+
+    ffmpeg.probe(path)
+    breakpoint()
 
 
 # ======================================================
@@ -467,7 +474,7 @@ def main(args):
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
     if args.info:
-        info = apply(data["path"], get_info)
+        info = apply(data["path"], get_info_ffmpeg)
         (
             data["num_frames"],
             data["height"],
@@ -528,7 +535,7 @@ def main(args):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", type=str, nargs="+")
+    parser.add_argument("input", type=str, nargs="+", help="path to the input dataset")
     parser.add_argument("--output", type=str, default=None, help="output path")
     parser.add_argument("--format", type=str, default="csv", help="output format", choices=["csv", "parquet"])
     parser.add_argument("--disable-parallel", action="store_true", help="disable parallel processing")
