@@ -317,16 +317,20 @@ class StyleGANDiscriminator(nn.Module):
         self.apply(xavier_uniform_weight_init)
 
     def forward(self, x):
-
+        
+        breakpoint()
         x = self.conv1(x)
         x = self.activation_fn(x)
+        breakpoint()
         
         for i in range(self.num_blocks):
             x = self.res_block_list[i](x)
+            breakpoint()
 
         x = self.conv2(x)
         x = self.norm1(x)
         x = self.activation_fn(x)
+        breakpoint()
         x = x.reshape((x.shape[0], -1)) # SCH: [B, (C * T * W * H)] ? 
 
         x = self.linear1(x)
@@ -429,16 +433,13 @@ class Encoder(nn.Module):
 
         for i in range(self.num_blocks):
             for j in range(self.num_res_blocks):
-                breakpoint()
                 x = self.block_res_blocks[i][j](x)
 
             if i < self.num_blocks - 1:
-                breakpoint()
                 x = self.conv_blocks[i](x)
                 
 
         for i in range(self.num_res_blocks):
-            breakpoint()
             x = self.res_blocks[i](x)
 
         x = self.norm1(x)
@@ -550,20 +551,17 @@ class Decoder(nn.Module):
         x,
         **kwargs,
     ):
-        dtype, device = x.dtype, x.device
+        # dtype, device = x.dtype, x.device
         x = self.conv1(x)
         for i in range(self.num_res_blocks):
-            breakpoint()
             x = self.res_blocks[i](x)
         for i in reversed(range(self.num_blocks)): # reverse here to make decoder symmetric with encoder
             for j in range(self.num_res_blocks):
-                breakpoint()
                 x = self.block_res_blocks[i][j](x)
 
             if i > 0:
                 t_stride = 2 if self.temporal_downsample[i - 1] else 1
                 # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
-                breakpoint()
                 x = self.conv_blocks[i-1](x)
                 x = rearrange(x, "B (C ts hs ws) T H W -> B C (T ts) (H hs) (W ws)", ts=t_stride, hs=2, ws=2)
 
@@ -635,6 +633,8 @@ class VAE_3D_V2(nn.Module):
         self.image_size = cast_tuple(image_size, 2)
         self.time_downsample_factor = 2**sum(temporal_downsample)
         self.time_padding = self.time_downsample_factor - 1
+        self.disc_time_downsample_factor = 2**len(discriminator_channel_multipliers)
+        self.disc_time_padding = self.disc_time_downsample_factor - 1
         self.separate_first_frame_encoding = separate_first_frame_encoding
 
         image_down = 2 ** len(temporal_downsample)
@@ -744,7 +744,6 @@ class VAE_3D_V2(nn.Module):
             video, _ = pack([first_frame, video], 'b c * h w')
             video = pad_at_dim(video, (self.time_padding, 0), dim = 2)
 
-        breakpoint()
         encoded_feature = self.encoder(video)
 
         moments = self.quant_conv(encoded_feature).to(video.dtype)
@@ -761,7 +760,7 @@ class VAE_3D_V2(nn.Module):
 
         z = self.post_quant_conv(z)
         dec = self.decoder(z)
-        breakpoint()
+
         # SCH: moved decoder last conv layer here for separate first frame decoding
         if decode_first_frame_separately:
             left_pad, dec_ff, dec = dec[:, :, :self.time_padding], dec[:, :, self.time_padding], dec[:, :, (self.time_padding + 1):]
@@ -796,7 +795,6 @@ class VAE_3D_V2(nn.Module):
         batch, channels, frames = video.shape[:3]
         assert divisible_by(frames - int(video_contains_first_frame), self.time_downsample_factor), f'number of frames {frames} minus the first frame ({frames - int(video_contains_first_frame)}) must be divisible by the total downsample factor across time {self.time_downsample_factor}'
 
-        breakpoint()
         posterior = self.encode(
             video,
             video_contains_first_frame = video_contains_first_frame,
@@ -807,14 +805,12 @@ class VAE_3D_V2(nn.Module):
         else:
             z = posterior.mode()
 
-        breakpoint()
 
         recon_video = self.decode(
             z, 
             video_contains_first_frame = video_contains_first_frame
         )
 
-        breakpoint()
         recon_loss = F.mse_loss(video, recon_video)
 
         kl_loss = posterior.kl()
@@ -825,9 +821,9 @@ class VAE_3D_V2(nn.Module):
         if self.adversarial_loss_weight is not None and self.adversarial_loss_weight > 0:
             if video_contains_first_frame:
                 # video_len = video.shape[2]
-                # real_video = pad_at_dim(video, (self.time_padding, 0), value = 0., dim = 2)
-                # video_packed_shape = [torch.Size([self.time_padding]), torch.Size([]), torch.Size([video_len - 1])]
-                fake_video = pad_at_dim(recon_video, (self.time_padding, 0), value = 0., dim = 2)
+                # real_video = pad_at_dim(video, (self.disc_time_padding, 0), value = 0., dim = 2)
+                # video_packed_shape = [torch.Size([self.disc_time_padding]), torch.Size([]), torch.Size([video_len - 1])]
+                fake_video = pad_at_dim(recon_video, (self.disc_time_padding, 0), value = 0., dim = 2)
             # real_logits = self.disc(real_video)
             fake_logits = self.disc(fake_video.detach())
             # dsicr_loss = hinge_discr_loss(fake_logits, real_logits)
