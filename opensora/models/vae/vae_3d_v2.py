@@ -312,6 +312,8 @@ class StyleGANDiscriminator(nn.Module):
         self.linear1 = nn.Linear(in_features, prev_filters, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.linear2 = nn.Linear(prev_filters, 1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
 
+        self.apply(xavier_uniform_weight_init) # TODO: DOUBLE CHECK IF RESBLOCK GETS XAVIER_UNIFORM
+
     def forward(self, x):
 
         x = self.conv1(x)
@@ -814,8 +816,8 @@ class VAE_3D_V2(nn.Module):
                 # real_video = pad_at_dim(video, (self.time_padding, 0), value = 0., dim = 2)
                 # video_packed_shape = [torch.Size([self.time_padding]), torch.Size([]), torch.Size([video_len - 1])]
                 fake_video = pad_at_dim(recon_video, (self.time_padding, 0), value = 0., dim = 2)
-            # real_logits = self.discr(real_video)
-            fake_logits = self.discr(fake_video.detach())
+            # real_logits = self.disc(real_video)
+            fake_logits = self.disc(fake_video.detach())
             # dsicr_loss = hinge_discr_loss(fake_logits, real_logits)
             gen_loss = hinge_gen_loss(fake_logits)
 
