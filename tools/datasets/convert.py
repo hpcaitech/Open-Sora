@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 
 import pandas as pd
 from torchvision.datasets import ImageNet
@@ -8,14 +9,40 @@ IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tif
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
 
+def scan_recursively(root):
+    num = 0
+    for entry in os.scandir(root):
+        if entry.is_file():
+            yield entry
+        elif entry.is_dir():
+            num += 1
+            if num % 100 == 0:
+                print(f"Scanned {num} directories.")
+            yield from scan_recursively(entry.path)
+
+
 def get_filelist(file_path, exts=None):
-    Filelist = []
-    for home, dirs, files in os.walk(file_path):
-        for filename in files:
-            ext = os.path.splitext(filename)[-1].lower()
+    filelist = []
+    time_start = time.time()
+
+    # == OS Walk ==
+    # for home, dirs, files in os.walk(file_path):
+    #     for filename in files:
+    #         ext = os.path.splitext(filename)[-1].lower()
+    #         if exts is None or ext in exts:
+    #             filelist.append(os.path.join(home, filename))
+
+    # == Scandir ==
+    obj = scan_recursively(file_path)
+    for entry in obj:
+        if entry.is_file():
+            ext = os.path.splitext(entry.name)[-1].lower()
             if exts is None or ext in exts:
-                Filelist.append(os.path.join(home, filename))
-    return Filelist
+                filelist.append(entry.path)
+
+    time_end = time.time()
+    print(f"Scanned {len(filelist)} files in {time_end - time_start:.2f} seconds.")
+    return filelist
 
 
 def split_by_capital(name):
