@@ -1,15 +1,19 @@
 import torch
 import numpy as np
+from typing import Union
 
 # some code are inspired by https://github.com/magic-research/piecewise-rectified-flow/blob/main/scripts/train_perflow.py
+# and https://github.com/magic-research/piecewise-rectified-flow/blob/main/src/scheduler_perflow.py
 
 
 class RFlowScheduler:
     def __init__(
         self,
         num_timesteps = 1000,
+        num_sampling_steps = 10,
     ):
         self.num_timesteps = num_timesteps
+        self.num_sampling_steps = num_sampling_steps
         
 
     def training_losses(self, model, x_start, t, model_kwargs=None, noise = None, mask = None, weights = None):
@@ -35,15 +39,34 @@ class RFlowScheduler:
 
         return terms
 
-    def add_noise(self, x0, x1, t):
-        '''
-        x0: sample of dataset
-        x1: sample of gaussian distribution
-        '''
-        # rescale t from [0,num_timesteps] to [0,1]
-        t = t / self.num_timesteps
-        return t * x1 + (1 - t) * x0
+
+    def add_noise(
+        self,
+        original_samples: torch.FloatTensor,
+        noise: torch.FloatTensor,
+        timesteps: torch.IntTensor,
+    ) -> torch.FloatTensor:
+        """
+        compatible with diffusers add_noise()
+        """
+        timepoints = timesteps.float() / self.num_timesteps # [0, 999/1000]
+        timepoints = 1 - timepoints # [1,1/1000]
+
+        return timepoints * original_samples + (1 - timepoints) * noise
     
-    def step():
-        pass
+    # def step(
+    #     self,
+    #     model_output: torch.FloatTensor,
+    #     timestep: Union[int, torch.IntTensor],
+    #     sample: torch.FloatTensor,
+    # ) -> torch.FloatTensor:
+    #     '''
+    #     take an Euler step sampling
+    #     '''
+
+    #     dt = 1 / self.num_sampling_steps
+
+    #     return sample + dt * model_output
+
+
         
