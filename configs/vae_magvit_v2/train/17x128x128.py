@@ -29,7 +29,7 @@ model = dict(
     kl_embed_dim = 64,
     activation_fn = 'swish',
     separate_first_frame_encoding = False,
-    custom_conv_padding = None,
+    custom_conv_padding = None
     # num_frames = num_frames,
     # image_size = image_size,
     # kl_loss_weight = 0.000001,
@@ -49,7 +49,7 @@ discriminator = dict(
     num_frames = num_frames,
     in_channels = 3,
     filters = 128,
-    channel_multipliers = (2,4,4,4,4),
+    channel_multipliers = (2,4,4,4,4)
 )
 
 
