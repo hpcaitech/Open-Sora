@@ -103,7 +103,7 @@ def main():
             if not cfg.use_image_transform
             else get_transforms_image(cfg.image_size[0])
         ),
-        num_frames=cfg.model.num_frames,
+        num_frames=cfg.num_frames,
         frame_interval=cfg.frame_interval,
         root=cfg.root,
     )
@@ -235,7 +235,7 @@ def main():
     # 6.3. training loop
 
     # calculate discriminator_time_padding
-    disc_time_downsample_factor = 2 ** cfg.discriminator.discriminator_channel_multipliers
+    disc_time_downsample_factor = 2 ** cfg.discriminator.channel_multipliers
     disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
 
     for epoch in range(start_epoch, cfg.epochs):
