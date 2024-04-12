@@ -237,6 +237,7 @@ def main():
     # calculate discriminator_time_padding
     disc_time_downsample_factor = 2 ** len(cfg.discriminator.channel_multipliers)
     disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
+    video_contains_first_frame = cfg.video_contains_first_frame
 
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
