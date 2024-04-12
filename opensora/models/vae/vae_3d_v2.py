@@ -921,7 +921,6 @@ class VEALoss(nn.Module):
         # KL Loss
         self.kl_loss_weight = kl_loss_weight
         # Perceptual Loss
-        self.perceptual_loss_weight = perceptual_loss_weight
         self.vgg = None
         self.perceptual_loss_weight = perceptual_loss_weight
         if perceptual_loss_weight is not None and perceptual_loss_weight > 0.0:

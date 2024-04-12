@@ -54,11 +54,11 @@ discriminator = dict(
 
 
 # loss weights 
-kl_loss_weight = 0.000001,
-perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
-discriminator_factor = 1.0,
-discriminator_loss="hinge",
-discriminator_start = 50001,
+kl_loss_weight = 0.000001
+perceptual_loss_weight = 0.1 # use vgg is not None and more than 0
+discriminator_factor = 1.0
+discriminator_loss="hinge"
+discriminator_start = 50001
 
 # Others
 seed = 42
