@@ -219,6 +219,8 @@ def main():
     nll_loss_fn = VEALoss(
         perceptual_loss_weight = cfg.perceptual_loss_weight,
         kl_loss_weight = cfg.kl_loss_weight,
+        device=device,
+        dtype=dtype,
     )
 
     adversarial_loss_fn = AdversarialLoss(
