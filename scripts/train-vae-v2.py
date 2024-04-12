@@ -148,7 +148,6 @@ def main():
     vae = vae.to(device, dtype)
     discriminator = discriminator.to(device, dtype)
 
-    breakpoint() # TODO: check vae parameters
 
     # 4.5. setup optimizer
     # vae optimizer

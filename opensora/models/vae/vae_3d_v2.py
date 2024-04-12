@@ -592,30 +592,30 @@ class VAE_3D_V2(nn.Module):
         latent_embed_dim = 256,
         filters = 128,
         num_res_blocks = 2,
-        image_size = (128, 128),
         separate_first_frame_encoding = False,
-        # kl_loss_weight = 0.000001,
-        # perceptual_loss_weight = 0.1,
-        # vgg = None,
-        # vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
-        num_frames = 17,
-        # discriminator_factor = 1.0,
-        # discriminator_in_channels = 3,
-        # discriminator_filters = 128,
-        discriminator_channel_multipliers = (2,4,4,4,4),
-        # discriminator_loss="hinge",
-        # discriminator_start=50001,
         num_groups = 32, # for nn.GroupNorm
-        # conv_downsample = False,
-        # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
         custom_conv_padding = None,
         activation_fn = 'swish',
         in_out_channels = 4, 
         kl_embed_dim = 64,
         device="cpu",
         dtype="bf16",
+        # image_size = (128, 128),
+        # kl_loss_weight = 0.000001,
+        # perceptual_loss_weight = 0.1,
+        # vgg = None,
+        # vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
+        # num_frames = 17,
+        # discriminator_factor = 1.0,
+        # discriminator_in_channels = 3,
+        # discriminator_filters = 128,
+        # discriminator_channel_multipliers = (2,4,4,4,4),
+        # discriminator_loss="hinge",
+        # discriminator_start=50001,
+        # conv_downsample = False,
+        # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
         # precision: Any = jax.lax.Precision.DEFAULT
     ):
         super().__init__()
@@ -911,7 +911,7 @@ class VAE_3D_V2(nn.Module):
 class VEALoss(nn.Module):
     def __init__(
         self,
-        perceptual_loss_weight=0.1, 
+        perceptual_loss_weight = 0.1, 
         kl_loss_weight = 0.000001,
         vgg=None,
         vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
@@ -924,7 +924,7 @@ class VEALoss(nn.Module):
         self.perceptual_loss_weight = perceptual_loss_weight
         self.vgg = None
         self.perceptual_loss_weight = perceptual_loss_weight
-        if perceptual_loss_weight is not None and perceptual_loss_weight > 0:
+        if perceptual_loss_weight is not None and perceptual_loss_weight > 0.0:
             if not exists(vgg):
                 vgg = torchvision.models.vgg16(
                     weights = vgg_weights
