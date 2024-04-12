@@ -958,7 +958,7 @@ class VEALoss(nn.Module):
             # NOTE: since we use MSE, here use mean as well, else use sum
             kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
             weighted_kl_loss = kl_loss * self.kl_loss_weight
-            total_loss += weighted_kl_loss
+            nll_loss += weighted_kl_loss
 
         # perceptual loss
         weighted_perceptual_loss = 0
