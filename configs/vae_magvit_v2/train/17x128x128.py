@@ -32,15 +32,32 @@ model = dict(
     activation_fn = 'swish',
     image_size = image_size,
     separate_first_frame_encoding = False,
-    kl_loss_weight = 0.000001,
-    perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
-    discriminator_factor = 1.0,
+    # kl_loss_weight = 0.000001,
+    # perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
+    # discriminator_factor = 1.0,
+    # discriminator_in_channels = 3,
+    # discriminator_filters = 128,
+    # discriminator_channel_multipliers = (2,4,4,4,4),
+    # discriminator_loss="hinge",
+    # discriminator_start = 50001,
+)
+
+
+discriminator = dict(
+    type="DISCRIMINATOR_3D",
     discriminator_in_channels = 3,
     discriminator_filters = 128,
     discriminator_channel_multipliers = (2,4,4,4,4),
-    discriminator_loss="hinge",
     discriminator_start = 50001,
 )
+
+
+# loss weights 
+kl_loss_weight = 0.000001,
+perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
+discriminator_factor = 1.0,
+discriminator_loss="hinge",
+discriminator_start = 50001,
 
 # Others
 seed = 42
