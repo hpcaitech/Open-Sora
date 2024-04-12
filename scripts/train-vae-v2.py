@@ -235,7 +235,7 @@ def main():
     # 6.3. training loop
 
     # calculate discriminator_time_padding
-    disc_time_downsample_factor = 2 ** cfg.discriminator.channel_multipliers
+    disc_time_downsample_factor = 2 ** len(cfg.discriminator.channel_multipliers)
     disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
 
     for epoch in range(start_epoch, cfg.epochs):
