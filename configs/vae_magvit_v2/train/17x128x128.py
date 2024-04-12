@@ -1,5 +1,4 @@
 num_frames = 17
-video_contains_first_frame = True
 frame_interval = 3
 image_size = (128, 128)
 

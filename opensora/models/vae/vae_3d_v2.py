@@ -9,7 +9,6 @@ from opensora.models.vae import model_utils
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
 from einops import rearrange, repeat, pack, unpack
-from einops.layers.torch import Rearrange
 import torch.nn.functional as F
 import torchvision
 from torchvision.models import VGG16_Weights
@@ -18,7 +17,6 @@ from taming.modules.losses.lpips import LPIPS # need to pip install https://gith
 from torch import nn, einsum, Tensor
 from kornia.filters import filter3d
 import math
-from torch.autograd import grad as torch_grad
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -799,26 +797,31 @@ class VAE_3D_V2(nn.Module):
     def get_last_layer(self):
         return self.conv_out.weight
     
+    def parameters(self):
+        return [
+            *self.conv_in.parameters(),
+            *self.conv_in_first_frame.parameters(),
+            *self.encoder.paramters(),
+            *self.quant_conv.parameters(),
+            *self.post_quant_conv.parameters(),
+            *self.decoder.parameters(),
+            *self.conv_out_first_frame.parametrs(),
+            *self.conv_out.parameters()
+        ]
+
+    def disc_parameters(self):
+        return self.discriminator.parameters()
+    
     def forward(
         self,
-        input,
-        optimizer_idx,
+        video,
+        # optimizer_idx,
         global_step,
         sample_posterior=True,
         video_contains_first_frame = True,
         split = "train",
 
     ):  
-        assert input.ndim in {4, 5}, f"received input of {input.ndim} dimensions" # either image or video
-        assert input.shape[-2:] == self.image_size, f"received input size {input.shape[-2:]}, but config image size is {self.image_size}"
-
-        is_image = input.ndim == 4
-
-        if is_image:
-            video = rearrange(input, 'b c ... -> b c 1 ...')
-            video_contains_first_frame = True
-        else:
-            video = input
 
         batch, channels, frames = video.shape[:3]
         assert divisible_by(frames - int(video_contains_first_frame), self.time_downsample_factor), f'number of frames {frames} minus the first frame ({frames - int(video_contains_first_frame)}) must be divisible by the total downsample factor across time {self.time_downsample_factor}'
@@ -877,63 +880,88 @@ class VAE_3D_V2(nn.Module):
 
 
         # GAN 
-        if optimizer_idx == 0: # generator update
-            if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
-                try: 
-                    d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, self.get_last_layer())
-                except RuntimeError:
-                    assert not self.training
-                    d_weight = torch.tensor(0.0)
-                # if video_contains_first_frame:
-                # Since we don't have enough T frames, pad anyways
-                fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
-                # real_logits = self.discriminator(real_video)
-                fake_logits = self.discriminator(fake_video.contiguous())
-                gan_loss = -torch.mean(fake_logits)
-            else:
+        # if optimizer_idx == 0: # generator update
+        if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
+            try: 
+                d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, self.get_last_layer())
+            except RuntimeError:
+                assert not self.training
                 d_weight = torch.tensor(0.0)
-                gan_loss = torch.tensor(0.0)
+            # if video_contains_first_frame:
+            # Since we don't have enough T frames, pad anyways
+            fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
+            fake_logits = self.discriminator(fake_video.contiguous()) # DETACH?
+            gan_loss = -torch.mean(fake_logits)
+        else:
+            d_weight = torch.tensor(0.0)
+            gan_loss = torch.tensor(0.0)
 
+        disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_iter_start)
+        weighted_gan_loss = d_weight * disc_factor * gan_loss
+        breakpoint()
+        total_loss += weighted_gan_loss
+
+        log = {"{}/total_loss".format(split): total_loss.clone().detach().mean(),
+            "{}/nll_loss".format(split): nll_loss.detach().mean(),
+            "{}/recon_loss".format(split): recon_loss.detach().mean(),
+            "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
+            "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
+            "{}/weighted_gan_loss".format(split): weighted_gan_loss.detach().mean(),
+            "{}gan_adaptive_weight".format(split): d_weight.detach(),
+            "{}/disc_factor".format(split): torch.tensor(disc_factor),
+        }
+        return total_loss, recon_video, log
+
+        ## SCH: move to a different function call
+        # if optimizer_idx == 1: # second pass for discriminator update
+        #     if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
+        #         # if video_contains_first_frame:
+        #         # Since we don't have enough T frames, pad anyways
+        #         real_video = pad_at_dim(video, (self.discr_time_padding, 0), value = 0., dim = 2)
+        #         fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
+        #         real_logits = self.discriminator(real_video.contiguous.detach())
+        #         fake_logits = self.discriminator(fake_video.contiguous.detach())
+        #         disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_iter_start)
+        #         weight_discriminator_loss = disc_factor * self.calc_disc_loss(real_logits, fake_logits)
+        #     else:
+        #         weight_discriminator_loss = 0
+
+        #     breakpoint()
+
+        #     log = {"{}/weighted_disc_loss".format(split): weight_discriminator_loss.clone().detach().mean(),
+        #            "{}/logits_real".format(split): real_logits.detach().mean(),
+        #            "{}/logits_fake".format(split): fake_logits.detach().mean()
+        #            }            
+
+        #     return weight_discriminator_loss, recon_video, log
+
+    def disc_forward(
+        self,
+        video,
+        recon_video,
+        global_step,
+        split = "train",
+    ):
+        if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
+            # if video_contains_first_frame:
+            # Since we don't have enough T frames, pad anyways
+            real_video = pad_at_dim(video, (self.discr_time_padding, 0), value = 0., dim = 2)
+            fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
+            real_logits = self.discriminator(real_video.contiguous.detach())
+            fake_logits = self.discriminator(fake_video.contiguous.detach())
             disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_iter_start)
-            weighted_gan_loss = d_weight * disc_factor * gan_loss
-            breakpoint()
-            total_loss += weighted_gan_loss
+            weight_discriminator_loss = disc_factor * self.calc_disc_loss(real_logits, fake_logits)
+        else:
+            weight_discriminator_loss = 0
 
-            log = {"{}/total_loss".format(split): total_loss.clone().detach().mean(),
-                "{}/nll_loss".format(split): nll_loss.detach().mean(),
-                "{}/recon_loss".format(split): recon_loss.detach().mean(),
-                "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
-                "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
-                "{}/weighted_gan_loss".format(split): weighted_gan_loss.detach().mean(),
-                "{}gan_adaptive_weight".format(split): d_weight.detach(),
-                "{}/disc_factor".format(split): torch.tensor(disc_factor),
-            }
-            return total_loss, recon_video, log
+        breakpoint()
 
+        log = {"{}/weighted_disc_loss".format(split): weight_discriminator_loss.clone().detach().mean(),
+                "{}/logits_real".format(split): real_logits.detach().mean(),
+                "{}/logits_fake".format(split): fake_logits.detach().mean()
+                }            
 
-        if optimizer_idx == 1: # second pass for discriminator update
-            if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
-                # if video_contains_first_frame:
-                # Since we don't have enough T frames, pad anyways
-                real_video = pad_at_dim(video, (self.discr_time_padding, 0), value = 0., dim = 2)
-                fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
-                real_logits = self.discriminator(real_video.contiguous.detach())
-                fake_logits = self.discriminator(fake_video.contiguous.detach())
-                disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_iter_start)
-                weight_discriminator_loss = disc_factor * self.calc_disc_loss(real_logits, fake_logits)
-            else:
-                weight_discriminator_loss = 0
-
-            breakpoint()
-
-            log = {"{}/weighted_disc_loss".format(split): weight_discriminator_loss.clone().detach().mean(),
-                   "{}/logits_real".format(split): real_logits.detach().mean(),
-                   "{}/logits_fake".format(split): fake_logits.detach().mean()
-                   }            
-
-            return weight_discriminator_loss, recon_video, log
-
-
+        return weight_discriminator_loss, log
 
 
 @MODELS.register_module("VAE_MAGVIT_V2")
