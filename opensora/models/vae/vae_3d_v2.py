@@ -805,11 +805,11 @@ class VAE_3D_V2(nn.Module):
         return [
             *self.conv_in.parameters(),
             *self.conv_in_first_frame.parameters(),
-            *self.encoder.paramters(),
+            *self.encoder.parameters(),
             *self.quant_conv.parameters(),
             *self.post_quant_conv.parameters(),
             *self.decoder.parameters(),
-            *self.conv_out_first_frame.parametrs(),
+            *self.conv_out_first_frame.parameters(),
             *self.conv_out.parameters()
         ]
 
