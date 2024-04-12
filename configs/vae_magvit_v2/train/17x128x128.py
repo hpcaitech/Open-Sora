@@ -1,4 +1,5 @@
 num_frames = 17
+video_contains_first_frame = True
 frame_interval = 3
 image_size = (128, 128)
 
@@ -38,6 +39,8 @@ model = dict(
     discriminator_in_channels = 3,
     discriminator_filters = 128,
     discriminator_channel_multipliers = (2,4,4,4,4),
+    discriminator_start = 50001,
+    discriminator_weight = 0.5,
 )
 
 # Others

@@ -189,6 +189,9 @@ def main():
     # # define loss function
     # loss_function = VEA3DLoss(kl_weight=cfg.kl_weight, perceptual_weight=cfg.perceptual_weight).to(device, dtype)
 
+    # TODO: Use separate optimizers, 0 for main model and 1 for gan model
+    optimizer_idx = 0
+
 
     # 6.2. training loop
     for epoch in range(start_epoch, cfg.epochs):
@@ -208,7 +211,13 @@ def main():
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
 
                 # loss = vae.get_loss(x)
-                loss, reconstructions = vae(x)
+                loss, reconstructions, log = vae(
+                    x,
+                    optimizer_idx, # TODO: add
+                    global_step,
+                    video_contains_first_frame = cfg.video_contains_first_frame,
+                    split = "train",
+                )
                 # loss = loss_function(x, reconstructions, posterior)
 
                 # Backward & update
@@ -225,7 +234,7 @@ def main():
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
                     avg_loss = running_loss / log_step
-                    pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step})
+                    pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step, "opt_idx": optimizer_idx})
                     running_loss = 0
                     log_step = 0
                     writer.add_scalar("loss", loss.item(), global_step)
@@ -233,6 +242,7 @@ def main():
                         wandb.log(
                             {
                                 "iter": global_step,
+                                "optimizer_idx": optimizer_idx,
                                 "num_samples": global_step * total_batch_size,
                                 "epoch": epoch,
                                 "loss": loss.item(),
