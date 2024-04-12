@@ -30,7 +30,7 @@ model = dict(
     kl_embed_dim = 64,
     custom_conv_padding = None,
     activation_fn = 'swish',
-    image_size = image_size,
+    # image_size = image_size,
     separate_first_frame_encoding = False,
     # kl_loss_weight = 0.000001,
     # perceptual_loss_weight = 0.1, # use vgg is not None and more than 0
@@ -45,10 +45,11 @@ model = dict(
 
 discriminator = dict(
     type="DISCRIMINATOR_3D",
-    discriminator_in_channels = 3,
-    discriminator_filters = 128,
-    discriminator_channel_multipliers = (2,4,4,4,4),
-    discriminator_start = 50001,
+    image_size = image_size,
+    num_frames = num_frames,
+    in_channels = 3,
+    filters = 128,
+    channel_multipliers = (2,4,4,4,4),
 )
 
 
