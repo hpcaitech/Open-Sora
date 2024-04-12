@@ -18,6 +18,7 @@ from taming.modules.losses.lpips import LPIPS # need to pip install https://gith
 from torch import nn, einsum, Tensor
 from kornia.filters import filter3d
 import math
+from torch.autograd import grad as torch_grad
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -62,8 +63,17 @@ def exists(v):
 def hinge_discr_loss(fake, real):
     return (F.relu(1 + fake) + F.relu(1 - real)).mean()
 
-def hinge_gen_loss(fake):
-    return -fake.mean()
+def hinge_d_loss(logits_real, logits_fake):
+    loss_real = torch.mean(F.relu(1. - logits_real))
+    loss_fake = torch.mean(F.relu(1. + logits_fake))
+    d_loss = 0.5 * (loss_real + loss_fake)
+    return d_loss
+
+def vanilla_d_loss(logits_real, logits_fake):
+    d_loss = 0.5 * (
+        torch.mean(torch.nn.functional.softplus(-logits_real)) +
+        torch.mean(torch.nn.functional.softplus(logits_fake)))
+    return d_loss
 
 def xavier_uniform_weight_init(m):
     if isinstance(m, nn.Conv3d) or isinstance(m, nn.Linear):
@@ -84,6 +94,26 @@ def SameConv2d(dim_in, dim_out, kernel_size):
     kernel_size = cast_tuple(kernel_size, 2)
     padding = [k // 2 for k in kernel_size]
     return nn.Conv2d(dim_in, dim_out, kernel_size = kernel_size, padding = padding)
+
+
+def calculate_adaptive_weight(self, nll_loss, g_loss, last_layer=None):
+    breakpoint() # TODO: scrutinize
+    if last_layer is not None:
+        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
+        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
+    else:
+        nll_grads = torch.autograd.grad(nll_loss, self.get_last_layer(), retain_graph=True)[0]
+        g_grads = torch.autograd.grad(g_loss, self.get_last_layer(), retain_graph=True)[0]
+
+    d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
+    d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
+    d_weight = d_weight * self.discriminator_weight
+    return d_weight
+
+def adopt_weight(weight, global_step, threshold=0, value=0.):
+    if global_step < threshold:
+        weight = value
+    return weight
 
 class CausalConv3d(nn.Module):
     def __init__(
@@ -568,19 +598,6 @@ class Decoder(nn.Module):
         # x = self.conv2(x) 
         return x
 
-LossBreakdown = namedtuple('LossBreakdown', [
-    'recon_loss',
-    'kl_loss',
-    'perceptual_loss',
-    'adversarial_gen_loss',
-    # 'adaptive_adversarial_weight',
-])
-
-DiscrLossBreakdown = namedtuple('DiscrLossBreakdown', [
-    'discr_loss',
-    'multiscale_discr_losses',
-    'gradient_penalty'
-])
 
 @MODELS.register_module()
 class VAE_3D_V2(nn.Module):
@@ -599,10 +616,11 @@ class VAE_3D_V2(nn.Module):
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
         num_frames = 17,
-        adversarial_loss_weight = None,
+        discriminator_factor = 1.0,
         discriminator_in_channels = 3,
         discriminator_filters = 128,
         discriminator_channel_multipliers = (2,4,4,4,4),
+        discriminator_loss="hinge",
         num_groups = 32, # for nn.GroupNorm
         # conv_downsample = False,
         # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
@@ -629,8 +647,8 @@ class VAE_3D_V2(nn.Module):
         self.image_size = cast_tuple(image_size, 2)
         self.time_downsample_factor = 2**sum(temporal_downsample)
         self.time_padding = self.time_downsample_factor - 1
-        self.disc_time_downsample_factor = 2**len(discriminator_channel_multipliers)
-        self.disc_time_padding = self.disc_time_downsample_factor - num_frames % self.disc_time_downsample_factor
+        self.discr_time_downsample_factor = 2**len(discriminator_channel_multipliers)
+        self.discr_time_padding = self.discr_time_downsample_factor - num_frames % self.discr_time_downsample_factor
         self.separate_first_frame_encoding = separate_first_frame_encoding
 
         image_down = 2 ** len(temporal_downsample)
@@ -697,10 +715,10 @@ class VAE_3D_V2(nn.Module):
             self.vgg = vgg
         
         # Adversarial Loss
-        self.adversarial_loss_weight = adversarial_loss_weight
-        self.disc = None
-        if adversarial_loss_weight is not None and adversarial_loss_weight > 0:
-            self.disc = StyleGANDiscriminator(
+        self.discriminator_factor = discriminator_factor
+        self.discriminator = None
+        if discriminator_factor is not None and discriminator_factor > 0:
+            self.discriminator = StyleGANDiscriminator(
                 image_size = image_size,
                 num_frames = num_frames,
                 discriminator_in_channels = discriminator_in_channels,
@@ -710,6 +728,13 @@ class VAE_3D_V2(nn.Module):
                 dtype = dtype,
                 device = device,
             )
+
+        if discriminator_loss == "hinge":
+            self.calc_disc_loss = hinge_d_loss
+        elif discriminator_loss == "vanilla":
+            self.calc_disc_loss = vanilla_d_loss
+        else:
+            raise ValueError(f"Unknown GAN loss '{discriminator_loss}'.")
         
 
     def get_latent_size(self, input_size):
@@ -771,11 +796,18 @@ class VAE_3D_V2(nn.Module):
 
         return video
     
+    def get_last_layer(self):
+        return self.conv_out.weight
+    
     def forward(
         self,
         input,
+        optimizer_idx,
+        global_step,
         sample_posterior=True,
         video_contains_first_frame = True,
+        split = "train",
+
     ):  
         assert input.ndim in {4, 5}, f"received input of {input.ndim} dimensions" # either image or video
         assert input.shape[-2:] == self.image_size, f"received input size {input.shape[-2:]}, but config image size is {self.image_size}"
@@ -808,77 +840,101 @@ class VAE_3D_V2(nn.Module):
         )
 
         recon_loss = F.mse_loss(video, recon_video)
-
+        # TODO: check if ths is tensor 
+        breakpoint()
         total_loss = recon_loss 
 
         # KL Loss
-        kl_loss = 0
-
+        weighted_kl_loss = 0
         if self.kl_loss_weight is not None and self.kl_loss_weight > 0:
             kl_loss = posterior.kl()
             # NOTE: since we use MSE, here use mean as well, else use sum
             kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
-            kl_loss = kl_loss * self.kl_loss_weight
-            total_loss += kl_loss
-
-
-        # Adversarial Loss
-        # TODO: DOUBLE add more sophisticated discrminator loss 
-        gen_loss = 0
-
-        if self.adversarial_loss_weight is not None and self.adversarial_loss_weight > 0:
-            if video_contains_first_frame:
-                # video_len = video.shape[2]
-                # real_video = pad_at_dim(video, (self.disc_time_padding, 0), value = 0., dim = 2)
-                # video_packed_shape = [torch.Size([self.disc_time_padding]), torch.Size([]), torch.Size([video_len - 1])]
-                fake_video = pad_at_dim(recon_video, (self.disc_time_padding, 0), value = 0., dim = 2)
-            # real_logits = self.disc(real_video)
-            fake_logits = self.disc(fake_video.detach())
-            # dsicr_loss = hinge_discr_loss(fake_logits, real_logits)
-            gen_loss = hinge_gen_loss(fake_logits)
-            gen_loss = gen_loss * self.adversarial_loss_weight
-            total_loss += gen_loss
-
-
+            weighted_kl_loss = kl_loss * self.kl_loss_weight
+            total_loss += weighted_kl_loss
 
         # Perceptual Loss
         # SCH: NOTE: if mse can pick single frame, if use sum of errors, need to calc for all frames!
-        perceptual_loss = 0
-
+        weighted_perceptual_loss = 0
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0:
-
             frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
-
             input_vgg_input = pick_video_frame(video, frame_indices)
             recon_vgg_input = pick_video_frame(recon_video, frame_indices)
-
             if channels == 1:
                 input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
                 recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
-
             elif channels == 4: # SCH: take the first 3 for perceptual loss calc
                 input_vgg_input = input_vgg_input[:, :3]
                 recon_vgg_input = recon_vgg_input[:, :3]
-
             input_vgg_feats = self.vgg(input_vgg_input)
             recon_vgg_feats = self.vgg(recon_vgg_input)
             perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
             # perceptual_loss = self.lpips(input_vgg_input.contiguous(), recon_vgg_input.contiguous())
-            
-            perceptual_loss = perceptual_loss * self.perceptual_loss_weight
-            total_loss += perceptual_loss
+            weighted_perceptual_loss = perceptual_loss * self.perceptual_loss_weight
+            total_loss += weighted_perceptual_loss
+
+        nll_loss = recon_loss + weighted_kl_loss + weighted_perceptual_loss
 
 
-        # loss breakdown
-        loss_breakdown = LossBreakdown(
-            recon_loss,
-            kl_loss,
-            perceptual_loss,
-            gen_loss
-        )
+        # GAN 
+        if optimizer_idx == 0: # generator update
+            if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
+                try: 
+                    d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, self.get_last_layer())
+                except RuntimeError:
+                    assert not self.training
+                    d_weight = torch.tensor(0.0)
+                # if video_contains_first_frame:
+                # Since we don't have enough T frames, pad anyways
+                fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
+                # real_logits = self.discriminator(real_video)
+                fake_logits = self.discriminator(fake_video.contiguous())
+                gan_loss = -torch.mean(fake_logits)
+            else:
+                d_weight = torch.tensor(0.0)
+                gan_loss = torch.tensor(0.0)
 
-        return total_loss, recon_video
-    
+            disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_iter_start)
+            weighted_gan_loss = d_weight * disc_factor * gan_loss
+            breakpoint()
+            total_loss += weighted_gan_loss
+
+            log = {"{}/total_loss".format(split): total_loss.clone().detach().mean(),
+                "{}/nll_loss".format(split): nll_loss.detach().mean(),
+                "{}/recon_loss".format(split): recon_loss.detach().mean(),
+                "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
+                "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
+                "{}/weighted_gan_loss".format(split): weighted_gan_loss.detach().mean(),
+                "{}gan_adaptive_weight".format(split): d_weight.detach(),
+                "{}/disc_factor".format(split): torch.tensor(disc_factor),
+            }
+            return total_loss, recon_video, log
+
+
+        if optimizer_idx == 1: # second pass for discriminator update
+            if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
+                # if video_contains_first_frame:
+                # Since we don't have enough T frames, pad anyways
+                real_video = pad_at_dim(video, (self.discr_time_padding, 0), value = 0., dim = 2)
+                fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
+                real_logits = self.discriminator(real_video.contiguous.detach())
+                fake_logits = self.discriminator(fake_video.contiguous.detach())
+                disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_iter_start)
+                weight_discriminator_loss = disc_factor * self.calc_disc_loss(real_logits, fake_logits)
+            else:
+                weight_discriminator_loss = 0
+
+            breakpoint()
+
+            log = {"{}/weighted_disc_loss".format(split): weight_discriminator_loss.clone().detach().mean(),
+                   "{}/logits_real".format(split): real_logits.detach().mean(),
+                   "{}/logits_fake".format(split): fake_logits.detach().mean()
+                   }            
+
+            return weight_discriminator_loss, recon_video, log
+
+
+
 
 @MODELS.register_module("VAE_MAGVIT_V2")
 def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
