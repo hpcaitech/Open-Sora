@@ -14,6 +14,7 @@ from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device
 from tqdm import tqdm
 import os
+from einops import rearrange
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import (
@@ -141,11 +142,19 @@ def main():
     # 4.3. move to device
     vae = vae.to(device, dtype)
 
+    breakpoint() # TODO: check vae parameters
+
     # 4.5. setup optimizer
+    # vae optimizer
     optimizer = HybridAdam(
         filter(lambda p: p.requires_grad, vae.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
     )
     lr_scheduler = None
+    # disc optimizer
+    disc_optimizer = HybridAdam(
+        filter(lambda p: p.requires_grad, vae.disc_parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
+    )
+    disc_lr_scheduler = None
 
     # 4.6. prepare for training
     if cfg.grad_checkpoint:
@@ -160,6 +169,12 @@ def main():
     vae, optimizer, _, dataloader, lr_scheduler = booster.boost(
         model=vae, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
     )
+    # TODO: do I need to pass the other parameters?
+    # TODO: can we use the same booster.boost?
+    vae.discriminator, disc_optimizer, _, _, disc_lr_scheduler = booster.boost(
+        model=vae.discriminator, optimizer=disc_optimizer, lr_scheduler=disc_lr_scheduler
+    )
+
     torch.set_default_dtype(torch.float)
     num_steps_per_epoch = len(dataloader)
     logger.info("Boost vae for distributed training")
@@ -169,6 +184,7 @@ def main():
     # =======================================================
     start_epoch = start_step = log_step = sampler_start_idx = 0
     running_loss = 0.0
+    running_disc_loss = 0.0
 
 
     # 6.1. resume training
@@ -176,8 +192,12 @@ def main():
         logger.info("Loading checkpoint")
         booster.load_model(vae, os.path.join(cfg.load, "model"))
         booster.load_optimizer(optimizer, os.path.join(cfg.load, "optimizer"))
+        booster.load_optimizer(disc_optimizer, os.path.join(cfg.load, "disc_optimizer"))
         if lr_scheduler is not None:
             booster.load_lr_scheduler(lr_scheduler, os.path.join(cfg.load, "lr_scheduler"))
+        if disc_lr_scheduler is not None:
+            booster.load_lr_scheduler(disc_lr_scheduler, os.path.join(cfg.load, "disc_lr_scheduler"))
+
         running_states = load_json(os.path.join(cfg.load, "running_states.json"))
         dist.barrier()
         start_epoch, start_step, sampler_start_idx = running_states["epoch"], running_states["step"], running_states["sample_start_index"]
@@ -188,9 +208,6 @@ def main():
 
     # # define loss function
     # loss_function = VEA3DLoss(kl_weight=cfg.kl_weight, perceptual_weight=cfg.perceptual_weight).to(device, dtype)
-
-    # TODO: Use separate optimizers, 0 for main model and 1 for gan model
-    optimizer_idx = 0
 
 
     # 6.2. training loop
@@ -207,34 +224,60 @@ def main():
             initial=start_step,
         ) as pbar:
             for step in pbar:
+
+                # SCH: calc global step at the start
+                global_step = epoch * num_steps_per_epoch + step
+            
                 batch = next(dataloader_iter)
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
 
+                # supprt for image or video inputs
+                assert x.ndim in {4, 5}, f"received input of {x.ndim} dimensions" # either image or video
+                assert x.shape[-2:] == cfg.image_size, f"received input size {x.shape[-2:]}, but config image size is {cfg.image_size}"
+                is_image = x.ndim == 4
+                if is_image:
+                    video = rearrange(x, 'b c ... -> b c 1 ...')
+                    video_contains_first_frame = True
+                else:
+                    video = x
+
                 # loss = vae.get_loss(x)
-                loss, reconstructions, log = vae(
-                    x,
-                    optimizer_idx, # TODO: add
+                loss, recon_video, log = vae(
+                    video,
                     global_step,
-                    video_contains_first_frame = cfg.video_contains_first_frame,
+                    video_contains_first_frame = video_contains_first_frame,
                     split = "train",
                 )
-                # loss = loss_function(x, reconstructions, posterior)
 
                 # Backward & update
                 booster.backward(loss=loss, optimizer=optimizer)
                 optimizer.step()
                 optimizer.zero_grad()
 
+                disc_loss, disc_log = vae.disc_forward(
+                    video,
+                    recon_video,
+                    global_step,
+                    split = "train",
+                )
+
+                booster.backward(loss=disc_loss, optimizer=disc_optimizer)
+                disc_optimizer.step()
+                disc_optimizer.zero_grad()
+
                 # Log loss values:
                 all_reduce_mean(loss)
                 running_loss += loss.item()
-                global_step = epoch * num_steps_per_epoch + step
+                all_reduce_mean(disc_loss)
+                running_disc_loss += disc_loss.item()
                 log_step += 1
+
 
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
                     avg_loss = running_loss / log_step
-                    pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step, "opt_idx": optimizer_idx})
+                    avg_disc_loss = running_disc_loss / log_step
+                    pbar.set_postfix({"loss": avg_loss, "disc_loss": avg_disc_loss, "step": step, "global_step": global_step})
                     running_loss = 0
                     log_step = 0
                     writer.add_scalar("loss", loss.item(), global_step)
@@ -242,7 +285,6 @@ def main():
                         wandb.log(
                             {
                                 "iter": global_step,
-                                "optimizer_idx": optimizer_idx,
                                 "num_samples": global_step * total_batch_size,
                                 "epoch": epoch,
                                 "loss": loss.item(),
@@ -258,8 +300,13 @@ def main():
                     # TODO: save in model?
                     booster.save_model(vae, os.path.join(save_dir, "model"), shard=True)
                     booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
+                    booster.save_optimizer(disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096)
+
                     if lr_scheduler is not None:
                         booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
+                    if disc_lr_scheduler is not None:
+                        booster.save_lr_scheduler(disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler"))
+
                     running_states = {
                         "epoch": epoch,
                         "step": step+1,
