@@ -7,6 +7,7 @@ root = None
 data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
+video_contains_first_frame = True
 
 # Define acceleration
 dtype = "bf16"
