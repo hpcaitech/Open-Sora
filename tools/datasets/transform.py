@@ -101,6 +101,91 @@ def extract_frames(video_path, input_dir, output, point):
     return path_new
 
 
+def extract_frames_new(
+        video_path,
+        frame_inds=[0, 10, 20, 30],
+        points=None,
+        backend='opencv',
+        return_length=False,
+):
+    """
+    Args:
+        video_path (str): path to video
+        frame_inds (List[int]): indices of frames to extract
+        points (List[float]): values within [0, 1); multiply #frames to get frame indices
+    Return:
+        List[PIL.Image]
+    """
+    assert backend in ['av', 'opencv', 'decord']
+    assert (frame_inds is None) or (points is None)
+
+    if backend == 'av':
+        import av
+        container = av.open(video_path)
+        total_frames = container.streams.video[0].frames
+
+        if points is not None:
+            frame_inds = [int(p * total_frames) for p in points]
+
+        frames = []
+        for idx in frame_inds:
+            if idx >= total_frames:
+                idx = total_frames - 1
+            target_timestamp = int(
+                idx * av.time_base / container.streams.video[0].average_rate
+            )
+            container.seek(target_timestamp)
+            frame = next(container.decode(video=0)).to_image()
+            frames.append(frame)
+
+        if return_length:
+            return frames, total_frames
+        return frames
+
+    elif backend == 'decord':
+        import decord
+        container = decord.VideoReader(video_path, num_threads=1)
+        total_frames = len(container)
+        # avg_fps = container.get_avg_fps()
+
+        if points is not None:
+            frame_inds = [int(p * total_frames) for p in points]
+
+        frame_inds = np.array(frame_inds).astype(np.int32)
+        frame_inds[frame_inds >= total_frames] = total_frames - 1
+        frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
+        frames = [Image.fromarray(x) for x in frames]
+
+        if return_length:
+            return frames, total_frames
+        return frames
+
+    elif backend == 'opencv':
+        import cv2
+        cap = cv2.VideoCapture(video_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        if points is not None:
+            frame_inds = [int(p * total_frames) for p in points]
+
+        frames = []
+        for idx in frame_inds:
+            if idx >= total_frames:
+                idx = total_frames - 1
+
+            cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+            ret, frame = cap.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = Image.fromarray(frame)
+            frames.append(frame)
+
+        if return_length:
+            return frames, total_frames
+        return frames
+    else:
+        raise ValueError
+
+
 def main(args):
     data = pd.read_csv(args.input)
     if args.method == "img_rand_crop":
@@ -145,3 +230,14 @@ if __name__ == "__main__":
     if args.disable_parallel:
         pandas_has_parallel = False
     main(args)
+    exit()
+
+    from torchvision.transforms.functional import pil_to_tensor
+    ret = extract_frames_new(
+        'E:/data/video/pexels_new/8974385_scene-0.mp4',
+        frame_inds=[0, 50, 100, 150],
+        backend='opencv')
+    for idx, img in enumerate(ret):
+        save_path = f'./checkpoints/vis/{idx}.png'
+        ret[idx].save(save_path)
+    exit()
