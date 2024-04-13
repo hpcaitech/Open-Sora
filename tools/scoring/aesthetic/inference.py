@@ -4,7 +4,6 @@ import os
 from datetime import timedelta
 
 import clip
-import decord
 import numpy as np
 import pandas as pd
 import torch
@@ -16,6 +15,8 @@ from einops import rearrange
 from PIL import Image
 from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
+
+from tools.datasets.transform import extract_frames_new
 
 try:
     from torchvision.transforms import InterpolationMode
@@ -34,16 +35,6 @@ def is_video(filename):
     return ext in VID_EXTENSIONS
 
 
-def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
-    container = decord.VideoReader(video_path, num_threads=1)
-    total_frames = len(container)
-    frame_inds = (np.array(points) * total_frames).astype(np.int32)
-    frame_inds[frame_inds >= total_frames] = total_frames - 1
-    frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
-    frames_pil = [Image.fromarray(frame) for frame in frames]
-    return frames_pil
-
-
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path, transform=None, points=(0.1, 0.5, 0.9)):
         self.csv_path = csv_path
@@ -57,7 +48,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         if not is_video(path):
             images = [pil_loader(path)]
         else:
-            images = extract_frames(sample["path"], points=self.points)
+            images = extract_frames_new(sample["path"], points=self.points, backend="opencv")
         images = [self.transform(img) for img in images]
         images = torch.stack(images)
         return dict(index=index, images=images)
