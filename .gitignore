@@ -170,6 +170,7 @@ runs/
 checkpoints/
 outputs/
 samples/
+logs/
 pretrained_models/
 *.swp
 

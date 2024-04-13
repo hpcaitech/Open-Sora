@@ -153,6 +153,3 @@ class VariableVideoTextDataset(VideoTextDataset):
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
         return {"video": video, "text": text, "num_frames": num_frames, "height": height, "width": width, "ar": ar}
-
-    def __getitem__(self, index):
-        return self.getitem(index)

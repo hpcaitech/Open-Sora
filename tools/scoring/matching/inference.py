@@ -8,10 +8,6 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torchvision.datasets.folder import pil_loader
-<<<<<<< HEAD
-
-=======
->>>>>>> dev/v1.0.1
 from tqdm import tqdm
 
 IMG_EXTENSIONS = (
@@ -48,9 +44,7 @@ def extract_frames(video_path, points=[0.5]):
     frames = []
     for point in points:
         target_frame = total_frames * point
-        target_timestamp = int(
-            (target_frame * av.time_base) / container.streams.video[0].average_rate
-        )
+        target_timestamp = int((target_frame * av.time_base) / container.streams.video[0].average_rate)
         container.seek(target_timestamp)
         frame = next(container.decode(video=0)).to_image()
         frames.append(frame)
@@ -65,7 +59,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         row = self.meta.iloc[index]
-        path = row['path']
+        path = row["path"]
 
         if is_video(path):
             img = extract_frames(path, points=[0.5])[0]

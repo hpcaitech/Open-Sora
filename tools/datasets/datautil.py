@@ -7,6 +7,7 @@ import re
 from functools import partial
 from glob import glob
 
+import cv2
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -47,8 +48,6 @@ def apply(df, func, **kwargs):
 
 
 def get_info(path):
-    import cv2
-
     try:
         ext = os.path.splitext(path)[1].lower()
         if ext in IMG_EXTENSIONS:
@@ -70,42 +69,6 @@ def get_info(path):
         return num_frames, height, width, aspect_ratio, fps, hw
     except:
         return 0, 0, 0, np.nan, np.nan, np.nan
-
-
-# ======================================================
-# --video-info
-# ======================================================
-
-
-def get_video_info(path):
-    import ffmpeg
-
-    try:
-        info = ffmpeg.probe(path)["streams"][0]
-        height = int(info["height"])
-        width = int(info["width"])
-        num_frames = int(info["nb_frames"])
-        aspect_ratio = height / width
-        hw = height * width
-        fps = np.nan
-        return num_frames, height, width, aspect_ratio, fps, hw
-    except:
-        return 0, 0, 0, np.nan, np.nan, np.nan
-
-
-# ======================================================
-# --remove-corrupted
-# ======================================================
-
-
-def is_video_valid(path):
-    import decord
-
-    try:
-        decord.VideoReader(path, num_threads=1)
-        return True
-    except:
-        return False
 
 
 # ======================================================
@@ -357,12 +320,15 @@ def text_preprocessing(text, use_text_preprocessing: bool = True):
 
 
 def load_caption(path, ext):
-    assert ext in ["json"]
-    json_path = path.split(".")[0] + ".json"
-    with open(json_path, "r") as f:
-        data = json.load(f)
-    caption = data["caption"]
-    return caption
+    try:
+        assert ext in ["json"]
+        json_path = path.split(".")[0] + ".json"
+        with open(json_path, "r") as f:
+            data = json.load(f)
+        caption = data["caption"]
+        return caption
+    except:
+        return ""
 
 
 # ======================================================
@@ -396,6 +362,7 @@ def read_data(input_paths):
         input_list.extend(glob(input_path))
     print("Input files:", input_list)
     for i, input_path in enumerate(input_list):
+        assert os.path.exists(input_path)
         data.append(read_file(input_path))
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(input_list) - 1:
@@ -444,10 +411,25 @@ def main(args):
 
         tokenizer = AutoTokenizer.from_pretrained("DeepFloyd/t5-v1_1-xxl")
 
-    # filtering
+    # IO-related
+    if args.load_caption is not None:
+        assert "path" in data.columns
+        data["text"] = apply(data["path"], load_caption, ext=args.load_caption)
+    if args.info:
+        info = apply(data["path"], get_info)
+        (
+            data["num_frames"],
+            data["height"],
+            data["width"],
+            data["aspect_ratio"],
+            data["fps"],
+            data["resolution"],
+        ) = zip(*info)
     if args.ext:
         assert "path" in data.columns
         data = data[apply(data["path"], os.path.exists)]
+
+    # filtering
     if args.remove_url:
         assert "text" in data.columns
         data = data[~data["text"].str.contains(r"(?P<url>https?://[^\s]+)", regex=True)]
@@ -461,9 +443,6 @@ def main(args):
     if args.remove_path_duplication:
         assert "path" in data.columns
         data = data.drop_duplicates(subset=["path"])
-    if args.remove_corrupted:
-        assert "path" in data.columns
-        data = data[apply(data["path"], is_video_valid)]
 
     # processing
     if args.relpath is not None:
@@ -487,30 +466,6 @@ def main(args):
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
-    if args.info:
-        info = apply(data["path"], get_info)
-        (
-            data["num_frames"],
-            data["height"],
-            data["width"],
-            data["aspect_ratio"],
-            data["fps"],
-            data["resolution"],
-        ) = zip(*info)
-    if args.video_info:
-        assert "path" in data.columns
-        info = apply(data["path"], get_video_info)
-        (
-            data["num_frames"],
-            data["height"],
-            data["width"],
-            data["aspect_ratio"],
-            data["fps"],
-            data["resolution"],
-        ) = zip(*info)
-    if args.load_caption is not None:
-        assert "path" in data.columns
-        data["text"] = apply(data["path"], load_caption, ext=args.load_caption)
 
     # sort
     if args.sort is not None:
@@ -577,9 +532,10 @@ def parse_args():
 
     # IO-related
     parser.add_argument("--info", action="store_true", help="get the basic information of each video and image")
-    parser.add_argument("--video-info", action="store_true", help="get the basic information of each video")
     parser.add_argument("--ext", action="store_true", help="check if the file exists")
-    parser.add_argument("--remove-corrupted", action="store_true", help="remove the corrupted video and image")
+    parser.add_argument(
+        "--load-caption", type=str, default=None, choices=["json", "txt"], help="load the caption from json or txt"
+    )
 
     # path processing
     parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
@@ -605,9 +561,6 @@ def parse_args():
     parser.add_argument("--merge-cmotion", action="store_true", help="merge the camera motion to the caption")
     parser.add_argument(
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
-    )
-    parser.add_argument(
-        "--load-caption", type=str, default=None, choices=["json", "txt"], help="load the caption from json or txt"
     )
 
     # score filtering
@@ -636,14 +589,13 @@ def get_output_path(args, input_name):
         name += "_sort"
 
     # IO-related
+    # for IO-related, the function must be wrapped in try-except
     if args.info:
         name += "_info"
-    if args.video_info:
-        name += "_vinfo"
     if args.ext:
         name += "_ext"
-    if args.remove_corrupted:
-        name += "_nocorrupted"
+    if args.load_caption:
+        name += f"_load{args.load_caption}"
 
     # path processing
     if args.relpath is not None:
@@ -674,8 +626,6 @@ def get_output_path(args, input_name):
         name += "_cmcaption"
     if args.count_num_token:
         name += "_ntoken"
-    if args.load_caption:
-        name += f"_load{args.load_caption}"
 
     # score filtering
     if args.fmin is not None:

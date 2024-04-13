@@ -119,6 +119,7 @@ def main(args):
     data = pd.read_csv(args.input)
     data["cmotion"] = apply(data["path"], process)
     data.to_csv(output_file, index=False)
+    print(f"Output saved to {output_file}")
 
 
 if __name__ == "__main__":

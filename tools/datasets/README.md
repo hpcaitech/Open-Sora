@@ -13,6 +13,7 @@
     - [Frame extraction](#frame-extraction)
     - [Crop Midjourney 4 grid](#crop-midjourney-4-grid)
   - [Analyze datasets](#analyze-datasets)
+  - [Data Process Pipeline](#data-process-pipeline)
 
 After preparing the raw dataset according to the [instructions](/docs/datasets.md), you can use the following commands to manage the dataset.
 
@@ -74,7 +75,7 @@ python -m tools.datasets.convert vidprom VIDPROM_FOLDER --info VidProM_semantic_
 
 ## Manage datasets
 
-Use `csvutil` to manage the dataset.
+Use `datautil` to manage the dataset.
 
 ### Requirement
 
@@ -88,6 +89,10 @@ To get image and video information, you need to install [opencv-python](https://
 
 ```bash
 pip install opencv-python
+# If your videos are in av1 codec instead of h264, you need to
+# - install ffmpeg first
+# - install via conda to support av1 codec
+conda install -c conda-forge opencv
 ```
 
 Or to get video information, you can install ffmpeg and ffmpeg-python:
@@ -107,30 +112,27 @@ pip install lingua-language-detector
 You can use the following commands to process the `csv` or `parquet` files. The output file will be saved in the same directory as the input, with different suffixes indicating the processed method.
 
 ```bash
-# csvutil takes multiple CSV files as input and merge them into one CSV file
+# datautil takes multiple CSV files as input and merge them into one CSV file
 # output: DATA1+DATA2.csv
-python -m tools.datasets.csvutil DATA1.csv DATA2.csv
+python -m tools.datasets.datautil DATA1.csv DATA2.csv
 
 # shard CSV files into multiple CSV files
 # output: DATA1_0.csv, DATA1_1.csv, ...
-python -m tools.datasets.csvutil DATA1.csv --shard 10
+python -m tools.datasets.datautil DATA1.csv --shard 10
 
 # filter frames between 128 and 256, with captions
 # output: DATA1_fmin_128_fmax_256.csv
-python -m tools.datasets.csvutil DATA.csv --fmin 128 --fmax 256
+python -m tools.datasets.datautil DATA.csv --fmin 128 --fmax 256
 
 # Disable parallel processing
-python -m tools.datasets.csvutil DATA.csv --fmin 128 --fmax 256 --disable-parallel
-
-# Remove corrupted video from the csv
-python -m tools.datasets.csvutil DATA.csv --remove-corrupted
+python -m tools.datasets.datautil DATA.csv --fmin 128 --fmax 256 --disable-parallel
 
 # Compute num_frames, height, width, fps, aspect_ratio for videos or images
 # output: IMG_DATA+VID_DATA_vinfo.csv
-python -m tools.datasets.csvutil IMG_DATA.csv VID_DATA.csv --video-info
+python -m tools.datasets.datautil IMG_DATA.csv VID_DATA.csv --video-info
 
 # You can run multiple operations at the same time.
-python -m tools.datasets.csvutil DATA.csv --video-info --remove-empty-caption --remove-url --lang en
+python -m tools.datasets.datautil DATA.csv --video-info --remove-empty-caption --remove-url --lang en
 ```
 
 ### Score filtering
@@ -140,7 +142,7 @@ To examine and filter the quality of the dataset by aesthetic score and clip sco
 ```bash
 # sort the dataset by aesthetic score
 # output: DATA_sort.csv
-python -m tools.datasets.csvutil DATA.csv --sort aesthetic_score
+python -m tools.datasets.datautil DATA.csv --sort aesthetic_score
 # View examples of high aesthetic score
 head -n 10 DATA_sort.csv
 # View examples of low aesthetic score
@@ -148,19 +150,19 @@ tail -n 10 DATA_sort.csv
 
 # sort the dataset by clip score
 # output: DATA_sort.csv
-python -m tools.datasets.csvutil DATA.csv --sort clip_score
+python -m tools.datasets.datautil DATA.csv --sort clip_score
 
 # filter the dataset by aesthetic score
 # output: DATA_aesmin_0.5.csv
-python -m tools.datasets.csvutil DATA.csv --aesmin 0.5
+python -m tools.datasets.datautil DATA.csv --aesmin 0.5
 # filter the dataset by clip score
 # output: DATA_matchmin_0.5.csv
-python -m tools.datasets.csvutil DATA.csv --matchmin 0.5
+python -m tools.datasets.datautil DATA.csv --matchmin 0.5
 ```
 
 ### Documentation
 
-You can also use `python -m tools.datasets.csvutil --help` to see usage.
+You can also use `python -m tools.datasets.datautil --help` to see usage.
 
 | Args                        | File suffix    | Description                                                   |
 | --------------------------- | -------------- | ------------------------------------------------------------- |
@@ -174,9 +176,7 @@ You can also use `python -m tools.datasets.csvutil --help` to see usage.
 | `--difference DATA.csv`     |                | Remove the paths in DATA.csv from the dataset                 |
 | `--intersection DATA.csv`   |                | Keep the paths in DATA.csv from the dataset and merge columns |
 | `--info`                    | `_info`        | Get the basic information of each video and image (cv2)       |
-| `--video-info`              | `_vinfo`       | Get the basic information of each video (ffmpeg)              |
 | `--ext`                     | `_ext`         | Remove rows if the file does not exist                        |
-| `--remove-corrupted`        | `_nocorrupted` | Remove the corrupted video and image                          |
 | `--relpath`                 | `_relpath`     | Modify the path to relative path by root given                |
 | `--abspath`                 | `_abspath`     | Modify the path to absolute path by root given                |
 | `--remove-empty-caption`    | `_noempty`     | Remove rows with empty caption                                |
@@ -244,4 +244,38 @@ For the dataset provided in a `.csv` or `.parquet` file, you can easily analyze 
 
 ```python
 pyhton -m tools.datasets.analyze DATA_info.csv
+```
+
+## Data Process Pipeline
+
+```bash
+# Suppose videos and images under ~/dataset/
+# 1. Convert dataset to CSV
+python -m tools.datasets.convert video ~/dataset --output meta.csv
+
+# 2. Get video information
+python -m tools.datasets.datautil meta.csv --info --fmin 1
+
+# 3. Get caption
+# 3.1. generate caption
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava meta_info_fmin1.csv --dp-size 8 --tp-size 1 --model-path liuhaotian/llava-v1.6-mistral-7b --prompt video
+# merge generated results
+python -m tools.datasets.datautil meta_info_fmin1_caption_part*.csv --output meta_caption.csv
+# merge caption and info
+python -m tools.datasets.datautil meta_info_fmin1.csv --intersection meta_caption.csv --output meta_caption_info.csv
+# clean caption
+python -m tools.datasets.datautil meta_caption_info.csv --clean-caption --refine-llm-caption --remove-empty-caption --output meta_caption_processed.csv
+# 3.2. extract caption
+python -m tools.datasets.datautil meta_info_fmin1.csv --load-caption json --remove-empty-caption --clean-caption
+
+# 4. Scoring
+# aesthetic scoring
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.aesthetic.inference meta_caption_processed.csv
+python -m tools.datasets.datautil meta_caption_processed_part*.csv --output meta_caption_processed_aes.csv
+# optical flow scoring
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.optical_flow.inference_parallel meta_caption_processed.csv
+# matching scoring
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.matching.inference_parallel meta_caption_processed.csv
+# camera motion
+python -m tools.caption.camera_motion_detect meta_caption_processed.csv
 ```

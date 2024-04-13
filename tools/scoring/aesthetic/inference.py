@@ -166,7 +166,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=512, help="Batch size")
+    parser.add_argument("--bs", type=int, default=1024, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     parser.add_argument("--accumulate", type=int, default=1, help="batch to accumulate")
     parser.add_argument("--prefetch_factor", type=int, default=2, help="Prefetch factor")
