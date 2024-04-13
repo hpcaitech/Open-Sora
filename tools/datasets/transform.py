@@ -103,7 +103,7 @@ def extract_frames(video_path, input_dir, output, point):
 
 def extract_frames_new(
         video_path,
-        frame_inds=[0, 10, 20, 30],
+        frame_inds=None,
         points=None,
         backend='opencv',
         return_length=False,
