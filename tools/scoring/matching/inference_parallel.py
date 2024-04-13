@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
 
+from tools.datasets.transform import extract_frames_new
+
 IMG_EXTENSIONS = (
     ".jpg",
     ".jpeg",
@@ -32,21 +34,6 @@ def is_video(filename):
     return ext in VID_EXTENSIONS
 
 
-def extract_frames(video_path, points=[0.5]):
-    container = av.open(video_path)
-    total_frames = container.streams.video[0].frames
-    frames = []
-    for point in points:
-        target_frame = total_frames * point
-        target_timestamp = int(
-            (target_frame * av.time_base) / container.streams.video[0].average_rate
-        )
-        container.seek(target_timestamp)
-        frame = next(container.decode(video=0)).to_image()
-        frames.append(frame)
-    return frames
-
-
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, meta_path, transform):
         self.meta_path = meta_path
@@ -58,7 +45,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         path = row["path"]
 
         if is_video(path):
-            img = extract_frames(path, points=[0.5])[0]
+            img = extract_frames_new(path, points=[0.5], backend='opencv')[0]
         else:
             img = pil_loader(path)
 
