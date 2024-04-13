@@ -784,7 +784,8 @@ class VAE_3D_V2(nn.Module):
         return video
     
     def get_last_layer(self):
-        return self.conv_out.weight
+        # CausalConv3d wraps the conv
+        return self.conv_out.conv.weight
     
     
     # def parameters(self):
