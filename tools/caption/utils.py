@@ -9,6 +9,8 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torchvision.datasets.folder import pil_loader
 
+from tools.datasets.transform import extract_frames_new
+
 PROMPTS = {
     "image": {
         "text": "Describe this image and its style to generate a succinct yet informative description. Pay attention to all objects in the image. The description should be useful for AI to re-generate the image. The description should be no more than five sentences. Remember do not exceed 5 sentences.",
@@ -92,7 +94,9 @@ class VideoTextDataset(torch.utils.data.Dataset):
             images = [pil_loader(path)]
             length = 1
         else:
-            images, length = extract_frames(sample["path"], points=self.points)
+            # images, length = extract_frames(sample["path"], points=self.points)
+            images, length = extract_frames_new(
+                sample["path"], points=self.points, backend='opencv', return_length=True)
         if self.resize_size is not None:
             images_r = []
             for img in images:

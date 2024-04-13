@@ -10,38 +10,11 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from einops import rearrange
 from torch.utils.data import DataLoader, DistributedSampler
+from torchvision.transforms.functional import pil_to_tensor
 from tqdm import tqdm
 
 from .unimatch import UniMatch
-
-import decord  # isort: skip
-
-
-def extract_frames_av(video_path, frame_inds=[0, 10, 20, 30]):
-    container = av.open(video_path)
-    total_frames = container.streams.video[0].frames
-    frames = []
-    for idx in frame_inds:
-        if idx >= total_frames:
-            idx = total_frames - 1
-        target_timestamp = int(
-            idx * av.time_base / container.streams.video[0].average_rate
-        )
-        container.seek(target_timestamp)
-        frame = next(container.decode(video=0)).to_image()
-        frames.append(frame)
-    return frames
-
-
-def extract_frames(video_path, frame_inds=[0, 10, 20, 30]):
-    container = decord.VideoReader(video_path, num_threads=1)
-    total_frames = len(container)
-    # avg_fps = container.get_avg_fps()
-
-    frame_inds = np.array(frame_inds).astype(np.int32)
-    frame_inds[frame_inds >= total_frames] = total_frames - 1
-    frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
-    return frames
+from tools.datasets.transform import extract_frames_new
 
 
 def merge_scores(gathered_list: list, meta: pd.DataFrame):
@@ -69,12 +42,11 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         row = self.meta.iloc[index]
-        images = extract_frames(row["path"], frame_inds=self.frame_inds)
-        # images = [pil_to_tensor(x) for x in images]  # [C, H, W]
+        images = extract_frames_new(row["path"], frame_inds=self.frame_inds, backend='opencv')
 
         # transform
-        images = torch.from_numpy(images).float()
-        images = rearrange(images, "N H W C -> N C H W")
+        images = torch.stack([pil_to_tensor(x) for x in images])  # shape: [N, C, H, W]; dtype: torch.uint8
+        images = images.float()
         H, W = images.shape[-2:]
         if H > W:
             images = rearrange(images, "N C H W -> N C W H")
