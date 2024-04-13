@@ -273,9 +273,9 @@ python -m tools.datasets.datautil meta_info_fmin1.csv --load-caption json --remo
 torchrun --standalone --nproc_per_node 8 -m tools.scoring.aesthetic.inference meta_caption_processed.csv
 python -m tools.datasets.datautil meta_caption_processed_part*.csv --output meta_caption_processed_aes.csv
 # optical flow scoring
-torchrun --standalone --nproc_per_node 8 -m tools.scoring.optical_flow.inference_parallel meta_caption_processed.csv
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.optical_flow.inference meta_caption_processed.csv
 # matching scoring
-torchrun --standalone --nproc_per_node 8 -m tools.scoring.matching.inference_parallel meta_caption_processed.csv
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.matching.inference meta_caption_processed.csv
 # camera motion
 python -m tools.caption.camera_motion_detect meta_caption_processed.csv
 ```
