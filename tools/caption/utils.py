@@ -72,11 +72,20 @@ def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
     return frames_pil, total_frames
 
 
+def read_file(input_path):
+    if input_path.endswith(".csv"):
+        return pd.read_csv(input_path)
+    elif input_path.endswith(".parquet"):
+        return pd.read_parquet(input_path)
+    else:
+        raise NotImplementedError(f"Unsupported file format: {input_path}")
+
+
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path, transform=None, num_frames=3, get_text_input_ids=None, resize=None):
         self.csv_path = csv_path
         self.transform = transform
-        self.data = pd.read_csv(csv_path)
+        self.data = read_file(csv_path)
         self.points = NUM_FRAMES_POINTS[num_frames]
         self.get_text_input_ids = get_text_input_ids
         self.use_text = False
