@@ -1,7 +1,6 @@
 import argparse
 import os
 
-import av
 import colossalai
 import numpy as np
 import pandas as pd
@@ -13,8 +12,9 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.transforms.functional import pil_to_tensor
 from tqdm import tqdm
 
+from tools.datasets.utils import extract_frames
+
 from .unimatch import UniMatch
-from tools.datasets.transform import extract_frames_new
 
 
 def merge_scores(gathered_list: list, meta: pd.DataFrame):
@@ -42,7 +42,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         row = self.meta.iloc[index]
-        images = extract_frames_new(row["path"], frame_inds=self.frame_inds, backend='opencv')
+        images = extract_frames(row["path"], frame_inds=self.frame_inds, backend="opencv")
 
         # transform
         images = torch.stack([pil_to_tensor(x) for x in images])  # shape: [N, C, H, W]; dtype: torch.uint8
@@ -50,9 +50,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         H, W = images.shape[-2:]
         if H > W:
             images = rearrange(images, "N C H W -> N C W H")
-        images = F.interpolate(
-            images, size=(320, 576), mode="bilinear", align_corners=True
-        )
+        images = F.interpolate(images, size=(320, 576), mode="bilinear", align_corners=True)
 
         return images, index
 
@@ -86,9 +84,7 @@ def main():
         reg_refine=True,
         task="flow",
     ).eval()
-    ckpt = torch.load(
-        "./pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth"
-    )
+    ckpt = torch.load("./pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth")
     model.load_state_dict(ckpt["model"])
     model = model.to(device)
     # model = torch.nn.DataParallel(model)

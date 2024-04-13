@@ -1,15 +1,11 @@
-import os
 import time
 
-import decord
-import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
-from PIL import Image
 from torchvision.datasets.folder import pil_loader
 
-from tools.datasets.transform import extract_frames_new
+from tools.datasets.utils import extract_frames, is_video
 
 PROMPTS = {
     "image": {
@@ -50,28 +46,12 @@ PROMPTS = {
     },
 }
 
-IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
-VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
+
 NUM_FRAMES_POINTS = {
     1: (0.5,),
     2: (0.25, 0.75),
     3: (0.1, 0.5, 0.9),
 }
-
-
-def is_video(filename):
-    ext = os.path.splitext(filename)[-1].lower()
-    return ext in VID_EXTENSIONS
-
-
-def extract_frames(video_path, points=(0.1, 0.5, 0.9)):
-    container = decord.VideoReader(video_path, num_threads=1)
-    total_frames = len(container)
-    frame_inds = (np.array(points) * total_frames).astype(np.int32)
-    frame_inds[frame_inds >= total_frames] = total_frames - 1
-    frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
-    frames_pil = [Image.fromarray(frame) for frame in frames]
-    return frames_pil, total_frames
 
 
 def read_file(input_path):
@@ -103,10 +83,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
             images = [pil_loader(path)]
             length = 1
         else:
-            # images, length = extract_frames(sample["path"], points=self.points)
-            images, length = extract_frames_new(
-                sample["path"], points=self.points, backend="opencv", return_length=True
-            )
+            images, length = extract_frames(sample["path"], points=self.points, backend="opencv", return_length=True)
         if self.resize_size is not None:
             images_r = []
             for img in images:

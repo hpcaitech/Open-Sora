@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from .utils import IMG_EXTENSIONS
+
 tqdm.pandas()
 
 try:
@@ -23,19 +25,6 @@ except ImportError:
     pandas_has_parallel = False
 
 
-IMG_EXTENSIONS = (
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".ppm",
-    ".bmp",
-    ".pgm",
-    ".tif",
-    ".tiff",
-    ".webp",
-)
-
-
 def apply(df, func, **kwargs):
     if pandas_has_parallel:
         return df.parallel_apply(func, **kwargs)
@@ -45,6 +34,16 @@ def apply(df, func, **kwargs):
 # ======================================================
 # --info
 # ======================================================
+
+
+def get_video_length(cap, method="header"):
+    assert method in ["header", "set"]
+    if method == "header":
+        length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    else:
+        cap.set(cv2.CAP_PROP_POS_AVI_RATIO, 1)
+        length = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+    return length
 
 
 def get_info(path):
@@ -59,7 +58,7 @@ def get_info(path):
         else:
             cap = cv2.VideoCapture(path)
             num_frames, height, width, fps = (
-                int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+                get_video_length(cap, method="header"),
                 int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
                 int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
                 float(cap.get(cv2.CAP_PROP_FPS)),
@@ -69,6 +68,17 @@ def get_info(path):
         return num_frames, height, width, aspect_ratio, fps, hw
     except:
         return 0, 0, 0, np.nan, np.nan, np.nan
+
+
+def get_video_info(path):
+    import torchvision
+
+    vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+    num_frames, height, width = vframes.shape[0], vframes.shape[1], vframes.shape[2]
+    aspect_ratio = height / width
+    fps = np.nan
+    resolution = height * width
+    return num_frames, height, width, aspect_ratio, fps, resolution
 
 
 # ======================================================
@@ -425,6 +435,16 @@ def main(args):
             data["fps"],
             data["resolution"],
         ) = zip(*info)
+    if args.video_info:
+        info = apply(data["path"], get_video_info)
+        (
+            data["num_frames"],
+            data["height"],
+            data["width"],
+            data["aspect_ratio"],
+            data["fps"],
+            data["resolution"],
+        ) = zip(*info)
     if args.ext:
         assert "path" in data.columns
         data = data[apply(data["path"], os.path.exists)]
@@ -532,6 +552,7 @@ def parse_args():
 
     # IO-related
     parser.add_argument("--info", action="store_true", help="get the basic information of each video and image")
+    parser.add_argument("--video-info", action="store_true", help="get the basic information of each video")
     parser.add_argument("--ext", action="store_true", help="check if the file exists")
     parser.add_argument(
         "--load-caption", type=str, default=None, choices=["json", "txt"], help="load the caption from json or txt"
@@ -592,6 +613,8 @@ def get_output_path(args, input_name):
     # for IO-related, the function must be wrapped in try-except
     if args.info:
         name += "_info"
+    if args.video_info:
+        name += "_vinfo"
     if args.ext:
         name += "_ext"
     if args.load_caption:

@@ -1,6 +1,5 @@
 # adapted from https://github.com/christophschuhmann/improved-aesthetic-predictor/blob/main/simple_inference.py
 import argparse
-import os
 from datetime import timedelta
 
 import clip
@@ -16,7 +15,7 @@ from PIL import Image
 from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
 
-from tools.datasets.transform import extract_frames_new
+from tools.datasets.utils import extract_frames, is_video
 
 try:
     from torchvision.transforms import InterpolationMode
@@ -26,21 +25,19 @@ except ImportError:
     BICUBIC = Image.BICUBIC
 
 
-IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
-VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
-
-
-def is_video(filename):
-    ext = os.path.splitext(filename)[-1].lower()
-    return ext in VID_EXTENSIONS
+NUM_FRAMES_POINTS = {
+    1: (0.5,),
+    2: (0.25, 0.5),
+    3: (0.1, 0.5, 0.9),
+}
 
 
 class VideoTextDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_path, transform=None, points=(0.1, 0.5, 0.9)):
+    def __init__(self, csv_path, transform=None, num_frames=3):
         self.csv_path = csv_path
         self.data = pd.read_csv(csv_path)
         self.transform = transform
-        self.points = points
+        self.points = NUM_FRAMES_POINTS[num_frames]
 
     def getitem(self, index):
         sample = self.data.iloc[index]
@@ -48,7 +45,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         if not is_video(path):
             images = [pil_loader(path)]
         else:
-            images = extract_frames_new(sample["path"], points=self.points, backend="opencv")
+            images = extract_frames(sample["path"], points=self.points, backend="opencv")
         images = [self.transform(img) for img in images]
         images = torch.stack(images)
         return dict(index=index, images=images)
@@ -111,7 +108,7 @@ def main(args):
     preprocess = model.preprocess
 
     # build dataset
-    dataset = VideoTextDataset(args.input, transform=preprocess)
+    dataset = VideoTextDataset(args.input, transform=preprocess, num_frames=args.num_frames)
     sampler = torch.utils.data.distributed.DistributedSampler(
         dataset=dataset, num_replicas=world_size, rank=rank, shuffle=False
     )
@@ -161,6 +158,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     parser.add_argument("--accumulate", type=int, default=1, help="batch to accumulate")
     parser.add_argument("--prefetch_factor", type=int, default=2, help="Prefetch factor")
+    parser.add_argument("--num_frames", type=int, default=3, help="Number of frames to extract")
     args = parser.parse_args()
 
     main(args)

@@ -1,7 +1,6 @@
 import argparse
 import os
 
-import av
 import clip
 import colossalai
 import numpy as np
@@ -13,25 +12,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
 
-from tools.datasets.transform import extract_frames_new
-
-IMG_EXTENSIONS = (
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".ppm",
-    ".bmp",
-    ".pgm",
-    ".tif",
-    ".tiff",
-    ".webp",
-)
-VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
-
-
-def is_video(filename):
-    ext = os.path.splitext(filename)[-1].lower()
-    return ext in VID_EXTENSIONS
+from tools.datasets.utils import extract_frames, is_video
 
 
 class VideoTextDataset(torch.utils.data.Dataset):
@@ -45,7 +26,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         path = row["path"]
 
         if is_video(path):
-            img = extract_frames_new(path, points=[0.5], backend='opencv')[0]
+            img = extract_frames(path, points=[0.5], backend="opencv")[0]
         else:
             img = pil_loader(path)
 
