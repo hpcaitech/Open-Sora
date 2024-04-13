@@ -941,15 +941,6 @@ class VEALoss(nn.Module):
                 )
                 vgg.classifier = Sequential(*vgg.classifier[:-2])
             self.vgg = vgg.to(device, dtype)
-    
-    def calculate_adaptive_weight(self, nll_loss, g_loss, last_layer):
-        breakpoint() # TODO: scrutinize
-        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
-        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
-        d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
-        d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
-        d_weight = d_weight * self.discriminator_weight
-        return d_weight
 
     def forward(
         self,
@@ -1026,10 +1017,20 @@ class AdversarialLoss(nn.Module):
         self,
         discriminator_factor = 1.0,
         discriminator_start = 50001,
+        discriminator_loss_weight = 0.5,
     ):
         super().__init__()
         self.discriminator_factor = discriminator_factor
         self.discriminator_start = discriminator_start
+        self.discriminator_loss_weight = discriminator_loss_weight
+    
+    def calculate_adaptive_weight(self, nll_loss, g_loss, last_layer):
+        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
+        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
+        d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
+        d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
+        d_weight = d_weight * self.discriminator_loss_weight
+        return d_weight
 
     def forward(
         self,
@@ -1038,17 +1039,16 @@ class AdversarialLoss(nn.Module):
         last_layer,
         global_step,
         is_training = True,
-    ):
+    ):  
+        gan_loss = -torch.mean(fake_logits)
         if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
             try: 
                 d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, last_layer)
             except RuntimeError:
                 assert not is_training
                 d_weight = torch.tensor(0.0)
-            gan_loss = -torch.mean(fake_logits)
         else:
             d_weight = torch.tensor(0.0)
-            gan_loss = torch.tensor(0.0)
 
         disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
         weighted_gan_loss = d_weight * disc_factor * gan_loss

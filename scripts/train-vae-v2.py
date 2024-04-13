@@ -271,10 +271,6 @@ def main():
                 else:
                     video = x
 
-                # padded videos for GAN
-                if global_step > cfg.discriminator_start:
-                    real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
-                    fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
 
                 #  ====== VAE ======
                 optimizer.zero_grad()
@@ -290,8 +286,11 @@ def main():
                     split = "train"
                 )
                 vae_loss = nll_loss
+
                 # adversarial loss 
                 if global_step > cfg.discriminator_start:
+                    # padded videos for GAN
+                    fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
                     fake_logits = discriminator(fake_video.contiguous())
                     adversarial_loss = adversarial_loss_fn(
                         fake_logits,
@@ -313,6 +312,7 @@ def main():
                     disc_optimizer.zero_grad()
                     # if video_contains_first_frame:
                     # Since we don't have enough T frames, pad anyways
+                    real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
                     real_logits = discriminator(real_video.contiguous().detach())
                     fake_logits = discriminator(fake_video.contiguous().detach())
                     disc_loss = disc_loss_fn(real_logits, fake_logits, global_step)
