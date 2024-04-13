@@ -292,11 +292,11 @@ def main():
                 vae_loss = nll_loss
                 # adversarial loss 
                 if global_step > cfg.discriminator_start:
-                    fake_logits = discriminator(fake_video.contiguous)
+                    fake_logits = discriminator(fake_video.contiguous())
                     adversarial_loss = adversarial_loss_fn(
                         fake_logits,
                         nll_loss, 
-                        vae.get_last_layer(),
+                        vae.module.get_last_layer(),
                         global_step,
                         is_training = vae.training,
                     )
@@ -313,8 +313,8 @@ def main():
                     disc_optimizer.zero_grad()
                     # if video_contains_first_frame:
                     # Since we don't have enough T frames, pad anyways
-                    real_logits = discriminator(real_video.contiguous.detach())
-                    fake_logits = discriminator(fake_video.contiguous.detach())
+                    real_logits = discriminator(real_video.contiguous().detach())
+                    fake_logits = discriminator(fake_video.contiguous().detach())
                     disc_loss = disc_loss_fn(real_logits, fake_logits, global_step)
                     # Backward & update
                     booster.backward(loss=disc_loss, optimizer=disc_optimizer)
