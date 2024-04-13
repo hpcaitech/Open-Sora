@@ -58,8 +58,9 @@ discriminator = dict(
 kl_loss_weight = 0.000001
 perceptual_loss_weight = 0.1 # use vgg is not None and more than 0
 discriminator_factor = 1.0
+discriminator_loss_weight = 0.5 # TODO: adjust value
 discriminator_loss="hinge"
-discriminator_start = 1 # 50001 TODO: change to correct val, debug use 1 for now
+discriminator_start = -1 # 50001 TODO: change to correct val, debug use -1 for now
 
 # Others
 seed = 42
