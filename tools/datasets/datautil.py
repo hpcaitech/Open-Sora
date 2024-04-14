@@ -10,6 +10,7 @@ from glob import glob
 import cv2
 import numpy as np
 import pandas as pd
+import torchvision
 from tqdm import tqdm
 
 from .utils import IMG_EXTENSIONS
@@ -71,14 +72,15 @@ def get_info(path):
 
 
 def get_video_info(path):
-    import torchvision
-
-    vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-    num_frames, height, width = vframes.shape[0], vframes.shape[1], vframes.shape[2]
-    aspect_ratio = height / width
-    fps = np.nan
-    resolution = height * width
-    return num_frames, height, width, aspect_ratio, fps, resolution
+    try:
+        vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+        num_frames, height, width = vframes.shape[0], vframes.shape[1], vframes.shape[2]
+        aspect_ratio = height / width
+        fps = np.nan
+        resolution = height * width
+        return num_frames, height, width, aspect_ratio, fps, resolution
+    except:
+        return 0, 0, 0, np.nan, np.nan, np.nan
 
 
 # ======================================================
@@ -134,13 +136,13 @@ CMOTION_TEXT = {
 }
 CMOTION_PROBS = {
     # hard-coded probabilities
-    "static": 0.1,
-    "dynamic": 0.25,
+    "static": 1.0,
+    "dynamic": 1.0,
     "unknown": 0.0,
-    "zoom in": 0.8,
+    "zoom in": 1.0,
     "zoom out": 1.0,
     "pan left": 1.0,
-    "pan right": 0.1,
+    "pan right": 1.0,
     "tilt up": 1.0,
     "tilt down": 1.0,
     "pan/tilt": 1.0,
@@ -469,6 +471,8 @@ def main(args):
         data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
     if args.abspath is not None:
         data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
+    if args.merge_cmotion:
+        data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
     if args.refine_llm_caption:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
@@ -481,8 +485,7 @@ def main(args):
             data["text"],
             partial(text_preprocessing, use_text_preprocessing=True),
         )
-    if args.merge_cmotion:
-        data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
+
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
