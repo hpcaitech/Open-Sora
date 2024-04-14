@@ -123,10 +123,12 @@ conda activate opensora
 pip install torch torchvision
 
 # install flash attention (optional)
+# set enable_flashattn=False in config to avoid using flash attention
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
 
 # install apex (optional)
+# set enable_layernorm_kernel=False in config to avoid using apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
 # install xformers
