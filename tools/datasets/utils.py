@@ -18,6 +18,7 @@ def extract_frames(
     points=None,
     backend="opencv",
     return_length=False,
+    num_frames=None,
 ):
     """
     Args:
@@ -34,7 +35,10 @@ def extract_frames(
         import av
 
         container = av.open(video_path)
-        total_frames = container.streams.video[0].frames
+        if num_frames is not None:
+            total_frames = num_frames
+        else:
+            total_frames = container.streams.video[0].frames
 
         if points is not None:
             frame_inds = [int(p * total_frames) for p in points]
@@ -56,8 +60,10 @@ def extract_frames(
         import decord
 
         container = decord.VideoReader(video_path, num_threads=1)
-        total_frames = len(container)
-        # avg_fps = container.get_avg_fps()
+        if num_frames is not None:
+            total_frames = num_frames
+        else:
+            total_frames = len(container)
 
         if points is not None:
             frame_inds = [int(p * total_frames) for p in points]
@@ -73,7 +79,10 @@ def extract_frames(
 
     elif backend == "opencv":
         cap = cv2.VideoCapture(video_path)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        if num_frames is not None:
+            total_frames = num_frames
+        else:
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         if points is not None:
             frame_inds = [int(p * total_frames) for p in points]
@@ -90,7 +99,6 @@ def extract_frames(
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = Image.fromarray(frame)
             except Exception as e:
-                breakpoint()
                 print(f"Error reading frame {video_path}: {e}")
                 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
