@@ -3,11 +3,11 @@ import os
 import random
 
 import cv2
-import decord
 import numpy as np
 import pandas as pd
-from PIL import Image
 from tqdm import tqdm
+
+from .utils import IMG_EXTENSIONS, extract_frames
 
 tqdm.pandas()
 
@@ -24,19 +24,6 @@ def apply(df, func, **kwargs):
     if pandas_has_parallel:
         return df.parallel_apply(func, **kwargs)
     return df.progress_apply(func, **kwargs)
-
-
-IMG_EXTENSIONS = (
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".ppm",
-    ".bmp",
-    ".pgm",
-    ".tif",
-    ".tiff",
-    ".webp",
-)
 
 
 def get_new_path(path, input_dir, output):
@@ -80,24 +67,6 @@ def rand_crop(path, input_dir, output):
     else:
         img_cropped = img[width // 2 :, height // 2 :]
     cv2.imwrite(path_new, img_cropped)
-    return path_new
-
-
-def extract_frames(video_path, input_dir, output, point):
-    point = round(point)
-    points = [point]
-    path_new = get_new_path(video_path, input_dir, output)
-
-    container = decord.VideoReader(video_path, num_threads=1)
-    total_frames = len(container)
-    frame_inds = np.array(points).astype(np.int32)
-    frame_inds[frame_inds >= total_frames] = total_frames - 1
-    frames = container.get_batch(frame_inds).asnumpy()
-    frames_pil = Image.fromarray(frames[0])
-
-    os.makedirs(path_new, exist_ok=True)
-    path_new = os.path.join(path_new, f"{point}.jpg")
-    frames_pil.save(path_new)
     return path_new
 
 

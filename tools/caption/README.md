@@ -66,7 +66,7 @@ Please note that you should add the `--flash-attention` flag when running with L
 After running the script, with `dp-size=N`, you will get `N` parts of csv files. Run the following command to merge them:
 
 ```bash
-python -m tools.datasets.csvutil DATA_caption_part*.csv --output DATA_caption.csv
+python -m tools.datasets.datautil DATA_caption_part*.csv --output DATA_caption.csv
 ```
 
 ### Resume
@@ -75,10 +75,10 @@ Sometimes the process may be interrupted. We can resume the process by running t
 
 ```bash
 # merge generated results
-python -m tools.datasets.csvutil DATA_caption_part*.csv --output DATA_caption.csv
+python -m tools.datasets.datautil DATA_caption_part*.csv --output DATA_caption.csv
 
 # get the remaining videos
-python -m tools.datasets.csvutil DATA.csv --difference DATA_caption.csv --output DATA_remaining.csv
+python -m tools.datasets.datautil DATA.csv --difference DATA_caption.csv --output DATA_remaining.csv
 ```
 
 Then use the output csv file to resume the process.

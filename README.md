@@ -123,10 +123,12 @@ conda activate opensora
 pip install torch torchvision
 
 # install flash attention (optional)
+# required if enable_flashattn=True
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
 
 # install apex (optional)
+# required if enable_layernorm_kernel=True
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
 # install xformers
@@ -201,40 +203,25 @@ the following steps:
 3. Score and filter videos. [[docs](/tools/scoring/README.md)]
 4. Generate video captions. [[docs](/tools/caption/README.md)]
 
-Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs. This pipeline applies to both image and video data.
+Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs. This pipeline applies to both image and video data. Full pipeline is available in [datasets.md](/tools/datasets/README.md#data-process-pipeline).
 
 ```bash
-# Suppose files under ~/dataset/
-# 1. Convert dataset to CSV
-python -m tools.datasets.convert video ~/dataset --output ~/dataset/meta.csv
-# filter out broken videos (broken ones num_frames=0)
-python -m tools.datasets.csvutil ~/dataset.csv --info --fmin 1 --output ~/dataset/meta.csv
-
-# 2. Filter dataset by aesthetic scores
-# output: ~/dataset/meta_aes.csv
-python -m tools.scoring.aesthetic.inference ~/dataset/meta.csv
-# sort and examine videos by aesthetic scores
-# output: ~/dataset/meta_aes_sort.csv
-python -m tools.datasets.csvutil ~/dataset/meta_aes.csv --sort-descending aes
-# bad videos (aesthetic_score < 5)
-tail ~/dataset/meta_aes_sort.csv
-# filter videos by aesthetic scores
-# output: ~/dataset/meta_aes_aesmin5.csv
-python -m tools.datasets.csvutil ~/dataset/meta_aes.csv --aesmin 5
-
-# 3. Caption dataset
-# output: ~/dataset/meta_aes_aesmin5_caption_parti.csv
-torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava ~/dataset/meta_aes_aesmin5.csv --tp-size 2 --dp-size 4 --bs 16
-# merge generated results
-python -m tools.datasets.csvutil ~/dataset/meta_aes_aesmin5_caption_part*.csv --output ~/dataset/meta_caption.csv
-# remove empty captions and process captions (may need to re-caption lost ones)
-python -m tools.datasets.csvutil ~/dataset/meta_caption.csv --clean-caption --remove-caption-prefix --remove-empty-caption --output ~/dataset/meta_caption_processed.csv
-
-# 4. Sanity check & prepare for training
-# sanity check
-python -m tools.datasets.csvutil ~/dataset/meta_caption_processed.csv --ext --info --output ~/dataset/meta_ready.csv
-# filter out videos less than 48 frames
-# output: ~/dataset/meta_ready_fmin48.csv
+# Suppose videos and images under ~/dataset/
+# 1. Convert dataset to CSV (meta.csv)
+python -m tools.datasets.convert video ~/dataset --output meta.csv
+# 2. Get video information (meta_info_fmin1.csv)
+python -m tools.datasets.datautil meta.csv --info --fmin 1
+# 3. Get caption information
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava meta_info_fmin1.csv --dp-size 8 --tp-size 1 --model-path liuhaotian/llava-v1.6-mistral-7b --prompt video
+# merge generated results (meta_caption.csv)
+python -m tools.datasets.datautil meta_info_fmin1_caption_part*.csv --output meta_caption.csv
+# clean caption (meta_caption_processed.csv)
+python -m tools.datasets.datautil meta_caption.csv --clean-caption --refine-llm-caption --remove-empty-caption --output meta_caption_processed.csv
+# 4. Scoring (meta_caption_processed_aes.csv)
+torchrun --nproc_per_node 8  -m tools.scoring.aesthetic.inference meta_caption_processed.csv --bs 1024 --num_workers 16
+# Filter videos by aesthetic scores (meta_aes_aesmin5.csv)
+python -m tools.datasets.csvutil meta_caption_processed_aes.csv --aesmin 5 --output meta_aes_aesmin5.csv
+# 5. Additional filtering
 python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
 ```
 

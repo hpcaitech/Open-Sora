@@ -16,7 +16,7 @@ bucket_config = {  # 6s/it
     "1024": {1: (0.3, 20)},
     "1080p": {1: (0.3, 8)},
 }
-# mask_ratios = {
+# mask_ratios = {x
 #     "mask_no": 0.9,
 #     "mask_random": 0.06,
 #     "mask_head": 0.01,

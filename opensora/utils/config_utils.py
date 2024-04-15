@@ -19,6 +19,9 @@ def parse_args(training=False):
     # model config
     parser.add_argument("config", help="model config file path")
 
+    # ======================================================
+    # General
+    # ======================================================
     parser.add_argument("--seed", default=42, type=int, help="generation seed")
     parser.add_argument("--ckpt-path", type=str, help="path to model ckpt; will overwrite cfg.ckpt_path if specified")
     parser.add_argument("--batch-size", default=None, type=int, help="batch size")
@@ -26,15 +29,22 @@ def parse_args(training=False):
     # ======================================================
     # Inference
     # ======================================================
-
     if not training:
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
         parser.add_argument("--save-dir", default=None, type=str, help="path to save generated samples")
 
+        # image/video
+        parser.add_argument("--num-frames", default=None, type=int, help="number of frames")
+        parser.add_argument("--fps", default=None, type=int, help="fps")
+        parser.add_argument("--image-size", default=None, type=int, nargs=2, help="image size")
+
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
         parser.add_argument("--cfg-scale", default=None, type=float, help="balance between cond & uncond")
+    # ======================================================
+    # Training
+    # ======================================================
     else:
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
