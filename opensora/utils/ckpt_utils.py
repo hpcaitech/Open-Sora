@@ -169,11 +169,12 @@ def save(
     booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
     if lr_scheduler is not None:
         booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
+    sampler_start_idx = step * batch_size if batch_size is not None else None
     running_states = {
         "epoch": epoch,
         "step": step,
         "global_step": global_step,
-        "sample_start_index": step * batch_size,
+        "sample_start_index": sampler_start_idx,
     }
     if coordinator.is_master():
         save_json(running_states, os.path.join(save_dir, "running_states.json"))

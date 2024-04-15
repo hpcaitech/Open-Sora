@@ -65,6 +65,6 @@ log_every = 10
 ckpt_every = 500
 load = None
 
-batch_size = 17  # only for logging
+batch_size = None
 lr = 2e-5
 grad_clip = 1.0
