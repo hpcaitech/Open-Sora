@@ -10,6 +10,7 @@ from glob import glob
 import cv2
 import numpy as np
 import pandas as pd
+import torchvision
 from tqdm import tqdm
 
 from .utils import IMG_EXTENSIONS
@@ -30,6 +31,8 @@ def apply(df, func, **kwargs):
         return df.parallel_apply(func, **kwargs)
     return df.progress_apply(func, **kwargs)
 
+
+TRAIN_COLUMNS = ["path", "text", "num_frames", "fps", "height", "width", "aspect_ratio", "resolution", "text_len"]
 
 # ======================================================
 # --info
@@ -71,14 +74,15 @@ def get_info(path):
 
 
 def get_video_info(path):
-    import torchvision
-
-    vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-    num_frames, height, width = vframes.shape[0], vframes.shape[1], vframes.shape[2]
-    aspect_ratio = height / width
-    fps = np.nan
-    resolution = height * width
-    return num_frames, height, width, aspect_ratio, fps, resolution
+    try:
+        vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+        num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
+        aspect_ratio = height / width
+        fps = np.nan
+        resolution = height * width
+        return num_frames, height, width, aspect_ratio, fps, resolution
+    except:
+        return 0, 0, 0, np.nan, np.nan, np.nan
 
 
 # ======================================================
@@ -134,13 +138,13 @@ CMOTION_TEXT = {
 }
 CMOTION_PROBS = {
     # hard-coded probabilities
-    "static": 0.1,
-    "dynamic": 0.25,
+    "static": 1.0,
+    "dynamic": 1.0,
     "unknown": 0.0,
-    "zoom in": 0.8,
+    "zoom in": 1.0,
     "zoom out": 1.0,
     "pan left": 1.0,
-    "pan right": 0.1,
+    "pan right": 1.0,
     "tilt up": 1.0,
     "tilt down": 1.0,
     "pan/tilt": 1.0,
@@ -356,6 +360,9 @@ def read_file(input_path):
 
 
 def save_file(data, output_path):
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir) and output_dir != "":
+        os.makedirs(output_dir)
     if output_path.endswith(".csv"):
         return data.to_csv(output_path, index=False)
     elif output_path.endswith(".parquet"):
@@ -409,6 +416,12 @@ def main(args):
         cols_to_use = cols_to_use.insert(0, "path")
         data = pd.merge(data, data_new[cols_to_use], on="path", how="inner")
         print(f"Intersection number of samples: {len(data)}.")
+
+    # train columns
+    if args.train_column:
+        all_columns = data.columns
+        columns_to_drop = all_columns.difference(TRAIN_COLUMNS)
+        data = data.drop(columns=columns_to_drop)
 
     # get output path
     output_path = get_output_path(args, input_name)
@@ -469,20 +482,18 @@ def main(args):
         data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
     if args.abspath is not None:
         data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
+    if args.merge_cmotion:
+        data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
     if args.refine_llm_caption:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
-    if args.unescape:
-        assert "text" in data.columns
-        data["text"] = apply(data["text"], html.unescape)
     if args.clean_caption:
         assert "text" in data.columns
         data["text"] = apply(
             data["text"],
             partial(text_preprocessing, use_text_preprocessing=True),
         )
-    if args.merge_cmotion:
-        data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
+
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
@@ -505,7 +516,11 @@ def main(args):
         assert "num_frames" in data.columns
         data = data[data["num_frames"] <= args.fmax]
     if args.hwmax is not None:
-        assert "resolution" in data.columns
+        if "resolution" not in data.columns:
+            height = data["height"]
+            width = data["width"]
+            data["resolution"] = height * width
+        breakpoint()
         data = data[data["resolution"] <= args.hwmax]
     if args.aesmin is not None:
         assert "aes" in data.columns
@@ -549,6 +564,7 @@ def parse_args():
     parser.add_argument(
         "--intersection", type=str, default=None, help="keep the paths in csv from the dataset and merge columns"
     )
+    parser.add_argument("--train-column", action="store_true", help="only keep the train column")
 
     # IO-related
     parser.add_argument("--info", action="store_true", help="get the basic information of each video and image")
@@ -578,7 +594,6 @@ def parse_args():
     parser.add_argument(
         "--clean-caption", action="store_true", help="modify the caption according to T5 pipeline to suit training"
     )
-    parser.add_argument("--unescape", action="store_true", help="unescape the caption")
     parser.add_argument("--merge-cmotion", action="store_true", help="merge the camera motion to the caption")
     parser.add_argument(
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
@@ -641,8 +656,6 @@ def get_output_path(args, input_name):
     # caption processing
     if args.refine_llm_caption:
         name += "_llm"
-    if args.unescape:
-        name += "_unescape"
     if args.clean_caption:
         name += "_clean"
     if args.merge_cmotion:

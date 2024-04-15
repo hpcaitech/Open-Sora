@@ -8,6 +8,7 @@ from mmengine.runner import set_random_seed
 
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import save_sample
+from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
@@ -97,6 +98,7 @@ def main():
     for i in range(0, len(prompts), cfg.batch_size):
         # 4.2 sample in hidden space
         batch_prompts = prompts[i : i + cfg.batch_size]
+        batch_prompts = [text_preprocessing(prompt) for prompt in batch_prompts]
         z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
 
         # 4.3. diffusion sampling

@@ -45,10 +45,14 @@ class VideoTextDataset(torch.utils.data.Dataset):
         if not is_video(path):
             images = [pil_loader(path)]
         else:
-            images = extract_frames(sample["path"], points=self.points, backend="opencv")
+            num_frames = None
+            if "num_frames" in sample:
+                num_frames = sample["num_frames"]
+            images = extract_frames(sample["path"], points=self.points, backend="opencv", num_frames=num_frames)
         images = [self.transform(img) for img in images]
         images = torch.stack(images)
-        return dict(index=index, images=images)
+        ret = dict(index=index, images=images)
+        return ret
 
     def __len__(self):
         return len(self.data)
