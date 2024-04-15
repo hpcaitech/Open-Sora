@@ -269,25 +269,11 @@ def main():
                     video = x
 
                 #  ====== VAE ======
-                # this is essential for the first iteration after OOM
-                # optimizer._grad_store.reset_all_gradients()
-                # optimizer._bucket_store.reset_num_elements_in_bucket()
-                # optimizer._bucket_store.grad_to_param_mapping = dict()
-                # optimizer._bucket_store._grad_in_bucket = dict()
-                # optimizer._bucket_store._param_list = []
-                # optimizer._bucket_store._padding_size = []
-                # for rank in range(optimizer._bucket_store._world_size):
-                #     optimizer._bucket_store._grad_in_bucket[rank] = []
-                # optimizer._bucket_store.offset_list = [0]
-                # optimizer.zero_grad()
-
                 optimizer.zero_grad()
                 recon_video, posterior = vae(
                     video,
                     video_contains_first_frame = video_contains_first_frame,
                 )
-
-
 
                 #  ====== Generator Loss ======
                 # simple nll loss
@@ -321,7 +307,8 @@ def main():
                 all_reduce_mean(vae_loss)
                 running_loss += vae_loss.item()
                 
-                # TODO: debug, move after generator loss later
+
+                
                 #  ====== Discriminator Loss ======
                 if global_step > cfg.discriminator_start:
                     disc_optimizer.zero_grad()

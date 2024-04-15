@@ -61,7 +61,7 @@ discriminator_factor = 1.0
 discriminator_loss_weight = 0.5
 lecam_loss_weight = 0 # TODO: not clear in MAGVIT what is the weight
 discriminator_loss="hinge"
-discriminator_start = -1 # 50001 TODO: change to correct val, debug use -1 for now
+discriminator_start = -1 # 50000 TODO: change to correct val, debug use -1 for now
 
 
 gradient_penalty_loss_weight = 10 # SCH: following MAGVIT config.vqgan.grad_penalty_cost
