@@ -304,6 +304,7 @@ def main():
             dataloader.sampler.set_start_index(0)
         if cfg.dataset.type == "VariableVideoTextDataset":
             dataloader.batch_sampler.set_epoch(epoch + 1)
+            print("Epoch done, recomputing batch sampler")
         start_step = 0
 
 

@@ -1,44 +1,37 @@
 import argparse
 import os
 
-import av
+import colossalai
 import numpy as np
 import pandas as pd
 import torch
+import torch.distributed as dist
 import torch.nn.functional as F
 from einops import rearrange
+from torch.utils.data import DataLoader, DistributedSampler
+from torchvision.transforms.functional import pil_to_tensor
 from tqdm import tqdm
+
+from tools.datasets.utils import extract_frames
 
 from .unimatch import UniMatch
 
-import decord  # isort: skip
 
-
-def extract_frames_av(video_path, frame_inds=[0, 10, 20, 30]):
-    container = av.open(video_path)
-    total_frames = container.streams.video[0].frames
-    frames = []
-    for idx in frame_inds:
-        if idx >= total_frames:
-            idx = total_frames - 1
-        target_timestamp = int(
-            idx * av.time_base / container.streams.video[0].average_rate
-        )
-        container.seek(target_timestamp)
-        frame = next(container.decode(video=0)).to_image()
-        frames.append(frame)
-    return frames
-
-
-def extract_frames(video_path, frame_inds=[0, 10, 20, 30]):
-    container = decord.VideoReader(video_path, num_threads=1)
-    total_frames = len(container)
-    # avg_fps = container.get_avg_fps()
-
-    frame_inds = np.array(frame_inds).astype(np.int32)
-    frame_inds[frame_inds >= total_frames] = total_frames - 1
-    frames = container.get_batch(frame_inds).asnumpy()  # [N, H, W, C]
-    return frames
+def merge_scores(gathered_list: list, meta: pd.DataFrame):
+    # reorder
+    indices_list = list(map(lambda x: x[0], gathered_list))
+    flow_scores_list = list(map(lambda x: x[1], gathered_list))
+    flat_indices = []
+    for x in zip(*indices_list):
+        flat_indices.extend(x)
+    flat_flow_scores = []
+    for x in zip(*flow_scores_list):
+        flat_flow_scores.extend(x)
+    flat_indices = np.array(flat_indices)
+    flat_flow_scores = np.array(flat_flow_scores)
+    # filter duplicates
+    unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
+    meta.loc[unique_indices, "flow"] = flat_flow_scores[unique_indices_idx]
 
 
 class VideoTextDataset(torch.utils.data.Dataset):
@@ -49,20 +42,17 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         row = self.meta.iloc[index]
-        images = extract_frames(row["path"], frame_inds=self.frame_inds)
-        # images = [pil_to_tensor(x) for x in images]  # [C, H, W]
+        images = extract_frames(row["path"], frame_inds=self.frame_inds, backend="opencv")
 
         # transform
-        images = torch.from_numpy(images).float()
-        images = rearrange(images, "N H W C -> N C H W")
+        images = torch.stack([pil_to_tensor(x) for x in images])  # shape: [N, C, H, W]; dtype: torch.uint8
+        images = images.float()
         H, W = images.shape[-2:]
         if H > W:
             images = rearrange(images, "N C H W -> N C W H")
-        images = F.interpolate(
-            images, size=(320, 576), mode="bilinear", align_corners=True
-        )
+        images = F.interpolate(images, size=(320, 576), mode="bilinear", align_corners=True)
 
-        return images
+        return images, index
 
     def __len__(self):
         return len(self.meta)
@@ -71,6 +61,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    colossalai.launch_from_torch({})
     parser = argparse.ArgumentParser()
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=4, help="Batch size")
@@ -93,26 +84,31 @@ def main():
         reg_refine=True,
         task="flow",
     ).eval()
-    ckpt = torch.load(
-        "./pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth"
-    )
+    ckpt = torch.load("./pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth")
     model.load_state_dict(ckpt["model"])
     model = model.to(device)
     # model = torch.nn.DataParallel(model)
 
     # build dataset
     dataset = VideoTextDataset(meta_path=meta_path, frame_inds=[0, 10, 20, 30])
-    dataloader = torch.utils.data.DataLoader(
+    dataloader = DataLoader(
         dataset,
         batch_size=args.bs,
         num_workers=args.num_workers,
-        shuffle=False,
+        sampler=DistributedSampler(
+            dataset,
+            num_replicas=dist.get_world_size(),
+            rank=dist.get_rank(),
+            shuffle=False,
+            drop_last=False,
+        ),
     )
 
     # compute optical flow scores
     dataset.meta["flow"] = np.nan
-    index = 0
-    for images in tqdm(dataloader):
+    indices_list = []
+    flow_scores_list = []
+    for images, indices in tqdm(dataloader, disable=dist.get_rank() != 0):
         images = images.to(device)
         B = images.shape[0]
 
@@ -134,13 +130,17 @@ def main():
             flow_maps = res["flow_preds"][-1].cpu()  # [B * (N-1), 2, H, W]
             flow_maps = rearrange(flow_maps, "(B N) C H W -> B N H W C", B=B)
             flow_scores = flow_maps.abs().mean(dim=[1, 2, 3, 4])
-            flow_scores_np = flow_scores.numpy()
+            flow_scores = flow_scores.tolist()
 
-        dataset.meta.loc[index : index + B - 1, "flow"] = flow_scores_np
-        index += B
+        indices_list.extend(indices)
+        flow_scores_list.extend(flow_scores)
 
-    dataset.meta.to_csv(out_path, index=False)
-    print(f"New meta with optical flow scores saved to '{out_path}'.")
+    gathered_list = [None] * dist.get_world_size()
+    dist.all_gather_object(gathered_list, (indices_list, flow_scores_list))
+    if dist.get_rank() == 0:
+        merge_scores(gathered_list, dataset.meta)
+        dataset.meta.to_csv(out_path, index=False)
+        print(f"New meta with optical flow scores saved to '{out_path}'.")
 
 
 if __name__ == "__main__":
