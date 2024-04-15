@@ -74,7 +74,7 @@ def get_info(path):
 def get_video_info(path):
     try:
         vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-        num_frames, height, width = vframes.shape[0], vframes.shape[1], vframes.shape[2]
+        num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
         aspect_ratio = height / width
         fps = np.nan
         resolution = height * width
@@ -358,6 +358,9 @@ def read_file(input_path):
 
 
 def save_file(data, output_path):
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     if output_path.endswith(".csv"):
         return data.to_csv(output_path, index=False)
     elif output_path.endswith(".parquet"):
@@ -476,9 +479,6 @@ def main(args):
     if args.refine_llm_caption:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
-    if args.unescape:
-        assert "text" in data.columns
-        data["text"] = apply(data["text"], html.unescape)
     if args.clean_caption:
         assert "text" in data.columns
         data["text"] = apply(
@@ -581,7 +581,6 @@ def parse_args():
     parser.add_argument(
         "--clean-caption", action="store_true", help="modify the caption according to T5 pipeline to suit training"
     )
-    parser.add_argument("--unescape", action="store_true", help="unescape the caption")
     parser.add_argument("--merge-cmotion", action="store_true", help="merge the camera motion to the caption")
     parser.add_argument(
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
@@ -644,8 +643,6 @@ def get_output_path(args, input_name):
     # caption processing
     if args.refine_llm_caption:
         name += "_llm"
-    if args.unescape:
-        name += "_unescape"
     if args.clean_caption:
         name += "_clean"
     if args.merge_cmotion:
