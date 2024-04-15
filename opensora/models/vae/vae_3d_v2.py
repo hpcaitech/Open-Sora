@@ -218,44 +218,75 @@ class ResBlock(nn.Module):
         if self.in_channels != self.filters: # SCH: ResBlock X->Y
             residual = self.conv3(residual)
         return x + residual 
-
-# discriminator with anti-aliased downsampling (blurpool Zhang et al.)
-class Blur(nn.Module):
-    def __init__(self):
-        super().__init__()
-        f = torch.Tensor([1, 2, 1])
-        self.register_buffer('f', f)
-
-    def forward(
-        self,
-        x,
-        space_only = False,
-        time_only = False
+    
+# SCH: own implementation modified on top of: discriminator with anti-aliased downsampling (blurpool Zhang et al.)
+class BlurPool3D(nn.Module):
+    def __init__(
+            self, 
+            channels, 
+            pad_type='reflect', 
+            filt_size=3, 
+            stride=2, 
+            pad_off=0,
+            device="cpu",
+            dtype=torch.bfloat16,
     ):
-        assert not (space_only and time_only)
+        super(BlurPool3D, self).__init__()
+        self.filt_size = filt_size
+        self.pad_off = pad_off
+        self.pad_sizes = [
+            int(1.*(filt_size-1)/2), int(np.ceil(1.*(filt_size-1)/2)), 
+            int(1.*(filt_size-1)/2), int(np.ceil(1.*(filt_size-1)/2)), 
+            int(1.*(filt_size-1)/2), int(np.ceil(1.*(filt_size-1)/2))
+        ]
+        self.pad_sizes = [pad_size+pad_off for pad_size in self.pad_sizes]
+        self.stride = stride
+        self.off = int((self.stride-1)/2.)
+        self.channels = channels
 
-        f = self.f
+        if(self.filt_size==1):
+            a = np.array([1.,])
+        elif(self.filt_size==2):
+            a = np.array([1., 1.])
+        elif(self.filt_size==3):
+            a = np.array([1., 2., 1.])
+        elif(self.filt_size==4):    
+            a = np.array([1., 3., 3., 1.])
+        elif(self.filt_size==5):    
+            a = np.array([1., 4., 6., 4., 1.])
+        elif(self.filt_size==6):    
+            a = np.array([1., 5., 10., 10., 5., 1.])
+        elif(self.filt_size==7):    
+            a = np.array([1., 6., 15., 20., 15., 6., 1.])
 
-        if space_only:
-            f = einsum('i, j -> i j', f, f)
-            f = rearrange(f, '... -> 1 1 ...')
-        elif time_only:
-            f = rearrange(f, 'f -> 1 f 1 1')
+        filt_2d = a[:,None]*a[None,:]
+        filt_3d = torch.Tensor(a[:, None, None] * filt_2d[None, :, :]).to(device, dtype)
+            
+        filt = filt_3d/torch.sum(filt_3d) # TODO: modify to make it 3D
+        self.register_buffer('filt', filt[None,None,:,:,:].repeat((self.channels,1,1,1,1)))
+
+        self.pad = get_pad_layer(pad_type)(self.pad_sizes)
+
+    def forward(self, inp):
+        if(self.filt_size==1):
+            if(self.pad_off==0):
+                return inp[:,:,::self.stride,::self.stride]    
+            else:
+                return self.pad(inp)[:,:,::self.stride,::self.stride]
         else:
-            f = einsum('i, j, k -> i j k', f, f, f)
-            f = rearrange(f, '... -> 1 ...')
+            return F.conv3d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
+    
+def get_pad_layer(pad_type):
+    if(pad_type in ['refl','reflect']):
+        PadLayer = nn.ReflectionPad3d
+    elif(pad_type in ['repl','replicate']):
+        PadLayer = nn.ReplicationPad3d
+    elif(pad_type=='zero'):
+        PadLayer = nn.ZeroPad3d
+    else:
+        print('Pad type [%s] not recognized'%pad_type)
+    return PadLayer
 
-        is_images = x.ndim == 4
-
-        if is_images:
-            x = rearrange(x, 'b c h w -> b c 1 h w')
-
-        out = filter3d(x, f, normalized = True)
-
-        if is_images:
-            out = rearrange(out, 'b c 1 h w -> b c h w')
-
-        return out
     
 class ResBlockDown(nn.Module):
     """3D StyleGAN ResBlock for D."""
@@ -278,10 +309,7 @@ class ResBlockDown(nn.Module):
         self.conv1 = nn.Conv3d(in_channels, in_channels, (3,3,3), padding=1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.norm1 = nn.GroupNorm(num_groups, in_channels, device=device, dtype=dtype)
 
-        # SCH: NOTE: use blur pooling instead, pooling bias is False following enc dec conv pool
-        self.blur = Blur()
-        self.conv_pool_residual = nn.Conv3d(in_channels * 8, in_channels, 3, padding=1, bias=False, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
-        self.conv_pool_input = nn.Conv3d(in_channels * 8, in_channels, 3, padding=1, bias=False, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
+        self.blur = BlurPool3D(in_channels, device=device, dtype=dtype)
 
         self.conv2 = nn.Conv3d(in_channels, self.filters,(1,1,1), bias=False, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3), padding=1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
@@ -296,20 +324,16 @@ class ResBlockDown(nn.Module):
         x = self.activation_fn(x)
 
         residual = self.blur(residual)
-        residual = rearrange(residual, 'b c (t pt) (h ph) (w pw) -> b (c pt ph pw) t h w', pt = 2, ph = 2, pw = 2)
-        residual = self.conv_pool_residual(residual)
         residual = self.conv2(residual)
 
         x = self.blur(x)
-        x = rearrange(x, 'b c (t pt) (h ph) (w pw) -> b (c pt ph pw) t h w', pt = 2, ph = 2, pw = 2)
-        x = self.conv_pool_input(x)
         x = self.conv3(x)
         x = self.norm2(x)
         x = self.activation_fn(x)
         out = (residual + x) / math.sqrt(2)
         return out
 
-class StyleGANDiscriminator(nn.Module):
+class StyleGANDiscriminatorBlur(nn.Module):
     """StyleGAN Discriminator."""
     """
     SCH: NOTE: 
@@ -635,21 +659,6 @@ class VAE_3D_V2(nn.Module):
         kl_embed_dim = 64,
         device="cpu",
         dtype="bf16",
-        # image_size = (128, 128),
-        # kl_loss_weight = 0.000001,
-        # perceptual_loss_weight = 0.1,
-        # vgg = None,
-        # vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
-        # num_frames = 17,
-        # discriminator_factor = 1.0,
-        # discriminator_in_channels = 3,
-        # discriminator_filters = 128,
-        # discriminator_channel_multipliers = (2,4,4,4,4),
-        # discriminator_loss="hinge",
-        # discriminator_start=50001,
-        # conv_downsample = False,
-        # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
-        # precision: Any = jax.lax.Precision.DEFAULT
     ):
         super().__init__()
 
@@ -666,8 +675,6 @@ class VAE_3D_V2(nn.Module):
         # self.image_size = cast_tuple(image_size, 2)
         self.time_downsample_factor = 2**sum(temporal_downsample)
         self.time_padding = self.time_downsample_factor - 1
-        # self.discr_time_downsample_factor = 2**len(discriminator_channel_multipliers)
-        # self.discr_time_padding = self.discr_time_downsample_factor - num_frames % self.discr_time_downsample_factor
         self.separate_first_frame_encoding = separate_first_frame_encoding
 
         image_down = 2 ** len(temporal_downsample)
@@ -717,45 +724,6 @@ class VAE_3D_V2(nn.Module):
 
         self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device, dtype=dtype)
-
-        # # KL Loss
-        # self.kl_loss_weight = kl_loss_weight
-
-        # # Perceptual Loss
-        # self.vgg = None
-        # self.perceptual_loss_weight = perceptual_loss_weight
-        # if perceptual_loss_weight is not None and perceptual_loss_weight > 0.0:
-        #     # self.lpips = LPIPS().eval()
-        #     if not exists(vgg):
-        #         vgg = torchvision.models.vgg16(
-        #             weights = vgg_weights
-        #         )
-        #         vgg.classifier = Sequential(*vgg.classifier[:-2])
-        #     self.vgg = vgg
-        
-        # # Adversarial Loss
-        # self.discriminator_factor = discriminator_factor
-        # self.discriminator_start = discriminator_start
-        # self.discriminator = None
-        # if discriminator_factor is not None and discriminator_factor > 0.0:
-        #     self.discriminator = StyleGANDiscriminator(
-        #         image_size = image_size,
-        #         num_frames = num_frames,
-        #         discriminator_in_channels = discriminator_in_channels,
-        #         discriminator_filters = discriminator_filters,
-        #         discriminator_channel_multipliers = discriminator_channel_multipliers,
-        #         num_groups = num_groups,
-        #         dtype = dtype,
-        #         device = device,
-        #     )
-
-        # if discriminator_loss == "hinge":
-        #     self.disc_loss_fn = hinge_d_loss
-        # elif discriminator_loss == "vanilla":
-        #     self.disc_loss_fn = vanilla_d_loss
-        # else:
-        #     raise ValueError(f"Unknown GAN loss '{discriminator_loss}'.")
-        
 
     def get_latent_size(self, input_size):
         for i in range(len(input_size)):
@@ -866,76 +834,6 @@ class VAE_3D_V2(nn.Module):
 
         return recon_video, posterior
 
-        # recon_loss = F.mse_loss(video, recon_video)
-
-        # total_loss = recon_loss 
-
-        # # KL Loss
-        # weighted_kl_loss = 0
-        # if self.kl_loss_weight is not None and self.kl_loss_weight > 0.0:
-        #     kl_loss = posterior.kl()
-        #     # NOTE: since we use MSE, here use mean as well, else use sum
-        #     kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
-        #     weighted_kl_loss = kl_loss * self.kl_loss_weight
-        #     total_loss += weighted_kl_loss
-
-        # # Perceptual Loss
-        # # SCH: NOTE: if mse can pick single frame, if use sum of errors, need to calc for all frames!
-        # weighted_perceptual_loss = 0
-        # if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
-        #     frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
-        #     input_vgg_input = pick_video_frame(video, frame_indices)
-        #     recon_vgg_input = pick_video_frame(recon_video, frame_indices)
-        #     if channels == 1:
-        #         input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
-        #         recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
-        #     elif channels == 4: # SCH: take the first 3 for perceptual loss calc
-        #         input_vgg_input = input_vgg_input[:, :3]
-        #         recon_vgg_input = recon_vgg_input[:, :3]
-        #     input_vgg_feats = self.vgg(input_vgg_input)
-        #     recon_vgg_feats = self.vgg(recon_vgg_input)
-        #     perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
-        #     # perceptual_loss = self.lpips(input_vgg_input.contiguous(), recon_vgg_input.contiguous())
-        #     weighted_perceptual_loss = perceptual_loss * self.perceptual_loss_weight
-        #     total_loss += weighted_perceptual_loss
-
-        # nll_loss = recon_loss + weighted_kl_loss + weighted_perceptual_loss
-
-
-        # # GAN 
-        # # if optimizer_idx == 0: # generator update
-        # if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
-        #     try: 
-        #         d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, self.get_last_layer())
-        #     except RuntimeError:
-        #         assert not self.training
-        #         d_weight = torch.tensor(0.0)
-        #     # if video_contains_first_frame:
-        #     # Since we don't have enough T frames, pad anyways
-
-        #     fake_video = pad_at_dim(recon_video, (self.discr_time_padding, 0), value = 0., dim = 2)
-        #     fake_logits = discriminator(fake_video.contiguous()) # SCH:DETACH?
-
-        #     gan_loss = -torch.mean(fake_logits)
-        # else:
-        #     d_weight = torch.tensor(0.0)
-        #     gan_loss = torch.tensor(0.0)
-
-        # disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
-        # weighted_gan_loss = d_weight * disc_factor * gan_loss
-        # total_loss += weighted_gan_loss
-
-        # log = {"{}/total_loss".format(split): total_loss.clone().detach().mean(),
-        #     "{}/nll_loss".format(split): nll_loss.detach().mean(),
-        #     "{}/recon_loss".format(split): recon_loss.detach().mean(),
-        #     "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
-        #     "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
-        #     "{}/weighted_gan_loss".format(split): weighted_gan_loss.detach().mean(),
-        #     "{}gan_adaptive_weight".format(split): d_weight.detach(),
-        #     "{}/disc_factor".format(split): torch.tensor(disc_factor),
-        # }
-        # return total_loss, recon_video, log
-
 
 class VEALoss(nn.Module):
     def __init__(
@@ -968,7 +866,8 @@ class VEALoss(nn.Module):
                     weights = vgg_weights
                 )
                 vgg.classifier = Sequential(*vgg.classifier[:-2])
-            self.vgg = vgg.to(device, dtype)
+            self.vgg = vgg.to(device, dtype).eval() # SCH: added eval
+            
 
     def forward(
         self,
@@ -1009,28 +908,6 @@ class VEALoss(nn.Module):
             perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
             weighted_perceptual_loss = perceptual_loss * self.perceptual_loss_weight
             nll_loss += weighted_perceptual_loss
-
-        # # GAN Loss
-        # if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
-        #     try: 
-        #         d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, last_layer)
-        #     except RuntimeError:
-        #         assert not self.training
-        #         d_weight = torch.tensor(0.0)
-        #     # if video_contains_first_frame:
-        #     # Since we don't have enough T frames, pad anyways
-        #     fake_video = pad_at_dim(recon_video, (discriminator_time_padding, 0), value = 0., dim = 2)
-        #     fake_logits = discriminator(fake_video.contiguous())
-        #     gan_loss = -torch.mean(fake_logits)
-        # else:
-        #     d_weight = torch.tensor(0.0)
-        #     gan_loss = torch.tensor(0.0)
-
-        # disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
-        # weighted_gan_loss = d_weight * disc_factor * gan_loss
-        # breakpoint()
-        # total_loss = nll_loss + weighted_gan_loss
-
 
         # log = {
         #     "{}/total_loss".format(split): nll_loss.clone().detach().mean(),
@@ -1165,7 +1042,8 @@ def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
 
 @MODELS.register_module("DISCRIMINATOR_3D")
 def DISCRIMINATOR_3D(from_pretrained=None, **kwargs):
-    model = StyleGANDiscriminator(**kwargs)
+    model = StyleGANDiscriminatorBlur(**kwargs)
+    # model = StyleGANDiscriminator(**kwargs) # SCH: DEBUG: to change back            
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model

@@ -41,6 +41,11 @@ CUDA_VISIBLE_DEVICES=5 torchrun --master_port=29530 --nnodes=1 --nproc_per_node=
 'x-transformers'
 ```
 
+Note: 
+uses `hotfix/zero` branch of `https://github.com/ver217/ColossalAI.git`.
+clone the repo, go to the branch, then do `pip install .` 
+
+
 ### 2.2 Train
 
 ```yaml
