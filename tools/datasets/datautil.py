@@ -32,6 +32,8 @@ def apply(df, func, **kwargs):
     return df.progress_apply(func, **kwargs)
 
 
+TRAIN_COLUMNS = ["path", "text", "num_frames", "fps", "height", "width", "aspect_ratio", "resolution", "text_len"]
+
 # ======================================================
 # --info
 # ======================================================
@@ -359,7 +361,7 @@ def read_file(input_path):
 
 def save_file(data, output_path):
     output_dir = os.path.dirname(output_path)
-    if not os.path.exists(output_dir):
+    if not os.path.exists(output_dir) and output_dir != "":
         os.makedirs(output_dir)
     if output_path.endswith(".csv"):
         return data.to_csv(output_path, index=False)
@@ -414,6 +416,12 @@ def main(args):
         cols_to_use = cols_to_use.insert(0, "path")
         data = pd.merge(data, data_new[cols_to_use], on="path", how="inner")
         print(f"Intersection number of samples: {len(data)}.")
+
+    # train columns
+    if args.train_column:
+        all_columns = data.columns
+        columns_to_drop = all_columns.difference(TRAIN_COLUMNS)
+        data = data.drop(columns=columns_to_drop)
 
     # get output path
     output_path = get_output_path(args, input_name)
@@ -508,7 +516,11 @@ def main(args):
         assert "num_frames" in data.columns
         data = data[data["num_frames"] <= args.fmax]
     if args.hwmax is not None:
-        assert "resolution" in data.columns
+        if "resolution" not in data.columns:
+            height = data["height"]
+            width = data["width"]
+            data["resolution"] = height * width
+        breakpoint()
         data = data[data["resolution"] <= args.hwmax]
     if args.aesmin is not None:
         assert "aes" in data.columns
@@ -552,6 +564,7 @@ def parse_args():
     parser.add_argument(
         "--intersection", type=str, default=None, help="keep the paths in csv from the dataset and merge columns"
     )
+    parser.add_argument("--train-column", action="store_true", help="only keep the train column")
 
     # IO-related
     parser.add_argument("--info", action="store_true", help="get the basic information of each video and image")
