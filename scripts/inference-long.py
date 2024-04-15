@@ -9,6 +9,7 @@ from mmengine.runner import set_random_seed
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import save_sample
 from opensora.datasets.utils import read_from_path
+from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
@@ -65,11 +66,13 @@ def process_prompts(prompts, num_loop):
             for i in range(0, len(prompt_list), 2):
                 start_loop = int(prompt_list[i])
                 text = prompt_list[i + 1]
+                text = text_preprocessing(text)
                 end_loop = int(prompt_list[i + 2]) if i + 2 < len(prompt_list) else num_loop
                 text_list.extend([text] * (end_loop - start_loop))
             assert len(text_list) == num_loop
             ret_prompts.append(text_list)
         else:
+            prompt = text_preprocessing(prompt)
             ret_prompts.append([prompt] * num_loop)
     return ret_prompts
 
