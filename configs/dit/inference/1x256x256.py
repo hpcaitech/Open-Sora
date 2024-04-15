@@ -23,7 +23,7 @@ scheduler = dict(
     num_sampling_steps=20,
     cfg_scale=4.0,
 )
-dtype = "fp16"
+dtype = "bf16"
 
 # Others
 batch_size = 2

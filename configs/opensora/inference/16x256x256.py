@@ -27,7 +27,7 @@ scheduler = dict(
     cfg_scale=7.0,
     cfg_channel=3,  # or None
 )
-dtype = "fp16"
+dtype = "bf16"
 
 # Condition
 prompt_path = "./assets/texts/t2v_samples.txt"

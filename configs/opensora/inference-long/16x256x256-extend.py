@@ -28,7 +28,7 @@ scheduler = dict(
     num_sampling_steps=100,
     cfg_scale=7.0,
 )
-dtype = "fp16"
+dtype = "bf16"
 
 # Condition
 prompt_path = None
