@@ -50,7 +50,7 @@ discriminator = dict(
     num_frames = num_frames,
     in_channels = 3,
     filters = 128,
-    channel_multipliers = (2,4,4,4,4)
+    channel_multipliers = (2,4,4,4,4) # (2,4,4,4) for 64x64 resolution
 )
 
 
@@ -58,9 +58,15 @@ discriminator = dict(
 kl_loss_weight = 0.000001
 perceptual_loss_weight = 0.1 # use vgg is not None and more than 0
 discriminator_factor = 1.0
-discriminator_loss_weight = 0.5 # TODO: adjust value
+discriminator_loss_weight = 0.5
+lecam_loss_weight = 0 # TODO: not clear in MAGVIT what is the weight
 discriminator_loss="hinge"
 discriminator_start = -1 # 50001 TODO: change to correct val, debug use -1 for now
+
+
+gradient_penalty_loss_weight = 10 # SCH: following MAGVIT config.vqgan.grad_penalty_cost
+ema_decay = 0.999  # ema decay factor for generator
+
 
 # Others
 seed = 42
