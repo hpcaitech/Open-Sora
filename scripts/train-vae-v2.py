@@ -15,6 +15,7 @@ from colossalai.utils import get_current_device
 from tqdm import tqdm
 import os
 from einops import rearrange
+import numpy as np
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import (
@@ -97,7 +98,6 @@ def main():
     # ======================================================
     dataset = DatasetFromCSV(
         cfg.data_path,
-        # TODO: change transforms
         transform=(
             get_transforms_video(cfg.image_size[0])
             if not cfg.use_image_transform
@@ -108,12 +108,6 @@ def main():
         root=cfg.root,
     )
 
-    # TODO: use plugin's prepare dataloader
-    # a batch contains:
-    # {
-    #      "video": torch.Tensor,  # [B, C, T, H, W],
-    #      "text": List[str],
-    # }
     dataloader = prepare_dataloader(
         dataset,
         batch_size=cfg.batch_size,
@@ -241,6 +235,9 @@ def main():
     disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
     video_contains_first_frame = cfg.video_contains_first_frame
 
+    lecam_ema_real = np.asarray(0)
+    lecam_ema_fake = np.asarray(0)
+
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
@@ -273,13 +270,24 @@ def main():
 
 
                 #  ====== VAE ======
+                # this is essential for the first iteration after OOM
+                # optimizer._grad_store.reset_all_gradients()
+                # optimizer._bucket_store.reset_num_elements_in_bucket()
+                # optimizer._bucket_store.grad_to_param_mapping = dict()
+                # optimizer._bucket_store._grad_in_bucket = dict()
+                # optimizer._bucket_store._param_list = []
+                # optimizer._bucket_store._padding_size = []
+                # for rank in range(optimizer._bucket_store._world_size):
+                #     optimizer._bucket_store._grad_in_bucket[rank] = []
+                # optimizer._bucket_store.offset_list = [0]
+                # optimizer.zero_grad()
                 optimizer.zero_grad()
                 recon_video, posterior = vae(
                     video,
                     video_contains_first_frame = video_contains_first_frame,
                 )
                 # simple nll loss
-                nll_loss, nll_loss_log = nll_loss_fn(
+                nll_loss = nll_loss_fn(
                     video,
                     recon_video,
                     posterior,
@@ -313,12 +321,30 @@ def main():
                     # if video_contains_first_frame:
                     # Since we don't have enough T frames, pad anyways
                     real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
+                    if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
+                        real_video = real_video.requires_grad_()
+
                     real_logits = discriminator(real_video.contiguous().detach())
                     fake_logits = discriminator(fake_video.contiguous().detach())
-                    disc_loss = disc_loss_fn(real_logits, fake_logits, global_step)
+                    disc_loss = disc_loss_fn(
+                        real_logits, 
+                        fake_logits, 
+                        global_step, 
+                        lecam_ema_real = lecam_ema_real, 
+                        lecam_ema_fake = lecam_ema_fake, 
+                        real_video = real_video
+                    )
+
+                    if cfg.ema_decay is not None: 
+                        # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
+                        lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * np.mean(real_logits.clone().detach())
+                        lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * np.mean(fake_logits.clone().detach())
+
+                    
                     # Backward & update
                     booster.backward(loss=disc_loss, optimizer=disc_optimizer)
                     disc_optimizer.step()
+
                     # Log loss values:
                     all_reduce_mean(disc_loss)
                     running_disc_loss += disc_loss.item()

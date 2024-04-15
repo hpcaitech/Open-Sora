@@ -65,7 +65,6 @@ def hinge_d_loss(logits_real, logits_fake):
     loss_real = torch.mean(F.relu(1. - logits_real))
     loss_fake = torch.mean(F.relu(1. + logits_fake))
     d_loss = 0.5 * (loss_real + loss_fake)
-    breakpoint() # TODO: CHECK mean rather than sum
     return d_loss
 
 def vanilla_d_loss(logits_real, logits_fake):
@@ -73,6 +72,40 @@ def vanilla_d_loss(logits_real, logits_fake):
         torch.mean(torch.nn.functional.softplus(-logits_real)) +
         torch.mean(torch.nn.functional.softplus(logits_fake)))
     return d_loss
+
+# TODO: verify if this is correct implementation
+def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
+  """Lecam loss for data-efficient and stable GAN training.
+
+  Described in https://arxiv.org/abs/2104.03310
+
+  Args:
+    real_pred: Prediction (scalar) for the real samples.
+    fake_pred: Prediction for the fake samples.
+    ema_real_pred: EMA prediction (scalar)  for the real samples.
+    ema_fake_pred: EMA prediction for the fake samples.
+
+  Returns:
+    Lecam regularization loss (scalar).
+  """
+  assert real_pred.ndim == 0 and ema_fake_pred.ndim == 0
+  lecam_loss = np.mean(np.power(nn.ReLU(real_pred - ema_fake_pred), 2))
+  lecam_loss += np.mean(np.power(nn.ReLU(ema_real_pred - fake_pred), 2))
+  return lecam_loss
+
+def gradient_penalty_fn(images, output):
+    # batch_size = images.shape[0]
+    gradients = torch.autograd.grad(
+        outputs = output,
+        inputs = images,
+        grad_outputs = torch.ones(output.size(), device = images.device),
+        create_graph = True,
+        retain_graph = True,
+        only_inputs = True
+    )[0]
+
+    gradients = rearrange(gradients, 'b ... -> b (...)')
+    return ((gradients.norm(2, dim = 1) - 1) ** 2).mean()
 
 def xavier_uniform_weight_init(m):
     if isinstance(m, nn.Conv3d) or isinstance(m, nn.Linear):
@@ -806,9 +839,6 @@ class VAE_3D_V2(nn.Module):
     def forward(
         self,
         video,
-        # optimizer_idx,
-        # global_step,
-        # discriminator, # TODO
         sample_posterior=True,
         video_contains_first_frame = True,
         # split = "train",
@@ -1003,13 +1033,15 @@ class VEALoss(nn.Module):
         # breakpoint()
         # total_loss = nll_loss + weighted_gan_loss
 
-        log = {
-            "{}/total_loss".format(split): nll_loss.clone().detach().mean(),
-            "{}/recon_loss".format(split): recon_loss.detach().mean(),
-            "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
-            "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
-        }
-        return nll_loss, log
+
+        # log = {
+        #     "{}/total_loss".format(split): nll_loss.clone().detach().mean(),
+        #     "{}/recon_loss".format(split): recon_loss.detach().mean(),
+        #     "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
+        #     "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
+        # }
+
+        return nll_loss
     
 
 class AdversarialLoss(nn.Module):
@@ -1054,6 +1086,8 @@ class AdversarialLoss(nn.Module):
         weighted_gan_loss = d_weight * disc_factor * gan_loss
 
         return weighted_gan_loss
+    
+
 
 class DiscriminatorLoss(nn.Module):
     def __init__(
@@ -1061,12 +1095,16 @@ class DiscriminatorLoss(nn.Module):
         discriminator_factor = 1.0, 
         discriminator_start = 50001,
         discriminator_loss="hinge",
+        lecam_loss_weight=0,
+        gradient_penalty_loss_weight=10, # SCH: following MAGVIT config.vqgan.grad_penalty_cost
     ):
         super().__init__()
         
         assert discriminator_loss in ["hinge", "vanilla"]
         self.discriminator_factor = discriminator_factor
         self.discriminator_start = discriminator_start
+        self.lecam_loss_weight = lecam_loss_weight
+        self.gradient_penalty_loss_weight = gradient_penalty_loss_weight
 
         if discriminator_loss == "hinge":
             self.disc_loss_fn = hinge_d_loss
@@ -1080,16 +1118,43 @@ class DiscriminatorLoss(nn.Module):
         real_logits,
         fake_logits,
         global_step,
+        lecam_ema_real = None,
+        lecam_ema_fake = None, 
+        real_video = None,
+        split = "train",
     ):
         if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
             disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
-            weight_discriminator_loss = disc_factor * self.disc_loss_fn(real_logits, fake_logits)
+            weighted_d_adversarial_loss = disc_factor * self.disc_loss_fn(real_logits, fake_logits)
         else:
-            weight_discriminator_loss = 0
+            weighted_d_adversarial_loss = 0
 
-        breakpoint()         
+        lecam_loss = 0.0
+        if self.lecam_loss_weight is not None and self.lecam_loss_weight > 0.0:
+            real_pred = np.mean(real_logits.clone().detach())
+            fake_pred = np.mean(fake_logits.clone().detach())
+            lecam_loss = lecam_reg(real_pred, fake_pred,
+                                    lecam_ema_real,
+                                    lecam_ema_fake)
+            lecam_loss = lecam_loss * self.lecam_loss_weight
+        
+        gradient_penalty = 0.0
+        if self.gradient_penalty_loss_weight is not None and self.gradient_penalty_loss_weight > 0.0:
+            assert real_video is not None
+            gradient_penalty = gradient_penalty_fn(real_video, real_logits)
+            gradient_penalty *= self.gradient_penalty_loss_weight
+            
+        discriminator_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty
 
-        return weight_discriminator_loss
+
+        # log = {
+        #     "{}/discriminator_loss".format(split): discriminator_loss.clone().detach().mean(),
+        #     "{}/d_adversarial_loss".format(split): weighted_d_adversarial_loss.detach().mean(),
+        #     "{}/lecam_loss".format(split): lecam_loss.detach().mean(),
+        #     "{}/gradient_penalty".format(split): gradient_penalty.detach().mean(),
+        # }
+
+        return discriminator_loss
 
 @MODELS.register_module("VAE_MAGVIT_V2")
 def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
