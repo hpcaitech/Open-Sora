@@ -235,8 +235,8 @@ def main():
     disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
     video_contains_first_frame = cfg.video_contains_first_frame
 
-    lecam_ema_real = np.asarray(0)
-    lecam_ema_fake = np.asarray(0)
+    lecam_ema_real = torch.tensor(0.0)
+    lecam_ema_fake = torch.tensor(0.0)
 
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
@@ -268,7 +268,6 @@ def main():
                 else:
                     video = x
 
-
                 #  ====== VAE ======
                 # this is essential for the first iteration after OOM
                 # optimizer._grad_store.reset_all_gradients()
@@ -281,11 +280,16 @@ def main():
                 #     optimizer._bucket_store._grad_in_bucket[rank] = []
                 # optimizer._bucket_store.offset_list = [0]
                 # optimizer.zero_grad()
+
                 optimizer.zero_grad()
                 recon_video, posterior = vae(
                     video,
                     video_contains_first_frame = video_contains_first_frame,
                 )
+
+
+
+                #  ====== Generator Loss ======
                 # simple nll loss
                 nll_loss = nll_loss_fn(
                     video,
@@ -310,21 +314,25 @@ def main():
                     vae_loss += adversarial_loss
                 # Backward & update
                 booster.backward(loss=vae_loss, optimizer=optimizer)
+                # NOTE: clip gradients? this is done in Open-Sora-Plan
+                torch.nn.utils.clip_grad_norm_(vae.parameters(), 1)
                 optimizer.step()
                 # Log loss values:
                 all_reduce_mean(vae_loss)
                 running_loss += vae_loss.item()
                 
-                #  ====== Discriminator ======
+                # TODO: debug, move after generator loss later
+                #  ====== Discriminator Loss ======
                 if global_step > cfg.discriminator_start:
                     disc_optimizer.zero_grad()
                     # if video_contains_first_frame:
                     # Since we don't have enough T frames, pad anyways
                     real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
+                    fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
                     if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
                         real_video = real_video.requires_grad_()
 
-                    real_logits = discriminator(real_video.contiguous().detach())
+                    real_logits = discriminator(real_video.contiguous()) # SCH: not detached for now for gradient_penalty calculation
                     fake_logits = discriminator(fake_video.contiguous().detach())
                     disc_loss = disc_loss_fn(
                         real_logits, 
@@ -337,12 +345,14 @@ def main():
 
                     if cfg.ema_decay is not None: 
                         # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
-                        lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * np.mean(real_logits.clone().detach())
-                        lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * np.mean(fake_logits.clone().detach())
+                        lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
+                        lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
 
-                    
                     # Backward & update
                     booster.backward(loss=disc_loss, optimizer=disc_optimizer)
+                    # NOTE: TODO: clip gradients? this is done in Open-Sora-Plan
+                    torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1)
+
                     disc_optimizer.step()
 
                     # Log loss values:

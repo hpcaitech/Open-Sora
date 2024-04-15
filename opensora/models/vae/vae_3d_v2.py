@@ -868,7 +868,6 @@ class VAE_3D_V2(nn.Module):
 
         # recon_loss = F.mse_loss(video, recon_video)
 
-        # breakpoint()
         # total_loss = recon_loss 
 
         # # KL Loss
@@ -924,7 +923,6 @@ class VAE_3D_V2(nn.Module):
 
         # disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
         # weighted_gan_loss = d_weight * disc_factor * gan_loss
-        # breakpoint()
         # total_loss += weighted_gan_loss
 
         # log = {"{}/total_loss".format(split): total_loss.clone().detach().mean(),
@@ -1057,8 +1055,8 @@ class AdversarialLoss(nn.Module):
         self.discriminator_loss_weight = discriminator_loss_weight
     
     def calculate_adaptive_weight(self, nll_loss, g_loss, last_layer):
-        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
-        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
+        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0] # SCH: TODO: debug added creat
+        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0] # SCH: TODO: debug added create_graph=True
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
         d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
         d_weight = d_weight * self.discriminator_loss_weight
@@ -1074,6 +1072,8 @@ class AdversarialLoss(nn.Module):
     ):  
         gan_loss = -torch.mean(fake_logits)
         if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
+            # DEBUG: NOTE: something about this d_weigth calculation is causing issue
+            # d_weight = 1
             try: 
                 d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, last_layer)
             except RuntimeError:
