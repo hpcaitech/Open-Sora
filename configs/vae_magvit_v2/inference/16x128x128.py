@@ -1,6 +1,7 @@
 num_frames = 16
 frame_interval = 3
 image_size = (128, 128)
+fps = 24 // 3
 is_vae = True
 
 # Define dataset
