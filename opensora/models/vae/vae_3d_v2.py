@@ -58,36 +58,9 @@ def pick_video_frame(video, frame_indices):
 def exists(v):
     return v is not None
 
-def hinge_discr_loss(fake, real):
-    return (F.relu(1 + fake) + F.relu(1 - real)).mean()
-
-def hinge_d_loss(logits_real, logits_fake):
-    loss_real = torch.mean(F.relu(1. - logits_real))
-    loss_fake = torch.mean(F.relu(1. + logits_fake))
-    d_loss = 0.5 * (loss_real + loss_fake)
-    return d_loss
-
-def vanilla_d_loss(logits_real, logits_fake):
-    d_loss = 0.5 * (
-        torch.mean(torch.nn.functional.softplus(-logits_real)) +
-        torch.mean(torch.nn.functional.softplus(logits_fake)))
-    return d_loss
-
+# ============== Generator Adversarial Loss Functions ==============
 # TODO: verify if this is correct implementation
 def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
-  """Lecam loss for data-efficient and stable GAN training.
-
-  Described in https://arxiv.org/abs/2104.03310
-
-  Args:
-    real_pred: Prediction (scalar) for the real samples.
-    fake_pred: Prediction for the fake samples.
-    ema_real_pred: EMA prediction (scalar)  for the real samples.
-    ema_fake_pred: EMA prediction for the fake samples.
-
-  Returns:
-    Lecam regularization loss (scalar).
-  """
   assert real_pred.ndim == 0 and ema_fake_pred.ndim == 0
   lecam_loss = np.mean(np.power(nn.ReLU(real_pred - ema_fake_pred), 2))
   lecam_loss += np.mean(np.power(nn.ReLU(ema_real_pred - fake_pred), 2))
@@ -106,6 +79,32 @@ def gradient_penalty_fn(images, output):
 
     gradients = rearrange(gradients, 'b ... -> b (...)')
     return ((gradients.norm(2, dim = 1) - 1) ** 2).mean()
+
+
+# ============== Discriminator Adversarial Loss Functions ==============
+def hinge_d_loss(logits_real, logits_fake):
+    loss_real = torch.mean(F.relu(1. - logits_real))
+    loss_fake = torch.mean(F.relu(1. + logits_fake))
+    d_loss = 0.5 * (loss_real + loss_fake)
+    return d_loss
+
+def vanilla_d_loss(logits_real, logits_fake):
+    d_loss = 0.5 * (
+        torch.mean(torch.nn.functional.softplus(-logits_real)) +
+        torch.mean(torch.nn.functional.softplus(logits_fake)))
+    return d_loss
+
+# from MAGVIT, used in place hof hinge_d_loss
+def sigmoid_cross_entropy_with_logits(labels, logits):
+    # The final formulation is: max(x, 0) - x * z + log(1 + exp(-abs(x)))
+    zeros = torch.zeros_like(logits, dtype=logits.dtype)
+    condition = (logits >= zeros)
+    relu_logits = torch.where(condition, logits, zeros)
+    neg_abs_logits = torch.where(condition, -logits, logits)
+    return relu_logits - logits * labels + torch.log1p(torch.exp(neg_abs_logits))
+
+
+
 
 def xavier_uniform_weight_init(m):
     if isinstance(m, nn.Conv3d) or isinstance(m, nn.Linear):
@@ -389,21 +388,28 @@ class StyleGANDiscriminatorBlur(nn.Module):
         self.apply(xavier_uniform_weight_init)
 
     def forward(self, x):
-        
+
         x = self.conv1(x)
+        # print("discriminator aft conv:", x.size())
         x = self.activation_fn(x)
         
         for i in range(self.num_blocks):
             x = self.res_block_list[i](x)
+            # print("discriminator resblock down:", x.size())
 
         x = self.conv2(x)
+        # print("discriminator aft conv2:", x.size())
         x = self.norm1(x)
         x = self.activation_fn(x)
         x = x.reshape((x.shape[0], -1)) # SCH: [B, (C * T * W * H)] ? 
 
+        # print("discriminator reshape:", x.size())
         x = self.linear1(x)
+        # print("discriminator aft linear1:", x.size())
+
         x = self.activation_fn(x)
         x = self.linear2(x)
+        # print("discriminator aft linear2:", x.size())
         return x
     
 class Encoder(nn.Module):
@@ -499,20 +505,26 @@ class Encoder(nn.Module):
         # NOTE: moved to VAE for separate first frame processing
         # x = self.conv1(x)
 
+        # print("encoder:", x.size())
+
         for i in range(self.num_blocks):
             for j in range(self.num_res_blocks):
                 x = self.block_res_blocks[i][j](x)
+                # print("encoder:", x.size())
 
             if i < self.num_blocks - 1:
                 x = self.conv_blocks[i](x)
+                # print("encoder:", x.size())
                 
 
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
+            # print("encoder:", x.size())
 
         x = self.norm1(x)
         x = self.activate(x)
         x = self.conv2(x)
+        # print("encoder:", x.size())
         return x
     
 class Decoder(nn.Module):
@@ -620,19 +632,22 @@ class Decoder(nn.Module):
         **kwargs,
     ):
         # dtype, device = x.dtype, x.device
+
         x = self.conv1(x)
+        # print("decoder:", x.size())
         for i in range(self.num_res_blocks):
             x = self.res_blocks[i](x)
+            # print("decoder:", x.size())
         for i in reversed(range(self.num_blocks)): # reverse here to make decoder symmetric with encoder
             for j in range(self.num_res_blocks):
                 x = self.block_res_blocks[i][j](x)
-
+                # print("decoder:", x.size())
             if i > 0:
                 t_stride = 2 if self.temporal_downsample[i - 1] else 1
                 # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
                 x = self.conv_blocks[i-1](x)
                 x = rearrange(x, "B (C ts hs ws) T H W -> B C (T ts) (H hs) (W ws)", ts=t_stride, hs=2, ws=2)
-
+                # print("decoder:", x.size())
 
         x = self.norm1(x)
         x = self.activate(x)
@@ -744,19 +759,30 @@ class VAE_3D_V2(nn.Module):
             video = pad_at_dim(video, (self.time_padding, 0), value = 0., dim = 2)
             video_packed_shape = [torch.Size([self.time_padding]), torch.Size([]), torch.Size([video_len - 1])]
 
+        # print("pre-encoder:", video.size())
+
         # NOTE: moved encoder conv1 here for separate first frame encoding
         if encode_first_frame_separately:
             pad, first_frame, video = unpack(video, video_packed_shape, 'b c * h w')
             first_frame = self.conv_in_first_frame(first_frame)
         video = self.conv_in(video)
+
+        # print("pre-encoder:", video.size())
+
         if encode_first_frame_separately:
             video, _ = pack([first_frame, video], 'b c * h w')
             video = pad_at_dim(video, (self.time_padding, 0), dim = 2)
 
         encoded_feature = self.encoder(video)
 
+        # print("after encoder:", encoded_feature.size())
+
+        # NOTE: TODO: do we include this before gaussian distri? or go directly to Gaussian distribution
         moments = self.quant_conv(encoded_feature).to(video.dtype)
         posterior = model_utils.DiagonalGaussianDistribution(moments)
+
+        # print("after encoder moments:", moments.size())
+
         return posterior
     
     def decode(
@@ -767,8 +793,12 @@ class VAE_3D_V2(nn.Module):
         # dtype = z.dtype
         decode_first_frame_separately = self.separate_first_frame_encoding and video_contains_first_frame
 
+
         z = self.post_quant_conv(z)
+        # print("pre decoder, post quant conv:", z.size())
+
         dec = self.decoder(z)
+        # print("post decoder:", dec.size())
 
         # SCH: moved decoder last conv layer here for separate first frame decoding
         if decode_first_frame_separately:
@@ -781,6 +811,8 @@ class VAE_3D_V2(nn.Module):
             # if video were padded, remove padding
             if video_contains_first_frame:
                 video = video[:, :, self.time_padding:]
+
+        # print("conv out:", video.size())
 
         return video
     
@@ -971,24 +1003,19 @@ class DiscriminatorLoss(nn.Module):
         self,
         discriminator_factor = 1.0, 
         discriminator_start = 50001,
-        discriminator_loss="hinge",
+        discriminator_loss="non-saturating",
         lecam_loss_weight=0,
         gradient_penalty_loss_weight=10, # SCH: following MAGVIT config.vqgan.grad_penalty_cost
     ):
         super().__init__()
         
-        assert discriminator_loss in ["hinge", "vanilla"]
+        assert discriminator_loss in ["hinge", "vanilla", "non-saturating"]
         self.discriminator_factor = discriminator_factor
         self.discriminator_start = discriminator_start
         self.lecam_loss_weight = lecam_loss_weight
         self.gradient_penalty_loss_weight = gradient_penalty_loss_weight
-
-        if discriminator_loss == "hinge":
-            self.disc_loss_fn = hinge_d_loss
-        elif discriminator_loss == "vanilla":
-            self.disc_loss_fn = vanilla_d_loss
-        else:
-            raise ValueError(f"Unknown GAN loss '{discriminator_loss}'.")
+        self.discriminator_loss_type = discriminator_loss
+    
 
     def forward(
         self,
@@ -1002,11 +1029,33 @@ class DiscriminatorLoss(nn.Module):
     ):
         if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
             disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
-            weighted_d_adversarial_loss = disc_factor * self.disc_loss_fn(real_logits, fake_logits)
+
+            if self.discriminator_loss_type == "hinge":
+                disc_loss = hinge_d_loss(real_logits, fake_logits)
+            elif self.discriminator_loss_type == "non-saturating":
+                if real_logits is not None:
+                    real_loss = sigmoid_cross_entropy_with_logits(
+                        labels=torch.ones_like(real_logits), logits=real_logits
+                    )
+                else:
+                    real_loss = 0.0
+                if fake_logits is not None:
+                    fake_loss = sigmoid_cross_entropy_with_logits(
+                        labels=torch.zeros_like(fake_logits), logits=fake_logits)
+                else:
+                    fake_loss = 0.0
+                disc_loss = 0.5 * (torch.mean(real_loss) + torch.mean(fake_loss))
+            elif self.discriminator_loss_type == "vanilla":
+                disc_loss = vanilla_d_loss(real_logits, fake_logits)
+            else:
+                raise ValueError(f"Unknown GAN loss '{self.discriminator_loss_type}'.")
+
+            weighted_d_adversarial_loss = disc_factor * disc_loss
         else:
             weighted_d_adversarial_loss = 0
 
         lecam_loss = 0.0
+
         if self.lecam_loss_weight is not None and self.lecam_loss_weight > 0.0:
             real_pred = np.mean(real_logits.clone().detach())
             fake_pred = np.mean(fake_logits.clone().detach())

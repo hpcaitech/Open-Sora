@@ -37,6 +37,14 @@ from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_num
 from opensora.utils.train_utils import update_ema, MaskGenerator
 from opensora.models.vae.vae_3d_v2 import VEALoss, DiscriminatorLoss, AdversarialLoss, pad_at_dim
 
+# efficiency
+# from torch.profiler import profile, record_function, ProfilerActivity
+
+def trace_handler(p):
+    output = p.key_averages().table(sort_by="self_cuda_time_total", row_limit=5)
+    print(output)
+    # p.export_chrome_trace("/home/shenchenhui/Open-Sora-dev/outputs/traces/trace_" + str(p.step_num) + ".json")
+
 
 def main():
     # ======================================================
@@ -226,7 +234,9 @@ def main():
         discriminator_factor = cfg.discriminator_factor,
         discriminator_start = cfg.discriminator_start,
         discriminator_loss = cfg.discriminator_loss,
-    )   
+        lecam_loss_weight = cfg.lecam_loss_weight,
+        gradient_penalty_loss_weight = cfg.gradient_penalty_loss_weight,
+    )
 
     # 6.3. training loop
 
@@ -238,10 +248,14 @@ def main():
     lecam_ema_real = torch.tensor(0.0)
     lecam_ema_fake = torch.tensor(0.0)
 
+
+
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
         logger.info(f"Beginning epoch {epoch}...")
+
+
 
         with tqdm(
             range(start_step, num_steps_per_epoch),
@@ -250,151 +264,182 @@ def main():
             total=num_steps_per_epoch,
             initial=start_step,
         ) as pbar:
-            for step in pbar:
-
-                # SCH: calc global step at the start
-                global_step = epoch * num_steps_per_epoch + step
             
-                batch = next(dataloader_iter)
-                x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-
-                # supprt for image or video inputs
-                assert x.ndim in {4, 5}, f"received input of {x.ndim} dimensions" # either image or video
-                assert x.shape[-2:] == cfg.image_size, f"received input size {x.shape[-2:]}, but config image size is {cfg.image_size}"
-                is_image = x.ndim == 4
-                if is_image:
-                    video = rearrange(x, 'b c ... -> b c 1 ...')
-                    video_contains_first_frame = True
-                else:
-                    video = x
-
-                #  ====== VAE ======
-                optimizer.zero_grad()
-                recon_video, posterior = vae(
-                    video,
-                    video_contains_first_frame = video_contains_first_frame,
-                )
-
-                #  ====== Generator Loss ======
-                # simple nll loss
-                nll_loss = nll_loss_fn(
-                    video,
-                    recon_video,
-                    posterior,
-                    split = "train"
-                )
-                vae_loss = nll_loss
-
-                # adversarial loss 
-                if global_step > cfg.discriminator_start:
-                    # padded videos for GAN
-                    fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
-                    fake_logits = discriminator(fake_video.contiguous())
-                    adversarial_loss = adversarial_loss_fn(
-                        fake_logits,
-                        nll_loss, 
-                        vae.module.get_last_layer(),
-                        global_step,
-                        is_training = vae.training,
-                    )
-                    vae_loss += adversarial_loss
-                # Backward & update
-                booster.backward(loss=vae_loss, optimizer=optimizer)
-                # NOTE: clip gradients? this is done in Open-Sora-Plan
-                torch.nn.utils.clip_grad_norm_(vae.parameters(), 1)
-                optimizer.step()
-                # Log loss values:
-                all_reduce_mean(vae_loss)
-                running_loss += vae_loss.item()
+            # with profile(
+            #     activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            #     schedule=torch.profiler.schedule(
+            #             wait=1,
+            #             warmup=1,
+            #             active=2,
+            #             repeat=2,
+            #         ),
+            #     on_trace_ready=torch.profiler.tensorboard_trace_handler('/home/shenchenhui/log'),
+            #     with_stack=True,
+            #     record_shapes=True,
+            #     profile_memory=True,
+            # ) as p: # trace efficiency
                 
+                for step in pbar:
 
-                
-                #  ====== Discriminator Loss ======
-                if global_step > cfg.discriminator_start:
-                    disc_optimizer.zero_grad()
-                    # if video_contains_first_frame:
-                    # Since we don't have enough T frames, pad anyways
-                    real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
-                    fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
-                    if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
-                        real_video = real_video.requires_grad_()
+                    # with profile(
+                    #     activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                    #     with_stack=True,
+                    # ) as p: # trace efficiency
 
-                    real_logits = discriminator(real_video.contiguous()) # SCH: not detached for now for gradient_penalty calculation
-                    fake_logits = discriminator(fake_video.contiguous().detach())
-                    disc_loss = disc_loss_fn(
-                        real_logits, 
-                        fake_logits, 
-                        global_step, 
-                        lecam_ema_real = lecam_ema_real, 
-                        lecam_ema_fake = lecam_ema_fake, 
-                        real_video = real_video
-                    )
+                        # SCH: calc global step at the start
+                        global_step = epoch * num_steps_per_epoch + step
+                    
+                        batch = next(dataloader_iter)
+                        x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
 
-                    if cfg.ema_decay is not None: 
-                        # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
-                        lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
-                        lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
+                        # supprt for image or video inputs
+                        assert x.ndim in {4, 5}, f"received input of {x.ndim} dimensions" # either image or video
+                        assert x.shape[-2:] == cfg.image_size, f"received input size {x.shape[-2:]}, but config image size is {cfg.image_size}"
+                        is_image = x.ndim == 4
+                        if is_image:
+                            video = rearrange(x, 'b c ... -> b c 1 ...')
+                            video_contains_first_frame = True
+                        else:
+                            video = x
 
-                    # Backward & update
-                    booster.backward(loss=disc_loss, optimizer=disc_optimizer)
-                    # NOTE: TODO: clip gradients? this is done in Open-Sora-Plan
-                    torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1)
-
-                    disc_optimizer.step()
-
-                    # Log loss values:
-                    all_reduce_mean(disc_loss)
-                    running_disc_loss += disc_loss.item()
-            
-                log_step += 1
-
-                # Log to tensorboard
-                if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
-                    avg_loss = running_loss / log_step
-                    avg_disc_loss = running_disc_loss / log_step
-                    pbar.set_postfix({"loss": avg_loss, "disc_loss": avg_disc_loss, "step": step, "global_step": global_step})
-                    running_loss = 0
-                    log_step = 0
-                    writer.add_scalar("loss", vae_loss.item(), global_step)
-                    if cfg.wandb:
-                        wandb.log(
-                            {
-                                "iter": global_step,
-                                "num_samples": global_step * total_batch_size,
-                                "epoch": epoch,
-                                "loss": vae_loss.item(),
-                                "disc_loss": disc_loss.item(),
-                                "avg_loss": avg_loss,
-                            },
-                            step=global_step,
+                        #  ====== VAE ======
+                        optimizer.zero_grad()
+                        recon_video, posterior = vae(
+                            video,
+                            video_contains_first_frame = video_contains_first_frame,
                         )
 
-                # Save checkpoint
-                if cfg.ckpt_every > 0 and (global_step + 1) % cfg.ckpt_every == 0:
-                    save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
-                    os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
-                    booster.save_model(vae, os.path.join(save_dir, "model"), shard=True)
-                    booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
-                    booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
-                    booster.save_optimizer(disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096)
+                        #  ====== Generator Loss ======
+                        # simple nll loss
+                        nll_loss = nll_loss_fn(
+                            video,
+                            recon_video,
+                            posterior,
+                            split = "train"
+                        )
+                        vae_loss = nll_loss
 
-                    if lr_scheduler is not None:
-                        booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
-                    if disc_lr_scheduler is not None:
-                        booster.save_lr_scheduler(disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler"))
+                        # adversarial loss 
+                        if global_step > cfg.discriminator_start:
+                            # padded videos for GAN
+                            fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
+                            fake_logits = discriminator(fake_video) # TODO: take out contiguous?
+                            adversarial_loss = adversarial_loss_fn(
+                                fake_logits,
+                                nll_loss, 
+                                vae.module.get_last_layer(),
+                                global_step,
+                                is_training = vae.training,
+                            )
+                            vae_loss += adversarial_loss
+                        # Backward & update
+                        booster.backward(loss=vae_loss, optimizer=optimizer)
+                        # NOTE: clip gradients? this is done in Open-Sora-Plan
+                        torch.nn.utils.clip_grad_norm_(vae.parameters(), 1)
+                        optimizer.step()
+                        # Log loss values:
+                        all_reduce_mean(vae_loss)
+                        running_loss += vae_loss.item()
+                        
 
-                    running_states = {
-                        "epoch": epoch,
-                        "step": step+1,
-                        "global_step": global_step+1,
-                        "sample_start_index": (step+1) * cfg.batch_size,
-                    }
-                    if coordinator.is_master():
-                        save_json(running_states, os.path.join(save_dir, "running_states.json"))
-                    dist.barrier()
-                    logger.info(
-                        f"Saved checkpoint at epoch {epoch} step {step + 1} global_step {global_step + 1} to {exp_dir}"
-                    )
+
+                        #  ====== Discriminator Loss ======
+                        if global_step > cfg.discriminator_start:
+                            disc_optimizer.zero_grad()
+                            # if video_contains_first_frame:
+                            # Since we don't have enough T frames, pad anyways
+
+                            real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
+                            fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
+
+                            if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
+                                real_video = real_video.requires_grad_()
+
+                            real_logits = discriminator(real_video.contiguous()) # SCH: not detached for now for gradient_penalty calculation
+
+                            if cfg.gradient_penalty_loss_weight is None:
+                                real_logits = real_logits.detach()
+
+                            fake_logits = discriminator(fake_video.contiguous().detach())
+                            disc_loss = disc_loss_fn(
+                                real_logits, 
+                                fake_logits, 
+                                global_step, 
+                                lecam_ema_real = lecam_ema_real, 
+                                lecam_ema_fake = lecam_ema_fake, 
+                                real_video = real_video if cfg.gradient_penalty_loss_weight is not None else None,
+                            )
+
+                            if cfg.ema_decay is not None: 
+                                # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
+                                lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
+                                lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
+
+                            # Backward & update
+                            booster.backward(loss=disc_loss, optimizer=disc_optimizer)
+                            # NOTE: TODO: clip gradients? this is done in Open-Sora-Plan
+                            torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1)
+
+                            disc_optimizer.step()
+
+                            # Log loss values:
+                            all_reduce_mean(disc_loss)
+                            running_disc_loss += disc_loss.item()
+                    
+                        log_step += 1
+
+                        # Log to tensorboard
+                        if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
+                            avg_loss = running_loss / log_step
+                            avg_disc_loss = running_disc_loss / log_step
+                            pbar.set_postfix({"loss": avg_loss, "disc_loss": avg_disc_loss, "step": step, "global_step": global_step})
+                            running_loss = 0
+                            log_step = 0
+                            writer.add_scalar("loss", vae_loss.item(), global_step)
+                            if cfg.wandb:
+                                wandb.log(
+                                    {
+                                        "iter": global_step,
+                                        "num_samples": global_step * total_batch_size,
+                                        "epoch": epoch,
+                                        "loss": vae_loss.item(),
+                                        "disc_loss": disc_loss.item(),
+                                        "avg_loss": avg_loss,
+                                    },
+                                    step=global_step,
+                                )
+
+                        # Save checkpoint
+                        if cfg.ckpt_every > 0 and (global_step + 1) % cfg.ckpt_every == 0:
+                            save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
+                            os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
+                            booster.save_model(vae, os.path.join(save_dir, "model"), shard=True)
+                            booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
+                            booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
+                            booster.save_optimizer(disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096)
+
+                            if lr_scheduler is not None:
+                                booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
+                            if disc_lr_scheduler is not None:
+                                booster.save_lr_scheduler(disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler"))
+
+                            running_states = {
+                                "epoch": epoch,
+                                "step": step+1,
+                                "global_step": global_step+1,
+                                "sample_start_index": (step+1) * cfg.batch_size,
+                            }
+                            if coordinator.is_master():
+                                save_json(running_states, os.path.join(save_dir, "running_states.json"))
+                            dist.barrier()
+                            logger.info(
+                                f"Saved checkpoint at epoch {epoch} step {step + 1} global_step {global_step + 1} to {exp_dir}"
+                            )
+
+                        # p.step()
+
+                    # print(p.key_averages().table(sort_by="self_cuda_time_total", row_limit=-1))
+                    
 
         # the continue epochs are not resumed, so we need to reset the sampler start index and start step
         dataloader.sampler.set_start_index(0)
