@@ -1,4 +1,4 @@
-num_frames = 17
+num_frames = 16
 frame_interval = 3
 image_size = (128, 128)
 
@@ -7,7 +7,7 @@ root = None
 data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
-video_contains_first_frame = True
+video_contains_first_frame = False
 
 # Define acceleration
 dtype = "bf16"
@@ -45,15 +45,16 @@ discriminator = dict(
 
 
 # loss weights 
+logvar_init=0.0
 kl_loss_weight = 0.000001
 perceptual_loss_weight = 0.1 # use vgg is not None and more than 0
 discriminator_factor = 1.0 # for discriminator adversarial loss
 # discriminator_loss_weight = 0.5 # for generator adversarial loss
 generator_factor = 0.5 # for generator adversarial loss
-lecam_loss_weight = None # TODO: not clear in MAGVIT what is the weight
+lecam_loss_weight = None # NOTE: not clear in MAGVIT what is the weight
 discriminator_loss_type="non-saturating"
 generator_loss_type="non-saturating"
-discriminator_start = 50000 # 50000 TODO: change to correct val, debug use -1 for now
+discriminator_start = 50000 # 50000 NOTE: change to correct val, debug use -1 for now
 gradient_penalty_loss_weight = None # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay factor for generator
 
