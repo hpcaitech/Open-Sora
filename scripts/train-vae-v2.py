@@ -385,7 +385,8 @@ def main():
                             # Log loss values:
                             all_reduce_mean(disc_loss)
                             running_disc_loss += disc_loss.item()
-                    
+                        else:
+                            disc_loss = torch.tensor(0.0)
                         log_step += 1
 
                         # Log to tensorboard
