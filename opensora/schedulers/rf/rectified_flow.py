@@ -29,11 +29,13 @@ class RFlowScheduler:
             model_kwargs = {}
         if noise is None:
             noise = torch.randn_like(x_start)
+        assert noise.shape == x_start.shape
 
         x_t = self.add_noise(x_start, noise, t)
 
         terms = {}
-        velocity_pred = model(x_t, t, **model_kwargs)
+        model_output = model(x_t, t, **model_kwargs)
+        velocity_pred = model_output.chunk(2, dim = 1)[0]
         loss = (velocity_pred - (x_start - noise)).pow(2).mean()
         terms['loss'] = loss
 
@@ -51,6 +53,11 @@ class RFlowScheduler:
         """
         timepoints = timesteps.float() / self.num_timesteps # [0, 999/1000]
         timepoints = 1 - timepoints # [1,1/1000]
+
+        # timepoint  (bsz) noise: (bsz, 4, frame, w ,h)
+        # expand timepoint to noise shape
+        timepoints = timepoints.unsqueeze(1).unsqueeze(1).unsqueeze(1).unsqueeze(1)
+        timepoints = timepoints.repeat(1, noise.shape[1], noise.shape[2], noise.shape[3], noise.shape[4])
 
         return timepoints * original_samples + (1 - timepoints) * noise
     

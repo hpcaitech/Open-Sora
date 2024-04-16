@@ -54,6 +54,9 @@ class RFLOW:
             z = z + v_pred * dt
 
         return z
+    
+    def training_losses(self, model, x_start, t, model_kwargs=None, noise = None, mask = None, weights = None):
+        return self.scheduler.training_losses(model, x_start, t, model_kwargs, noise, mask, weights)
 
         
         
