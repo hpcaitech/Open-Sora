@@ -62,7 +62,7 @@ ema_decay = 0.999  # ema decay factor for generator
 
 # Others
 seed = 42
-outputs = "outputs/samples_v2"
+save_dir = "outputs/samples_v2"
 wandb = False
 
 # Training
