@@ -12,11 +12,12 @@ from einops import rearrange, repeat, pack, unpack
 import torch.nn.functional as F
 import torchvision
 from torchvision.models import VGG16_Weights
-from collections import namedtuple
 from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
-from torch import nn, einsum, Tensor
-from kornia.filters import filter3d
+from torch import nn
 import math
+
+# from diffusers.models.modeling_utils import ModelMixin
+
 
 """Encoder and Decoder stuctures with 3D CNNs."""
 
@@ -28,8 +29,6 @@ NOTE:
 
     !!! opensora read video into [B,C,T,H,W] format output
 
-TODO:
-    check data dimensions format
 """
 def cast_tuple(t, length = 1):
     return t if isinstance(t, tuple) else ((t,) * length)
@@ -83,8 +82,8 @@ def gradient_penalty_fn(images, output):
 
 # ============== Discriminator Adversarial Loss Functions ==============
 def hinge_d_loss(logits_real, logits_fake):
-    loss_real = torch.mean(F.relu(1. - logits_real))
-    loss_fake = torch.mean(F.relu(1. + logits_fake))
+    loss_real = torch.mean(F.relu(1.0 - logits_real))
+    loss_fake = torch.mean(F.relu(1.0 + logits_fake))
     d_loss = 0.5 * (loss_real + loss_fake)
     return d_loss
 
@@ -261,7 +260,7 @@ class BlurPool3D(nn.Module):
         filt_2d = a[:,None]*a[None,:]
         filt_3d = torch.Tensor(a[:, None, None] * filt_2d[None, :, :]).to(device, dtype)
             
-        filt = filt_3d/torch.sum(filt_3d) # TODO: modify to make it 3D
+        filt = filt_3d/torch.sum(filt_3d) # SCH: modified to it 3D
         self.register_buffer('filt', filt[None,None,:,:,:].repeat((self.channels,1,1,1,1)))
 
         self.pad = get_pad_layer(pad_type)(self.pad_sizes)
@@ -657,7 +656,7 @@ class Decoder(nn.Module):
 
 
 @MODELS.register_module()
-class VAE_3D_V2(nn.Module):
+class VAE_3D_V2(nn.Module): # , ModelMixin
     """The 3D VAE """
     def __init__(
         self, 
@@ -870,10 +869,11 @@ class VAE_3D_V2(nn.Module):
 class VEALoss(nn.Module):
     def __init__(
         self,
+        logvar_init=0.0,
         perceptual_loss_weight = 0.1, 
         kl_loss_weight = 0.000001,
-        vgg=None,
-        vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
+        # vgg=None,
+        # vgg_weights: VGG16_Weights = VGG16_Weights.DEFAULT,
         device = "cpu",
         dtype = "bf16"
     ):
@@ -890,15 +890,18 @@ class VEALoss(nn.Module):
         # KL Loss
         self.kl_loss_weight = kl_loss_weight
         # Perceptual Loss
-        self.vgg = None
+        self.perceptual_loss_fn = LPIPS().eval()
         self.perceptual_loss_weight = perceptual_loss_weight
-        if perceptual_loss_weight is not None and perceptual_loss_weight > 0.0:
-            if not exists(vgg):
-                vgg = torchvision.models.vgg16(
-                    weights = vgg_weights
-                )
-                vgg.classifier = Sequential(*vgg.classifier[:-2])
-            self.vgg = vgg.to(device, dtype).eval() # SCH: added eval
+        self.logvar = nn.Parameter(torch.ones(size=()) * logvar_init)
+
+        # self.vgg = None
+        # if perceptual_loss_weight is not None and perceptual_loss_weight > 0.0:
+        #     if not exists(vgg):
+        #         vgg = torchvision.models.vgg16(
+        #             weights = vgg_weights
+        #         )
+        #         vgg.classifier = Sequential(*vgg.classifier[:-2])
+        #     self.vgg = vgg.to(device, dtype).eval() # SCH: added eval
             
 
     def forward(
@@ -906,40 +909,69 @@ class VEALoss(nn.Module):
         video,
         recon_video,
         posterior,
+        nll_weights=None,
         split = "train",
-    ):
-        # reconstruction loss
-        recon_loss = F.mse_loss(video, recon_video)
-        nll_loss = recon_loss
+    ):  
+        video = rearrange(video, "b c t h w -> (b t) c h w").contiguous()
+        recon_video = rearrange(recon_video, "b c t h w -> (b t) c h w").contiguous()
 
-        # KL Loss
-        weighted_kl_loss = 0
-        if self.kl_loss_weight is not None and self.kl_loss_weight > 0.0:
-            kl_loss = posterior.kl()
-            # NOTE: since we use MSE, here use mean as well, else use sum
-            kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
-            weighted_kl_loss = kl_loss * self.kl_loss_weight
-            nll_loss += weighted_kl_loss
+        # reconstruction loss
+        recon_loss = torch.abs(video - recon_video)
 
         # perceptual loss
-        weighted_perceptual_loss = 0
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
-            assert exists(self.vgg)
-            batch, channels, frames = video.shape[:3]
-            frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
-            input_vgg_input = pick_video_frame(video, frame_indices)
-            recon_vgg_input = pick_video_frame(recon_video, frame_indices)
+            # handle channels 
+            channels = video.shape[1]
             if channels == 1:
                 input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
                 recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
             elif channels == 4: # SCH: take the first 3 for perceptual loss calc
                 input_vgg_input = input_vgg_input[:, :3]
                 recon_vgg_input = recon_vgg_input[:, :3]
-            input_vgg_feats = self.vgg(input_vgg_input)
-            recon_vgg_feats = self.vgg(recon_vgg_input)
-            perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
-            weighted_perceptual_loss = perceptual_loss * self.perceptual_loss_weight
-            nll_loss += weighted_perceptual_loss
+            perceptual_loss = self.perceptual_loss_fn(video, recon_video)
+            recon_loss = recon_loss + self.perceptual_loss_weight * perceptual_loss
+        
+        nll_loss = recon_loss / torch.exp(self.logvar) + self.logvar
+        weighted_nll_loss = nll_loss
+        if nll_weights is not None:
+            weighted_nll_loss = nll_weights * nll_loss
+        weighted_nll_loss = torch.sum(weighted_nll_loss) / weighted_nll_loss.shape[0]
+        nll_loss = torch.sum(nll_loss) / nll_loss.shape[0]
+
+        # recon_loss = F.mse_loss(video, recon_video)
+        # nll_loss = recon_loss
+
+        # KL Loss
+        weighted_kl_loss = 0
+        if self.kl_loss_weight is not None and self.kl_loss_weight > 0.0:
+            kl_loss = posterior.kl()
+            # # NOTE: since we use MSE, here use mean as well, else use sum
+            # kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
+            kl_loss = torch.sum(kl_loss) / kl_loss.shape[0]
+            weighted_kl_loss = kl_loss * self.kl_loss_weight
+
+        return nll_loss, weighted_nll_loss, weighted_kl_loss
+
+        # # perceptual loss
+        # # TODO: use all frames and take average instead of sampling
+        # weighted_perceptual_loss = 0
+        # if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
+        #     assert exists(self.vgg)
+        #     batch, channels, frames = video.shape[:3]
+        #     frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
+        #     input_vgg_input = pick_video_frame(video, frame_indices)
+        #     recon_vgg_input = pick_video_frame(recon_video, frame_indices)
+        #     if channels == 1:
+        #         input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
+        #         recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
+        #     elif channels == 4: # SCH: take the first 3 for perceptual loss calc
+        #         input_vgg_input = input_vgg_input[:, :3]
+        #         recon_vgg_input = recon_vgg_input[:, :3]
+        #     input_vgg_feats = self.vgg(input_vgg_input)
+        #     recon_vgg_feats = self.vgg(recon_vgg_input)
+        #     perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
+        #     weighted_perceptual_loss = perceptual_loss * self.perceptual_loss_weight
+        #     nll_loss += weighted_perceptual_loss
 
         # log = {
         #     "{}/total_loss".format(split): nll_loss.clone().detach().mean(),
@@ -948,7 +980,7 @@ class VEALoss(nn.Module):
         #     "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
         # }
 
-        return nll_loss
+        # return nll_loss, weighted_kl_loss
     
 
 class AdversarialLoss(nn.Module):
@@ -956,19 +988,21 @@ class AdversarialLoss(nn.Module):
         self,
         discriminator_factor = 1.0,
         discriminator_start = 50001,
-        discriminator_loss_weight = 0.5,
+        generator_factor = 0.5,
+        generator_loss_type="non-saturating",
     ):
         super().__init__()
         self.discriminator_factor = discriminator_factor
         self.discriminator_start = discriminator_start
-        self.discriminator_loss_weight = discriminator_loss_weight
+        self.generator_factor = generator_factor
+        self.generator_loss_type = generator_loss_type
     
     def calculate_adaptive_weight(self, nll_loss, g_loss, last_layer):
         nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0] # SCH: TODO: debug added creat
         g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0] # SCH: TODO: debug added create_graph=True
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
         d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
-        d_weight = d_weight * self.discriminator_loss_weight
+        d_weight = d_weight * self.generator_factor
         return d_weight
 
     def forward(
@@ -979,12 +1013,22 @@ class AdversarialLoss(nn.Module):
         global_step,
         is_training = True,
     ):  
-        gan_loss = -torch.mean(fake_logits)
+        # NOTE: following MAGVIT to allow non_saturating
+        assert self.generator_loss_type in ["hinge", "vanilla", "non-saturating"]
+        if self.generator_loss_type == "hinge":
+            gen_loss = -torch.mean(fake_logits)
+        elif self.generator_loss_type == "non-saturating":
+            gen_loss = torch.mean(
+                sigmoid_cross_entropy_with_logits(
+                        labels=torch.ones_like(fake_logits), logits=fake_logits)
+                )
+        else:
+            raise ValueError("Generator loss {} not supported".format(self.generator_loss_type))
+
+
         if self.discriminator_factor is not None and self.discriminator_factor > 0.0:
-            # DEBUG: NOTE: something about this d_weigth calculation is causing issue
-            # d_weight = 1
             try: 
-                d_weight = self.calculate_adaptive_weight(nll_loss, gan_loss, last_layer)
+                d_weight = self.calculate_adaptive_weight(nll_loss, gen_loss, last_layer)
             except RuntimeError:
                 assert not is_training
                 d_weight = torch.tensor(0.0)
@@ -992,9 +1036,9 @@ class AdversarialLoss(nn.Module):
             d_weight = torch.tensor(0.0)
 
         disc_factor = adopt_weight(self.discriminator_factor, global_step, threshold=self.discriminator_start)
-        weighted_gan_loss = d_weight * disc_factor * gan_loss
+        weighted_gen_loss = d_weight * disc_factor * gen_loss
 
-        return weighted_gan_loss
+        return weighted_gen_loss
     
 
 
@@ -1003,18 +1047,18 @@ class DiscriminatorLoss(nn.Module):
         self,
         discriminator_factor = 1.0, 
         discriminator_start = 50001,
-        discriminator_loss="non-saturating",
-        lecam_loss_weight=0,
-        gradient_penalty_loss_weight=10, # SCH: following MAGVIT config.vqgan.grad_penalty_cost
+        discriminator_loss_type="non-saturating",
+        lecam_loss_weight=None,
+        gradient_penalty_loss_weight=None, # SCH: following MAGVIT config.vqgan.grad_penalty_cost
     ):
         super().__init__()
         
-        assert discriminator_loss in ["hinge", "vanilla", "non-saturating"]
+        assert discriminator_loss_type in ["hinge", "vanilla", "non-saturating"]
         self.discriminator_factor = discriminator_factor
         self.discriminator_start = discriminator_start
         self.lecam_loss_weight = lecam_loss_weight
         self.gradient_penalty_loss_weight = gradient_penalty_loss_weight
-        self.discriminator_loss_type = discriminator_loss
+        self.discriminator_loss_type = discriminator_loss_type
     
 
     def forward(

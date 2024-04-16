@@ -37,6 +37,8 @@ from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_num
 from opensora.utils.train_utils import update_ema, MaskGenerator
 from opensora.models.vae.vae_3d_v2 import VEALoss, DiscriminatorLoss, AdversarialLoss, pad_at_dim
 
+
+
 # efficiency
 # from torch.profiler import profile, record_function, ProfilerActivity
 
@@ -218,7 +220,8 @@ def main():
     dataloader.sampler.set_start_index(sampler_start_idx)
 
     # 6.2 Define loss functions
-    nll_loss_fn = VEALoss(
+    vae_loss_fn = VEALoss(
+        logvar_init=cfg.logvar_init,
         perceptual_loss_weight = cfg.perceptual_loss_weight,
         kl_loss_weight = cfg.kl_loss_weight,
         device=device,
@@ -228,12 +231,14 @@ def main():
     adversarial_loss_fn = AdversarialLoss(
         discriminator_factor = cfg.discriminator_factor,
         discriminator_start = cfg.discriminator_start,
+        generator_factor = cfg.generator_factor,
+        generator_loss_type = cfg.generator_loss_type,
     )
 
     disc_loss_fn = DiscriminatorLoss(
         discriminator_factor = cfg.discriminator_factor,
         discriminator_start = cfg.discriminator_start,
-        discriminator_loss = cfg.discriminator_loss,
+        discriminator_loss_type = cfg.discriminator_loss_type,
         lecam_loss_weight = cfg.lecam_loss_weight,
         gradient_penalty_loss_weight = cfg.gradient_penalty_loss_weight,
     )
@@ -303,7 +308,6 @@ def main():
                             video = x
 
                         #  ====== VAE ======
-                        optimizer.zero_grad()
                         recon_video, posterior = vae(
                             video,
                             video_contains_first_frame = video_contains_first_frame,
@@ -311,19 +315,18 @@ def main():
 
                         #  ====== Generator Loss ======
                         # simple nll loss
-                        nll_loss = nll_loss_fn(
+                        nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(
                             video,
                             recon_video,
                             posterior,
                             split = "train"
                         )
-                        vae_loss = nll_loss
-
+    
                         # adversarial loss 
                         if global_step > cfg.discriminator_start:
                             # padded videos for GAN
                             fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
-                            fake_logits = discriminator(fake_video) # TODO: take out contiguous?
+                            fake_logits = discriminator(fake_video.contiguous()) # TODO: take out contiguous?
                             adversarial_loss = adversarial_loss_fn(
                                 fake_logits,
                                 nll_loss, 
@@ -331,12 +334,16 @@ def main():
                                 global_step,
                                 is_training = vae.training,
                             )
-                            vae_loss += adversarial_loss
-                        # Backward & update
+                        
+                        vae_loss = weighted_nll_loss + weighted_kl_loss + adversarial_loss
+
+                        optimizer.zero_grad()
+                        # Backward & update 
                         booster.backward(loss=vae_loss, optimizer=optimizer)
                         # NOTE: clip gradients? this is done in Open-Sora-Plan
                         torch.nn.utils.clip_grad_norm_(vae.parameters(), 1)
                         optimizer.step()
+
                         # Log loss values:
                         all_reduce_mean(vae_loss)
                         running_loss += vae_loss.item()
@@ -345,7 +352,7 @@ def main():
 
                         #  ====== Discriminator Loss ======
                         if global_step > cfg.discriminator_start:
-                            disc_optimizer.zero_grad()
+                            
                             # if video_contains_first_frame:
                             # Since we don't have enough T frames, pad anyways
 
@@ -354,11 +361,9 @@ def main():
 
                             if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
                                 real_video = real_video.requires_grad_()
-
-                            real_logits = discriminator(real_video.contiguous()) # SCH: not detached for now for gradient_penalty calculation
-
-                            if cfg.gradient_penalty_loss_weight is None:
-                                real_logits = real_logits.detach()
+                                real_logits = discriminator(real_video.contiguous()) # SCH: not detached for now for gradient_penalty calculation
+                            else:
+                                real_logits = discriminator(real_video.contiguous().detach()) 
 
                             fake_logits = discriminator(fake_video.contiguous().detach())
                             disc_loss = disc_loss_fn(
@@ -375,11 +380,11 @@ def main():
                                 lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
                                 lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
 
+                            disc_optimizer.zero_grad()
                             # Backward & update
                             booster.backward(loss=disc_loss, optimizer=disc_optimizer)
                             # NOTE: TODO: clip gradients? this is done in Open-Sora-Plan
                             torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1)
-
                             disc_optimizer.step()
 
                             # Log loss values:
