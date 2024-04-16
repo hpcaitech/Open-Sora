@@ -353,10 +353,8 @@ def main():
 
                         #  ====== Discriminator Loss ======
                         if global_step > cfg.discriminator_start:
-                            
                             # if video_contains_first_frame:
                             # Since we don't have enough T frames, pad anyways
-
                             real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
                             fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
 

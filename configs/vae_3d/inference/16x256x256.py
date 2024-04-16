@@ -54,3 +54,5 @@ load = None
 batch_size = 8
 grad_clip = 1.0
 lr = 1e-4
+
+calc_loss = False
