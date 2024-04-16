@@ -21,7 +21,7 @@ text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     cache_dir=None,  # "/mnt/hdd/cached_models",
-    model_max_length=300,
+    model_max_length=200,
 )
 scheduler = dict(
     type="iddpm",
