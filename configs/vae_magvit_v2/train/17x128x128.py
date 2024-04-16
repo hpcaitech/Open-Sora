@@ -45,6 +45,7 @@ discriminator = dict(
 
 
 # loss weights 
+logvar_init=0.0
 kl_loss_weight = 0.000001
 perceptual_loss_weight = 0.1 # use vgg is not None and more than 0
 discriminator_factor = 1.0 # for discriminator adversarial loss
