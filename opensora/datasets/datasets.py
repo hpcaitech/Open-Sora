@@ -92,7 +92,8 @@ class VideoTextDataset(torch.utils.data.Dataset):
             try:
                 return self.getitem(index)
             except Exception as e:
-                print(e)
+                path = self.data.iloc[index]["path"]
+                print(f"data {path}: {e}")
                 index = np.random.randint(len(self))
         raise RuntimeError("Too many bad data.")
 
