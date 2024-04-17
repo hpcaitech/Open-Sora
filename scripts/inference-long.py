@@ -85,13 +85,18 @@ def main():
     print(cfg)
 
     # init distributed
-    colossalai.launch_from_torch({})
-    coordinator = DistCoordinator()
+    if os.environ.get("WORLD_SIZE", None):
+        use_dist = True
+        colossalai.launch_from_torch({})
+        coordinator = DistCoordinator()
 
-    if coordinator.world_size > 1:
-        set_sequence_parallel_group(dist.group.WORLD)
-        enable_sequence_parallelism = True
+        if coordinator.world_size > 1:
+            set_sequence_parallel_group(dist.group.WORLD)
+            enable_sequence_parallelism = True
+        else:
+            enable_sequence_parallelism = False
     else:
+        use_dist = False
         enable_sequence_parallelism = False
 
     # ======================================================
@@ -206,7 +211,7 @@ def main():
 
             # 4.7. save video
             if loop_i == cfg.loop - 1:
-                if coordinator.is_master():
+                if not use_dist or coordinator.is_master():
                     for idx in range(len(video_clips[0])):
                         video_clips_i = [video_clips[0][idx]] + [
                             video_clips[i][idx][:, cfg.condition_frame_length :] for i in range(1, cfg.loop)
