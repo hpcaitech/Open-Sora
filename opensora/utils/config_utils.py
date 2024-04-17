@@ -30,9 +30,12 @@ def parse_args(training=False):
     # Inference
     # ======================================================
     if not training:
+        # output
+        parser.add_argument("--save-dir", default=None, type=str, help="path to save generated samples")
+        parser.add_argument("--sample-name", default=None, type=str, help="sample name, default is sample_idx")
+
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
-        parser.add_argument("--save-dir", default=None, type=str, help="path to save generated samples")
 
         # image/video
         parser.add_argument("--num-frames", default=None, type=int, help="number of frames")
@@ -71,6 +74,8 @@ def merge_args(cfg, args, training=False):
         if "prompt" not in cfg or cfg["prompt"] is None:
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
             cfg["prompt"] = load_prompts(cfg["prompt_path"])
+        if "sample_name" not in cfg:
+            cfg["sample_name"] = None
     else:
         # Training only
         if args.data_path is not None:
