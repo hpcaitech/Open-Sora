@@ -313,7 +313,7 @@ class ResBlockDown(nn.Module):
         self.conv3 = nn.Conv3d(in_channels, self.filters, (3,3,3), padding=1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
         self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
 
-        self.apply(xavier_uniform_weight_init)
+        # self.apply(xavier_uniform_weight_init)
 
     def forward(self, x):
         residual = x
@@ -331,6 +331,67 @@ class ResBlockDown(nn.Module):
         out = (residual + x) / math.sqrt(2)
         return out
 
+
+# SCH: taken from Open Sora Plan
+def n_layer_disc_weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.constant_(m.bias.data, 0)
+
+class NLayerDiscriminator3D(nn.Module):
+    """Defines a 3D PatchGAN discriminator as in Pix2Pix but for 3D inputs."""
+    def __init__(self, input_nc=1, ndf=64, n_layers=3, use_actnorm=False):
+        """
+        Construct a 3D PatchGAN discriminator
+
+        Parameters:
+            input_nc (int)  -- the number of channels in input volumes
+            ndf (int)       -- the number of filters in the last conv layer
+            n_layers (int)  -- the number of conv layers in the discriminator
+            use_actnorm (bool) -- flag to use actnorm instead of batchnorm
+        """
+        super(NLayerDiscriminator3D, self).__init__()
+        if not use_actnorm:
+            norm_layer = nn.BatchNorm3d
+        else:
+            raise NotImplementedError("Not implemented.")
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func != nn.BatchNorm3d
+        else:
+            use_bias = norm_layer != nn.BatchNorm3d
+
+        kw = 4
+        padw = 1
+        sequence = [nn.Conv3d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(1, n_layers):  # gradually increase the number of filters
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            sequence += [
+                nn.Conv3d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=(kw, kw, kw), stride=(1,2,2), padding=padw, bias=use_bias),
+                norm_layer(ndf * nf_mult),
+                nn.LeakyReLU(0.2, True)
+            ]
+
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+        sequence += [
+            nn.Conv3d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=(kw, kw, kw), stride=1, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [nn.Conv3d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
+        self.main = nn.Sequential(*sequence)
+
+    def forward(self, input):
+        """Standard forward."""
+        return self.main(input)
+    
 class StyleGANDiscriminatorBlur(nn.Module):
     """StyleGAN Discriminator."""
     """
@@ -364,7 +425,7 @@ class StyleGANDiscriminatorBlur(nn.Module):
         self.res_block_list = []
         for i in range(self.num_blocks):
             filters = self.filters * self.channel_multipliers[i]
-            self.res_block_list.append(ResBlockDown(prev_filters, filters, self.activation_fn, device=device, dtype=dtype))
+            self.res_block_list.append(ResBlockDown(prev_filters, filters, self.activation_fn, device=device, dtype=dtype).apply(xavier_uniform_weight_init))
             prev_filters = filters # update in_channels 
 
         self.conv2 = nn.Conv3d(prev_filters, prev_filters, (3,3,3), padding=1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
@@ -1095,14 +1156,15 @@ class DiscriminatorLoss(nn.Module):
                 raise ValueError(f"Unknown GAN loss '{self.discriminator_loss_type}'.")
 
             weighted_d_adversarial_loss = disc_factor * disc_loss
+
         else:
             weighted_d_adversarial_loss = 0
 
         lecam_loss = 0.0
 
         if self.lecam_loss_weight is not None and self.lecam_loss_weight > 0.0:
-            real_pred = np.mean(real_logits.clone().detach())
-            fake_pred = np.mean(fake_logits.clone().detach())
+            real_pred = np.mean(real_logits)
+            fake_pred = np.mean(fake_logits)
             lecam_loss = lecam_reg(real_pred, fake_pred,
                                     lecam_ema_real,
                                     lecam_ema_fake)
@@ -1135,8 +1197,9 @@ def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
 
 @MODELS.register_module("DISCRIMINATOR_3D")
 def DISCRIMINATOR_3D(from_pretrained=None, **kwargs):
-    model = StyleGANDiscriminatorBlur(**kwargs)
-    # model = StyleGANDiscriminator(**kwargs) # SCH: DEBUG: to change back            
+    # model = StyleGANDiscriminatorBlur(**kwargs).apply(xavier_uniform_weight_init)
+    # model = StyleGANDiscriminator(**kwargs).apply(xavier_uniform_weight_init) # SCH: DEBUG: to change back  
+    model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)          
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
