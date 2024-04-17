@@ -33,6 +33,8 @@ def parse_args(training=False):
         # output
         parser.add_argument("--save-dir", default=None, type=str, help="path to save generated samples")
         parser.add_argument("--sample-name", default=None, type=str, help="sample name, default is sample_idx")
+        parser.add_argument("--start-index", default=None, type=int, help="start index for sample name")
+        parser.add_argument("--end-index", default=None, type=int, help="end index for sample name")
 
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
@@ -74,6 +76,12 @@ def merge_args(cfg, args, training=False):
         if "prompt" not in cfg or cfg["prompt"] is None:
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
             cfg["prompt"] = load_prompts(cfg["prompt_path"])
+        if args.start_index is not None and args.end_index is not None:
+            cfg["prompt"] = cfg["prompt"][args.start_index : args.end_index]
+        elif args.start_index is not None:
+            cfg["prompt"] = cfg["prompt"][args.start_index :]
+        elif args.end_index is not None:
+            cfg["prompt"] = cfg["prompt"][: args.end_index]
         if "sample_name" not in cfg:
             cfg["sample_name"] = None
     else:
