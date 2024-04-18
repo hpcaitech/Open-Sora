@@ -931,8 +931,6 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
             z, 
             video_contains_first_frame = video_contains_first_frame
         )
-
-        breakpoint()
         
         return recon_video, posterior
 
