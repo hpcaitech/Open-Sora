@@ -3,6 +3,7 @@ frame_interval = 3
 image_size = (128, 128)
 fps = 24 // 3
 is_vae = True
+use_pipeline = True
 
 # Define dataset
 root = None
@@ -10,6 +11,8 @@ data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
 video_contains_first_frame = False
+
+
 
 # Define acceleration
 dtype = "bf16"
@@ -20,9 +23,14 @@ sp_size = 1
 
 # Define model
 
+vae_2d = dict(
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
+)
+
 model = dict(
     type="VAE_MAGVIT_V2",
-    in_out_channels = 3,
+    in_out_channels = 4,
     latent_embed_dim = 256,
     filters = 128,
     num_res_blocks = 4,
@@ -32,6 +40,7 @@ model = dict(
     kl_embed_dim = 64,
     activation_fn = 'swish',
     separate_first_frame_encoding = False,
+    disable_space = True,
     custom_conv_padding = None
 )
 
@@ -40,7 +49,7 @@ discriminator = dict(
     type="DISCRIMINATOR_3D",
     image_size = image_size,
     num_frames = num_frames,
-    in_channels = 3,
+    in_channels = 4,
     filters = 128,
     channel_multipliers = (2,4,4,4,4) # (2,4,4,4) for 64x64 resolution
 )
@@ -56,14 +65,14 @@ generator_factor = 0.1 # for generator adversarial loss
 lecam_loss_weight = None # NOTE: not clear in MAGVIT what is the weight
 discriminator_loss_type="non-saturating"
 generator_loss_type="non-saturating"
-discriminator_start = 50000 # 50000 NOTE: change to correct val, debug use -1 for now
+discriminator_start = 2500 # 50000 NOTE: change to correct val, debug use -1 for now
 gradient_penalty_loss_weight = None # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay factor for generator
 
 
 # Others
 seed = 42
-save_dir = "outputs/samples_v2"
+save_dir = "outputs/pipeline_samples_v2"
 wandb = False
 
 # Training
@@ -75,11 +84,11 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 
 epochs = 10
 log_every = 1
-ckpt_every = 1000
+ckpt_every = 500
 load = None
 
 batch_size = 4
 lr = 1e-4
 grad_clip = 1.0
 
-calc_loss = False
+calc_loss = True

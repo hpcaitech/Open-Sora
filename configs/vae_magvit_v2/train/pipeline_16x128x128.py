@@ -1,6 +1,7 @@
 num_frames = 16
 frame_interval = 3
 image_size = (128, 128)
+use_pipeline = True
 
 # Define dataset
 root = None
@@ -8,7 +9,6 @@ data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
 video_contains_first_frame = False
-use_pipeline = True
 
 # Define acceleration
 dtype = "bf16"
