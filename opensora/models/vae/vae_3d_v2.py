@@ -7,7 +7,7 @@ import numpy as np
 from numpy import typing as nptyping
 from opensora.models.vae import model_utils 
 from opensora.registry import MODELS
-from opensora.utils.ckpt_utils import load_checkpoint
+from opensora.utils.ckpt_utils import load_checkpoint, find_model
 from einops import rearrange, repeat, pack, unpack
 import torch.nn.functional as F
 import torchvision
@@ -483,6 +483,7 @@ class Encoder(nn.Module):
         # in_out_channels = 3, # SCH: added, in_channels at the start
         latent_embed_dim = 512, # num channels for latent vector
         # conv_downsample = False, 
+        disable_spatial_downsample = False, # for vae pipeline
         custom_conv_padding = None,
         activation_fn = 'swish',
         device="cpu",
@@ -496,6 +497,7 @@ class Encoder(nn.Module):
         self.num_groups = num_groups
             
         self.embedding_dim = latent_embed_dim
+        self.disable_spatial_downsample = disable_spatial_downsample
         # self.conv_downsample = conv_downsample
         self.custom_conv_padding = custom_conv_padding
 
@@ -542,9 +544,10 @@ class Encoder(nn.Module):
                 prev_filters = filters # update in_channels
             self.block_res_blocks.append(block_items)
             
-            if i < self.num_blocks - 1: # SCH: T-Causal Conv 3x3x3, 128->128, stride t x 2 x 2
+            if i < self.num_blocks - 1: # SCH: T-Causal Conv 3x3x3, 128->128, stride t x stride s x stride s
                 t_stride = 2 if self.temporal_downsample[i] else 1
-                self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(3, 3, 3), strides=(t_stride, 2, 2))) # SCH: should be same in_channel and out_channel
+                s_stride = 2 if not self.disable_spatial_downsample else 1
+                self.conv_blocks.append(self.conv_fn(prev_filters, filters, kernel_size=(3, 3, 3), strides=(t_stride, s_stride, s_stride))) # SCH: should be same in_channel and out_channel
                 prev_filters = filters # update in_channels
 
 
@@ -598,6 +601,7 @@ class Decoder(nn.Module):
         temporal_downsample = (False, True, True),
         num_groups = 32, # for nn.GroupNorm
         # upsample = "nearest+conv", # options: "deconv", "nearest+conv"
+        disable_spatial_upsample = False, # for vae pipeline
         custom_conv_padding = None,
         activation_fn = 'swish',
         device="cpu",
@@ -613,6 +617,7 @@ class Decoder(nn.Module):
         self.num_groups = num_groups
             
         # self.upsample = upsample
+        self.s_stride = 1 if self.disable_spatial_upsample else 2 # spatial stride
         self.custom_conv_padding = custom_conv_padding
         # self.norm_type = self.config.vqvae.norm_type
         # self.num_remat_block = self.config.vqvae.get('num_dec_remat_blocks', 0)
@@ -677,7 +682,7 @@ class Decoder(nn.Module):
                 t_stride = 2 if self.temporal_downsample[i - 1] else 1
                 # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
                 self.conv_blocks.insert(0, 
-                    self.conv_fn(prev_filters, prev_filters * t_stride * 4, kernel_size=(3,3,3))
+                    self.conv_fn(prev_filters, prev_filters * t_stride * self.s_stride * self.s_stride, kernel_size=(3,3,3))
                 )
                 
         self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device, dtype=dtype)
@@ -706,7 +711,7 @@ class Decoder(nn.Module):
                 t_stride = 2 if self.temporal_downsample[i - 1] else 1
                 # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
                 x = self.conv_blocks[i-1](x)
-                x = rearrange(x, "B (C ts hs ws) T H W -> B C (T ts) (H hs) (W ws)", ts=t_stride, hs=2, ws=2)
+                x = rearrange(x, "B (C ts hs ws) T H W -> B C (T ts) (H hs) (W ws)", ts=t_stride, hs=self.s_stride, ws=self.s_stride)
                 # print("decoder:", x.size())
 
         x = self.norm1(x)
@@ -728,6 +733,7 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
         channel_multipliers = (1, 2, 2, 4),
         temporal_downsample = (True, True, False),
         num_groups = 32, # for nn.GroupNorm
+        disable_space = False,
         custom_conv_padding = None,
         activation_fn = 'swish',
         in_out_channels = 4, 
@@ -777,6 +783,7 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
             # in_out_channels = in_out_channels,
             latent_embed_dim = latent_embed_dim, 
             # conv_downsample = conv_downsample, 
+            disable_spatial_downsample=disable_space,
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn, 
             device = device,
@@ -791,6 +798,7 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
             temporal_downsample = temporal_downsample,
             num_groups = num_groups, # for nn.GroupNorm
             # upsample = upsample, # options: "deconv", "nearest+conv"
+            disable_spatial_upsample=disable_space,
             custom_conv_padding = custom_conv_padding,
             activation_fn = activation_fn,
             device = device,
@@ -1196,10 +1204,38 @@ def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
     return model
 
 @MODELS.register_module("DISCRIMINATOR_3D")
-def DISCRIMINATOR_3D(from_pretrained=None, **kwargs):
+def DISCRIMINATOR_3D(from_pretrained=None, inflate_from_2d=False, **kwargs):
     model = StyleGANDiscriminatorBlur(**kwargs).apply(xavier_uniform_weight_init)
     # model = StyleGANDiscriminator(**kwargs).apply(xavier_uniform_weight_init) # SCH: DEBUG: to change back  
     # model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)          
     if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
+        if inflate_from_2d:
+            load_checkpoint_with_inflation(model, from_pretrained)
+        else:
+            load_checkpoint(model, from_pretrained)
     return model
+
+
+
+def load_checkpoint_with_inflation(model, ckpt_path):
+    """
+    pre-train using image, then inflate to 3D videos 
+    """
+    if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
+        state_dict = find_model(ckpt_path)
+        breakpoint() # NOTE: need to manually check before first use
+        with torch.no_grad():
+            for key in state_dict:
+                if key in model:
+                        # central inflation
+                        if state_dict[key].size() == model[key][:, :, 0, :, :].size():
+                            # temporal dimension
+                            val = torch.zeros_like(model[key])
+                            centre = int(model[key].size(2) // 2)
+                            val[:, :, centre, :, :] = state_dict[key]
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+        print(f"Missing keys: {missing_keys}")
+        print(f"Unexpected keys: {unexpected_keys}")
+    else:
+        load_checkpoint(model, ckpt_path) # use the default function
+        
