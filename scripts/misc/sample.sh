@@ -49,8 +49,6 @@ function run_image() {
 function run_video_1() {
   # 2.1.1 16x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name short_16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426
 
   # 2.1.2 16x720p multi-resolution
   # 1:1
@@ -71,12 +69,18 @@ function run_video_1() {
 }
 
 function run_video_2() {
+  # 2.2.1 16x240x426
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name short_16x240x426
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426
+
   # 2.2.1 64x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name short_64x240x426
 
   # 2.2.2 128x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 128 --image-size 240 426 --sample-name short_128x240x426
+}
 
+function run_video_3() {
   # 2.2.3 16x480x854
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name short_16x480x854
 
@@ -93,15 +97,15 @@ function run_video_edit() {
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 16 --image-size 240 426 \
     --loop 5 --condition-frame-length 4 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png \
-    --mask-strategy "0,0,0,1,0" "0,0,0,1,0"
+    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --mask-strategy "0,0,0,1,0" "0,0,0,1,0" "0,0,0,1,0"
 
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 64 --image-size 240 426 \
     --loop 5 --condition-frame-length 16 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png \
-    --mask-strategy "0,0,0,1,0" "0,0,0,1,0"
+    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --mask-strategy "0,0,0,1,0" "0,0,0,1,0" "0,0,0,1,0"
 
   # 3.2
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
@@ -116,20 +120,24 @@ function run_video_edit() {
 
 for arg in "$@"; do
   if [[ "$arg" = -1 ]] || [[ "$arg" = --image ]]; then
-    run_image
     echo "Running image samples..."
+    run_image
   fi
-  if [[ "$arg" = -2_1 ]] || [[ "$arg" = --video ]]; then
-    run_video_1
+  if [[ "$arg" = -2a ]] || [[ "$arg" = --video ]]; then
     echo "Running video samples 1..."
+    run_video_1
   fi
-  if [[ "$arg" = -2_2 ]] || [[ "$arg" = --video ]]; then
-    run_video_2
+  if [[ "$arg" = -2b ]] || [[ "$arg" = --video ]]; then
     echo "Running video samples 2..."
+    run_video_2
+  fi
+  if [[ "$arg" = -2c ]] || [[ "$arg" = --video ]]; then
+    echo "Running video samples 3..."
+    run_video_3
   fi
   if [[ "$arg" = -3 ]] || [[ "$arg" = --video-edit ]]; then
-    run_video_edit
     echo "Running video edit samples..."
+    run_video_edit
   fi
 done
 
