@@ -617,7 +617,7 @@ class Decoder(nn.Module):
         self.num_groups = num_groups
             
         # self.upsample = upsample
-        self.s_stride = 1 if self.disable_spatial_upsample else 2 # spatial stride
+        self.s_stride = 1 if disable_spatial_upsample else 2 # spatial stride
         self.custom_conv_padding = custom_conv_padding
         # self.norm_type = self.config.vqvae.norm_type
         # self.num_remat_block = self.config.vqvae.get('num_dec_remat_blocks', 0)
