@@ -29,4 +29,4 @@ dtype = "bf16"
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/imagenet_labels.txt"
-save_dir = "./outputs/samples/"
+save_dir = "./samples/samples/"

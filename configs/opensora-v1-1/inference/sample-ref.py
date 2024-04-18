@@ -3,6 +3,23 @@ fps = 24 // 3
 image_size = (240, 426)
 multi_resolution = "STDiT2"
 
+# Condition
+prompt_path = None
+prompt = None
+
+loop = 10
+condition_frame_length = 4
+reference_path = [
+    "assets/images/condition/cliff.png",
+    "assets/images/condition/wave.png",
+]
+# valid when reference_path is not None
+# (loop id, ref id, ref start, length, target start)
+mask_strategy = [
+    "0,0,0,1,0",
+    "0,0,0,1,0",
+]
+
 # Define model
 model = dict(
     type="STDiT2-XL/2",
@@ -30,10 +47,6 @@ scheduler = dict(
     cfg_channel=3,  # or None
 )
 dtype = "bf16"
-
-# Condition
-prompt_path = "./assets/texts/t2v_samples.txt"
-prompt = None  # prompt has higher priority than prompt_path
 
 # Others
 batch_size = 1
