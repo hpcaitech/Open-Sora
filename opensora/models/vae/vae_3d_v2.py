@@ -429,7 +429,7 @@ class StyleGANDiscriminatorBlur(nn.Module):
             prev_filters = filters # update in_channels 
 
         self.conv2 = nn.Conv3d(prev_filters, prev_filters, (3,3,3), padding=1, device=device, dtype=dtype) # NOTE: init to xavier_uniform 
-        torch.nn.init.xavier_uniform(self.conv2.weight)
+        # torch.nn.init.xavier_uniform_(self.conv2.weight)
 
         self.norm1 = nn.GroupNorm(num_groups, prev_filters, dtype=dtype, device=device)
 
