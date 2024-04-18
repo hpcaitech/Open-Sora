@@ -314,13 +314,11 @@ def main():
                             video_contains_first_frame = True
                         else:
                             video = x
-
+                        
                         #  ===== Spatial VAE =====
                         if cfg.get("use_pipeline") == True:
                             with torch.no_grad():
-                                video = vae.encode(video)
-
-                        breakpoint()
+                                video = vae_2d.encode(video)
 
                         #  ====== VAE ======
                         recon_video, posterior = vae(

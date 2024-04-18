@@ -25,7 +25,7 @@ vae_2d = dict(
 
 model = dict(
     type="VAE_MAGVIT_V2",
-    in_out_channels = 3,
+    in_out_channels = 4,
     latent_embed_dim = 256,
     filters = 128,
     num_res_blocks = 4,
@@ -44,7 +44,7 @@ discriminator = dict(
     type="DISCRIMINATOR_3D",
     image_size = image_size,
     num_frames = num_frames,
-    in_channels = 3,
+    in_channels = 4,
     filters = 128,
     channel_multipliers = (2,4,4,4,4), # (2,4,4,4) for 64x64 resolution
 )
