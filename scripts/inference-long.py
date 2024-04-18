@@ -21,7 +21,7 @@ def collect_references_batch(reference_paths, vae, image_size):
         ref_path = reference_path.split(";")
         ref = []
         for r_path in ref_path:
-            r = read_from_path(r_path, image_size)
+            r = read_from_path(r_path, image_size, transform_name="resize_crop")
             r_x = vae.encode(r.unsqueeze(0).to(vae.device, vae.dtype))
             r_x = r_x.squeeze(0)
             ref.append(r_x)
@@ -164,6 +164,7 @@ def main():
     # 4. inference
     # ======================================================
     sample_idx = 0
+    sample_name = cfg.sample_name if cfg.sample_name is not None else "sample"
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
 
@@ -218,7 +219,7 @@ def main():
                         ]
                         video = torch.cat(video_clips_i, dim=1)
                         print(f"Prompt: {prompts[i + idx]}")
-                        save_path = os.path.join(save_dir, f"sample_{sample_idx}")
+                        save_path = os.path.join(save_dir, f"{sample_name}_{sample_idx}")
                         save_sample(video, fps=cfg.fps, save_path=save_path)
                         sample_idx += 1
 

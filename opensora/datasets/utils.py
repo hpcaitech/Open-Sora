@@ -86,32 +86,32 @@ def get_transforms_image(name="center", image_size=(256, 256)):
     return transform
 
 
-def read_image_from_path(path, transform=None, num_frames=1, image_size=(256, 256)):
+def read_image_from_path(path, transform=None, transform_name="center", num_frames=1, image_size=(256, 256)):
     image = pil_loader(path)
     if transform is None:
-        transform = get_transforms_image(image_size=image_size)
+        transform = get_transforms_image(image_size=image_size, name=transform_name)
     image = transform(image)
     video = image.unsqueeze(0).repeat(num_frames, 1, 1, 1)
     video = video.permute(1, 0, 2, 3)
     return video
 
 
-def read_video_from_path(path, transform=None, image_size=(256, 256)):
+def read_video_from_path(path, transform=None, transform_name="center", image_size=(256, 256)):
     vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
     if transform is None:
-        transform = get_transforms_video(image_size=image_size)
+        transform = get_transforms_video(image_size=image_size, name=transform_name)
     video = transform(vframes)  # T C H W
     video = video.permute(1, 0, 2, 3)
     return video
 
 
-def read_from_path(path, image_size):
+def read_from_path(path, image_size, transform_name="center"):
     ext = os.path.splitext(path)[-1].lower()
     if ext.lower() in VID_EXTENSIONS:
-        return read_video_from_path(path, image_size=image_size)
+        return read_video_from_path(path, image_size=image_size, transform_name=transform_name)
     else:
         assert ext.lower() in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
-        return read_image_from_path(path, image_size=image_size)
+        return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
 
 
 def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
