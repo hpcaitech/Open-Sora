@@ -8,6 +8,7 @@ data_path = "CSV_PATH"
 use_image_transform = False
 num_workers = 4
 video_contains_first_frame = False
+use_pipeline = True
 
 # Define acceleration
 dtype = "bf16"
@@ -17,6 +18,10 @@ sp_size = 1
 
 
 # Define model
+vae_2d = dict(
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
+)
 
 model = dict(
     type="VAE_MAGVIT_V2",

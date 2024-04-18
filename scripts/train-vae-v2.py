@@ -136,6 +136,11 @@ def main():
     # 4. build model
     # ======================================================
     # 4.1. build model
+
+    if cfg.get("use_pipeline") == True:
+        # use 2D VAE, then temporal VAE
+        vae_2d = build_module(cfg.vae_2d, MODELS)
+
     vae = build_module(cfg.model, MODELS, device=device)
     vae_numel, vae_numel_trainable = get_model_numel(vae)
     logger.info(
@@ -149,6 +154,9 @@ def main():
     )
 
     # 4.3. move to device
+    if cfg.get("use_pipeline") == True:
+        vae_2d.to(device, dtype).eval() # eval mode, not training!
+
     vae = vae.to(device, dtype)
     discriminator = discriminator.to(device, dtype)
 
@@ -306,6 +314,13 @@ def main():
                             video_contains_first_frame = True
                         else:
                             video = x
+
+                        #  ===== Spatial VAE =====
+                        if cfg.get("use_pipeline") == True:
+                            with torch.no_grad():
+                                video = vae.encode(video)
+
+                        breakpoint()
 
                         #  ====== VAE ======
                         recon_video, posterior = vae(
