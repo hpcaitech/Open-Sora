@@ -932,6 +932,8 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
             video_contains_first_frame = video_contains_first_frame
         )
 
+        breakpoint()
+        
         return recon_video, posterior
 
 
@@ -991,13 +993,18 @@ class VEALoss(nn.Module):
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
             # handle channels 
             channels = video.shape[1]
+            assert channels in {1,3,4}
             if channels == 1:
-                input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
-                recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
+                input_vgg_input = repeat(video, 'b 1 h w -> b c h w', c = 3)
+                recon_vgg_input = repeat(recon_video, 'b 1 h w -> b c h w', c = 3)
             elif channels == 4: # SCH: take the first 3 for perceptual loss calc
-                input_vgg_input = input_vgg_input[:, :3]
-                recon_vgg_input = recon_vgg_input[:, :3]
-            perceptual_loss = self.perceptual_loss_fn(video, recon_video)
+                input_vgg_input = video[:, :3]
+                recon_vgg_input = recon_video[:, :3]
+            else:
+                input_vgg_input = video
+                recon_vgg_input = recon_video
+
+            perceptual_loss = self.perceptual_loss_fn(input_vgg_input, recon_vgg_input)
             recon_loss = recon_loss + self.perceptual_loss_weight * perceptual_loss
         
         nll_loss = recon_loss / torch.exp(self.logvar) + self.logvar
@@ -1223,7 +1230,6 @@ def load_checkpoint_with_inflation(model, ckpt_path):
     """
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path)
-        breakpoint() # NOTE: need to manually check before first use
         with torch.no_grad():
             for key in state_dict:
                 if key in model:
