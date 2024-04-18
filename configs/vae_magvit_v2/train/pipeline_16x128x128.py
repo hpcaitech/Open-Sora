@@ -30,6 +30,7 @@ model = dict(
     kl_embed_dim = 64,
     activation_fn = 'swish',
     separate_first_frame_encoding = False,
+    disable_space = True,
     custom_conv_padding = None
 )
 
