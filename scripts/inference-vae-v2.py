@@ -84,10 +84,15 @@ def main():
     # 4. build model & load weights
     # ======================================================
     # 3.1. build model
+    if cfg.get("use_pipeline") == True:
+        # use 2D VAE, then temporal VAE
+        vae_2d = build_module(cfg.vae_2d, MODELS)
     vae = build_module(cfg.model, MODELS, device=device)
     discriminator = build_module(cfg.discriminator, MODELS, device=device)
 
     # 3.2. move to device & eval
+    if cfg.get("use_pipeline") == True:
+        vae_2d.to(device, dtype).eval()
     vae = vae.to(device, dtype).eval()
     discriminator = discriminator.to(device, dtype).eval()
 
@@ -167,6 +172,11 @@ def main():
             else:
                 video = x
 
+            #  ===== Spatial VAE =====
+            if cfg.get("use_pipeline") == True:
+                with torch.no_grad():
+                    video = vae_2d.encode(video)
+
             recon_video, posterior = vae(
                 video,
                 video_contains_first_frame = video_contains_first_frame
@@ -224,11 +234,34 @@ def main():
                 running_disc_loss = disc_loss.item()/loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
                 running_loss = vae_loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
 
+
+            #  ===== Spatial VAE =====
+            if cfg.get("use_pipeline") == True:
+                with torch.no_grad():
+                    recon_video_decode_spatial = vae_2d.decode(recon_video)
+
             if coordinator.is_master():
                 for idx, sample in enumerate(recon_video):
                     pos = step * cfg.batch_size + idx
-                    save_path = os.path.join(save_dir, f"sample_{pos}")
+                    if cfg.get("use_pipeline") == True:
+                        save_path = os.path.join(save_dir, f"sample_{pos}_time_decode")
+                    else:
+                        save_path = os.path.join(save_dir, f"sample_{pos}")
                     save_sample(sample, fps=cfg.fps, save_path=save_path)
+                
+                if cfg.get("use_pipeline") == True:
+                    # store intermediate encoded video (spatial)
+                    for idx, sample in enumerate(video):
+                        pos = step * cfg.batch_size + idx
+                        save_path = os.path.join(save_dir, f"sample_{pos}_space_encode")
+                        save_sample(sample, fps=cfg.fps, save_path=save_path)
+                    # store final decoded video (decompressed spatially)
+                    for idx, sample in enumerate(recon_video_decode_spatial):
+                        pos = step * cfg.batch_size + idx
+                        save_path = os.path.join(save_dir, f"sample_{pos}_final")
+                        save_sample(sample, fps=cfg.fps, save_path=save_path)
+
+
 
     if cfg.calc_loss:
         print("test vae loss:", running_loss)
