@@ -425,6 +425,8 @@ def main():
                                         "num_samples": global_step * total_batch_size,
                                         "epoch": epoch,
                                         "loss": vae_loss.item(),
+                                        "kl_loss": weighted_kl_loss.item(),
+                                        "gen_adv_loss": adversarial_loss.item(),
                                         "disc_loss": disc_loss.item(),
                                         "avg_loss": avg_loss,
                                     },

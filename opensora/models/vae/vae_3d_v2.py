@@ -1094,6 +1094,7 @@ class AdversarialLoss(nn.Module):
     ):  
         # NOTE: following MAGVIT to allow non_saturating
         assert self.generator_loss_type in ["hinge", "vanilla", "non-saturating"]
+
         if self.generator_loss_type == "hinge":
             gen_loss = -torch.mean(fake_logits)
         elif self.generator_loss_type == "non-saturating":
