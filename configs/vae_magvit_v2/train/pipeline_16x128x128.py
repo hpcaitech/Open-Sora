@@ -63,7 +63,7 @@ lecam_loss_weight = None # NOTE: MAVGIT v2 use 0.001
 # generator_loss_type="non-saturating"
 discriminator_loss_type="hinge"
 generator_loss_type="hinge"
-discriminator_start = 30000 # 50000 NOTE: change to correct val, debug use -1 for now
+discriminator_start = 1000 # 50000 NOTE: change to correct val, debug use -1 for now
 gradient_penalty_loss_weight = None # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay factor for generator
 
@@ -80,9 +80,9 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 3-6 epochs for pexel, from pexel observation its correct
 '''
 
-epochs = 10
+epochs = 500
 log_every = 1
-ckpt_every = 1000
+ckpt_every = 100
 load = None
 
 batch_size = 4
