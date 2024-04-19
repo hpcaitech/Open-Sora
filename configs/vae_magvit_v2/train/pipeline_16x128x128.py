@@ -46,6 +46,7 @@ discriminator = dict(
     num_frames = num_frames,
     in_channels = 4,
     filters = 128,
+    use_pretrained=False, # NOTE: set to False only if we want to fresh train using a different discriminator!
     # channel_multipliers = (2,4,4,4,4), # (2,4,4,4) for 64x64 resolution
     channel_multipliers= (2,4,4) # since on intermediate layer, 16 x 16 x 16 dimension z
 )
