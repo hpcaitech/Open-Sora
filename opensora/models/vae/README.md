@@ -19,6 +19,15 @@ CUDA_VISIBLE_DEVICES=6 torchrun --standalone --nnodes=1 --nproc_per_node=1 scrip
 CUDA_VISIBLE_DEVICES=5 torchrun --master_port=29530 --nnodes=1 --nproc_per_node=1 scripts/train-vae.py configs/vae_3d/train/16x256x256.py --data-path /home/shenchenhui/data/pexels/debug.csv  --load /home/shenchenhui/Open-Sora-dev/outputs/006-F16S3-VAE_3D_B/epoch49-global_step50
 ```
 
+version 2 pipeline
+```yaml
+# NOTE: first VAE is pretrained 2D, 16x128x128 --> 16x16x16
+# then we train our own temporal VAE, 16x16x16 --> 4x16x16
+# we use a 3 layer discriminator on the intermediate of 16x16x16
+WANDB_API_KEY=<wandb_api_key> CUDA_VISIBLE_DEVICES=7 torchrun --master_port=29580 --nnodes=1 --nproc_per_node=1 scripts/train-vae-v2.py configs/vae_magvit_v2/train/pipeline_16x128x128.py --data-path /home/shenchenhui/data/trial_data/train_short.csv --wandb True
+```
+
+
 ## 2. MAGVIT-v2
 
 ### 2.1 dependencies
