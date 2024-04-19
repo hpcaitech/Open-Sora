@@ -416,6 +416,7 @@ def main():
                             pbar.set_postfix({"loss": avg_loss, "disc_loss": avg_disc_loss, "step": step, "global_step": global_step})
                             running_loss = 0
                             log_step = 0
+                            running_disc_loss = 0
                             writer.add_scalar("loss", vae_loss.item(), global_step)
                             if cfg.wandb:
                                 wandb.log(
