@@ -3,12 +3,26 @@ from collections import OrderedDict, defaultdict
 from pprint import pprint
 from typing import Iterator, List, Optional
 
+import numpy as np
 import torch
 import torch.distributed as dist
+from pandarallel import pandarallel
 from torch.utils.data import DistributedSampler
 
 from .bucket import Bucket
 from .datasets import VariableVideoTextDataset
+
+
+# HACK: use pandarallel
+# pandarallel should only access local variables
+def apply(data, method=None, frame_interval=None, seed=None, num_bucket=None):
+    return method(
+        data["num_frames"],
+        data["height"],
+        data["width"],
+        frame_interval,
+        seed + data["id"] * num_bucket,
+    )
 
 
 class VariableVideoBatchSampler(DistributedSampler):
@@ -22,6 +36,7 @@ class VariableVideoBatchSampler(DistributedSampler):
         seed: int = 0,
         drop_last: bool = False,
         verbose: bool = False,
+        num_bucket_build_workers: int = 1,
     ) -> None:
         super().__init__(
             dataset=dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle, seed=seed, drop_last=drop_last
@@ -32,47 +47,55 @@ class VariableVideoBatchSampler(DistributedSampler):
         self.last_micro_batch_access_index = 0
         self.approximate_num_batch = None
 
-    def get_num_batch(self) -> int:
-        g = torch.Generator()
-        g.manual_seed(self.seed + self.epoch)
+        self._get_num_batch_cached_bucket_sample_dict = None
+        self.num_bucket_build_workers = num_bucket_build_workers
+
+    def group_by_bucket(self) -> dict:
         bucket_sample_dict = OrderedDict()
+
+        pandarallel.initialize(progress_bar=True, nb_workers=self.num_bucket_build_workers)
+        bucket_ids = self.dataset.data.parallel_apply(
+            apply,
+            axis=1,
+            method=self.bucket.get_bucket_id,
+            frame_interval=self.dataset.frame_interval,
+            seed=self.seed + self.epoch,
+            num_bucket=self.bucket.num_bucket,
+        )
 
         # group by bucket
         # each data sample is put into a bucket with a similar image/video size
         for i in range(len(self.dataset)):
-            t, h, w = self.dataset.get_data_info(i)
-            bucket_id = self.bucket.get_bucket_id(t, h, w, self.dataset.frame_interval, g)
+            bucket_id = bucket_ids[i]
             if bucket_id is None:
                 continue
             if bucket_id not in bucket_sample_dict:
                 bucket_sample_dict[bucket_id] = []
             bucket_sample_dict[bucket_id].append(i)
+        return bucket_sample_dict
+
+    def get_num_batch(self) -> int:
+        bucket_sample_dict = self.group_by_bucket()
+        self._get_num_batch_cached_bucket_sample_dict = bucket_sample_dict
 
         # calculate the number of batches
-        self._print_bucket_info(bucket_sample_dict)
+        if self.verbose:
+            self._print_bucket_info(bucket_sample_dict)
         return self.approximate_num_batch
 
     def __iter__(self) -> Iterator[List[int]]:
+        if self._get_num_batch_cached_bucket_sample_dict is not None:
+            bucket_sample_dict = self._get_num_batch_cached_bucket_sample_dict
+            self._get_num_batch_cached_bucket_sample_dict = None
+        else:
+            bucket_sample_dict = self.group_by_bucket()
+            if self.verbose:
+                self._print_bucket_info(bucket_sample_dict)
+
         g = torch.Generator()
         g.manual_seed(self.seed + self.epoch)
-        bucket_sample_dict = OrderedDict()
         bucket_micro_batch_count = OrderedDict()
         bucket_last_consumed = OrderedDict()
-
-        # group by bucket
-        # each data sample is put into a bucket with a similar image/video size
-        for i in range(len(self.dataset)):
-            t, h, w = self.dataset.get_data_info(i)
-            bucket_id = self.bucket.get_bucket_id(t, h, w, self.dataset.frame_interval, g)
-            if bucket_id is None:
-                continue
-            if bucket_id not in bucket_sample_dict:
-                bucket_sample_dict[bucket_id] = []
-            bucket_sample_dict[bucket_id].append(i)
-
-        # print bucket info
-        if self.verbose:
-            self._print_bucket_info(bucket_sample_dict)
 
         # process the samples
         for bucket_id, data_list in bucket_sample_dict.items():

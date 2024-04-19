@@ -12,7 +12,7 @@ bucket_config = {  # 6s/it
     "256": {1: (1.0, 254)},
     "512": {1: (0.5, 86)},
     "480p": {1: (0.4, 54), 16: (0.4, 4), 32: (0.0, None)},
-    "720p": {16: (0.1, 2), 32: (0.0, None)},  # No examples now
+    "720p": {16: (0.1, 2), 32: (0.0, None)},
     "1024": {1: (0.3, 20)},
     "1080p": {1: (0.4, 8)},
 }
@@ -30,6 +30,7 @@ mask_ratios = {
 
 # Define acceleration
 num_workers = 4
+num_bucket_build_workers = 16
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
