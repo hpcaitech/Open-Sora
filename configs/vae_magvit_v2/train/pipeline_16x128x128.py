@@ -36,6 +36,7 @@ model = dict(
     activation_fn = 'swish',
     separate_first_frame_encoding = False,
     disable_space = True,
+    ncoder_double_z = False,
     custom_conv_padding = None
 )
 
