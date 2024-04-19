@@ -66,10 +66,6 @@ def main():
         root=cfg.root,
     )
 
-    # limit data
-    if cfg.max_test_samples > 0:
-        dataset = dataset[:cfg.max_test_samples]
-        print(f"limiting test dataset to {cfg.max_test_samples}")
 
     dataloader = prepare_dataloader(
         dataset,
@@ -160,6 +156,9 @@ def main():
     lecam_ema_fake = torch.tensor(0.0)
 
     total_steps = len(dataloader)
+    if cfg.max_test_samples > 0:
+        total_steps = min(int(cfg.max_test_samples//cfg.batch_size), total_steps)
+        print(f"limiting test dataset to {int(cfg.max_test_samples//cfg.batch_size) * cfg.batch_size}")
     dataloader_iter = iter(dataloader)
 
     with tqdm(
@@ -244,7 +243,7 @@ def main():
 
 
                 loss_steps += 1
-                running_disc_loss = disc_loss.item()/loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
+                running_disc_loss = disc_loss.item()/loss_steps + disc_loss * ((loss_steps - 1) / loss_steps)
                 running_loss = vae_loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
 
 
