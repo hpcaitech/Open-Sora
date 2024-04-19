@@ -47,12 +47,14 @@ vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
     micro_batch_size=4,
+    local_files_only=True,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=200,
     shardformer=True,
+    local_files_only=True,
 )
 scheduler = dict(
     type="iddpm-speed",
