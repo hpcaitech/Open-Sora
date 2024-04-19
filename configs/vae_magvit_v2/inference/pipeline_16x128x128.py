@@ -42,7 +42,8 @@ model = dict(
     activation_fn = 'swish',
     separate_first_frame_encoding = False,
     disable_space = True,
-    custom_conv_padding = None
+    custom_conv_padding = None,
+    encoder_double_z = False,
 )
 
 
