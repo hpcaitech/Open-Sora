@@ -21,6 +21,7 @@ sp_size = 1
 vae_2d = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
+    # SDXL
 )
 
 model = dict(
@@ -82,7 +83,7 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 3-6 epochs for pexel, from pexel observation its correct
 '''
 
-epochs = 200
+epochs = 1000
 log_every = 1
 ckpt_every = 200
 load = None
