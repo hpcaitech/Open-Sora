@@ -87,10 +87,12 @@ def main():
         width = torch.tensor([image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
         num_frames = torch.tensor([cfg.num_frames], device=device, dtype=dtype).repeat(cfg.batch_size)
         ar = torch.tensor([image_size[0] / image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
+        fps = torch.tensor([cfg.fps], device=device, dtype=dtype).repeat(cfg.batch_size)
         model_args["height"] = height
         model_args["width"] = width
         model_args["num_frames"] = num_frames
         model_args["ar"] = ar
+        model_args["fps"] = fps
 
     # ======================================================
     # 4. inference
@@ -122,7 +124,7 @@ def main():
             for idx, sample in enumerate(samples):
                 print(f"Prompt: {batch_prompts[idx]}")
                 save_path = os.path.join(save_dir, f"{sample_name}_{sample_idx}")
-                save_sample(sample, fps=cfg.fps, save_path=save_path)
+                save_sample(sample, fps=cfg.fps // cfg.frame_interval, save_path=save_path)
                 sample_idx += 1
 
 

@@ -250,6 +250,7 @@ class STDiT2(nn.Module):
         self.csize_embedder = SizeEmbedder(self.hidden_size // 3)
         self.ar_embedder = SizeEmbedder(self.hidden_size // 3)
         self.fl_embedder = SizeEmbedder(self.hidden_size)  # new
+        self.fps_embedder = SizeEmbedder(self.hidden_size)  # new
 
         # init model
         self.initialize_weights()
@@ -281,7 +282,9 @@ class STDiT2(nn.Module):
         W = W // self.patch_size[2]
         return (T, H, W)
 
-    def forward(self, x, timestep, y, mask=None, x_mask=None, num_frames=None, height=None, width=None, ar=None):
+    def forward(
+        self, x, timestep, y, mask=None, x_mask=None, num_frames=None, height=None, width=None, ar=None, fps=None
+    ):
         """
         Forward pass of STDiT.
         Args:
@@ -311,7 +314,9 @@ class STDiT2(nn.Module):
 
         # 3. get number of frames
         fl = num_frames.unsqueeze(1)
+        fps = fps.unsqueeze(1)
         fl = self.fl_embedder(fl, B)
+        fl = fl + self.fps_embedder(fps, B)
 
         # === get dynamic shape size ===
         _, _, Tx, Hx, Wx = x.size()

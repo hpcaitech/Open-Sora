@@ -1,5 +1,6 @@
 num_frames = 16
-fps = 24 // 3
+frame_interval = 3
+fps = 24
 image_size = (240, 426)
 multi_resolution = "STDiT2"
 

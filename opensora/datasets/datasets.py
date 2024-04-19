@@ -9,6 +9,8 @@ from opensora.registry import DATASETS
 
 from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, read_file, temporal_random_crop
 
+IMG_FPS = 120
+
 
 @DATASETS.register_module()
 class VideoTextDataset(torch.utils.data.Dataset):
@@ -131,9 +133,12 @@ class VariableVideoTextDataset(VideoTextDataset):
         file_type = self.get_type(path)
         ar = width / height
 
+        video_fps = 24  # default fps
         if file_type == "video":
             # loading
-            vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            if "video_fps" in infos:
+                video_fps = infos["video_fps"]
 
             # Sampling video frames
             video = temporal_random_crop(vframes, num_frames, self.frame_interval)
@@ -144,6 +149,7 @@ class VariableVideoTextDataset(VideoTextDataset):
         else:
             # loading
             image = pil_loader(path)
+            video_fps = IMG_FPS
 
             # transform
             transform = get_transforms_image(self.transform_name, (height, width))
@@ -154,4 +160,12 @@ class VariableVideoTextDataset(VideoTextDataset):
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-        return {"video": video, "text": text, "num_frames": num_frames, "height": height, "width": width, "ar": ar}
+        return {
+            "video": video,
+            "text": text,
+            "num_frames": num_frames,
+            "height": height,
+            "width": width,
+            "ar": ar,
+            "fps": video_fps,
+        }
