@@ -8,6 +8,7 @@ use_pipeline = True
 # Define dataset
 root = None
 data_path = "CSV_PATH"
+max_test_samples = -1
 use_image_transform = False
 num_workers = 4
 video_contains_first_frame = False
