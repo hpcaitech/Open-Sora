@@ -15,7 +15,7 @@ from torchvision.models import VGG16_Weights
 from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
 from torch import nn
 import math
-
+import os
 # from diffusers.models.modeling_utils import ModelMixin
 
 
@@ -1206,25 +1206,25 @@ class DiscriminatorLoss(nn.Module):
 def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
     model = VAE_3D_V2(**kwargs)
     if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
+        load_checkpoint(model, from_pretrained, model_name="model")
     return model
 
 @MODELS.register_module("DISCRIMINATOR_3D")
 def DISCRIMINATOR_3D(from_pretrained=None, inflate_from_2d=False, use_pretrained=True, **kwargs):
     model = StyleGANDiscriminatorBlur(**kwargs).apply(xavier_uniform_weight_init)
     # model = StyleGANDiscriminator(**kwargs).apply(xavier_uniform_weight_init) # SCH: DEBUG: to change back  
-    # model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)          
+    # model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)      
     if from_pretrained is not None:
         if use_pretrained:
             if inflate_from_2d:
                 load_checkpoint_with_inflation(model, from_pretrained)
             else:
-                load_checkpoint(model, from_pretrained)
+                load_checkpoint(model, from_pretrained, model_name="discriminator")
+            print(f"loading from:{use_pretrained}")
         else:
             print(f"discriminator use_pretrained={use_pretrained}, initializing new discriminator")
             
     return model
-
 
 
 def load_checkpoint_with_inflation(model, ckpt_path):

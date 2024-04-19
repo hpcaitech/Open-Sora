@@ -47,6 +47,8 @@ def parse_args(training=False):
 def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
+        if cfg.get("discriminator") is not None:
+            cfg.discriminator["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
 
     for k, v in vars(args).items():

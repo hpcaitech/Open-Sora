@@ -80,9 +80,9 @@ def download_model(model_name):
     return model
 
 
-def load_from_sharded_state_dict(model, ckpt_path):
+def load_from_sharded_state_dict(model, ckpt_path, model_name="model"):
     ckpt_io = GeneralCheckpointIO()
-    ckpt_io.load_model(model, os.path.join(ckpt_path, "model"))
+    ckpt_io.load_model(model, os.path.join(ckpt_path, model_name))
 
 def model_sharding(model: torch.nn.Module):
     global_rank = dist.get_rank()
@@ -203,14 +203,14 @@ def create_logger(logging_dir):
     return logger
 
 
-def load_checkpoint(model, ckpt_path, save_as_pt=True):
+def load_checkpoint(model, ckpt_path, save_as_pt=True, model_name="model"):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
         print(f"Missing keys: {missing_keys}")
         print(f"Unexpected keys: {unexpected_keys}")
     elif os.path.isdir(ckpt_path):
-        load_from_sharded_state_dict(model, ckpt_path)
+        load_from_sharded_state_dict(model, ckpt_path, model_name)
         if save_as_pt:
             save_path = os.path.join(ckpt_path, "model_ckpt.pt")
             torch.save(model.state_dict(), save_path)
