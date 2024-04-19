@@ -18,10 +18,14 @@ bucket_config = {  # 6s/it
 }
 mask_ratios = {
     "mask_no": 0.9,
-    "mask_random": 0.06,
-    "mask_head": 0.01,
-    "mask_tail": 0.01,
-    "mask_head_tail": 0.02,
+    "mask_quarter_random": 0.01,
+    "mask_quarter_head": 0.01,
+    "mask_quarter_tail": 0.01,
+    "mask_quarter_head_tail": 0.02,
+    "mask_image_random": 0.01,
+    "mask_image_head": 0.01,
+    "mask_image_tail": 0.01,
+    "mask_image_head_tail": 0.02,
 }
 
 # Define acceleration

@@ -32,31 +32,40 @@ pretrained_models = {
 
 
 def reparameter(ckpt, name=None, model=None):
-    if "DiT-XL" in name and "STDiT" not in name:
+    if name in ["DiT-XL-2-512x512.pt", "DiT-XL-2-256x256.pt"]:
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
-    elif "Latte" in name:
+    if name in ["Latte-XL-2-256x256-ucf101.pt"]:
         ckpt = ckpt["ema"]
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
         del ckpt["temp_embed"]
-    elif "PixArt" in name:
+    if name in ["PixArt-XL-2-256x256.pth", "PixArt-XL-2-SAM-256x256.pth", "PixArt-XL-2-512x512.pth"]:
         ckpt = ckpt["state_dict"]
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
 
-    # different text length
-    if "y_embedder.y_embedding" in ckpt:
-        if ckpt["y_embedder.y_embedding"].shape[0] < model.y_embedder.y_embedding.shape[0]:
-            additional_length = model.y_embedder.y_embedding.shape[0] - ckpt["y_embedder.y_embedding"].shape[0]
-            new_y_embedding = torch.randn(additional_length, model.y_embedder.y_embedding.shape[1])
-            ckpt["y_embedder.y_embedding"] = torch.cat([ckpt["y_embedder.y_embedding"], new_y_embedding], dim=0)
-        elif ckpt["y_embedder.y_embedding"].shape[0] > model.y_embedder.y_embedding.shape[0]:
-            ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
+    # no need pos_embed
     if "pos_embed_temporal" in ckpt:
         del ckpt["pos_embed_temporal"]
     if "pos_embed" in ckpt:
         del ckpt["pos_embed"]
+    # different text length
+    if "y_embedder.y_embedding" in ckpt:
+        if ckpt["y_embedder.y_embedding"].shape[0] < model.y_embedder.y_embedding.shape[0]:
+            print(
+                f"Extend y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
+            )
+            additional_length = model.y_embedder.y_embedding.shape[0] - ckpt["y_embedder.y_embedding"].shape[0]
+            new_y_embedding = torch.zeros(additional_length, model.y_embedder.y_embedding.shape[1])
+            new_y_embedding[:] = ckpt["y_embedder.y_embedding"][-1]
+            ckpt["y_embedder.y_embedding"] = torch.cat([ckpt["y_embedder.y_embedding"], new_y_embedding], dim=0)
+        elif ckpt["y_embedder.y_embedding"].shape[0] > model.y_embedder.y_embedding.shape[0]:
+            print(
+                f"Shrink y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
+            )
+            ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
+
     return ckpt
 
 

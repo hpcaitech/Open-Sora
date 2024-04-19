@@ -25,12 +25,7 @@ from opensora.datasets import prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import model_sharding
 from opensora.utils.config_utils import merge_args, parse_configs
-from opensora.utils.misc import (
-    format_numel_str,
-    get_model_numel,
-    requires_grad,
-    to_torch_dtype,
-)
+from opensora.utils.misc import format_numel_str, get_model_numel, requires_grad, to_torch_dtype
 from opensora.utils.train_utils import MaskGenerator, update_ema
 
 
@@ -66,9 +61,7 @@ class BColors:
 def parse_configs():
     parser = argparse.ArgumentParser()
     parser.add_argument("config", help="model config file path")
-    parser.add_argument(
-        "-o", "--output", help="output config file path", default="output_config.py"
-    )
+    parser.add_argument("-o", "--output", help="output config file path", default="output_config.py")
 
     parser.add_argument("--seed", default=42, type=int, help="generation seed")
     parser.add_argument(
@@ -76,24 +69,14 @@ def parse_configs():
         type=str,
         help="path to model ckpt; will overwrite cfg.ckpt_path if specified",
     )
-    parser.add_argument(
-        "--data-path", default=None, type=str, help="path to data csv", required=True
-    )
+    parser.add_argument("--data-path", default=None, type=str, help="path to data csv", required=True)
     parser.add_argument("--warmup-steps", default=1, type=int, help="warmup steps")
     parser.add_argument("--active-steps", default=1, type=int, help="active steps")
-    parser.add_argument(
-        "--base-resolution", default="240p", type=str, help="base resolution"
-    )
+    parser.add_argument("--base-resolution", default="240p", type=str, help="base resolution")
     parser.add_argument("--base-frames", default=128, type=int, help="base frames")
-    parser.add_argument(
-        "--batch-size-start", default=2, type=int, help="batch size start"
-    )
-    parser.add_argument(
-        "--batch-size-end", default=256, type=int, help="batch size end"
-    )
-    parser.add_argument(
-        "--batch-size-step", default=2, type=int, help="batch size step"
-    )
+    parser.add_argument("--batch-size-start", default=2, type=int, help="batch size start")
+    parser.add_argument("--batch-size-end", default=256, type=int, help="batch size end")
+    parser.add_argument("--batch-size-step", default=2, type=int, help="batch size step")
     args = parser.parse_args()
     cfg = Config.fromfile(args.config)
     cfg = merge_args(cfg, args, training=True)
@@ -116,9 +99,7 @@ def main():
     # ======================================================
     cfg, args = parse_configs()
     print(cfg)
-    assert (
-        cfg.dataset.type == "VariableVideoTextDataset"
-    ), "Only VariableVideoTextDataset is supported"
+    assert cfg.dataset.type == "VariableVideoTextDataset", "Only VariableVideoTextDataset is supported"
 
     # ======================================================
     # 2. runtime variables & colossalai launch
@@ -223,10 +204,7 @@ def main():
     model_sharding(ema)
 
     buckets = [
-        (res, f)
-        for res, d in cfg.bucket_config.items()
-        for f, (p, bs) in d.items()
-        if bs is not None and p > 0.0
+        (res, f) for res, d in cfg.bucket_config.items() for f, (p, bs) in d.items() if bs is not None and p > 0.0
     ]
     output_bucket_cfg = deepcopy(cfg.bucket_config)
     # find the base batch size
@@ -248,15 +226,11 @@ def main():
         optimizer,
         ema,
     )
-    update_bucket_config_bs(
-        output_bucket_cfg, args.base_resolution, args.base_frames, base_batch_size
-    )
+    update_bucket_config_bs(output_bucket_cfg, args.base_resolution, args.base_frames, base_batch_size)
     coordinator.print_on_master(
         f"{BColors.OKBLUE}Base resolution: {args.base_resolution}, Base frames: {args.base_frames}, Batch size: {base_batch_size}, Base step time: {base_step_time}{BColors.ENDC}"
     )
-    result_table = [
-        f"{args.base_resolution}, {args.base_frames}, {base_batch_size}, {base_step_time:.2f}"
-    ]
+    result_table = [f"{args.base_resolution}, {args.base_frames}, {base_batch_size}, {base_step_time:.2f}"]
     for resolution, frames in buckets:
         try:
             batch_size, step_time = benchmark(
@@ -280,9 +254,7 @@ def main():
                 f"{BColors.OKBLUE}Resolution: {resolution}, Frames: {frames}, Batch size: {batch_size}, Step time: {step_time}{BColors.ENDC}"
             )
             update_bucket_config_bs(output_bucket_cfg, resolution, frames, batch_size)
-            result_table.append(
-                f"{resolution}, {frames}, {batch_size}, {step_time:.2f}"
-            )
+            result_table.append(f"{resolution}, {frames}, {batch_size}, {step_time:.2f}")
         except RuntimeError:
             pass
     result_table = "\n".join(result_table)
@@ -367,10 +339,7 @@ def benchmark(
         raise RuntimeError("No valid batch size found")
     if target_step_time is None:
         # find the fastest batch size
-        throughputs = [
-            batch_size / step_time
-            for step_time, batch_size in zip(step_times, batch_sizes)
-        ]
+        throughputs = [batch_size / step_time for step_time, batch_size in zip(step_times, batch_sizes)]
         max_throughput = max(throughputs)
         target_batch_size = batch_sizes[throughputs.index(max_throughput)]
         step_time = step_times[throughputs.index(max_throughput)]
@@ -419,13 +388,9 @@ def train(
         **dataloader_args,
     )
     dataloader_iter = iter(dataloader)
-    num_steps_per_epoch = (
-        dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
-    )
+    num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
 
-    assert (
-        num_steps_per_epoch >= total_steps
-    ), f"num_steps_per_epoch={num_steps_per_epoch} < total_steps={total_steps}"
+    assert num_steps_per_epoch >= total_steps, f"num_steps_per_epoch={num_steps_per_epoch} < total_steps={total_steps}"
     duration = 0
     # this is essential for the first iteration after OOM
     optimizer._grad_store.reset_all_gradients()

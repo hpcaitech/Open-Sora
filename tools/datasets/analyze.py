@@ -17,7 +17,7 @@ def read_file(input_path):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Path to the input dataset")
-    parser.add_argument("--save-img", type=str, default="outputs/samples/infos/", help="Path to save the image")
+    parser.add_argument("--save-img", type=str, default="samples/samples/infos/", help="Path to save the image")
     return parser.parse_args()
 
 

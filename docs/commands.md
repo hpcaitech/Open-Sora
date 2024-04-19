@@ -71,6 +71,19 @@ vae = dict(
 )
 ```
 
+### Evalution
+
+Use the following commands to generate predefined samples.
+
+```bash
+# image
+bash scripts/misc/sample.sh /path/to/ckpt --image
+# video
+bash scripts/misc/sample.sh /path/to/ckpt --video
+# video edit
+bash scripts/misc/sample.sh /path/to/ckpt --video-edit
+```
+
 ## Training
 
 To resume training, run the following command. ``--load`` different from ``--ckpt-path`` as it loads the optimizer and dataloader states.
@@ -109,6 +122,7 @@ python tools/datasets/split.py YOUR_CSV_PATH -o YOUR_SUBSET_CSV_PATH -c configs/
 If you want to control the batch size search more granularly, you can configure batch size start, end, and step in the config file.
 
 Bucket config format:
+
 1. `{ resolution: {num_frames: (prob, batch_size)} }`, in this case batch_size is ignored when searching
 2. `{ resolution: {num_frames: (prob, (max_batch_size, ))} }`, batch_size is searched in the range `[batch_size_start, max_batch_size)`, batch_size_start is configured via CLI
 3. `{ resolution: {num_frames: (prob, (min_batch_size, max_batch_size))} }`, batch_size is searched in the range `[min_batch_size, max_batch_size)`

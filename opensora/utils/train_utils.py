@@ -35,7 +35,17 @@ def update_ema(
 
 class MaskGenerator:
     def __init__(self, mask_ratios):
-        valid_mask_names = ["mask_no", "mask_random", "mask_head", "mask_tail", "mask_head_tail"]
+        valid_mask_names = [
+            "mask_no",
+            "mask_quarter_random",
+            "mask_quarter_head",
+            "mask_quarter_tail",
+            "mask_quarter_head_tail",
+            "mask_image_random",
+            "mask_image_head",
+            "mask_image_tail",
+            "mask_image_head_tail",
+        ]
         assert all(
             mask_name in valid_mask_names for mask_name in mask_ratios.keys()
         ), f"mask_name should be one of {valid_mask_names}, got {mask_ratios.keys()}"
@@ -70,19 +80,32 @@ class MaskGenerator:
         if num_frames <= 1:
             return mask
 
-        if mask_name == "mask_random":
+        if mask_name == "mask_quarter_random":
             random_size = random.randint(1, condition_frames_max)
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
-            return mask
-        elif mask_name == "mask_head":
+        elif mask_name == "mask_image_random":
+            random_size = 1
+            random_pos = random.randint(0, x.shape[2] - random_size)
+            mask[random_pos : random_pos + random_size] = 0
+        elif mask_name == "mask_quarter_head":
             random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
-        elif mask_name == "mask_tail":
+        elif mask_name == "mask_image_head":
+            random_size = 1
+            mask[:random_size] = 0
+        elif mask_name == "mask_quarter_tail":
             random_size = random.randint(1, condition_frames_max)
             mask[-random_size:] = 0
-        elif mask_name == "mask_head_tail":
+        elif mask_name == "mask_image_tail":
+            random_size = 1
+            mask[-random_size:] = 0
+        elif mask_name == "mask_quarter_head_tail":
             random_size = random.randint(1, condition_frames_max)
+            mask[:random_size] = 0
+            mask[-random_size:] = 0
+        elif mask_name == "mask_image_head_tail":
+            random_size = 1
             mask[:random_size] = 0
             mask[-random_size:] = 0
 

@@ -356,7 +356,6 @@ class STDiT2(nn.Module):
         if mask is not None:
             if mask.shape[0] != y.shape[0]:
                 mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
-                # mask[:, 100:] = 0
             mask = mask.squeeze(1).squeeze(1)
             y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
             y_lens = mask.sum(dim=1).tolist()
