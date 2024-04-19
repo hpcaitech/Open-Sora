@@ -438,6 +438,7 @@ class StyleGANDiscriminatorBlur(nn.Module):
             time_scaled = num_frames // scale_factor + 1
         else:
             time_scaled = num_frames / scale_factor
+    
         assert self.input_size[0] % scale_factor == 0, f"image width {self.input_size[0]} is not divisible by scale factor {scale_factor}"
         assert self.input_size[1] % scale_factor == 0, f"image height {self.input_size[1]} is not divisible by scale factor {scale_factor}"
         w_scaled, h_scaled = self.input_size[0] / scale_factor, self.input_size[1] / scale_factor
