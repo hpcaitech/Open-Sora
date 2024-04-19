@@ -9,6 +9,7 @@
     <a href="https://join.slack.com/t/colossalaiworkspace/shared_invite/zt-247ipg9fk-KRRYmUl~u2ll2637WRURVA"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
     <a href="https://twitter.com/yangyou1991/status/1769411544083996787?s=61&t=jT0Dsx2d-MS5vS9rNM5e5g"><img src="https://img.shields.io/badge/Twitter-Discuss-blue?logo=twitter&amp"></a>
     <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-小助手加群-green?logo=wechat&amp"></a>
+    <a href="https://hpc-ai.com/blog/open-sora-v1.0"><img src="https://img.shields.io/badge/Open_Sora-Blog-blue"></a>
 </div>
 
 ## Open-Sora： 完全开源的高效复现类Sora视频生成方案
@@ -25,7 +26,7 @@
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
 * Open-Sora 1.0 支持视频数据预处理、<a href="https://github.com/hpcaitech/ColossalAI"><img src="../assets/readme/colossal_ai.png" width="8%" ></a> 加速训练、推理等全套流程。
 * 我们提供的[模型权重](/#model-weights)只需 3 天的训练就能生成 2 秒的 512x512 视频。
-* **[2024.03.04]** Open-Sora：开源Sora复现方案，成本降低46%，序列扩充至近百万
+* **[2024.03.04]** Open-Sora：开源Sora复现方案，成本降低46%，序列扩充至近百万。[[英文博客]](https://hpc-ai.com/blog/open-sora)
 
 ## 🎥 最新视频
 
@@ -129,15 +130,11 @@ pip install -v .
 要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](docs/structure.md#inference-config-demos)自定义配置。
 
 ```bash
-# Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
-# Auto Download
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path OpenSora-v1-HQ-16x256x256.pth --prompt-path ./assets/texts/t2v_samples.txt
-
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
-torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
-# Auto Download
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x512x512.py --ckpt-path OpenSora-v1-HQ-16x512x512.pth --prompt-path ./assets/texts/t2v_samples.txt
+
+# Sample 16x256x256 (5s/sample, 100 time steps, 22 GB memory)
+torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/16x256x256.py --ckpt-path OpenSora-v1-HQ-16x256x256.pth --prompt-path ./assets/texts/t2v_samples.txt
 
 # Sample 64x512x512 (40s/sample, 100 time steps)
 torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
@@ -145,9 +142,10 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/i
 # Sample 64x512x512 with sequence parallelism (30s/sample, 100 time steps)
 # sequence parallelism is enabled automatically when nproc_per_node is larger than 1
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
+
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands_zh.md)获取更多说明。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands_zh.md)获取更多说明。减小`vae.micro_batch_size`来降低显存使用（但取样速度会略微减慢）。
 
 ## 数据处理
 
@@ -182,6 +180,7 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 
 ## 声明
 
+* [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
 * [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
 * [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration strategies for training progress from OpenDiT.
 * [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
