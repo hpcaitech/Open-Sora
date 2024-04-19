@@ -36,6 +36,8 @@ def parse_args(training=False):
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
         parser.add_argument("--cfg-scale", default=None, type=float, help="balance between cond & uncond")
+        parser.add_argument("--max-test-samples", default=-1, type=int, help="limit the number of test samples")
+
     else:
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
