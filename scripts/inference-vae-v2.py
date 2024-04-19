@@ -145,7 +145,10 @@ def main():
     loss_steps = 0
 
     disc_time_downsample_factor = 2 ** len(cfg.discriminator.channel_multipliers)
-    disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
+    if cfg.num_frames % disc_time_downsample_factor != 0:
+        disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
+    else:
+        disc_time_padding = 0
     video_contains_first_frame = cfg.video_contains_first_frame
 
     lecam_ema_real = torch.tensor(0.0)
