@@ -23,7 +23,7 @@ perceptual_weight = 0.1 # TODO: need to change this to 0.1 !!! according to MAGV
 model = dict(
     type="VAE_3D_B",
     in_out_channels = 3,
-    latent_embed_dim = 256,
+    latent_embed_dim = 4,
     filters = 64,
     num_res_blocks = 2,
     channel_multipliers = (1, 2, 2, 4),
@@ -31,7 +31,7 @@ model = dict(
     num_groups = 32, # for nn.GroupNorm
     conv_downsample = False,
     upsample = "nearest+conv", # options: "deconv", "nearest+conv"
-    kl_embed_dim = 64,
+    kl_embed_dim = 4,
     custom_conv_padding = None,
     activation_fn = 'swish',
 )
@@ -48,9 +48,9 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 3-6 epochs for pexel, from pexel observation its correct
 '''
 
-epochs = 10
+epochs = 500
 log_every = 1
-ckpt_every = 1000
+ckpt_every = 200
 load = None
 
 batch_size = 8
