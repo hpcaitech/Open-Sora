@@ -123,12 +123,12 @@ conda activate opensora
 pip install torch torchvision
 
 # install flash attention (optional)
-# required if enable_flashattn=True
+# set enable_flashattn=False in config to avoid using flash attention
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
 
 # install apex (optional)
-# required if enable_layernorm_kernel=True
+# set enable_layernorm_kernel=False in config to avoid using apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
 # install xformers
@@ -163,14 +163,14 @@ on improving the quality and text alignment.
 
 ## Inference
 
-We have provided a Gradio application in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
+We have provided a [Gradio application](./gradio) in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
 
 ```bash
-pip install gradio
-python scripts/demo.py
+pip install gradio spaces
+python gradio/app.py
 ```
 
-This will launch a Gradio application on your localhost.
+This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [README file](./gradio/README.md).
 
 Besides, we have also provided an offline inference script. Run the following commands to generate samples, the required model weights will be automatically downloaded. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
 
