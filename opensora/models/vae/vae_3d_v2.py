@@ -1220,7 +1220,7 @@ def DISCRIMINATOR_3D(from_pretrained=None, inflate_from_2d=False, use_pretrained
                 load_checkpoint_with_inflation(model, from_pretrained)
             else:
                 load_checkpoint(model, from_pretrained, model_name="discriminator")
-            print(f"loading from:{use_pretrained}")
+                print(f"loaded discriminator")
         else:
             print(f"discriminator use_pretrained={use_pretrained}, initializing new discriminator")
             
