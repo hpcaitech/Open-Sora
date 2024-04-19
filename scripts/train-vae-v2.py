@@ -255,7 +255,10 @@ def main():
 
     # calculate discriminator_time_padding
     disc_time_downsample_factor = 2 ** len(cfg.discriminator.channel_multipliers)
-    disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
+    if cfg.num_frames % disc_time_downsample_factor != 0:
+        disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
+    else:
+        disc_time_padding = 0
     video_contains_first_frame = cfg.video_contains_first_frame
 
     lecam_ema_real = torch.tensor(0.0)
@@ -340,7 +343,7 @@ def main():
                         if global_step > cfg.discriminator_start:
                             # padded videos for GAN
                             fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
-                            fake_logits = discriminator(fake_video.contiguous()) # TODO: take out contiguous?
+                            fake_logits = discriminator(fake_video.contiguous())
                             adversarial_loss = adversarial_loss_fn(
                                 fake_logits,
                                 nll_loss, 
