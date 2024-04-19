@@ -739,6 +739,7 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
         activation_fn = 'swish',
         in_out_channels = 4,
         kl_embed_dim = 64,
+        encoder_double_z = True,
         device="cpu",
         dtype="bf16",
     ):
@@ -782,7 +783,7 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
             temporal_downsample=temporal_downsample,
             num_groups = num_groups, # for nn.GroupNorm
             # in_out_channels = in_out_channels,
-            latent_embed_dim = latent_embed_dim, 
+            latent_embed_dim = latent_embed_dim * 2 if encoder_double_z else latent_embed_dim, 
             # conv_downsample = conv_downsample, 
             disable_spatial_downsample=disable_space,
             custom_conv_padding = custom_conv_padding,
@@ -805,8 +806,11 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
             device = device,
             dtype = dtype,
         )
-
-        self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
+        
+        if encoder_double_z:
+            self.quant_conv = nn.Conv3d(2*latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
+        else:
+            self.quant_conv = nn.Conv3d(latent_embed_dim, 2*kl_embed_dim, 1, device=device, dtype=dtype)
         self.post_quant_conv = nn.Conv3d(kl_embed_dim, latent_embed_dim, 1, device=device, dtype=dtype)
 
     def get_latent_size(self, input_size):
