@@ -113,6 +113,7 @@ class VariableVideoTextDataset(VideoTextDataset):
     ):
         super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
         self.transform_name = transform_name
+        self.data["id"] = np.arange(len(self.data))
 
     def get_data_info(self, index):
         T = self.data.iloc[index]["num_frames"]

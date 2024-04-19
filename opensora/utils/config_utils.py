@@ -103,6 +103,8 @@ def merge_args(cfg, args, training=False):
             cfg["bucket_config"] = None
         if "transform_name" not in cfg.dataset:
             cfg.dataset["transform_name"] = "center"
+        if "num_bucket_build_workers" not in cfg:
+            cfg["num_bucket_build_workers"] = 1
 
     # Both training and inference
     if "multi_resolution" not in cfg:

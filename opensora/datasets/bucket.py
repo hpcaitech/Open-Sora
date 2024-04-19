@@ -1,8 +1,7 @@
 from collections import OrderedDict
 
-import torch
-
 from .aspect import ASPECT_RATIOS, get_closest_ratio
+import numpy as np
 
 
 def find_approximate_hw(hw, hw_dict, approx=0.8):
@@ -44,12 +43,17 @@ class Bucket:
         hw_criteria = dict()
         t_criteria = dict()
         ar_criteria = dict()
+        bucket_id = OrderedDict()
+        bucket_id_cnt = 0
         for k1, v1 in bucket_probs.items():
             hw_criteria[k1] = ASPECT_RATIOS[k1][0]
             t_criteria[k1] = dict()
             ar_criteria[k1] = dict()
+            bucket_id[k1] = dict()
             for k2, _ in v1.items():
                 t_criteria[k1][k2] = k2
+                bucket_id[k1][k2] = bucket_id_cnt
+                bucket_id_cnt += 1
                 ar_criteria[k1][k2] = dict()
                 for k3, v3 in ASPECT_RATIOS[k1][1].items():
                     ar_criteria[k1][k2][k3] = v3
@@ -57,58 +61,52 @@ class Bucket:
 
         self.bucket_probs = bucket_probs
         self.bucket_bs = bucket_bs
+        self.bucket_id = bucket_id
         self.hw_criteria = hw_criteria
         self.t_criteria = t_criteria
         self.ar_criteria = ar_criteria
         self.num_bucket = num_bucket
         print(f"Number of buckets: {num_bucket}")
 
-    def info_bucket(self, dataset, frame_interval=1):
-        infos = dict()
-        infos_ar = dict()
-        for i in range(len(dataset)):
-            T, H, W = dataset.get_data_info(i)
-            bucket_id = self.get_bucket_id(T, H, W, frame_interval)
-            if bucket_id is None:
+    def get_bucket_id(self, T, H, W, frame_interval=1, seed=None):
+        resolution = H * W
+        approx = 0.8
+
+        fail = True
+        for hw_id, t_criteria in self.bucket_probs.items():
+            if resolution < self.hw_criteria[hw_id] * approx:
                 continue
-            if f"{(bucket_id[0], bucket_id[1])}" not in infos:
-                infos[f"{(bucket_id[0], bucket_id[1])}"] = 0
-            if f"{bucket_id[2]}" not in infos_ar:
-                infos_ar[f"{bucket_id[2]}"] = 0
-            infos[f"{(bucket_id[0], bucket_id[1])}"] += 1
-            infos_ar[f"{bucket_id[2]}"] += 1
-        print(f"Dataset contains {len(dataset)} samples.")
-        print("Bucket info:", infos)
-        print("Aspect ratio info:", infos_ar)
 
-    def get_bucket_id(self, T, H, W, frame_interval=1, generator=None):
-        # hw
-        hw = H * W
-        hw_id = find_approximate_hw(hw, self.hw_criteria)
-        if hw_id is None:
-            return None
-        hw_id_index = list(self.hw_criteria.keys()).index(hw_id)
-
-        # hw drops by probablity
-        while True:
-            # T
-            T_id = find_closet_smaller_bucket(T, self.t_criteria[hw_id], frame_interval)
-            if T_id is not None:
-                prob = self.get_prob((hw_id, T_id))
-                if torch.rand(1, generator=generator).item() < prob:
+            # if sample is an image
+            if T == 1:
+                if 1 in t_criteria:
+                    fail = False
+                    t_id = 1
                     break
-            hw_id_index += 1
-            if hw_id_index > len(self.hw_criteria) - 1:
-                break
-            hw_id = list(self.hw_criteria.keys())[hw_id_index]
+                else:
+                    continue
 
-        if T_id is None or hw_id_index > len(self.hw_criteria) - 1:
+            # otherwise, find suitable t_id for video
+            t_fail = True
+            for t_id, prob in t_criteria.items():
+                if T > t_id * frame_interval and t_id != 1:
+                    t_fail = False
+                    break
+            if t_fail:
+                continue
+
+            # leave the loop if prob is high enough
+            rng = np.random.default_rng(seed + self.bucket_id[hw_id][t_id])
+            if prob == 1 or rng.random() < prob:
+                fail = False
+                break
+        if fail:
             return None
 
-        # ar
-        ar_criteria = self.ar_criteria[hw_id][T_id]
+        # get aspect ratio id
+        ar_criteria = self.ar_criteria[hw_id][t_id]
         ar_id = get_closest_ratio(H, W, ar_criteria)
-        return hw_id, T_id, ar_id
+        return hw_id, t_id, ar_id
 
     def get_thw(self, bucket_id):
         assert len(bucket_id) == 3

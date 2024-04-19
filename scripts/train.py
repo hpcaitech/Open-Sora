@@ -4,6 +4,7 @@ from pprint import pprint
 
 import torch
 import torch.distributed as dist
+import wandb
 from colossalai.booster import Booster
 from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
@@ -11,7 +12,6 @@ from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
 from tqdm import tqdm
 
-import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import (
     get_data_parallel_group,
@@ -95,6 +95,7 @@ def main():
     # 3. build dataset and dataloader
     # ======================================================
     dataset = build_module(cfg.dataset, DATASETS)
+    logger.info(f"Dataset contains {len(dataset)} samples.")
     dataloader_args = dict(
         dataset=dataset,
         batch_size=cfg.batch_size,
@@ -109,7 +110,11 @@ def main():
     if cfg.bucket_config is None:
         dataloader = prepare_dataloader(**dataloader_args)
     else:
-        dataloader = prepare_variable_dataloader(bucket_config=cfg.bucket_config, **dataloader_args)
+        dataloader = prepare_variable_dataloader(
+            bucket_config=cfg.bucket_config,
+            num_bucket_build_workers=cfg.num_bucket_build_workers,
+            **dataloader_args,
+        )
     if cfg.dataset.type == "VideoTextDataset":
         total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
         logger.info(f"Total batch size: {total_batch_size}")
