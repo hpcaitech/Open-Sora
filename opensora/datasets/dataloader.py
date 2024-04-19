@@ -107,6 +107,7 @@ def prepare_variable_dataloader(
     pin_memory=False,
     num_workers=0,
     process_group=None,
+    num_bucket_build_workers=1,
     **kwargs,
 ):
     _kwargs = kwargs.copy()
@@ -120,6 +121,7 @@ def prepare_variable_dataloader(
         seed=seed,
         drop_last=drop_last,
         verbose=True,
+        num_bucket_build_workers=num_bucket_build_workers,
     )
 
     # Deterministic dataloader
