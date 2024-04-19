@@ -18,7 +18,7 @@ start=$(date +%s)
 
 ### Functions
 
-function run_image() {
+function run_image() { # 10min
   # 1.1 1024x1024
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 1024 1024 --sample-name 1024x1024
 
@@ -27,6 +27,9 @@ function run_image() {
 
   # 1.3 512x512
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3
 
   # 1.4 720p multi-resolution
   # 1:1
@@ -46,11 +49,9 @@ function run_image() {
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 600 1358 --sample-name 720p_2_1
 }
 
-function run_video_1() {
+function run_video_1() { # 20min
   # 2.1.1 16x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name short_16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426
 
   # 2.1.2 16x720p multi-resolution
   # 1:1
@@ -70,38 +71,52 @@ function run_video_1() {
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 600 1358 --sample-name 720p_2_1
 }
 
-function run_video_2() {
-  # 2.2.1 64x240x426
+function run_video_2() { # 60min
+  # 2.2.1 16x240x426
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name short_16x240x426
+
+  # 2.2.2 64x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name short_64x240x426
+}
 
-  # 2.2.2 128x240x426
+function run_video_3() { # 60min
+  # 2.3.1 16x240x426
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426
+
+  # 2.3.2 128x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 128 --image-size 240 426 --sample-name short_128x240x426
+}
 
-  # 2.2.3 16x480x854
+function run_video_4() { # 120min
+  # 2.4 16x480x854
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name short_16x480x854
+}
 
-  # 2.2.4 64x480x854
+function run_video_5() { # 120min
+  # 2.5 64x480x854
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 480 854 --sample-name short_64x480x854
+}
 
-  # 2.2.5 16x720x1280
+function run_video_6() { # 120min
+  # 2.6 16x720x1280
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name short_16x720x1280
 }
 
-function run_video_edit() {
+function run_video_edit() { # 23min
   # 3.1 image-conditioned long video generation
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_16x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 16 --image-size 240 426 \
     --loop 5 --condition-frame-length 4 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png \
-    --mask-strategy "0,0,0,1,0" "0,0,0,1,0"
+    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --mask-strategy "0,0,0,1,0" "0,0,0,1,0" "0,0,0,1,0"
 
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 64 --image-size 240 426 \
     --loop 5 --condition-frame-length 16 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png \
-    --mask-strategy "0,0,0,1,0" "0,0,0,1,0"
+    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --mask-strategy "0,0,0,1,0" "0,0,0,1,0" "0,0,0,1,0"
 
   # 3.2
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
@@ -116,20 +131,36 @@ function run_video_edit() {
 
 for arg in "$@"; do
   if [[ "$arg" = -1 ]] || [[ "$arg" = --image ]]; then
-    run_image
     echo "Running image samples..."
+    run_image
   fi
-  if [[ "$arg" = -2_1 ]] || [[ "$arg" = --video ]]; then
-    run_video_1
+  if [[ "$arg" = -2a ]] || [[ "$arg" = --video ]]; then
     echo "Running video samples 1..."
+    run_video_1
   fi
-  if [[ "$arg" = -2_2 ]] || [[ "$arg" = --video ]]; then
-    run_video_2
+  if [[ "$arg" = -2b ]] || [[ "$arg" = --video ]]; then
     echo "Running video samples 2..."
+    run_video_2
+  fi
+  if [[ "$arg" = -2c ]] || [[ "$arg" = --video ]]; then
+    echo "Running video samples 3..."
+    run_video_3
+  fi
+  if [[ "$arg" = -2d ]] || [[ "$arg" = --video ]]; then
+    echo "Running video samples 4..."
+    run_video_4
+  fi
+  if [[ "$arg" = -2e ]] || [[ "$arg" = --video ]]; then
+    echo "Running video samples 5..."
+    run_video_5
+  fi
+  if [[ "$arg" = -2f ]] || [[ "$arg" = --video ]]; then
+    echo "Running video samples 6..."
+    run_video_6
   fi
   if [[ "$arg" = -3 ]] || [[ "$arg" = --video-edit ]]; then
-    run_video_edit
     echo "Running video edit samples..."
+    run_video_edit
   fi
 done
 
