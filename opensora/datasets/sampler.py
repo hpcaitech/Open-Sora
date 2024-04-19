@@ -3,7 +3,6 @@ from collections import OrderedDict, defaultdict
 from pprint import pprint
 from typing import Iterator, List, Optional
 
-import numpy as np
 import torch
 import torch.distributed as dist
 from pandarallel import pandarallel
@@ -53,7 +52,7 @@ class VariableVideoBatchSampler(DistributedSampler):
     def group_by_bucket(self) -> dict:
         bucket_sample_dict = OrderedDict()
 
-        pandarallel.initialize(progress_bar=True, nb_workers=self.num_bucket_build_workers)
+        pandarallel.initialize(nb_workers=self.num_bucket_build_workers, progress_bar=False)
         bucket_ids = self.dataset.data.parallel_apply(
             apply,
             axis=1,

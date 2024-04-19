@@ -7,8 +7,13 @@ dataset = dict(
     image_size=(None, None),
     transform_name="resize_crop",
 )
-bucket_config = {  # 6s/it
-    "256": {1: (1.0, 254)},
+# IMG: 1024 (20%) 512 (30%) 256 (50%) drop (50%)
+bucket_config = {  # 1s/it
+    "144p": {16: (1.0, 8), 32: (1.0, 4), 64: (1.0, 2), 128: (1.0, 1)},
+    "256": {1: (0.5, 32), 16: (0.5, 4), 32: (0.5, 2), 64: (0.5, 1), 128: (0.0, None)},
+    "240p": {16: (0.3, 3), 32: (0.3, 1), 64: (0.0, None)},
+    "512": {1: (0.4, 16)},
+    "1024": {1: (0.3, 4)},
 }
 mask_ratios = {
     "mask_no": 0.9,
@@ -23,10 +28,10 @@ mask_ratios = {
 }
 
 # Define acceleration
-num_workers = 4
+num_workers = 8
 num_bucket_build_workers = 16
 dtype = "bf16"
-grad_checkpoint = True
+grad_checkpoint = False
 plugin = "zero2"
 sp_size = 1
 

@@ -7,7 +7,7 @@ from colossalai.cluster import DistCoordinator
 from mmengine.runner import set_random_seed
 
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
-from opensora.datasets import save_sample
+from opensora.datasets import IMG_FPS, save_sample
 from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
@@ -87,6 +87,8 @@ def main():
         width = torch.tensor([image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
         num_frames = torch.tensor([cfg.num_frames], device=device, dtype=dtype).repeat(cfg.batch_size)
         ar = torch.tensor([image_size[0] / image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
+        if cfg.num_frames == 1:
+            cfg.fps = IMG_FPS
         fps = torch.tensor([cfg.fps], device=device, dtype=dtype).repeat(cfg.batch_size)
         model_args["height"] = height
         model_args["width"] = width
