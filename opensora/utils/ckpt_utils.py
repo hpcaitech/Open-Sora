@@ -212,7 +212,7 @@ def load_checkpoint(model, ckpt_path, save_as_pt=True, model_name="model"):
     elif os.path.isdir(ckpt_path):
         load_from_sharded_state_dict(model, ckpt_path, model_name)
         if save_as_pt:
-            save_path = os.path.join(ckpt_path, "model_ckpt.pt")
+            save_path = os.path.join(ckpt_path, model_name+"_ckpt.pt")
             torch.save(model.state_dict(), save_path)
             print(f"Model checkpoint saved to {save_path}")
     else:
