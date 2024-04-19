@@ -66,6 +66,11 @@ def main():
         root=cfg.root,
     )
 
+    # limit data
+    if cfg.max_test_samples > 0:
+        dataset = dataset[:cfg.max_test_samples]
+        print(f"limiting test dataset to {cfg.max_test_samples}")
+
     dataloader = prepare_dataloader(
         dataset,
         batch_size=cfg.batch_size,
