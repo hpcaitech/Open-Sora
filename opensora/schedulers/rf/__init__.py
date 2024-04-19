@@ -33,7 +33,6 @@ class RFLOW:
             guidance_scale = self.cfg_scale
 
         n = len(prompts)
-        z = torch.cat([z, z], 0)
         model_args = text_encoder.encode(prompts)
         y_null = text_encoder.null(n)
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
@@ -46,8 +45,10 @@ class RFLOW:
         timesteps = [int(round(t)) for t in timesteps]
 
         for i, t in enumerate(timesteps):
-            pred = model(z, torch.tensor(t * z.shape[0], device = device), **model_args)
-            pred_cond, pred_uncond = pred.chunk(2, dim = 1)
+            z_in = torch.cat([z, z], 0)
+            print(z_in.shape, torch.tensor([t]* z_in.shape[0], device = device).shape)
+            pred = model(z_in, torch.tensor([t]* z_in.shape[0], device = device), **model_args).chunk(2, dim = 1)[0]
+            pred_cond, pred_uncond = pred.chunk(2, dim = 0)
             v_pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
 
             dt = (timesteps[i] - timesteps[i+1])/self.num_timesteps if i < len(timesteps) - 1 else 1/self.num_timesteps
