@@ -46,6 +46,7 @@ class T5Embedder:
         torch_dtype=None,
         use_offload_folder=None,
         model_max_length=120,
+        local_files_only=False,
     ):
         self.device = torch.device(device)
         self.torch_dtype = torch_dtype or torch.bfloat16
@@ -99,8 +100,17 @@ class T5Embedder:
         self.hf_token = hf_token
 
         assert from_pretrained in self.available_models
-        self.tokenizer = AutoTokenizer.from_pretrained(from_pretrained, cache_dir=cache_dir)
-        self.model = T5EncoderModel.from_pretrained(from_pretrained, cache_dir=cache_dir, **t5_model_kwargs).eval()
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            from_pretrained,
+            cache_dir=cache_dir,
+            local_files_only=local_files_only,
+        )
+        self.model = T5EncoderModel.from_pretrained(
+            from_pretrained,
+            cache_dir=cache_dir,
+            local_files_only=local_files_only,
+            **t5_model_kwargs,
+        ).eval()
         self.model_max_length = model_max_length
 
     def get_text_embeddings(self, texts):
@@ -134,6 +144,7 @@ class T5Encoder:
         dtype=torch.float,
         cache_dir=None,
         shardformer=False,
+        local_files_only=False,
     ):
         assert from_pretrained is not None, "Please specify the path to the T5 model"
 
@@ -143,6 +154,7 @@ class T5Encoder:
             from_pretrained=from_pretrained,
             cache_dir=cache_dir,
             model_max_length=model_max_length,
+            local_files_only=local_files_only,
         )
         self.t5.model.to(dtype=dtype)
         self.y_embedder = None
