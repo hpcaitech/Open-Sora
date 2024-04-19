@@ -84,6 +84,8 @@ def merge_args(cfg, args, training=False):
             cfg["reference_path"] = None
         if "loop" not in cfg:
             cfg["loop"] = 1
+        if "frame_interval" not in cfg:
+            cfg["frame_interval"] = 3
         # - Prompt handling
         if "prompt" not in cfg or cfg["prompt"] is None:
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
