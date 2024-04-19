@@ -211,13 +211,13 @@ def load(
     booster.load_model(model, os.path.join(load_dir, "model"))
     # ema is not boosted, so we don't use booster.load_model
     # ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt")))
-    ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu"), strict=False))
+    ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")))
     booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
     if lr_scheduler is not None:
         booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
     running_states = load_json(os.path.join(load_dir, "running_states.json"))
     if sampler is not None:
-        sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
+        sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")), strict=False)
     dist.barrier()
     return (
         running_states["epoch"],

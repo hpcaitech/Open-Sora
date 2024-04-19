@@ -229,6 +229,7 @@ def main():
         ) as pbar:
             for step, batch in pbar:
                 x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
+                print(x.shape)
                 y = batch.pop("text")
                 # Visual and text encoding
                 with torch.no_grad():
