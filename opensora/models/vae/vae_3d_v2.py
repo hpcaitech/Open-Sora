@@ -737,7 +737,7 @@ class VAE_3D_V2(nn.Module): # , ModelMixin
         disable_space = False,
         custom_conv_padding = None,
         activation_fn = 'swish',
-        in_out_channels = 4, 
+        in_out_channels = 4,
         kl_embed_dim = 64,
         device="cpu",
         dtype="bf16",
