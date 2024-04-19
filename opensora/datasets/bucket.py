@@ -1,7 +1,8 @@
 from collections import OrderedDict
 
-from .aspect import ASPECT_RATIOS, get_closest_ratio
 import numpy as np
+
+from .aspect import ASPECT_RATIOS, get_closest_ratio
 
 
 def find_approximate_hw(hw, hw_dict, approx=0.8):
@@ -80,9 +81,11 @@ class Bucket:
             # if sample is an image
             if T == 1:
                 if 1 in t_criteria:
-                    fail = False
-                    t_id = 1
-                    break
+                    rng = np.random.default_rng(seed + self.bucket_id[hw_id][1])
+                    if rng.random() < t_criteria[1]:
+                        fail = False
+                        t_id = 1
+                        break
                 else:
                     continue
 

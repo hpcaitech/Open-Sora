@@ -150,6 +150,8 @@ def main():
         width = torch.tensor([image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
         num_frames = torch.tensor([cfg.num_frames], device=device, dtype=dtype).repeat(cfg.batch_size)
         ar = torch.tensor([image_size[0] / image_size[1]], device=device, dtype=dtype).repeat(cfg.batch_size)
+        if cfg.num_frames == 1:
+            cfg.fps = IMG_FPS
         fps = torch.tensor([cfg.fps], device=device, dtype=dtype).repeat(cfg.batch_size)
         model_args["height"] = height
         model_args["width"] = width

@@ -8,8 +8,8 @@ dataset = dict(
     transform_name="resize_crop",
 )
 bucket_config = {  # 6s/it
-    "240p": {16: (1.0, 17), 32: (1.0, 9), 64: (1.0, 4), 128: (1.0, 2)},
     "256": {1: (1.0, 254)},
+    "240p": {16: (1.0, 17), 32: (1.0, 9), 64: (1.0, 4), 128: (1.0, 2)},
     "512": {1: (0.5, 86)},
     "480p": {1: (0.4, 54), 16: (0.4, 4), 32: (0.0, None)},
     "720p": {16: (0.1, 2), 32: (0.0, None)},
@@ -29,7 +29,7 @@ mask_ratios = {
 }
 
 # Define acceleration
-num_workers = 4
+num_workers = 8
 num_bucket_build_workers = 16
 dtype = "bf16"
 grad_checkpoint = True
