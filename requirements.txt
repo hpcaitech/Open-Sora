@@ -13,3 +13,4 @@ timm
 tqdm
 transformers
 wandb
+rotary_embedding_torch

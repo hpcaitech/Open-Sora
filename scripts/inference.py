@@ -22,13 +22,18 @@ def main():
     print(cfg)
 
     # init distributed
-    colossalai.launch_from_torch({})
-    coordinator = DistCoordinator()
+    if os.environ.get("WORLD_SIZE", None):
+        use_dist = True
+        colossalai.launch_from_torch({})
+        coordinator = DistCoordinator()
 
-    if coordinator.world_size > 1:
-        set_sequence_parallel_group(dist.group.WORLD)
-        enable_sequence_parallelism = True
+        if coordinator.world_size > 1:
+            set_sequence_parallel_group(dist.group.WORLD)
+            enable_sequence_parallelism = True
+        else:
+            enable_sequence_parallelism = False
     else:
+        use_dist = False
         enable_sequence_parallelism = False
 
     # ======================================================
@@ -91,6 +96,7 @@ def main():
     # 4. inference
     # ======================================================
     sample_idx = 0
+    sample_name = cfg.sample_name if cfg.sample_name is not None else "sample"
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
 
@@ -112,10 +118,10 @@ def main():
         )
         samples = vae.decode(samples.to(dtype))
 
-        if coordinator.is_master():
+        if not use_dist or coordinator.is_master():
             for idx, sample in enumerate(samples):
                 print(f"Prompt: {batch_prompts[idx]}")
-                save_path = os.path.join(save_dir, f"sample_{sample_idx}")
+                save_path = os.path.join(save_dir, f"{sample_name}_{sample_idx}")
                 save_sample(sample, fps=cfg.fps, save_path=save_path)
                 sample_idx += 1
 

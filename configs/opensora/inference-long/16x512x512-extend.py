@@ -47,4 +47,4 @@ mask_strategy = ["0,0,0,1,0", "0,0,0,1,0"]  # valid when reference_path is not N
 # Others
 batch_size = 2
 seed = 42
-save_dir = "./outputs/samples/"
+save_dir = "./samples/samples/"
