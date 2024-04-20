@@ -408,15 +408,21 @@ class GaussianDiffusion:
         if mask is not None:
             if mask.shape[0] != x.shape[0]:
                 mask = mask.repeat(2, 1)  # HACK
-            # copy unchanged x values to x0
+            mask_t = (mask * len(self.betas) - 1).to(torch.int)
+
+            # x0: copy unchanged x values
+            # x_noise: add noise to x values
             x0 = x.clone()
-            mask_t =  (mask * len(self.betas)).to(torch.int)
-            mask_t_equall = (mask_t == t.unsqueeze(1))[:, None, :, None, None]
-            mask_t_upper = (mask_t > t.unsqueeze(1))[:, None, :, None, None]
-            x_noise = x0 * _extract_into_tensor(self.sqrt_alphas_cumprod, t, x.shape) + torch.randn_like(x) * _extract_into_tensor(
-                self.sqrt_one_minus_alphas_cumprod, t, x.shape)
+            x_noise = x0 * _extract_into_tensor(self.sqrt_alphas_cumprod, t, x.shape) + torch.randn_like(
+                x
+            ) * _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x.shape)
+
             # active noise addition
-            x = torch.where(mask_t_equall, x_noise, x)
+            mask_t_equall = (mask_t == t.unsqueeze(1))[:, None, :, None, None]
+            x = torch.where(mask_t_equall, x_noise, x0)
+
+            # create x_mask
+            mask_t_upper = (mask_t > t.unsqueeze(1))[:, None, :, None, None]
             batch_size = x.shape[0]
             model_kwargs["x_mask"] = mask_t_upper.reshape(batch_size, -1).to(torch.bool)
 
