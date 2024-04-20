@@ -49,7 +49,7 @@ function run_image() { # 10min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 600 1358 --sample-name 720p_2_1
 }
 
-function run_video_1() { # 20min
+function run_video_a() { # 20min
   # 2.1.1 16x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426
 
@@ -71,7 +71,7 @@ function run_video_1() { # 20min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 600 1358 --sample-name 720p_2_1
 }
 
-function run_video_2() { # 60min
+function run_video_b() { # 30min
   # 2.2.1 16x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name short_16x240x426
 
@@ -79,7 +79,7 @@ function run_video_2() { # 60min
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name short_64x240x426
 }
 
-function run_video_3() { # 60min
+function run_video_c() { # 30min
   # 2.3.1 16x240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426
 
@@ -87,17 +87,17 @@ function run_video_3() { # 60min
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 128 --image-size 240 426 --sample-name short_128x240x426
 }
 
-function run_video_4() { # 120min
+function run_video_d() { # 30min
   # 2.4 16x480x854
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name short_16x480x854
 }
 
-function run_video_5() { # 120min
+function run_video_e() { # 30min
   # 2.5 64x480x854
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 480 854 --sample-name short_64x480x854
 }
 
-function run_video_6() { # 120min
+function run_video_f() { # 30min
   # 2.6 16x720x1280
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name short_16x720x1280
 }
@@ -127,40 +127,131 @@ function run_video_edit() { # 23min
     --mask-strategy "0,0,0,1,0\;0,0,0,1,-1" "0,0,0,1,0\;0,1,0,1,-1"
 }
 
+# vbench has 950 samples
+
+function run_vbenck_a() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 0 --end-index 120
+}
+
+function run_vbenck_b() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 120 --end-index 240
+}
+
+function run_vbenck_c() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 240 --end-index 360
+}
+
+function run_vbenck_d() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 360 --end-index 480
+}
+
+function run_vbenck_e() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 480 --end-index 600
+}
+
+function run_vbenck_f() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 600 --end-index 720
+}
+
+function run_vbenck_g() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 720 --end-index 840
+}
+
+function run_vbenck_h() {
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_dimension.txt \
+    --start-index 840
+}
+
 ### Main
 
 for arg in "$@"; do
+  # image
   if [[ "$arg" = -1 ]] || [[ "$arg" = --image ]]; then
     echo "Running image samples..."
     run_image
   fi
+  # video: sample 16x240p & multi-resolution
   if [[ "$arg" = -2a ]] || [[ "$arg" = --video ]]; then
-    echo "Running video samples 1..."
-    run_video_1
+    echo "Running video samples a..."
+    run_video_a
   fi
+  # video: short 16x240p & 64x240p
   if [[ "$arg" = -2b ]] || [[ "$arg" = --video ]]; then
-    echo "Running video samples 2..."
-    run_video_2
+    echo "Running video samples b..."
+    run_video_b
   fi
+  # video: sora 16x240p & short 128x240p
   if [[ "$arg" = -2c ]] || [[ "$arg" = --video ]]; then
-    echo "Running video samples 3..."
-    run_video_3
+    echo "Running video samples c..."
+    run_video_c
   fi
+  # short 16x480p
   if [[ "$arg" = -2d ]] || [[ "$arg" = --video ]]; then
-    echo "Running video samples 4..."
-    run_video_4
+    echo "Running video samples d..."
+    run_video_d
   fi
+  # short 64x480p
   if [[ "$arg" = -2e ]] || [[ "$arg" = --video ]]; then
-    echo "Running video samples 5..."
-    run_video_5
+    echo "Running video samples e..."
+    run_video_e
   fi
+  # short 16x720p
   if [[ "$arg" = -2f ]] || [[ "$arg" = --video ]]; then
-    echo "Running video samples 6..."
-    run_video_6
+    echo "Running video samples f..."
+    run_video_f
   fi
+  # video edit
   if [[ "$arg" = -3 ]] || [[ "$arg" = --video-edit ]]; then
     echo "Running video edit samples..."
     run_video_edit
+  fi
+  # vbench
+  if [[ "$arg" = -4a ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples a..."
+    run_vbenck_a
+  fi
+  if [[ "$arg" = -4b ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples b..."
+    run_vbenck_b
+  fi
+  if [[ "$arg" = -4c ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples c..."
+    run_vbenck_c
+  fi
+  if [[ "$arg" = -4d ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples d..."
+    run_vbenck_d
+  fi
+  if [[ "$arg" = -4e ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples e..."
+    run_vbenck_e
+  fi
+  if [[ "$arg" = -4f ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples f..."
+    run_vbenck_f
+  fi
+  if [[ "$arg" = -4g ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples g..."
+    run_vbenck_g
+  fi
+  if [[ "$arg" = -4h ]] || [[ "$arg" = --vbench ]]; then
+    echo "Running vbench samples h..."
+    run_vbenck_h
   fi
 done
 

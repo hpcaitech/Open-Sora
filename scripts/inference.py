@@ -100,7 +100,12 @@ def main():
     # 4. inference
     # ======================================================
     sample_idx = 0
-    sample_name = cfg.sample_name if cfg.sample_name is not None else "sample"
+    if cfg.sample_name is not None:
+        sample_name = cfg.sample_name
+    elif cfg.prompt_as_path:
+        sample_name = ""
+    else:
+        sample_name = "sample"
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
 
@@ -112,22 +117,33 @@ def main():
         z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
 
         # 4.3. diffusion sampling
-        samples = scheduler.sample(
-            model,
-            text_encoder,
-            z=z,
-            prompts=batch_prompts,
-            device=device,
-            additional_args=model_args,
-        )
-        samples = vae.decode(samples.to(dtype))
+        old_sample_idx = sample_idx
+        # generate multiple samples for each prompt
+        for k in range(cfg.num_sample):
+            sample_idx = old_sample_idx
 
-        if not use_dist or coordinator.is_master():
-            for idx, sample in enumerate(samples):
-                print(f"Prompt: {batch_prompts[idx]}")
-                save_path = os.path.join(save_dir, f"{sample_name}_{sample_idx}")
-                save_sample(sample, fps=cfg.fps // cfg.frame_interval, save_path=save_path)
-                sample_idx += 1
+            samples = scheduler.sample(
+                model,
+                text_encoder,
+                z=z,
+                prompts=batch_prompts,
+                device=device,
+                additional_args=model_args,
+            )
+            samples = vae.decode(samples.to(dtype))
+
+            if not use_dist or coordinator.is_master():
+                for idx, sample in enumerate(samples):
+                    print(f"Prompt: {batch_prompts[idx]}")
+                    if cfg.prompt_as_path:
+                        sample_name_suffix = batch_prompts[idx]
+                    else:
+                        sample_name_suffix = f"_{sample_idx}"
+                    save_path = os.path.join(save_dir, f"{sample_name}{sample_name_suffix}")
+                    if cfg.num_sample != 1:
+                        save_path = f"{save_path}-{k}"
+                    save_sample(sample, fps=cfg.fps // cfg.frame_interval, save_path=save_path)
+                    sample_idx += 1
 
 
 if __name__ == "__main__":

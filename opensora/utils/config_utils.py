@@ -35,6 +35,8 @@ def parse_args(training=False):
         parser.add_argument("--sample-name", default=None, type=str, help="sample name, default is sample_idx")
         parser.add_argument("--start-index", default=None, type=int, help="start index for sample name")
         parser.add_argument("--end-index", default=None, type=int, help="end index for sample name")
+        parser.add_argument("--num-sample", default=None, type=int, help="number of samples to generate for one prompt")
+        parser.add_argument("--prompt-as-path", action="store_true", help="use prompt as path to save samples")
 
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
@@ -88,6 +90,10 @@ def merge_args(cfg, args, training=False):
             cfg["frame_interval"] = 1
         if "sample_name" not in cfg:
             cfg["sample_name"] = None
+        if "num_sample" not in cfg:
+            cfg["num_sample"] = 1
+        if "prompt_as_path" not in cfg:
+            cfg["prompt_as_path"] = False
         # - Prompt handling
         if "prompt" not in cfg or cfg["prompt"] is None:
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"

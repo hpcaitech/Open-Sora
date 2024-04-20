@@ -87,16 +87,23 @@ def find_model(model_name, model=None):
     return model_ckpt
 
 
-def download_model(model_name):
+def download_model(model_name=None, local_path=None, url=None):
     """
     Downloads a pre-trained DiT model from the web.
     """
-    assert model_name in pretrained_models
-    local_path = f"pretrained_models/{model_name}"
+    if model_name is not None:
+        assert model_name in pretrained_models
+        local_path = f"pretrained_models/{model_name}"
+        web_path = pretrained_models[model_name]
+    else:
+        assert local_path is not None
+        assert url is not None
+        web_path = url
     if not os.path.isfile(local_path):
         os.makedirs("pretrained_models", exist_ok=True)
-        web_path = pretrained_models[model_name]
-        download_url(web_path, "pretrained_models", model_name)
+        dir_name = os.path.dirname(local_path)
+        file_name = os.path.basename(local_path)
+        download_url(web_path, dir_name, file_name)
     model = torch.load(local_path, map_location=lambda storage, loc: storage)
     return model
 

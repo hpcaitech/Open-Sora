@@ -1,49 +1,43 @@
-import os
 import argparse
-import time
+import os
 import subprocess
-from tqdm import tqdm
-
-import pandas as pd
-from scenedetect import FrameTimecode
-from imageio_ffmpeg import get_ffmpeg_exe
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from mmengine.logging import MMLogger, print_log
-from utils_video import is_intact_video, iterate_files, clone_folder_structure
+import pandas as pd
+from imageio_ffmpeg import get_ffmpeg_exe
+from mmengine.logging import print_log
+from scenedetect import FrameTimecode
+from tqdm import tqdm
 
 
 def single_process(row, save_dir, logger=None):
     # video_id = row['videoID']
     # video_path = os.path.join(root_src, f'{video_id}.mp4')
-    video_path = row['path']
+    video_path = row["path"]
 
     # check mp4 integrity
     # if not is_intact_video(video_path, logger=logger):
     #     return False
 
-    timestamp = row['timestamp']
-    if not (timestamp.startswith('[') and timestamp.endswith(']')):
+    timestamp = row["timestamp"]
+    if not (timestamp.startswith("[") and timestamp.endswith("]")):
         return False
     scene_list = eval(timestamp)
-    scene_list = [
-        (FrameTimecode(s, fps=1), FrameTimecode(t, fps=1))
-        for s, t in scene_list
-    ]
+    scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
     split_video(video_path, scene_list, save_dir=save_dir, logger=logger)
     return True
 
 
 def split_video(
-        video_path,
-        scene_list,
-        save_dir,
-        min_seconds=None,
-        max_seconds=None,
-        target_fps=30,
-        shorter_size=512,
-        verbose=False,
-        logger=None,
+    video_path,
+    scene_list,
+    save_dir,
+    min_seconds=None,
+    max_seconds=None,
+    target_fps=30,
+    shorter_size=512,
+    verbose=False,
+    logger=None,
 ):
     """
     scenes shorter than min_seconds will be ignored;
@@ -120,9 +114,9 @@ def split_video(
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', default='F:/Panda-70M/')
-    parser.add_argument('--split', default='test')
-    parser.add_argument('--num_workers', default=5, type=int)
+    parser.add_argument("--root", default="F:/Panda-70M/")
+    parser.add_argument("--split", default="test")
+    parser.add_argument("--num_workers", default=5, type=int)
 
     args = parser.parse_args()
     return args
@@ -133,10 +127,10 @@ def main():
     # root = args.root
     # split = args.split
 
-    root = 'F:/Panda-70M/'
-    root, split = 'F:/pexels_new/', 'popular_2'
-    meta_path = os.path.join(root, f'raw/meta/{split}_format_timestamp.csv')
-    root_dst = os.path.join(root, f'scene_cut/data/{split}')
+    root = "F:/Panda-70M/"
+    root, split = "F:/pexels_new/", "popular_2"
+    meta_path = os.path.join(root, f"raw/meta/{split}_format_timestamp.csv")
+    root_dst = os.path.join(root, f"scene_cut/data/{split}")
 
     folder_dst = root_dst
     # folder_src = os.path.join(root_src, f'data/{split}')
@@ -164,5 +158,5 @@ def main():
     pool.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -24,9 +24,9 @@ def coords_grid(b, h, w, homogeneous=False, device=None):
 def generate_window_grid(h_min, h_max, w_min, w_max, len_h, len_w, device=None):
     assert device is not None
 
-    x, y = torch.meshgrid([torch.linspace(w_min, w_max, len_w, device=device),
-                           torch.linspace(h_min, h_max, len_h, device=device)],
-                          )
+    x, y = torch.meshgrid(
+        [torch.linspace(w_min, w_max, len_w, device=device), torch.linspace(h_min, h_max, len_h, device=device)],
+    )
     grid = torch.stack((x, y), -1).transpose(0, 1).float()  # [H, W, 2]
 
     return grid
@@ -34,11 +34,11 @@ def generate_window_grid(h_min, h_max, w_min, w_max, len_h, len_w, device=None):
 
 def normalize_coords(coords, h, w):
     # coords: [B, H, W, 2]
-    c = torch.Tensor([(w - 1) / 2., (h - 1) / 2.]).float().to(coords.device)
+    c = torch.Tensor([(w - 1) / 2.0, (h - 1) / 2.0]).float().to(coords.device)
     return (coords - c) / c  # [-1, 1]
 
 
-def bilinear_sample(img, sample_coords, mode='bilinear', padding_mode='zeros', return_mask=False):
+def bilinear_sample(img, sample_coords, mode="bilinear", padding_mode="zeros", return_mask=False):
     # img: [B, C, H, W]
     # sample_coords: [B, 2, H, W] in image scale
     if sample_coords.size(1) != 2:  # [B, H, W, 2]
@@ -62,20 +62,16 @@ def bilinear_sample(img, sample_coords, mode='bilinear', padding_mode='zeros', r
     return img
 
 
-def flow_warp(feature, flow, mask=False, padding_mode='zeros'):
+def flow_warp(feature, flow, mask=False, padding_mode="zeros"):
     b, c, h, w = feature.size()
     assert flow.size(1) == 2
 
     grid = coords_grid(b, h, w).to(flow.device) + flow  # [B, 2, H, W]
 
-    return bilinear_sample(feature, grid, padding_mode=padding_mode,
-                           return_mask=mask)
+    return bilinear_sample(feature, grid, padding_mode=padding_mode, return_mask=mask)
 
 
-def forward_backward_consistency_check(fwd_flow, bwd_flow,
-                                       alpha=0.01,
-                                       beta=0.5
-                                       ):
+def forward_backward_consistency_check(fwd_flow, bwd_flow, alpha=0.01, beta=0.5):
     # fwd_flow, bwd_flow: [B, 2, H, W]
     # alpha and beta values are following UnFlow (https://arxiv.org/abs/1711.07837)
     assert fwd_flow.dim() == 4 and bwd_flow.dim() == 4
@@ -121,8 +117,9 @@ def camera_transform(points_ref, extrinsics_ref=None, extrinsics_tgt=None, extri
     if extrinsics_rel is None:
         extrinsics_rel = torch.bmm(extrinsics_tgt, torch.inverse(extrinsics_ref))  # [B, 4, 4]
 
-    points_tgt = torch.bmm(extrinsics_rel[:, :3, :3],
-                           points_ref.view(b, 3, -1)) + extrinsics_rel[:, :3, -1:]  # [B, 3, H*W]
+    points_tgt = (
+        torch.bmm(extrinsics_rel[:, :3, :3], points_ref.view(b, 3, -1)) + extrinsics_rel[:, :3, -1:]
+    )  # [B, 3, H*W]
 
     points_tgt = points_tgt.view(b, 3, h, w)  # [B, 3, H, W]
 
@@ -146,49 +143,57 @@ def reproject(points_tgt, intrinsics, return_mask=False):
 
     if return_mask:
         # valid mask in pixel space
-        mask = (pixel_coords[:, 0] >= 0) & (pixel_coords[:, 0] <= (w - 1)) & (
-                pixel_coords[:, 1] >= 0) & (pixel_coords[:, 1] <= (h - 1))  # [B, H, W]
+        mask = (
+            (pixel_coords[:, 0] >= 0)
+            & (pixel_coords[:, 0] <= (w - 1))
+            & (pixel_coords[:, 1] >= 0)
+            & (pixel_coords[:, 1] <= (h - 1))
+        )  # [B, H, W]
 
         return pixel_coords, mask
 
     return pixel_coords
 
 
-def reproject_coords(depth_ref, intrinsics, extrinsics_ref=None, extrinsics_tgt=None, extrinsics_rel=None,
-                     return_mask=False):
+def reproject_coords(
+    depth_ref, intrinsics, extrinsics_ref=None, extrinsics_tgt=None, extrinsics_rel=None, return_mask=False
+):
     # Compute reprojection sample coords
     points_ref = back_project(depth_ref, intrinsics)  # [B, 3, H, W]
     points_tgt = camera_transform(points_ref, extrinsics_ref, extrinsics_tgt, extrinsics_rel=extrinsics_rel)
 
     if return_mask:
-        reproj_coords, mask = reproject(points_tgt, intrinsics,
-                                        return_mask=return_mask)  # [B, 2, H, W] in image scale
+        reproj_coords, mask = reproject(points_tgt, intrinsics, return_mask=return_mask)  # [B, 2, H, W] in image scale
 
         return reproj_coords, mask
 
-    reproj_coords = reproject(points_tgt, intrinsics,
-                              return_mask=return_mask)  # [B, 2, H, W] in image scale
+    reproj_coords = reproject(points_tgt, intrinsics, return_mask=return_mask)  # [B, 2, H, W] in image scale
 
     return reproj_coords
 
 
-def compute_flow_with_depth_pose(depth_ref, intrinsics,
-                                 extrinsics_ref=None, extrinsics_tgt=None, extrinsics_rel=None,
-                                 return_mask=False):
+def compute_flow_with_depth_pose(
+    depth_ref, intrinsics, extrinsics_ref=None, extrinsics_tgt=None, extrinsics_rel=None, return_mask=False
+):
     b, h, w = depth_ref.shape
     coords_init = coords_grid(b, h, w, device=depth_ref.device)  # [B, 2, H, W]
 
     if return_mask:
-        reproj_coords, mask = reproject_coords(depth_ref, intrinsics, extrinsics_ref, extrinsics_tgt,
-                                               extrinsics_rel=extrinsics_rel,
-                                               return_mask=return_mask)  # [B, 2, H, W]
+        reproj_coords, mask = reproject_coords(
+            depth_ref,
+            intrinsics,
+            extrinsics_ref,
+            extrinsics_tgt,
+            extrinsics_rel=extrinsics_rel,
+            return_mask=return_mask,
+        )  # [B, 2, H, W]
         rigid_flow = reproj_coords - coords_init
 
         return rigid_flow, mask
 
-    reproj_coords = reproject_coords(depth_ref, intrinsics, extrinsics_ref, extrinsics_tgt,
-                                     extrinsics_rel=extrinsics_rel,
-                                     return_mask=return_mask)  # [B, 2, H, W]
+    reproj_coords = reproject_coords(
+        depth_ref, intrinsics, extrinsics_ref, extrinsics_tgt, extrinsics_rel=extrinsics_rel, return_mask=return_mask
+    )  # [B, 2, H, W]
 
     rigid_flow = reproj_coords - coords_init
 
