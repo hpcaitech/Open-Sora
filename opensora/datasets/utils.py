@@ -1,7 +1,9 @@
 import os
+import re
 
 import numpy as np
 import pandas as pd
+import requests
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -14,6 +16,20 @@ from . import video_transforms
 
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
+regex = re.compile(
+    r"^(?:http|ftp)s?://"  # http:// or https://
+    r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain...
+    r"localhost|"  # localhost...
+    r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+    r"(?::\d+)?"  # optional port
+    r"(?:/?|[/?]\S+)$",
+    re.IGNORECASE,
+)
+
+
+def is_url(url):
+    return re.match(regex, url) is not None
+
 
 def read_file(input_path):
     if input_path.endswith(".csv"):
@@ -22,6 +38,19 @@ def read_file(input_path):
         return pd.read_parquet(input_path)
     else:
         raise NotImplementedError(f"Unsupported file format: {input_path}")
+
+
+def download_url(input_path):
+    output_dir = "cache"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    base_name = os.path.basename(input_path)
+    output_path = os.path.join(output_dir, base_name)
+    img_data = requests.get(input_path).content
+    with open(output_path, "wb") as handler:
+        handler.write(img_data)
+    print(f"URL {input_path} downloaded to {output_path}")
+    return output_path
 
 
 def temporal_random_crop(vframes, num_frames, frame_interval):
@@ -106,6 +135,8 @@ def read_video_from_path(path, transform=None, transform_name="center", image_si
 
 
 def read_from_path(path, image_size, transform_name="center"):
+    if is_url(path):
+        path = download_url(path)
     ext = os.path.splitext(path)[-1].lower()
     if ext.lower() in VID_EXTENSIONS:
         return read_video_from_path(path, image_size=image_size, transform_name=transform_name)
