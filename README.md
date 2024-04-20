@@ -25,7 +25,8 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 📰 News
 
-* **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, a fully open-source project for video generation.
+* **[2024.04.22]** 🔥 We release **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video and video-to-video** generation. While a [checkpoint]() is provided, our model is still under training. In addition, a full video processing pipeline is released.
+* **[2024.03.18]** We release **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
   <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
   acceleration,
@@ -37,6 +38,11 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 🎥 Latest Demo
 
+TBD
+
+<details>
+<summary>OpenSora 1.0 Demo</summary>
+
 | **2s 512×512**                                                                                                                                                                 | **2s 512×512**                                                                                                                                                              | **2s 512×512**                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
@@ -44,19 +50,31 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 | [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
 | A bustling city street at night, filled with the glow of car headlights and the ambient light of streetlights. [...]                                                           | The vibrant beauty of a sunflower field. The sunflowers are arranged in neat rows, creating a sense of order and symmetry. [...]                                            | A serene underwater scene featuring a sea turtle swimming through a coral reef. The turtle, with its greenish-brown shell [...]                   |
 
+</details>
+
 Videos are downsampled to `.gif` for display. Click for original videos. Prompts are trimmed for display,
 see [here](/assets/texts/t2v_samples.txt) for full prompts. See more samples at
 our [gallery](https://hpcaitech.github.io/Open-Sora/).
 
 ## 🔆 New Features/Updates
 
-* 📍 Open-Sora-v1 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800
-  days (compared with 152M samples in Stable Video Diffusion), we are able to generate 2s 512×512 videos.
+* 📍
+* ✅
+* ✅
+* ✅
+* ✅
+* 📍 Open-Sora 1.0 released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800
+  days (compared with 152M samples in Stable Video Diffusion), we are able to generate 2s 512×512 videos. See our **[report](docs/report_01.md)** for more discussions.
 * ✅ Three stages training from an image diffusion model to a video diffusion model. We provide the weights for each
   stage.
 * ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism.
   Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates
   at [acceleration.md](docs/acceleration.md).
+
+
+<details>
+<summary>View more</summary>
+
 * ✅ We provide data preprocessing pipeline,
   including [downloading](/tools/datasets/README.md), [video cutting](/tools/scenedetect/README.md),
   and [captioning](/tools/caption/README.md) tools. Our data collection plan can be found
@@ -72,10 +90,6 @@ our [gallery](https://hpcaitech.github.io/Open-Sora/).
 * ✅ Support inference with official weights
   from [DiT](https://github.com/facebookresearch/DiT), [Latte](https://github.com/Vchitect/Latte),
   and [PixArt](https://pixart-alpha.github.io/).
-
-<details>
-<summary>View more</summary>
-
 * ✅ Refactor the codebase. See [structure.md](docs/structure.md) to learn the project structure and how to use the
   config files.
 
@@ -83,18 +97,17 @@ our [gallery](https://hpcaitech.github.io/Open-Sora/).
 
 ### TODO list sorted by priority
 
-* [ ] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity,
-  deduplication, etc.). See [datasets.md](/docs/datasets.md) for more information. **[WIP]**
-* [ ] Training Video-VAE. **[WIP]**
+* [ ] Training Video-VAE and adapt our model to new VAE. **[WIP]**
+* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3.
+* [ ] Scaling model parameters and dataset size.
 
 <details>
 <summary>View more</summary>
 
-* [ ] Support image and video conditioning.
 * [ ] Evaluation pipeline.
-* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3.
-* [ ] Support variable aspect ratios, resolutions, durations.
-* [ ] Support SD3 when released.
+* [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.).
+* [x] Support image and video conditioning.
+* [x] Support variable aspect ratios, resolutions, durations.
 
 </details>
 
