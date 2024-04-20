@@ -34,9 +34,11 @@ def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
     masks = []
     for i, mask_strategy in enumerate(mask_strategys):
         mask_strategy = mask_strategy.split(";")
-        mask = torch.ones(z.shape[2], dtype=torch.bool, device=z.device)
+        mask = torch.ones(z.shape[2], dtype=torch.float, device=z.device)
         for mst in mask_strategy:
-            loop_id, m_id, m_ref_start, m_length, m_target_start = mst.split(",")
+            mask_batch = mst.split(",")
+            loop_id, m_id, m_ref_start, m_length, m_target_start = mask_batch[:5]
+            edit_ratio = mask_batch[5] if len(mask_batch) == 6 else 0.0
             loop_id = int(loop_id)
             if loop_id != loop_i:
                 continue
@@ -44,6 +46,7 @@ def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
             m_ref_start = int(m_ref_start)
             m_length = int(m_length)
             m_target_start = int(m_target_start)
+            edit_ratio = float(edit_ratio)
             ref = refs_x[i][m_id]  # [C, T, H, W]
             if m_ref_start < 0:
                 m_ref_start = ref.shape[1] + m_ref_start
@@ -51,7 +54,7 @@ def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
                 # z: [B, C, T, H, W]
                 m_target_start = z.shape[2] + m_target_start
             z[i, :, m_target_start : m_target_start + m_length] = ref[:, m_ref_start : m_ref_start + m_length]
-            mask[m_target_start : m_target_start + m_length] = 0
+            mask[m_target_start : m_target_start + m_length] = edit_ratio
         masks.append(mask)
     masks = torch.stack(masks)
     return masks
@@ -69,7 +72,7 @@ def process_prompts(prompts, num_loop):
                 text = text_preprocessing(text)
                 end_loop = int(prompt_list[i + 2]) if i + 2 < len(prompt_list) else num_loop
                 text_list.extend([text] * (end_loop - start_loop))
-            assert len(text_list) == num_loop
+            assert len(text_list) == num_loop, f"Prompt loop mismatch: {len(text_list)} != {num_loop}"
             ret_prompts.append(text_list)
         else:
             prompt = text_preprocessing(prompt)
@@ -161,8 +164,12 @@ def main():
 
     # 3.5 reference
     if cfg.reference_path is not None:
-        assert len(cfg.reference_path) == len(prompts)
-        assert len(cfg.reference_path) == len(cfg.mask_strategy)
+        assert len(cfg.reference_path) == len(
+            prompts
+        ), f"Reference path mismatch: {len(cfg.reference_path)} != {len(prompts)}"
+        assert len(cfg.reference_path) == len(
+            cfg.mask_strategy
+        ), f"Mask strategy mismatch: {len(cfg.mask_strategy)} != {len(prompts)}"
 
     # ======================================================
     # 4. inference
@@ -204,7 +211,6 @@ def main():
                             j
                         ] += f";{loop_i},{len(refs)-1},-{cfg.condition_frame_length},{cfg.condition_frame_length},0"
                 masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
-                model_args["x_mask"] = masks
 
             # 4.6. diffusion sampling
             old_sample_idx = sample_idx
