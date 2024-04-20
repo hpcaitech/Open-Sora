@@ -120,11 +120,11 @@ function run_video_edit() { # 23min
 
   # 3.2
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
-    --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 5 \
+    --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
     --num-frames 128 --image-size 240 426 \
     --loop 1 \
-    --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" \
-    --mask-strategy "0,0,0,1,0\;0,0,0,1,-1" "0,0,0,1,0\;0,1,0,1,-1"
+    --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
+    --mask-strategy "0,0,0,1,0\;0,0,0,1,-1" "0,0,0,1,0\;0,1,0,1,-1" "0,0,0,64,0,0.5"
 }
 
 # vbench has 950 samples
