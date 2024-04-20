@@ -21,9 +21,7 @@ def run_attn(enable_flashattn: bool):
         rope=rope.rotate_queries_or_keys,
         enable_flashattn=enable_flashattn,
     ).to(device=get_current_device(), dtype=torch.bfloat16)
-    x = torch.randn(
-        B, S, H, device=get_current_device(), dtype=torch.bfloat16
-    ).requires_grad_()
+    x = torch.randn(B, S, H, device=get_current_device(), dtype=torch.bfloat16).requires_grad_()
     y = attn(x)
     y.mean().backward()
     print(f"Peak memory: {get_accelerator().max_memory_allocated() / 1024**2:.2f} MB")

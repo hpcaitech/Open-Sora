@@ -173,6 +173,7 @@ samples/
 samples
 logs/
 pretrained_models/
+evaluation_results/
 *.swp
 
 # Secret files

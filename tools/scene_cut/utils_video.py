@@ -1,4 +1,5 @@
 import os
+
 import cv2
 from mmengine.logging import print_log
 from moviepy.editor import VideoFileClip
@@ -44,13 +45,13 @@ def clone_folder_structure(root_src, root_dst, verbose=False):
             print(f"Create folder: '{folder_path}'")
 
 
-def is_intact_video(video_path, mode='moviepy', verbose=False, logger=None):
+def is_intact_video(video_path, mode="moviepy", verbose=False, logger=None):
     if not os.path.exists(video_path):
         if verbose:
             print_log(f"Could not find '{video_path}'", logger=logger)
         return False
 
-    if mode == 'moviepy':
+    if mode == "moviepy":
         try:
             VideoFileClip(video_path)
             if verbose:
@@ -61,7 +62,7 @@ def is_intact_video(video_path, mode='moviepy', verbose=False, logger=None):
                 print_log(f"Error: {e}", logger=logger)
                 print_log(f"The video file '{video_path}' is not intact.", logger=logger)
             return False
-    elif mode == 'cv2':
+    elif mode == "cv2":
         try:
             cap = cv2.VideoCapture(video_path)
             if cap.isOpened():
@@ -94,4 +95,3 @@ def count_files(root, suffix=".mp4"):
     files_list = iterate_files(root)
     cnt = len([x for x in files_list if x.endswith(suffix)])
     return cnt
-

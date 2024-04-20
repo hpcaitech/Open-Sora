@@ -7,7 +7,7 @@ from colossalai.cluster import DistCoordinator
 from mmengine.runner import set_random_seed
 
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
-from opensora.datasets import save_sample
+from opensora.datasets import IMG_FPS, save_sample
 from opensora.datasets.utils import read_from_path
 from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
@@ -168,7 +168,12 @@ def main():
     # 4. inference
     # ======================================================
     sample_idx = 0
-    sample_name = cfg.sample_name if cfg.sample_name is not None else "sample"
+    if cfg.sample_name is not None:
+        sample_name = cfg.sample_name
+    elif cfg.prompt_as_path:
+        sample_name = ""
+    else:
+        sample_name = "sample"
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
 
@@ -202,30 +207,41 @@ def main():
                 model_args["x_mask"] = masks
 
             # 4.6. diffusion sampling
-            samples = scheduler.sample(
-                model,
-                text_encoder,
-                z=z,
-                prompts=batch_prompts,
-                device=device,
-                additional_args=model_args,
-                mask=masks,  # scheduler must support mask
-            )
-            samples = vae.decode(samples.to(dtype))
-            video_clips.append(samples)
+            old_sample_idx = sample_idx
+            # generate multiple samples for each prompt
+            for k in range(cfg.num_sample):
+                sample_idx = old_sample_idx
 
-            # 4.7. save video
-            if loop_i == cfg.loop - 1:
-                if not use_dist or coordinator.is_master():
-                    for idx in range(len(video_clips[0])):
-                        video_clips_i = [video_clips[0][idx]] + [
-                            video_clips[i][idx][:, cfg.condition_frame_length :] for i in range(1, cfg.loop)
-                        ]
-                        video = torch.cat(video_clips_i, dim=1)
-                        print(f"Prompt: {prompts[i + idx]}")
-                        save_path = os.path.join(save_dir, f"{sample_name}_{sample_idx}")
-                        save_sample(video, fps=cfg.fps // cfg.frame_interval, save_path=save_path)
-                        sample_idx += 1
+                samples = scheduler.sample(
+                    model,
+                    text_encoder,
+                    z=z,
+                    prompts=batch_prompts,
+                    device=device,
+                    additional_args=model_args,
+                    mask=masks,  # scheduler must support mask
+                )
+                samples = vae.decode(samples.to(dtype))
+                video_clips.append(samples)
+
+                # 4.7. save video
+                if loop_i == cfg.loop - 1:
+                    if not use_dist or coordinator.is_master():
+                        for idx in range(len(video_clips[0])):
+                            video_clips_i = [video_clips[0][idx]] + [
+                                video_clips[i][idx][:, cfg.condition_frame_length :] for i in range(1, cfg.loop)
+                            ]
+                            video = torch.cat(video_clips_i, dim=1)
+                            print(f"Prompt: {prompts[i + idx]}")
+                            if cfg.prompt_as_path:
+                                sample_name_suffix = batch_prompts[idx]
+                            else:
+                                sample_name_suffix = f"_{sample_idx}"
+                            save_path = os.path.join(save_dir, f"{sample_name}{sample_name_suffix}")
+                            if cfg.num_sample != 1:
+                                save_path = f"{save_path}-{k}"
+                            save_sample(video, fps=cfg.fps // cfg.frame_interval, save_path=save_path)
+                            sample_idx += 1
 
 
 if __name__ == "__main__":

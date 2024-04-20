@@ -1,21 +1,18 @@
-import os
 import argparse
-import time
+import os
 import subprocess
-from tqdm import tqdm
+import time
+from functools import partial
 
 import pandas as pd
-from scenedetect import FrameTimecode
-from functools import partial
-from pandarallel import pandarallel
 from imageio_ffmpeg import get_ffmpeg_exe
-
 from mmengine.logging import MMLogger, print_log
-from utils_video import is_intact_video, iterate_files, clone_folder_structure
+from pandarallel import pandarallel
+from scenedetect import FrameTimecode
 
 
 def process_single_row(row, save_dir, log_name=None):
-    video_path = row['path']
+    video_path = row["path"]
 
     logger = None
     if log_name is not None:
@@ -25,29 +22,26 @@ def process_single_row(row, save_dir, log_name=None):
     # if not is_intact_video(video_path, logger=logger):
     #     return False
 
-    timestamp = row['timestamp']
-    if not (timestamp.startswith('[') and timestamp.endswith(']')):
+    timestamp = row["timestamp"]
+    if not (timestamp.startswith("[") and timestamp.endswith("]")):
         return False
     scene_list = eval(timestamp)
-    scene_list = [
-        (FrameTimecode(s, fps=1), FrameTimecode(t, fps=1))
-        for s, t in scene_list
-    ]
-    split_video(video_path, scene_list, save_dir=save_dir,
-                min_seconds=2, max_seconds=15, shorter_size=720,
-                logger=logger)
+    scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
+    split_video(
+        video_path, scene_list, save_dir=save_dir, min_seconds=2, max_seconds=15, shorter_size=720, logger=logger
+    )
 
 
 def split_video(
-        video_path,
-        scene_list,
-        save_dir,
-        min_seconds=None,
-        max_seconds=None,
-        target_fps=30,
-        shorter_size=512,
-        verbose=False,
-        logger=None,
+    video_path,
+    scene_list,
+    save_dir,
+    min_seconds=None,
+    max_seconds=None,
+    target_fps=30,
+    shorter_size=512,
+    verbose=False,
+    logger=None,
 ):
     """
     scenes shorter than min_seconds will be ignored;
@@ -127,9 +121,9 @@ def split_video(
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--meta_path', default='./data/pexels_new/raw/meta/popular_5_format_timestamp.csv')
-    parser.add_argument('--out_dir', default='./data/pexels_new/scene_cut/data/popular_5')
-    parser.add_argument('--num_workers', default=5, type=int)
+    parser.add_argument("--meta_path", default="./data/pexels_new/raw/meta/popular_5_format_timestamp.csv")
+    parser.add_argument("--out_dir", default="./data/pexels_new/scene_cut/data/popular_5")
+    parser.add_argument("--num_workers", default=5, type=int)
 
     args = parser.parse_args()
     return args
@@ -140,7 +134,7 @@ def main():
     meta_path = args.meta_path
     out_dir = args.out_dir
 
-    assert os.path.basename(os.path.dirname(out_dir)) == 'data'
+    assert os.path.basename(os.path.dirname(out_dir)) == "data"
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -159,5 +153,5 @@ def main():
     meta.parallel_apply(process_single_row_partial, axis=1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
