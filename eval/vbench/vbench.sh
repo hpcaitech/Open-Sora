@@ -5,15 +5,20 @@ set -e
 # Base path for videos
 videos_path=$1
 videos_base=$(basename $videos_path)
-json_path=./eval/VBench_full_info.json
+json_path=./eval/vbench/VBench_full_info.json
 output_path=./evaluation_results/$videos_base
 
 # Define the dimension list
 dimensions=(
+    # Quality Score
     "subject_consistency"
     "background_consistency"
+    "motion_smoothness"
+    "dynamic_degree"
     "aesthetic_quality"
     "imaging_quality"
+    "temporal_flickering"
+    # Semantic Score
     "object_class"
     "multiple_objects"
     "color"
@@ -22,9 +27,6 @@ dimensions=(
     "temporal_style"
     "overall_consistency"
     "human_action"
-    "temporal_flickering"
-    "motion_smoothness"
-    "dynamic_degree"
     "appearance_style"
 )
 

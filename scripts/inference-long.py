@@ -20,6 +20,9 @@ from opensora.utils.misc import to_torch_dtype
 def collect_references_batch(reference_paths, vae, image_size):
     refs_x = []
     for reference_path in reference_paths:
+        if reference_path is None:
+            refs_x.append([])
+            continue
         ref_path = reference_path.split(";")
         ref = []
         for r_path in ref_path:
@@ -35,8 +38,11 @@ def collect_references_batch(reference_paths, vae, image_size):
 def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
     masks = []
     for i, mask_strategy in enumerate(mask_strategys):
-        mask_strategy = mask_strategy.split(";")
         mask = torch.ones(z.shape[2], dtype=torch.float, device=z.device)
+        if mask_strategy is None:
+            masks.append(mask)
+            continue
+        mask_strategy = mask_strategy.split(";")
         for mst in mask_strategy:
             mask_batch = mst.split(",")
             loop_id, m_id, m_ref_start, m_length, m_target_start = mask_batch[:5]
@@ -186,6 +192,9 @@ def main():
         assert len(cfg.reference_path) == len(
             cfg.mask_strategy
         ), f"Mask strategy mismatch: {len(cfg.mask_strategy)} != {len(prompts)}"
+    else:
+        cfg.reference_path = [None] * len(prompts)
+        cfg.mask_strategy = [None] * len(prompts)
 
     # ======================================================
     # 4. inference
@@ -208,9 +217,13 @@ def main():
         video_clips = []
 
         # 4.2. load reference videos & images
-        if cfg.reference_path is not None:
-            refs_x = collect_references_batch(cfg.reference_path[i : i + cfg.batch_size], vae, cfg.image_size)
-            mask_strategy = cfg.mask_strategy[i : i + cfg.batch_size]
+        for j, info in enumerate(additional_infos):
+            if "reference_path" in info:
+                cfg.reference_path[i + j] = info["reference_path"]
+            if "mask_strategy" in info:
+                cfg.mask_strategy[i + j] = info["mask_strategy"]
+        refs_x = collect_references_batch(cfg.reference_path[i : i + cfg.batch_size], vae, cfg.image_size)
+        mask_strategy = cfg.mask_strategy[i : i + cfg.batch_size]
 
         # 4.3. long video generation
         for loop_i in range(cfg.loop):
@@ -220,15 +233,22 @@ def main():
 
             # 4.5. apply mask strategy
             masks = None
-            if cfg.reference_path is not None:
-                if loop_i > 0:
-                    ref_x = vae.encode(video_clips[-1])
-                    for j, refs in enumerate(refs_x):
+            # if cfg.reference_path is not None:
+            if loop_i > 0:
+                ref_x = vae.encode(video_clips[-1])
+                for j, refs in enumerate(refs_x):
+                    if refs is None:
+                        refs_x[j] = [ref_x[j]]
+                    else:
                         refs.append(ref_x[j])
-                        mask_strategy[
-                            j
-                        ] += f";{loop_i},{len(refs)-1},-{cfg.condition_frame_length},{cfg.condition_frame_length},0"
-                masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
+                    if mask_strategy[j] is None:
+                        mask_strategy[j] = ""
+                    else:
+                        mask_strategy[j] += ";"
+                    mask_strategy[
+                        j
+                    ] += f"{loop_i},{len(refs)-1},-{cfg.condition_frame_length},{cfg.condition_frame_length},0"
+            masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
 
             # 4.6. diffusion sampling
             old_sample_idx = sample_idx
