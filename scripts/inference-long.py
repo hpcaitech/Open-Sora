@@ -1,4 +1,6 @@
+import json
 import os
+import re
 
 import colossalai
 import torch
@@ -78,6 +80,20 @@ def process_prompts(prompts, num_loop):
             prompt = text_preprocessing(prompt)
             ret_prompts.append([prompt] * num_loop)
     return ret_prompts
+
+
+def extract_json_from_prompts(prompts):
+    additional_infos = []
+    ret_prompts = []
+    for prompt in prompts:
+        parts = re.split(r"(?=[{\[])", prompt)
+        assert len(parts) <= 2, f"Invalid prompt: {prompt}"
+        ret_prompts.append(parts[0])
+        if len(parts) == 1:
+            additional_infos.append({})
+        else:
+            additional_infos.append(json.loads(parts[1]))
+    return ret_prompts, additional_infos
 
 
 def main():
@@ -186,7 +202,9 @@ def main():
 
     # 4.1. batch generation
     for i in range(0, len(prompts), cfg.batch_size):
-        batch_prompts_loops = process_prompts(prompts[i : i + cfg.batch_size], cfg.loop)
+        batch_prompts_raw = prompts[i : i + cfg.batch_size]
+        batch_prompts_raw, additional_infos = extract_json_from_prompts(batch_prompts_raw)
+        batch_prompts_loops = process_prompts(batch_prompts_raw, cfg.loop)
         video_clips = []
 
         # 4.2. load reference videos & images
@@ -238,9 +256,9 @@ def main():
                                 video_clips[i][idx][:, cfg.condition_frame_length :] for i in range(1, cfg.loop)
                             ]
                             video = torch.cat(video_clips_i, dim=1)
-                            print(f"Prompt: {prompts[i + idx]}")
+                            print(f"Prompt: {batch_prompts_raw[idx]}")
                             if cfg.prompt_as_path:
-                                sample_name_suffix = batch_prompts[idx]
+                                sample_name_suffix = batch_prompts_raw[idx]
                             else:
                                 sample_name_suffix = f"_{sample_idx}"
                             save_path = os.path.join(save_dir, f"{sample_name}{sample_name_suffix}")
