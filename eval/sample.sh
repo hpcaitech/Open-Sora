@@ -179,6 +179,64 @@ function run_vbenck_h() { # 2h
     --start-index 840
 }
 
+# vbench-i2v has 1120 samples
+
+function run_vbenck_i2v_a() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 0 --end-index 140 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_b() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 140 --end-index 280 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_c() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 280 --end-index 420 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_d() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 420 --end-index 560 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_e() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 560 --end-index 700 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_f() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 700 --end-index 840 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_g() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 840 --end-index 980 \
+    --image-size 256 256
+}
+
+function run_vbenck_i2v_h() {
+  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+    --prompt-path assets/texts/VBench/all_i2v.txt \
+    --start-index 980 \
+    --image-size 256 256
+}
+
 ### Main
 
 for arg in "$@"; do
@@ -254,6 +312,39 @@ for arg in "$@"; do
   if [[ "$arg" = -4h ]] || [[ "$arg" = --vbench ]]; then
     echo "Running vbench samples h..."
     run_vbenck_h
+  fi
+  # vbench-i2v
+  if [[ "$arg" = -5a ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples a..."
+    run_vbenck_i2v_a
+  fi
+  if [[ "$arg" = -5b ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples b..."
+    run_vbenck_i2v_b
+  fi
+  if [[ "$arg" = -5c ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples c..."
+    run_vbenck_i2v_c
+  fi
+  if [[ "$arg" = -5d ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples d..."
+    run_vbenck_i2v_d
+  fi
+  if [[ "$arg" = -5e ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples e..."
+    run_vbenck_i2v_e
+  fi
+  if [[ "$arg" = -5f ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples f..."
+    run_vbenck_i2v_f
+  fi
+  if [[ "$arg" = -5g ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples g..."
+    run_vbenck_i2v_g
+  fi
+  if [[ "$arg" = -5h ]] || [[ "$arg" = --vbench-i2v ]]; then
+    echo "Running vbench-i2v samples h..."
+    run_vbenck_i2v_h
   fi
 done
 
