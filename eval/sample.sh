@@ -51,6 +51,8 @@ function run_image() { # 10min
 
 function run_video_a() { # 20min
   # 2.1.1 16x240x426
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 144 256 --sample-name sample_16x144x256
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 256 256 --sample-name sample_16x256x256
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426
 
   # 2.1.2 16x720p multi-resolution
@@ -129,49 +131,49 @@ function run_video_edit() { # 23min
 
 # vbench has 950 samples
 
-function run_vbenck_a() {
+function run_vbenck_a() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 0 --end-index 120
 }
 
-function run_vbenck_b() {
+function run_vbenck_b() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 120 --end-index 240
 }
 
-function run_vbenck_c() {
+function run_vbenck_c() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 240 --end-index 360
 }
 
-function run_vbenck_d() {
+function run_vbenck_d() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 360 --end-index 480
 }
 
-function run_vbenck_e() {
+function run_vbenck_e() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 480 --end-index 600
 }
 
-function run_vbenck_f() {
+function run_vbenck_f() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 600 --end-index 720
 }
 
-function run_vbenck_g() {
+function run_vbenck_g() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 720 --end-index 840
 }
 
-function run_vbenck_h() {
+function run_vbenck_h() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
     --start-index 840
@@ -260,4 +262,5 @@ done
 end=$(date +%s)
 
 runtime=$((end - start))
+
 echo "Runtime: $runtime seconds"
