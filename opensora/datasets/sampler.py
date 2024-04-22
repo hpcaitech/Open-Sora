@@ -216,10 +216,10 @@ class VariableVideoBatchSampler(DistributedSampler):
             print(f"Total training samples: {total_samples}, num buckets: {len(num_dict)}")
             print("Bucket samples:")
             pprint(num_dict)
-            print("Bucket samples by HxWxT:")
-            pprint(num_hwt_dict)
             print("Bucket samples by aspect ratio:")
             pprint(num_aspect_dict)
+            print("Bucket samples by HxWxT:")
+            pprint(num_hwt_dict)
             print(f"Number of batches: {num_batch}")
         self.approximate_num_batch = num_batch
 

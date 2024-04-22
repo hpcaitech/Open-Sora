@@ -18,6 +18,7 @@ dataset = dict(
 # 5. { resolution: {num_frames: (0.0, None)} }, this bucket will not be used
 
 bucket_config = {
+    # == manual search ==
     # "240p": {128: (1.0, 2)}, # 4.28s/it
     # "240p": {64: (1.0, 4)},
     # "240p": {32: (1.0, 8)},  # 4.6s/it
@@ -32,26 +33,26 @@ bucket_config = {
     # "1024": {1: (1.0, 20)}, # 4.3s/it
     # "1080p": {1: (1.0, 16)}, # 8.6s/it
     # "1080p": {1: (1.0, 8)},  # 4.4s/it
-    "240p": {
-        16: (1.0, (2, 32)),
-        32: (1.0, (2, 16)),
-        64: (1.0, (2, 8)),
-        128: (1.0, (2, 6)),
-    },
-    "256": {1: (1.0, (128, 300))},
-    "512": {1: (0.5, (64, 128))},
-    "480p": {1: (0.4, (32, 128)), 16: (0.4, (2, 32)), 32: (0.0, None)},
-    "720p": {16: (0.1, (2, 16)), 32: (0.0, None)},  # No examples now
-    "1024": {1: (0.3, (8, 64))},
-    "1080p": {1: (0.3, (2, 32))},
+    # == stage 0 ==
+    # "240p": {
+    #     16: (1.0, (2, 32)),
+    #     32: (1.0, (2, 16)),
+    #     64: (1.0, (2, 8)),
+    #     128: (1.0, (2, 6)),
+    # },
+    # "256": {1: (1.0, (128, 300))},
+    # "512": {1: (0.5, (64, 128))},
+    # "480p": {1: (0.4, (32, 128)), 16: (0.4, (2, 32)), 32: (0.0, None)},
+    # "720p": {16: (0.1, (2, 16)), 32: (0.0, None)},  # No examples now
+    # "1024": {1: (0.3, (8, 64))},
+    # "1080p": {1: (0.3, (2, 32))},
+    # == stage 2 ==
 }
-# mask_ratios = {
-#     "mask_no": 0.0,
-#     "mask_random": 1.0,
-# }
+
 
 # Define acceleration
 num_workers = 4
+num_bucket_build_workers = 16
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
@@ -62,6 +63,7 @@ model = dict(
     type="STDiT2-XL/2",
     from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
+    qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
@@ -69,12 +71,14 @@ vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
     micro_batch_size=4,
+    local_files_only=True,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=200,
     shardformer=True,
+    local_files_only=True,
 )
 scheduler = dict(
     type="iddpm-speed",
@@ -91,6 +95,6 @@ log_every = 10
 ckpt_every = 1000
 load = None
 
-batch_size = 10  # only for logging
+batch_size = None
 lr = 2e-5
 grad_clip = 1.0
