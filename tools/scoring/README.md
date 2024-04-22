@@ -32,7 +32,7 @@ With `meta.csv` containing the paths to the videos, run the following command:
 
 ```bash
 # output: meta_aes.csv
-torchrun --nproc_per_node 8  -m tools.scoring.aesthetic.inference meta.csv --bs 1024 --num_workers 16
+torchrun --nproc_per_node 8 -m tools.scoring.aesthetic.inference /path/to/meta.csv --bs 1024 --num_workers 16
 ```
 
 This will generate multiple part files, you can use `python -m tools.datasets.csvutil DATA1.csv DATA2.csv` to merge these part files.
@@ -51,7 +51,7 @@ wget https://s3.eu-central-1.amazonaws.com/avg-projects/unimatch/pretrained/gmfl
 Then run:
 
 ```bash
-torchrun --standalone --nproc_per_node 8 tools/scoring/optical_flow/inference.py --meta_path /path/to/meta.csv
+torchrun --standalone --nproc_per_node 8 tools/scoring/optical_flow/inference.py /path/to/meta.csv
 ```
 
 The output should be `/path/to/meta_flow.csv` with column `flow`.
@@ -64,7 +64,7 @@ For videos, we compute the matching score of the middle frame and the caption.
 **Make sure** meta files contain the column `text`, which is the caption of the sample. Then run:
 
 ```bash
-torchrun --standalone --nproc_per_node 8 tools/scoring/matching/inference.py --meta_path /path/to/meta.csv
+torchrun --standalone --nproc_per_node 8 tools/scoring/matching/inference.py /path/to/meta.csv
 ```
 
 The output should be `/path/to/meta_match.csv` with column `match`. Higher matching scores indicate better image-text/video-text alignment.
