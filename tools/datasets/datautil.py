@@ -519,7 +519,6 @@ def main(args):
             height = data["height"]
             width = data["width"]
             data["resolution"] = height * width
-        breakpoint()
         data = data[data["resolution"] <= args.hwmax]
     if args.aesmin is not None:
         assert "aes" in data.columns
