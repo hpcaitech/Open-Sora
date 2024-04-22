@@ -82,7 +82,7 @@ text_encoder = dict(
     local_files_only=True,
 )
 scheduler = dict(
-    type="iddpm-speed",
+    type="iddpm",
     timestep_respacing="",
 )
 
