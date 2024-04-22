@@ -1,7 +1,5 @@
 # Open-Sora 1.0 Report
 
-> Zangwei Zheng*, Xiangyu Peng*, Shenggui Li, Hongxing Liu, Yang You
-
 OpenAI's Sora is amazing at generating one minutes high quality videos. However, it reveals almost no information about its details. To make AI more "open", we are dedicated to build an open-source version of Sora. This report describes our first attempt to train a transformer-based video diffusion model.
 
 ## Efficiency in choosing the architecture
@@ -47,3 +45,5 @@ With a limited training budgets, we made only a few exploration. We find learnin
 16x512x512 HQ Training Loss Curve
 
 ![16x512x512 HQ Training Loss Curve](https://i0.imgs.ovh/2024/03/16/erHBe.png)
+
+> Core Contributor: Zangwei Zheng*, Xiangyu Peng*, Shenggui Li, Hongxing Liu, Yang You
