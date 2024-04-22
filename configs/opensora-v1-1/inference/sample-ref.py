@@ -32,6 +32,7 @@ model = dict(
     type="STDiT2-XL/2",
     from_pretrained=None,
     input_sq_size=512,
+    qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
