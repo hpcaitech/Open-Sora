@@ -77,7 +77,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=16, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     args = parser.parse_args()
