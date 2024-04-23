@@ -35,6 +35,26 @@ def collect_references_batch(reference_paths, vae, image_size):
     return refs_x
 
 
+def process_mask_strategy(mask_strategy):
+    mask_batch = []
+    mask_strategy = mask_strategy.split(";")
+    for mask in mask_strategy:
+        mask_group = mask.split(",")
+        assert len(mask_group) >= 1 and len(mask_group) <= 6, f"Invalid mask strategy: {mask}"
+        if len(mask_group) == 1:
+            mask_group.extend(["0", "0", "0", "1", "0"])
+        elif len(mask_group) == 2:
+            mask_group.extend(["0", "0", "1", "0"])
+        elif len(mask_group) == 3:
+            mask_group.extend(["0", "1", "0"])
+        elif len(mask_group) == 4:
+            mask_group.extend(["1", "0"])
+        elif len(mask_group) == 5:
+            mask_group.append("0")
+        mask_batch.append(mask_group)
+    return mask_batch
+
+
 def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
     masks = []
     for i, mask_strategy in enumerate(mask_strategys):
@@ -42,11 +62,9 @@ def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
         if mask_strategy is None:
             masks.append(mask)
             continue
-        mask_strategy = mask_strategy.split(";")
+        mask_strategy = process_mask_strategy(mask_strategy)
         for mst in mask_strategy:
-            mask_batch = mst.split(",")
-            loop_id, m_id, m_ref_start, m_length, m_target_start = mask_batch[:5]
-            edit_ratio = mask_batch[5] if len(mask_batch) == 6 else 0.0
+            loop_id, m_id, m_ref_start, m_target_start, m_length, edit_ratio = mst
             loop_id = int(loop_id)
             if loop_id != loop_i:
                 continue
@@ -247,7 +265,7 @@ def main():
                         mask_strategy[j] += ";"
                     mask_strategy[
                         j
-                    ] += f"{loop_i},{len(refs)-1},-{cfg.condition_frame_length},{cfg.condition_frame_length},0"
+                    ] += f"{loop_i},{len(refs)-1},-{cfg.condition_frame_length},0,{cfg.condition_frame_length}"
             masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
 
             # 4.6. diffusion sampling

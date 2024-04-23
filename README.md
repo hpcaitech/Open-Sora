@@ -119,7 +119,16 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 * [Training](#training)
 * [Contribution](#contribution)
 * [Acknowledgement](#acknowledgement)
-* [Citation](#citation)
+
+Other useful documents and links are listed below.
+
+* Report: [1.0](docs/report_01.md), [1.1](docs/report_02.md), [acceleration.md](docs/acceleration.md)
+* Repo structure: [structure.md](docs/structure.md)
+* Config file explanation: [config.md](docs/config.md)
+* Useful commands: [commands.md](docs/commands.md)
+* Data processing pipeline and dataset: [datasets.md](docs/datasets.md)
+* Each data processing tool's README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
+* Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 ## Installation
 
@@ -267,8 +276,14 @@ python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
 
 ## Training
 
-To launch training, first download [T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main) weights
-into `pretrained_models/t5_ckpts/t5-v1_1-xxl`. Then run the following commands to launch training on a single node.
+### Open-Sora 1.1 Training
+
+### Open-Sora 1.0 Training
+
+<details>
+<summary>View more</summary>
+
+Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
 
 ```bash
 # 1 GPU, 16x256x256
@@ -286,6 +301,8 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 ```
 
 For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
+
+</details>
 
 ## Contribution
 
