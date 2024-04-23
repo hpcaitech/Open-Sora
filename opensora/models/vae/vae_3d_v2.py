@@ -60,8 +60,8 @@ def exists(v):
 # ============== Generator Adversarial Loss Functions ==============
 def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
   assert real_pred.ndim == 0 and ema_fake_pred.ndim == 0
-  lecam_loss = np.mean(np.power(nn.ReLU(real_pred - ema_fake_pred), 2))
-  lecam_loss += np.mean(np.power(nn.ReLU(ema_real_pred - fake_pred), 2))
+  lecam_loss = torch.mean(torch.pow(nn.ReLU()(real_pred - ema_fake_pred), 2))
+  lecam_loss += torch.mean(torch.pow(nn.ReLU()(ema_real_pred - fake_pred), 2))
   return lecam_loss
 
 def gradient_penalty_fn(images, output):
@@ -1120,10 +1120,15 @@ class AdversarialLoss(nn.Module):
         return weighted_gen_loss
     
 class LeCamEMA:
-    def __init__(self, decay=0.999):
+    def __init__(
+            self, 
+            decay=0.999,
+            dtype=torch.bfloat16,
+            device="cpu"
+        ):
         self.decay = decay
-        self.ema_real = torch.tensor(0.0)
-        self.ema_fake = torch.tensor(0.0) 
+        self.ema_real = torch.tensor(0.0).to(device, dtype)
+        self.ema_fake = torch.tensor(0.0).to(device, dtype)
     
     def update(self, ema_real, ema_fake):
         self.ema_real = self.ema_real * self.decay + ema_real * (1-self.decay)
@@ -1192,8 +1197,8 @@ class DiscriminatorLoss(nn.Module):
         lecam_loss = 0.0
 
         if self.lecam_loss_weight is not None and self.lecam_loss_weight > 0.0:
-            real_pred = np.mean(real_logits)
-            fake_pred = np.mean(fake_logits)
+            real_pred = torch.mean(real_logits)
+            fake_pred = torch.mean(fake_logits)
             lecam_loss = lecam_reg(real_pred, fake_pred,
                                     lecam_ema_real,
                                     lecam_ema_fake)

@@ -67,3 +67,9 @@ clone the repo, go to the branch, then do `pip install .`
 CUDA_VISIBLE_DEVICES7 torchrun --master_port=29510 --nnodes=1 --nproc_per_node=1 scripts/train-vae-v2.py configs/vae_magvit_v2/train/17x128x128.py --data-path /home/shenchenhui/data/pexels/train.csv
 ```
 
+### 2.3 Inference
+
+
+### 2.4 Data
+
+* `/home/data/sora_data/pixabay/raw/data/split-0`
