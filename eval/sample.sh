@@ -15,6 +15,7 @@ else
 fi
 OUTPUT="./samples/samples_${CKPT_BASE}"
 start=$(date +%s)
+DEFAULT_BS=4
 
 ### Functions
 
@@ -49,13 +50,17 @@ function run_image() { # 10min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 600 1358 --sample-name 720p_2_1
 }
 
-function run_video_a() { # 20min
-  # 2.1.1 16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 144 256 --sample-name sample_16x144x256
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 256 256 --sample-name sample_16x256x256
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426
+function run_video_a() { # 30min, sample & multi-resolution
+  # sample
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 144 256 --sample-name sample_16x144x256 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 32 --image-size 240 426 --sample-name sample_32x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name sample_64x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name sample_16x480x854
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 32 --image-size 480 854 --sample-name sample_32x480x854
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name sample_16x720x1280
 
-  # 2.1.2 16x720p multi-resolution
+  # 16x720p multi-resolution
   # 1:1
   PROMPT="A soaring drone footage captures the majestic beauty of a coastal cliff, its red and yellow stratified rock faces rich in color and against the vibrant turquoise of the sea. Seabirds can be seen taking flight around the cliff's precipices. As the drone slowly moves from different angles, the changing sunlight casts shifting shadows that highlight the rugged textures of the cliff and the surrounding calm sea. The water gently laps at the rock base and the greenery that clings to the top of the cliff, and the scene gives a sense of peaceful isolation at the fringes of the ocean. The video captures the essence of pristine natural beauty untouched by human structures."
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 960 960 --sample-name 720p_1_1
@@ -73,35 +78,35 @@ function run_video_a() { # 20min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 600 1358 --sample-name 720p_2_1
 }
 
-function run_video_b() { # 30min
-  # 2.2.1 16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name short_16x240x426
+function run_video_b() { # 30min, short 16x240p & 64x240p
+  # 32x240p, short
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 32 --image-size 240 426 --sample-name short_32x240x426 --batch-size $DEFAULT_BS
 
-  # 2.2.2 64x240x426
+  # 64x240p, short
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name short_64x240x426
 }
 
-function run_video_c() { # 30min
-  # 2.3.1 16x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426
+function run_video_c() { # 30min, sora 16x240p & short 128x240p
+  # 16x240p, sora
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426 --batch-size $DEFAULT_BS
 
-  # 2.3.2 128x240x426
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 48 --image-size 256 256 --sample-name sora_48x256x256
+  # 128x240p, sora
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 128 --image-size 240 426 --sample-name sora_128x240x426
 }
 
-function run_video_d() { # 30min
-  # 2.4 16x480x854
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name sora_16x480x854
+function run_video_d() { # 30min, sora 32x480p
+  # 32x480p, short
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 32 --image-size 480 854 --sample-name short_32x480x854
 }
 
 function run_video_e() { # 30min
-  # 2.5 64x480x854
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 480 854 --sample-name short_64x480x854
+  # 64x480p, sora
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 64 --image-size 480 854 --sample-name sora_64x480x854
 }
 
 function run_video_f() { # 30min
-  # 2.6 16x720x1280
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name short_16x720x1280
+  # 16x720p, sora
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name sora_16x720x1280
 }
 
 function run_video_edit() { # 23min
@@ -131,52 +136,56 @@ function run_video_edit() { # 23min
 
 # vbench has 950 samples
 
+VBENCH_BS=4
+VBENCH_FRAMES=16
+VBENCH_H=240
+VBENCH_W=426
+
 function run_vbenck_a() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 0 --end-index 120
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 0 --end-index 120
 }
 
 function run_vbenck_b() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-    --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 120 --end-index 240
+    --prompt-path assets/texts/VBench/all_dimension.txt --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 120 --end-index 240
 }
 
 function run_vbenck_c() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 240 --end-index 360
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 240 --end-index 360
 }
 
 function run_vbenck_d() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 360 --end-index 480
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 360 --end-index 480
 }
 
 function run_vbenck_e() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 480 --end-index 600
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 480 --end-index 600
 }
 
 function run_vbenck_f() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 600 --end-index 720
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 600 --end-index 720
 }
 
 function run_vbenck_g() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 720 --end-index 840
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 720 --end-index 840
 }
 
 function run_vbenck_h() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --start-index 840
+    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 840
 }
 
 # vbench-i2v has 1120 samples
