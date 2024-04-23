@@ -53,7 +53,6 @@ def main():
     # 1. args & cfg
     # ======================================================
     cfg = parse_configs(training=True)
-    print(cfg)
     exp_name, exp_dir = create_experiment_workspace(cfg)
     save_training_config(cfg._cfg_dict, exp_dir)
 
@@ -73,6 +72,7 @@ def main():
     if not coordinator.is_master():
         logger = create_logger(None)
     else:
+        print(cfg)
         logger = create_logger(exp_dir)
         logger.info(f"Experiment directory created at {exp_dir}")
 

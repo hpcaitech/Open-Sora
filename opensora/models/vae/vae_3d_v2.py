@@ -12,7 +12,7 @@ from einops import rearrange, repeat, pack, unpack
 import torch.nn.functional as F
 import torchvision
 from torchvision.models import VGG16_Weights
-from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
+from opensora.models.vae.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
 from torch import nn
 import math
 import os
