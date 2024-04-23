@@ -35,7 +35,7 @@ from opensora.utils.config_utils import (
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
 from opensora.utils.train_utils import update_ema, MaskGenerator
-from opensora.models.vae.vae_3d_v2 import VEALoss, DiscriminatorLoss, AdversarialLoss, pad_at_dim
+from opensora.models.vae.vae_3d_v2 import VEALoss, DiscriminatorLoss, AdversarialLoss, LeCamEMA, pad_at_dim
 
 
 
@@ -78,7 +78,9 @@ def main():
 
         writer = create_tensorboard_writer(exp_dir)
         if cfg.wandb:
-            wandb.init(project="opensora-vae", name=exp_name, config=cfg._cfg_dict)
+            # wandb.init(project="opensora-vae", name=exp_name, config=cfg._cfg_dict)
+            # NOTE: here we use the outputs folder name to store running records of different experiments (since frequent interruption)
+            wandb.init(project="opensora-vae", name=cfg.outputs, config=cfg._cfg_dict)
 
     # 2.3. initialize ColossalAI booster
     if cfg.plugin == "zero2":
@@ -261,10 +263,10 @@ def main():
         disc_time_padding = 0
     video_contains_first_frame = cfg.video_contains_first_frame
 
-    lecam_ema_real = torch.tensor(0.0)
-    lecam_ema_fake = torch.tensor(0.0)
-
-
+    
+    # lecam_ema_real = torch.tensor(0.0)
+    # lecam_ema_fake = torch.tensor(0.0)
+    lecam_ema = LeCamEMA(decay=cfg.ema_decay)
 
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
@@ -357,12 +359,12 @@ def main():
                         optimizer.zero_grad()
                         # Backward & update 
                         booster.backward(loss=vae_loss, optimizer=optimizer)
-                        # NOTE: clip gradients? this is done in Open-Sora-Plan
-                        torch.nn.utils.clip_grad_norm_(vae.parameters(), 1)
+                        # # NOTE: clip gradients? this is done in Open-Sora-Plan
+                        # torch.nn.utils.clip_grad_norm_(vae.parameters(), 1) # NOTE: done by grad_clip
                         optimizer.step()
 
                         # Log loss values:
-                        all_reduce_mean(vae_loss)
+                        all_reduce_mean(vae_loss) # NOTE: this is to get average loss for logging
                         running_loss += vae_loss.item()
                         
 
@@ -381,6 +383,10 @@ def main():
                                 real_logits = discriminator(real_video.contiguous().detach()) 
 
                             fake_logits = discriminator(fake_video.contiguous().detach())
+
+
+                            lecam_ema_real, lecam_ema_fake = lecam_ema.get()
+
                             disc_loss = disc_loss_fn(
                                 real_logits, 
                                 fake_logits, 
@@ -392,14 +398,19 @@ def main():
 
                             if cfg.ema_decay is not None: 
                                 # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
-                                lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
-                                lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
+                                # lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
+                                # lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
+                                ema_real = torch.mean(real_logits.clone().detach())
+                                ema_fake = torch.mean(fake_logits.clone().detach()) 
+                                all_reduce_mean(ema_real)
+                                all_reduce_mean(ema_fake)
+                                lecam_ema.update(ema_real, ema_fake)
 
                             disc_optimizer.zero_grad()
                             # Backward & update
                             booster.backward(loss=disc_loss, optimizer=disc_optimizer)
-                            # NOTE: TODO: clip gradients? this is done in Open-Sora-Plan
-                            torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1)
+                            # # NOTE: TODO: clip gradients? this is done in Open-Sora-Plan
+                            # torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1) # NOTE: done by grad_clip
                             disc_optimizer.step()
 
                             # Log loss values:
