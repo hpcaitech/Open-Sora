@@ -1,6 +1,6 @@
 num_frames = 16
 frame_interval = 3
-image_size = (256, 256)
+image_size = (128, 128)
 use_pipeline = True
 
 # Define dataset
@@ -44,13 +44,13 @@ model = dict(
 
 discriminator = dict(
     type="DISCRIMINATOR_3D",
-    image_size = (32, 32), # NOTE: here image size is different
+    image_size = (16, 16), # NOTE: here image size is different
     num_frames = num_frames,
     in_channels = 4,
     filters = 128,
     use_pretrained=True, # NOTE: set to False only if we want to disable load
     # channel_multipliers = (2,4,4,4,4), # (2,4,4,4) for 64x64 resolution
-    channel_multipliers= (2,4,4) # since on intermediate layer, 16 x 32 x 32 dimension z
+    channel_multipliers= (2,4,4) # since on intermediate layer dimension ofs z
 )
 
 
