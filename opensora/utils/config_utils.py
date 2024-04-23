@@ -63,6 +63,7 @@ def parse_args(training=False):
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
         parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
+        parser.add_argument("--start-from-scratch", action="store_true", help="start training from scratch")
 
     return parser.parse_args()
 
@@ -115,6 +116,8 @@ def merge_args(cfg, args, training=False):
         # - Allow not set
         if "mask_ratios" not in cfg:
             cfg["mask_ratios"] = None
+        if "start_from_scratch" not in cfg:
+            cfg["start_from_scratch"] = False
         if "bucket_config" not in cfg:
             cfg["bucket_config"] = None
         if "transform_name" not in cfg.dataset:

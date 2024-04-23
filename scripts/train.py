@@ -204,7 +204,7 @@ def main():
             optimizer,
             lr_scheduler,
             cfg.load,
-            sampler=sampler_to_io,
+            sampler=sampler_to_io if not cfg.start_from_scratch else None,
         )
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
