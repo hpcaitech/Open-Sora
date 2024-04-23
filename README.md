@@ -25,7 +25,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 📰 News
 
-* **[2024.04.22]** 🔥 We release **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video and video-to-video** generation. In addition, a full video processing pipeline is released. [[report]](/docs/report_02.md)
+* **[2024.04.22]** 🔥 We release **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[report]](/docs/report_02.md)
 * **[2024.03.18]** We release **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
   <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
@@ -117,6 +117,7 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 * [Inference](#inference)
 * [Data Processing](#data-processing)
 * [Training](#training)
+* [Evaluation](#evaluation)
 * [Contribution](#contribution)
 * [Acknowledgement](#acknowledgement)
 
@@ -128,6 +129,7 @@ Other useful documents and links are listed below.
 * Useful commands: [commands.md](docs/commands.md)
 * Data processing pipeline and dataset: [datasets.md](docs/datasets.md)
 * Each data processing tool's README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
+* Evaluation: [eval](/eval/README.md)
 * Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 ## Installation
@@ -162,9 +164,6 @@ git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
 pip install -v .
 ```
-
-After installation, we suggest reading [structure.md](docs/structure.md) to learn the project structure and how to use
-the config files.
 
 ## Model Weights
 
@@ -210,7 +209,15 @@ This will launch a Gradio application on your localhost. If you want to know mor
 
 ### Open-Sora 1.1 Command Line Inference
 
-TBD
+Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
+
+```bash
+# video sampling
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
+```
+
+See [here](docs/commands.md#inference-with-open-sora-11) for more instructions.
 
 ### Open-Sora 1.0 Command Line Inference
 
@@ -280,6 +287,17 @@ python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
 
 ### Open-Sora 1.1 Training
 
+Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
+
+```bash
+# one node
+torchrun --standalone --nproc_per_node 8 scripts/train.py \
+    configs/opensora-v1-1/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+# multiple nodes
+colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
+    configs/opensora-v1-1/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
 ### Open-Sora 1.0 Training
 
 <details>
@@ -305,6 +323,10 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
 
 </details>
+
+## Evaluation
+
+See [here](eval/README.md) for more instructions.
 
 ## Contribution
 
