@@ -24,7 +24,7 @@ class LPIPS(nn.Module):
     def load_from_pretrained(self, name="vgg_lpips"):
         ckpt = get_ckpt_path(name, "taming/modules/autoencoder/lpips")
         self.load_state_dict(torch.load(ckpt, map_location=torch.device("cpu")), strict=False)
-        print("loaded pretrained LPIPS loss from {}".format(ckpt))
+        # print("loaded pretrained LPIPS loss from {}".format(ckpt))
 
     @classmethod
     def from_pretrained(cls, name="vgg_lpips"):
