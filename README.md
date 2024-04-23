@@ -122,7 +122,7 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 
 Other useful documents and links are listed below.
 
-* Report: [1.0](docs/report_01.md), [1.1](docs/report_02.md), [acceleration.md](docs/acceleration.md)
+* Report: [report 1.0](docs/report_01.md), [report 1.1](docs/report_02.md), [acceleration.md](docs/acceleration.md)
 * Repo structure: [structure.md](docs/structure.md)
 * Config file explanation: [config.md](docs/config.md)
 * Useful commands: [commands.md](docs/commands.md)

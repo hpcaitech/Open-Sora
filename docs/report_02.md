@@ -74,24 +74,25 @@ As we found in Open-Sora 1.0, the data number and quality are crucial for traini
 
 We plan to use [panda-70M](https://snap-research.github.io/Panda-70M/) and other data to traing the model, which is approximately 30M+ data. However, we find disk IO a botteleneck for training and data processing at the same time. Thus, we can only prepare a 10M dataset and did not go through all processing pipeline that we built. Finally, we use a dataset with 9.7M videos + 2.6M images for pre-training, and 560k videos + 1.6M images for fine-tuning. The pretraining dataset statistics are shown below.
 
-Image text tokens (by T5 tokenizer): ![image text tokens](/assets/readme/report_image_textlen.png)
+Image text tokens (by T5 tokenizer):
+![image text tokens](/assets/readme/report_image_textlen.png)
 
 Video text tokens (by T5 tokenizer). We directly use panda's short caption for training, and caption other datasets by ourselves. The generated caption is usually less than 200 tokens.
-
 ![video text tokens](/assets/readme/report_video_textlen.png)
 
-Video duration: ![video duration](/assets/readme/report_video_duration.png)
+Video duration:
+![video duration](/assets/readme/report_video_duration.png)
 
 ## Training Details
 
 With limited computational resources, we have to carefully monitor the training process, and change the training strategy if we speculate the model is not learning well since there is no computation for ablation study. Thus, Open-Sora 1.1's training includes multiple changes, and as a result, ema is not applied.
 
-1. First, we fine-tune 6k steps with images of different resolution from `Pixart-alpha-1024` checkpoints. We find the model easily adapts to generate images with different resolutions. We use [SpeeDiT](https://github.com/1zeryu/SpeeDiT) (iddpm-speed) to accelerate the diffusion training.
-2. **[Stage 1]** Then, we pretrain the model with gradient-checkpointing for 24k steps, which takes 4 days on 64 H800 GPUs. Although the number of samples seen by the model is the same, we find the model learns slowly compared to a smaller batch size. We speculate that at an early stage, the number of steps is more important for training. The most videos are in 240p resolution, and the config is similar to [stage2.py](/configs/opensora-v1-1/train/stage2.py).
-3. **[Stage 1]** To increase the number of steps, we switch to a smaller batch size without gradient-checkpointing. We also add fps conditioning at this point. We trained 40k steps for 2 days. The most videos are in 144p resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py).
-4. **[Stage 1]** We find the model cannot learn well for long videos, and find a noised generation result as speculated to be half-precision problem found in Open-Sora 1.0 training. Thus, we adopt the QK-normalization to stabilize the training. We also switch iddpm-speed to iddpm. We trained for 17k steps for 14 hours. The most videos are in 144p resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py). The stage 1 training lasts for approximately one week, with total step 81k.
-5. **[Stage 2]** We switch to a higher resolution, where most videos are in 240p and 480p resolution ([stage2.py](/configs/opensora-v1-1/train/stage2.py)). We trained 22k steps for one day on all pre-training data, and ?k with ? hours on high-quality data.
-6. **[Stage 3]** We switch to a higher resolution, where most videos are in 480p and 720p resolution ([stage3.py](/configs/opensora-v1-1/train/stage3.py)). We trained ?k with ? hours on high-quality data.
+1. First, we fine-tune **6k** steps with images of different resolution from `Pixart-alpha-1024` checkpoints. We find the model easily adapts to generate images with different resolutions. We use [SpeeDiT](https://github.com/1zeryu/SpeeDiT) (iddpm-speed) to accelerate the diffusion training.
+2. **[Stage 1]** Then, we pretrain the model with gradient-checkpointing for **24k** steps, which takes **4 days** on 64 H800 GPUs. Although the number of samples seen by the model is the same, we find the model learns slowly compared to a smaller batch size. We speculate that at an early stage, the number of steps is more important for training. The most videos are in **240p** resolution, and the config is similar to [stage2.py](/configs/opensora-v1-1/train/stage2.py).
+3. **[Stage 1]** To increase the number of steps, we switch to a smaller batch size without gradient-checkpointing. We also add fps conditioning at this point. We trained **40k** steps for **2 days**. The most videos are in **144p** resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py).
+4. **[Stage 1]** We find the model cannot learn well for long videos, and find a noised generation result as speculated to be half-precision problem found in Open-Sora 1.0 training. Thus, we adopt the QK-normalization to stabilize the training. We also switch iddpm-speed to iddpm. We trained for **17k** steps for **14 hours**. The most videos are in **144p** resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py). The stage 1 training lasts for approximately one week, with total step **81k**.
+5. **[Stage 2]** We switch to a higher resolution, where most videos are in **240p and 480p** resolution ([stage2.py](/configs/opensora-v1-1/train/stage2.py)). We trained **22k** steps for **one day** on all pre-training data, and **?k** with **? hours** on high-quality data.
+6. **[Stage 3]** We switch to a higher resolution, where most videos are in **480p and 720p** resolution ([stage3.py](/configs/opensora-v1-1/train/stage3.py)). We trained **?k** with **? hours** on high-quality data.
 
 ## Results and Evaluation
 
@@ -104,5 +105,5 @@ As we get one step closer to the replication of Sora, we find many limitations f
 - **Bad human generation**: We find the model cannot generate high-quality human videos. We think the problem is due to the lack of human data. We plan to collect more human data and continue training the model to improve the human generation.
 - **Low aesthetic score**: we find the model's aesthetic score is not high. The problem is due to the lack of aesthetic score filtering, which is not conducted due to IO bottleneck. We plan to filter the data by aesthetic score and finetuning the model to improve the aesthetic score.
 
-> **Algorithm & Acceleration**: Zangwei Zheng, Xiangyu Peng, Shenggui Li, Hongxing Liu, Yukun Zhou
-> **Data Collection & Pipeline**: Xiangyu Peng, Zangwei Zheng, Chenhui Shen, Tom Young, Junjie Wang, Chenfeng Yu
+> - **Algorithm & Acceleration**: Zangwei Zheng, Xiangyu Peng, Shenggui Li, Hongxing Liu, Yukun Zhou
+> - **Data Collection & Pipeline**: Xiangyu Peng, Zangwei Zheng, Chenhui Shen, Tom Young, Junjie Wang, Chenfeng Yu
