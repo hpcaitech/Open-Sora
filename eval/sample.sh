@@ -91,7 +91,7 @@ function run_video_c() { # 30min
 
 function run_video_d() { # 30min
   # 2.4 16x480x854
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name short_16x480x854
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name sora_16x480x854
 }
 
 function run_video_e() { # 30min
@@ -111,14 +111,14 @@ function run_video_edit() { # 23min
     --num-frames 16 --image-size 240 426 \
     --loop 5 --condition-frame-length 4 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
-    --mask-strategy "0,0,0,1,0" "0,0,0,1,0" "0,0,0,1,0"
+    --mask-strategy "0" "0" "0"
 
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 64 --image-size 240 426 \
     --loop 5 --condition-frame-length 16 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
-    --mask-strategy "0,0,0,1,0" "0,0,0,1,0" "0,0,0,1,0"
+    --mask-strategy "0" "0" "0"
 
   # 3.2
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
@@ -126,7 +126,7 @@ function run_video_edit() { # 23min
     --num-frames 128 --image-size 240 426 \
     --loop 1 \
     --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
-    --mask-strategy "0,0,0,1,0\;0,0,0,1,-1" "0,0,0,1,0\;0,1,0,1,-1" "0,0,0,64,0,0.5"
+    --mask-strategy "0\;0,0,0,-1,1" "0\;0,1,0,-1,1" "0,0,0,0,64,0.5"
 }
 
 # vbench has 950 samples
