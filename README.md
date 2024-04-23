@@ -59,7 +59,7 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 ## 🔆 New Features/Updates
 
 * 📍 **Open-Sora 1.1** released. Model weights are available [here](). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
-* 🔧 **Data processing pipeline v1.1** is released. An automatic processing pipeline from raw videos to (text, video clip) pairs is provided, including scene cutting$\rightarrow$filtering(aesthetic, optical flow, OCR, etc.)$\rightarrow$captioning$\rightarrow$managing. With this tool, you can easily build your video dataset.
+* 🔧 **Data processing pipeline v1.1** is released. An automatic processing pipeline from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
 * ✅ Modified ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
 * ✅ Support training with any resolution, aspect ratio, and duration (including images).
 * ✅ Support image and video conditioning and video editing, and thus support animating images, connecting videos, etc.
@@ -273,6 +273,8 @@ python -m tools.datasets.csvutil meta_caption_processed_aes.csv --aesmin 5 --out
 # 5. Additional filtering
 python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
 ```
+
+![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
 
 ## Training
 
