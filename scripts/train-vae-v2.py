@@ -267,7 +267,7 @@ def main():
     
     # lecam_ema_real = torch.tensor(0.0)
     # lecam_ema_fake = torch.tensor(0.0)
-    lecam_ema = LeCamEMA(decay=cfg.ema_decay)
+    lecam_ema = LeCamEMA(decay=cfg.ema_decay, dtype=dtype, device=device)
 
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
@@ -401,8 +401,8 @@ def main():
                                 # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
                                 # lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
                                 # lecam_ema_fake = lecam_ema_fake * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(fake_logits.clone().detach())
-                                ema_real = torch.mean(real_logits.clone().detach())
-                                ema_fake = torch.mean(fake_logits.clone().detach()) 
+                                ema_real = torch.mean(real_logits.clone().detach()).to(device, dtype)
+                                ema_fake = torch.mean(fake_logits.clone().detach()).to(device, dtype)
                                 all_reduce_mean(ema_real)
                                 all_reduce_mean(ema_fake)
                                 lecam_ema.update(ema_real, ema_fake)
