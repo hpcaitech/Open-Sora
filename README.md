@@ -248,7 +248,7 @@ is [here](/docs/datasets.md). We provide tools to process video data. Our data p
 the following steps:
 
 1. Manage datasets. [[docs](/tools/datasets/README.md)]
-2. Scene detection and video splitting. [[docs](/tools/splitting/README.md)]
+2. Scene detection and video splitting. [[docs](/tools/scene_cut/README.md)]
 3. Score and filter videos. [[docs](/tools/scoring/README.md)]
 4. Generate video captions. [[docs](/tools/caption/README.md)]
 

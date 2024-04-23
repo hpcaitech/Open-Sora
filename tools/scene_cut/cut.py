@@ -1,19 +1,22 @@
 import argparse
 import os
 import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+from functools import partial
 
 import pandas as pd
 from imageio_ffmpeg import get_ffmpeg_exe
-from mmengine.logging import print_log
+from mmengine.logging import MMLogger, print_log
+from pandarallel import pandarallel
 from scenedetect import FrameTimecode
-from tqdm import tqdm
 
 
-def single_process(row, save_dir, logger=None):
-    # video_id = row['videoID']
-    # video_path = os.path.join(root_src, f'{video_id}.mp4')
+def process_single_row(row, args, log_name=None):
     video_path = row["path"]
+
+    logger = None
+    if log_name is not None:
+        logger = MMLogger.get_instance(log_name)
 
     # check mp4 integrity
     # if not is_intact_video(video_path, logger=logger):
@@ -24,18 +27,26 @@ def single_process(row, save_dir, logger=None):
         return False
     scene_list = eval(timestamp)
     scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
-    split_video(video_path, scene_list, save_dir=save_dir, logger=logger)
-    return True
+    split_video(
+        video_path,
+        scene_list,
+        save_dir=args.save_dir,
+        min_seconds=args.min_seconds,
+        max_seconds=args.max_seconds,
+        target_fps=args.target_fps,
+        shorter_size=args.shorter_size,
+        logger=logger,
+    )
 
 
 def split_video(
     video_path,
     scene_list,
     save_dir,
-    min_seconds=None,
-    max_seconds=None,
+    min_seconds=2.0,
+    max_seconds=15.0,
     target_fps=30,
-    shorter_size=512,
+    shorter_size=720,
     verbose=False,
     logger=None,
 ):
@@ -81,12 +92,15 @@ def split_video(
         # for the remaining calls.
         # cmd += ['-v', 'error']
 
+        # -ss after -i is very slow; put -ss before -i
         # input path
         # cmd += ["-i", video_path]
 
         # clip to cut
-        cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-i", video_path, "-t", str(duration.get_seconds())]
         # cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-t", str(duration.get_seconds())]
+
+        # clip to cut
+        cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-i", video_path, "-t", str(duration.get_seconds())]
 
         # target fps
         # cmd += ['-vf', 'select=mod(n\,2)']
@@ -102,60 +116,52 @@ def split_video(
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = proc.communicate()
-        if verbose:
-            stdout = stdout.decode("utf-8")
-            print_log(stdout, logger=logger)
+        # stdout = stdout.decode("utf-8")
+        # print_log(stdout, logger=logger)
 
         save_path_list.append(video_path)
-        print_log(f"Video clip saved to '{save_path}'", logger=logger)
+        if verbose:
+            print_log(f"Video clip saved to '{save_path}'", logger=logger)
 
     return save_path_list
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", default="F:/Panda-70M/")
-    parser.add_argument("--split", default="test")
-    parser.add_argument("--num_workers", default=5, type=int)
+    parser.add_argument("meta_path", type=str)
+    parser.add_argument("--save_dir", type=str)
+    parser.add_argument("--min_seconds", type=float, default=None,
+                        help='if not None, clip shorter than min_seconds is ignored')
+    parser.add_argument("--max_seconds", type=float, default=None,
+                        help='if not None, clip longer than max_seconds is truncated')
+    parser.add_argument("--target_fps", type=int, default=30, help='target fps of clips')
+    parser.add_argument("--shorter_size", type=int, default=720, help='resize the shorter size by keeping ratio')
 
     args = parser.parse_args()
     return args
 
 
 def main():
-    # args = parse_args()
-    # root = args.root
-    # split = args.split
+    args = parse_args()
 
-    root = "F:/Panda-70M/"
-    root, split = "F:/pexels_new/", "popular_2"
-    meta_path = os.path.join(root, f"raw/meta/{split}_format_timestamp.csv")
-    root_dst = os.path.join(root, f"scene_cut/data/{split}")
-
-    folder_dst = root_dst
-    # folder_src = os.path.join(root_src, f'data/{split}')
-    # folder_dst = os.path.join(root_dst, os.path.relpath(folder_src, root_src))
-    os.makedirs(folder_dst, exist_ok=True)
-
-    meta = pd.read_csv(meta_path)
+    save_dir = args.save_dir
+    os.makedirs(save_dir, exist_ok=True)
 
     # create logger
-    # folder_path_log = os.path.dirname(root_dst)
-    # log_name = os.path.basename(root_dst)
-    # timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
-    # log_path = os.path.join(folder_path_log, f"{log_name}_{timestamp}.log")
-    # logger = MMLogger.get_instance(log_name, log_file=log_path)
-    logger = None
+    log_dir = os.path.dirname(save_dir)
+    log_name = os.path.basename(save_dir)
+    timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
+    log_path = os.path.join(log_dir, f"{log_name}_{timestamp}.log")
+    logger = MMLogger.get_instance(log_name, log_file=log_path)
+    # logger = None
 
-    tasks = []
-    pool = ThreadPoolExecutor(max_workers=1)
-    for idx, row in meta.iterrows():
-        task = pool.submit(single_process, row, folder_dst, logger)
-        tasks.append(task)
+    # initialize pandarallel
+    pandarallel.initialize(progress_bar=True)
+    process_single_row_partial = partial(process_single_row, args=args, log_name=log_name)
 
-    for task in tqdm(as_completed(tasks), total=len(meta)):
-        task.result()
-    pool.shutdown()
+    # process
+    meta = pd.read_csv(args.meta_path)
+    meta.parallel_apply(process_single_row_partial, axis=1)
 
 
 if __name__ == "__main__":
