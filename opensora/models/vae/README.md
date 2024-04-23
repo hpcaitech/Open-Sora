@@ -5,6 +5,7 @@
 * https://github.com/google-research/magvit
 * https://github.com/CompVis/taming-transformers
 * https://github.com/adobe/antialiased-cnns/pull/39/commits/3d6f02b6943c58b68c19c07bc26fad57492ff3bc
+* https://github.com/PKU-YuanGroup/Open-Sora-Plan
 
 
 ## 1. VAE 3D
