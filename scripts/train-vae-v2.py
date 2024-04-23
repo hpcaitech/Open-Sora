@@ -80,7 +80,8 @@ def main():
         if cfg.wandb:
             # wandb.init(project="opensora-vae", name=exp_name, config=cfg._cfg_dict)
             # NOTE: here we use the outputs folder name to store running records of different experiments (since frequent interruption)
-            wandb.init(project="opensora-vae", name=cfg.outputs, config=cfg._cfg_dict)
+            name = os.path.basename(os.path.normpath(cfg.outputs))
+            wandb.init(project="opensora-vae", name=name, config=cfg._cfg_dict)
 
     # 2.3. initialize ColossalAI booster
     if cfg.plugin == "zero2":
