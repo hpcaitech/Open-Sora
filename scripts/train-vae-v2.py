@@ -341,7 +341,7 @@ def main():
                             split = "train"
                         )
 
-                        adversarial_loss = 0.0
+                        adversarial_loss = torch.tensor(0.0)
                         # adversarial loss 
                         if global_step > cfg.discriminator_start:
                             # padded videos for GAN
