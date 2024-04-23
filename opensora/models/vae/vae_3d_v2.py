@@ -58,7 +58,6 @@ def exists(v):
     return v is not None
 
 # ============== Generator Adversarial Loss Functions ==============
-# TODO: verify if this is correct implementation
 def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
   assert real_pred.ndim == 0 and ema_fake_pred.ndim == 0
   lecam_loss = np.mean(np.power(nn.ReLU(real_pred - ema_fake_pred), 2))
@@ -1120,8 +1119,19 @@ class AdversarialLoss(nn.Module):
 
         return weighted_gen_loss
     
+class LeCamEMA:
+    def __init__(self, decay=0.999):
+        self.decay = decay
+        self.ema_real = torch.tensor(0.0)
+        self.ema_fake = torch.tensor(0.0) 
+    
+    def update(self, ema_real, ema_fake):
+        self.ema_real = self.ema_real * self.decay + ema_real * (1-self.decay)
+        self.ema_fake = self.ema_fake * self.decay + ema_fake * (1-self.decay)
 
-
+    def get(self):
+        return self.ema_real, self.ema_fake
+    
 class DiscriminatorLoss(nn.Module):
     def __init__(
         self,
