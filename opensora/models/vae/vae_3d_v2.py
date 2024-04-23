@@ -64,6 +64,63 @@ def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
   lecam_loss += torch.mean(torch.pow(nn.ReLU()(ema_real_pred - fake_pred), 2))
   return lecam_loss
 
+# Open-Sora-Plan
+def r1_penalty(real_img, real_pred):
+    """R1 regularization for discriminator. The core idea is to
+        penalize the gradient on real data alone: when the
+        generator distribution produces the true data distribution
+        and the discriminator is equal to 0 on the data manifold, the
+        gradient penalty ensures that the discriminator cannot create
+        a non-zero gradient orthogonal to the data manifold without
+        suffering a loss in the GAN game.
+
+        Ref:
+        Eq. 9 in Which training methods for GANs do actually converge.
+        """
+    grad_real = torch.autograd.grad(outputs=real_pred.sum(), inputs=real_img, create_graph=True)[0]
+    grad_penalty = grad_real.pow(2).view(grad_real.shape[0], -1).sum(1).mean()
+    return grad_penalty
+
+# Open-Sora-Plan
+def gradient_penalty_loss(discriminator, real_data, fake_data, weight=None):
+    """Calculate gradient penalty for wgan-gp.
+
+    Args:
+        discriminator (nn.Module): Network for the discriminator.
+        real_data (Tensor): Real input data.
+        fake_data (Tensor): Fake input data.
+        weight (Tensor): Weight tensor. Default: None.
+
+    Returns:
+        Tensor: A tensor for gradient penalty.
+    """
+
+    batch_size = real_data.size(0)
+    alpha = real_data.new_tensor(torch.rand(batch_size, 1, 1, 1))
+
+    # interpolate between real_data and fake_data
+    interpolates = alpha * real_data + (1. - alpha) * fake_data
+    interpolates = torch.autograd.Variable(interpolates, requires_grad=True)
+
+    disc_interpolates = discriminator(interpolates)
+    gradients = torch.autograd.grad(
+        outputs=disc_interpolates,
+        inputs=interpolates,
+        grad_outputs=torch.ones_like(disc_interpolates),
+        create_graph=True,
+        retain_graph=True,
+        only_inputs=True)[0]
+
+    if weight is not None:
+        gradients = gradients * weight
+
+    gradients_penalty = ((gradients.norm(2, dim=1) - 1)**2).mean()
+    if weight is not None:
+        gradients_penalty /= torch.mean(weight)
+
+    return gradients_penalty
+
+
 def gradient_penalty_fn(images, output):
     # batch_size = images.shape[0]
     gradients = torch.autograd.grad(
@@ -1207,7 +1264,8 @@ class DiscriminatorLoss(nn.Module):
         gradient_penalty = 0.0
         if self.gradient_penalty_loss_weight is not None and self.gradient_penalty_loss_weight > 0.0:
             assert real_video is not None
-            gradient_penalty = gradient_penalty_fn(real_video, real_logits)
+            # gradient_penalty = gradient_penalty_fn(real_video, real_logits)
+            gradient_penalty = r1_penalty(real_video, real_logits) # MAGVIT uses r1 penalty
             gradient_penalty *= self.gradient_penalty_loss_weight
             
         discriminator_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty
