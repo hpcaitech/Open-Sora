@@ -55,7 +55,7 @@ generator_factor = 0.1 # SCH: generator adversarial loss, MAGVIT v2 uses 0.1
 lecam_loss_weight = 0.001 # NOTE: MAVGIT v2 use 0.001
 discriminator_loss_type="non-saturating"
 generator_loss_type="non-saturating"
-discriminator_start = 1000 # 50000 NOTE: change to correct val, debug use -1 for now
+discriminator_start = -1 # 50000 NOTE: change to correct val, debug use -1 for now
 gradient_penalty_loss_weight = None # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay for LeCam
 
