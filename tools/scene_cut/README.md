@@ -1,9 +1,15 @@
 # Scene Detection and Video Splitting
+
+- [Scene Detection and Video Splitting](#scene-detection-and-video-splitting)
+    - [Prepare Meta Files](#prepare-meta-files)
+    - [Scene Detection](#scene-detection)
+    - [Video Splitting](#video-splitting)
+
 In many cases, raw videos contain several scenes and are too long for training. Thus, it is essential to split them into shorter 
 clips based on scenes. Here, we provide code for scene detection and video splitting.
 
-## Prepare a meta file
-At this step, you should have a raw video dataset prepared. We need a meta file for the dataset. To create a meta file from a folder, run:
+## Prepare Meta Files
+At this step, you should have a raw video dataset prepared. A meta file of the dataset information is needed for data processing. To create a meta file from a folder, run:
 
 ```bash
 python -m tools.datasets.convert video /path/to/video/folder --output /path/to/save/meta.csv
