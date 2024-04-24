@@ -233,6 +233,13 @@ def main():
         batch_prompts_raw, additional_infos = extract_json_from_prompts(batch_prompts_raw)
         batch_prompts_loops = process_prompts(batch_prompts_raw, cfg.loop)
         video_clips = []
+        # handle the last batch
+        if len(batch_prompts_raw) < cfg.batch_size and cfg.multi_resolution == "STDiT2":
+            model_args["height"] = model_args["height"][: len(batch_prompts_raw)]
+            model_args["width"] = model_args["width"][: len(batch_prompts_raw)]
+            model_args["num_frames"] = model_args["num_frames"][: len(batch_prompts_raw)]
+            model_args["ar"] = model_args["ar"][: len(batch_prompts_raw)]
+            model_args["fps"] = model_args["fps"][: len(batch_prompts_raw)]
 
         # 4.2. load reference videos & images
         for j, info in enumerate(additional_infos):

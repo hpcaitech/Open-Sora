@@ -64,7 +64,7 @@ Typically, we unmask the frames to be conditioned on for image/video-to-video co
 
 Inspired by [UL2](https://arxiv.org/abs/2205.05131), we introduce random mask strategy during training. Specifically, we randomly unmask the frames during training, including unmask the first frame, the first k frames, the last frame, the last k frames, the first and last k frames, random frames, etc. Based on Open-Sora 1.0, with 50% probability of applying masking, we see the model can learn to handle image conditioning (while 30% yields worse ability) for 10k steps, with a little text-to-video performance drop. Thus, for Open-Sora 1.1, we pretrain the model from scratch with masking strategy.
 
-An illustration of masking strategy config to use in inference is given as follow. A five number tuple provides great flexibility in defining the mask strategy.
+An illustration of masking strategy config to use in inference is given as follow. A five number tuple provides great flexibility in defining the mask strategy. By conditioning on generated frames, we can autogressively generate infinite frames (although error propagates).
 
 ![mask strategy config](/assets/readme/report_mask_config.png)
 
@@ -72,19 +72,22 @@ A detailed explanation of the mask strategy usage is available in [docs/config.m
 
 ## Data Collection & Pipeline
 
-As we found in Open-Sora 1.0, the data number and quality are crucial for training a good model, we work hard on scaling the dataset. First, we create an automatic pipeline following [SVD](https://arxiv.org/abs/2311.15127), inlcuding scene cutting, captioning, various scoring and filtering, and dataset management scripts and conventions.
+As we found in Open-Sora 1.0, the data number and quality are crucial for training a good model, we work hard on scaling the dataset. First, we create an automatic pipeline following [SVD](https://arxiv.org/abs/2311.15127), inlcuding scene cutting, captioning, various scoring and filtering, and dataset management scripts and conventions. More infomation can be found in [docs/data_processing.md](/docs/data_processing.md).
 
 ![pipeline](/assets/readme/report_data_pipeline.png)
 
-We plan to use [panda-70M](https://snap-research.github.io/Panda-70M/) and other data to traing the model, which is approximately 30M+ data. However, we find disk IO a botteleneck for training and data processing at the same time. Thus, we can only prepare a 10M dataset and did not go through all processing pipeline that we built. Finally, we use a dataset with 9.7M videos + 2.6M images for pre-training, and 560k videos + 1.6M images for fine-tuning. The pretraining dataset statistics are shown below.
+We plan to use [panda-70M](https://snap-research.github.io/Panda-70M/) and other data to traing the model, which is approximately 30M+ data. However, we find disk IO a botteleneck for training and data processing at the same time. Thus, we can only prepare a 10M dataset and did not go through all processing pipeline that we built. Finally, we use a dataset with 9.7M videos + 2.6M images for pre-training, and 560k videos + 1.6M images for fine-tuning. The pretraining dataset statistics are shown below. More information about the dataset can be found in [docs/datasets.md](/docs/datasets.md).
 
 Image text tokens (by T5 tokenizer):
+
 ![image text tokens](/assets/readme/report_image_textlen.png)
 
 Video text tokens (by T5 tokenizer). We directly use panda's short caption for training, and caption other datasets by ourselves. The generated caption is usually less than 200 tokens.
+
 ![video text tokens](/assets/readme/report_video_textlen.png)
 
 Video duration:
+
 ![video duration](/assets/readme/report_video_duration.png)
 
 ## Training Details
@@ -92,11 +95,13 @@ Video duration:
 With limited computational resources, we have to carefully monitor the training process, and change the training strategy if we speculate the model is not learning well since there is no computation for ablation study. Thus, Open-Sora 1.1's training includes multiple changes, and as a result, ema is not applied.
 
 1. First, we fine-tune **6k** steps with images of different resolution from `Pixart-alpha-1024` checkpoints. We find the model easily adapts to generate images with different resolutions. We use [SpeeDiT](https://github.com/1zeryu/SpeeDiT) (iddpm-speed) to accelerate the diffusion training.
-2. **[Stage 1]** Then, we pretrain the model with gradient-checkpointing for **24k** steps, which takes **4 days** on 64 H800 GPUs. Although the number of samples seen by the model is the same, we find the model learns slowly compared to a smaller batch size. We speculate that at an early stage, the number of steps is more important for training. The most videos are in **240p** resolution, and the config is similar to [stage2.py](/configs/opensora-v1-1/train/stage2.py).
+2. **[Stage 1]** Then, we pretrain the model with gradient-checkpointing for **24k** steps, which takes **4 days** on 64 H800 GPUs. Although the number of samples seen by the model is the same, we find the model learns slowly compared to a smaller batch size. We speculate that at an early stage, the number of steps is more important for training. The most videos are in **240p** resolution, and the config is similar to [stage2.py](/configs/opensora-v1-1/train/stage2.py). The video looking is good, but the model does not know much about the temporal knowledge. We use mask ratio of 10%.
 3. **[Stage 1]** To increase the number of steps, we switch to a smaller batch size without gradient-checkpointing. We also add fps conditioning at this point. We trained **40k** steps for **2 days**. The most videos are in **144p** resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py). We use a lower resolution as we find in Open-Sora 1.0 that the model can learn temporal knowledge with relatively low resolution.
-4. **[Stage 1]** We find the model cannot learn well for long videos, and find a noised generation result as speculated to be half-precision problem found in Open-Sora 1.0 training. Thus, we adopt the QK-normalization to stabilize the training. We also switch iddpm-speed to iddpm. We trained for **17k** steps for **14 hours**. The most videos are in **144p** resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py). The stage 1 training lasts for approximately one week, with total step **81k**.
+4. **[Stage 1]** We find the model cannot learn well for long videos, and find a noised generation result as speculated to be half-precision problem found in Open-Sora 1.0 training. Thus, we adopt the QK-normalization to stabilize the training. Similar to SD3, we find the model quickly adapt to the QK-normalization. We also switch iddpm-speed to iddpm, and increase the mask ratio to 25% as we find image-condition not learning well. We trained for **17k** steps for **14 hours**. The most videos are in **144p** resolution, and the config file is [stage1.py](/configs/opensora-v1-1/train/stage1.py). The stage 1 training lasts for approximately one week, with total step **81k**.
 5. **[Stage 2]** We switch to a higher resolution, where most videos are in **240p and 480p** resolution ([stage2.py](/configs/opensora-v1-1/train/stage2.py)). We trained **22k** steps for **one day** on all pre-training data.
-6. **[Stage 3]** We switch to a higher resolution, where most videos are in **480p and 720p** resolution ([stage3.py](/configs/opensora-v1-1/train/stage3.py)). We trained **4k** with **one day** on high-quality data.
+6. **[Stage 3]** We switch to a higher resolution, where most videos are in **480p and 720p** resolution ([stage3.py](/configs/opensora-v1-1/train/stage3.py)). We trained **4k** with **one day** on high-quality data. We find loading previous stage's optimizer state can help the model learn faster.
+
+To summarize, the training of Open-Sora 1.1 requires approximately **9 days** on 64 H800 GPUs.
 
 ## Results and Evaluation
 
@@ -104,6 +109,7 @@ With limited computational resources, we have to carefully monitor the training 
 
 As we get one step closer to the replication of Sora, we find many limitations for the current model, and these limitations point to the future work.
 
+- **Generation Failure**: we fine many cases (especially when the total token number is large or the content is complex),  our model fails to generate the scene.
 - **Noisy generation and influency**: we find the generated model is sometimes noisy and not fluent, especially for long videos. We think the problem is due to not using a temporal VAE. As [Pixart-Sigma](https://arxiv.org/abs/2403.04692) finds that adapting to a new VAE is simple, we plan to develop a temporal VAE for the model in the next version.
 - **Lack of time consistency**: we find the model cannot generate videos with high time consistency. We think the problem is due to the lack of training FLOPs. We plan to collect more data and continue training the model to improve the time consistency.
 - **Bad human generation**: We find the model cannot generate high-quality human videos. We think the problem is due to the lack of human data. We plan to collect more human data and continue training the model to improve the human generation.

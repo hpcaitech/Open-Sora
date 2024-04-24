@@ -103,7 +103,7 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 <details>
 <summary>View more</summary>
 
-* [ ] Evaluation pipeline.
+* [x] Evaluation pipeline.
 * [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.).
 * [x] Support image and video conditioning.
 * [x] Support variable aspect ratios, resolutions, durations.
@@ -123,7 +123,7 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 
 Other useful documents and links are listed below.
 
-* Report: [report 1.0](docs/report_01.md), [report 1.1](docs/report_02.md), [acceleration.md](docs/acceleration.md)
+* Report: [report 1.1](docs/report_02.md), [report 1.0](docs/report_01.md), [acceleration.md](docs/acceleration.md)
 * Repo structure: [structure.md](docs/structure.md)
 * Config file explanation: [config.md](docs/config.md)
 * Useful commands: [commands.md](docs/commands.md)
