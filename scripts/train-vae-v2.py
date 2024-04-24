@@ -421,7 +421,7 @@ def main():
                             weighted_d_adversarial_loss = torch.tensor(0.0)
                             lecam_loss = torch.tensor(0.0)
                             gradient_penalty_loss = torch.tensor(0.0)
-                            
+
                         log_step += 1
 
                         # Log to tensorboard
@@ -445,6 +445,7 @@ def main():
                                         "disc_loss": disc_loss.item(),
                                         "lecam_loss": lecam_loss.item(),
                                         "r1_grad_penalty": gradient_penalty_loss.item(),
+                                        "nll_loss": weighted_nll_loss.item(),
                                         "avg_loss": avg_loss,
                                     },
                                     step=global_step,
