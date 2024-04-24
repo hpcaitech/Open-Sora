@@ -20,7 +20,7 @@ reference_path = [
     "assets/images/condition/wave.png",
 ]
 # valid when reference_path is not None
-# (loop id, ref id, ref start, length, target start)
+# (loop id, ref id, ref start, target start, length, edit_ratio)
 mask_strategy = [
     "0,0,0,0,8,0.3",
     None,
