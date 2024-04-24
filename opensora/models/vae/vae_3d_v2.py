@@ -1263,8 +1263,8 @@ class DiscriminatorLoss(nn.Module):
         gradient_penalty = torch.tensor(0.0)
         if self.gradient_penalty_loss_weight is not None and self.gradient_penalty_loss_weight > 0.0:
             assert real_video is not None
-            # gradient_penalty = gradient_penalty_fn(real_video, real_logits)
-            gradient_penalty = r1_penalty(real_video, real_logits) # MAGVIT uses r1 penalty
+            gradient_penalty = gradient_penalty_fn(real_video, real_logits)
+            # gradient_penalty = r1_penalty(real_video, real_logits) # MAGVIT uses r1 penalty
             gradient_penalty *= self.gradient_penalty_loss_weight
             
         # discriminator_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty
