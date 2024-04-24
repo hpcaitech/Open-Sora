@@ -5,7 +5,6 @@
 - [Masked DiT as Image/Video-to-Video Model](#masked-dit-as-imagevideo-to-video-model)
 - [Data Collection \& Pipeline](#data-collection--pipeline)
 - [Training Details](#training-details)
-- [Results and Evaluation](#results-and-evaluation)
 - [Limitation and Future Work](#limitation-and-future-work)
 
 In Open-Sora 1.1 release, we train a 700M models on 10M data (Open-Sora 1.0 trained on 400K data) with a better STDiT architecture. We implement the following features mentioned in [sora's report](https://openai.com/research/video-generation-models-as-world-simulators):
@@ -103,13 +102,11 @@ With limited computational resources, we have to carefully monitor the training 
 
 To summarize, the training of Open-Sora 1.1 requires approximately **9 days** on 64 H800 GPUs.
 
-## Results and Evaluation
-
 ## Limitation and Future Work
 
 As we get one step closer to the replication of Sora, we find many limitations for the current model, and these limitations point to the future work.
 
-- **Generation Failure**: we fine many cases (especially when the total token number is large or the content is complex),  our model fails to generate the scene.
+- **Generation Failure**: we fine many cases (especially when the total token number is large or the content is complex),  our model fails to generate the scene. There may be a collapse in the temporal attention and we are working hard on it.
 - **Noisy generation and influency**: we find the generated model is sometimes noisy and not fluent, especially for long videos. We think the problem is due to not using a temporal VAE. As [Pixart-Sigma](https://arxiv.org/abs/2403.04692) finds that adapting to a new VAE is simple, we plan to develop a temporal VAE for the model in the next version.
 - **Lack of time consistency**: we find the model cannot generate videos with high time consistency. We think the problem is due to the lack of training FLOPs. We plan to collect more data and continue training the model to improve the time consistency.
 - **Bad human generation**: We find the model cannot generate high-quality human videos. We think the problem is due to the lack of human data. We plan to collect more human data and continue training the model to improve the human generation.

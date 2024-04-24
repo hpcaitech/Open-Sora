@@ -408,7 +408,7 @@ class GaussianDiffusion:
         if mask is not None:
             if mask.shape[0] != x.shape[0]:
                 mask = mask.repeat(2, 1)  # HACK
-            mask_t = (mask * len(self.betas) - 1).to(torch.int)
+            mask_t = (mask * len(self.betas)).to(torch.int)
 
             # x0: copy unchanged x values
             # x_noise: add noise to x values

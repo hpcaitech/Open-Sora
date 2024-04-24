@@ -171,6 +171,7 @@ class Attention(nn.Module):
 
         qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
+        # WARNING: this may be a bug
         if self.rope:
             q = self.rotary_emb(q)
             k = self.rotary_emb(k)

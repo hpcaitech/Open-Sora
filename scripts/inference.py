@@ -114,7 +114,6 @@ def main():
         # 4.2 sample in hidden space
         batch_prompts_raw = prompts[i : i + cfg.batch_size]
         batch_prompts = [text_preprocessing(prompt) for prompt in batch_prompts_raw]
-        z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
         # handle the last batch
         if len(batch_prompts_raw) < cfg.batch_size and cfg.multi_resolution == "STDiT2":
             model_args["height"] = model_args["height"][: len(batch_prompts_raw)]
@@ -145,6 +144,7 @@ def main():
                     continue
 
             # sampling
+            z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
             samples = scheduler.sample(
                 model,
                 text_encoder,
