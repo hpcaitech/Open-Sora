@@ -11,25 +11,144 @@ import importlib
 import os
 import subprocess
 import sys
+import re
+import json
+import math
 
 import spaces
 import torch
 
 import gradio as gr
 
-MODEL_TYPES = ["v1-16x256x256", "v1-HQ-16x256x256", "v1-HQ-16x512x512"]
+
+MODEL_TYPES = ["v1.1"]
 CONFIG_MAP = {
-    "v1-16x256x256": "configs/opensora/inference/16x256x256.py",
-    "v1-HQ-16x256x256": "configs/opensora/inference/16x256x256.py",
-    "v1-HQ-16x512x512": "configs/opensora/inference/16x512x512.py",
+    "v1.1": "configs/opensora-v1-1/inference/sample-ref.py",
 }
 HF_STDIT_MAP = {
-    "v1-16x256x256": "hpcai-tech/OpenSora-STDiT-v1-16x256x256",
-    "v1-HQ-16x256x256": "hpcai-tech/OpenSora-STDiT-v1-HQ-16x256x256",
-    "v1-HQ-16x512x512": "hpcai-tech/OpenSora-STDiT-v1-HQ-16x512x512",
+    "v1.1": "hpcai-tech/OpenSora-STDiT-v2-stage2",
+}
+RESOLUTION_MAP = {
+    "360p": (360, 480),
+    "480p": (480, 858),
+    "720p": (720, 1280),
+    "1080p": (1080, 1920)
 }
 
 
+# ============================
+# Utils
+# ============================
+def collect_references_batch(reference_paths, vae, image_size):
+    from opensora.datasets.utils import read_from_path
+
+    refs_x = []
+    for reference_path in reference_paths:
+        if reference_path is None:
+            refs_x.append([])
+            continue
+        ref_path = reference_path.split(";")
+        ref = []
+        for r_path in ref_path:
+            r = read_from_path(r_path, image_size, transform_name="resize_crop")
+            r_x = vae.encode(r.unsqueeze(0).to(vae.device, vae.dtype))
+            r_x = r_x.squeeze(0)
+            ref.append(r_x)
+        refs_x.append(ref)
+    # refs_x: [batch, ref_num, C, T, H, W]
+    return refs_x
+
+
+def process_mask_strategy(mask_strategy):
+    mask_batch = []
+    mask_strategy = mask_strategy.split(";")
+    for mask in mask_strategy:
+        mask_group = mask.split(",")
+        assert len(mask_group) >= 1 and len(mask_group) <= 6, f"Invalid mask strategy: {mask}"
+        if len(mask_group) == 1:
+            mask_group.extend(["0", "0", "0", "1", "0"])
+        elif len(mask_group) == 2:
+            mask_group.extend(["0", "0", "1", "0"])
+        elif len(mask_group) == 3:
+            mask_group.extend(["0", "1", "0"])
+        elif len(mask_group) == 4:
+            mask_group.extend(["1", "0"])
+        elif len(mask_group) == 5:
+            mask_group.append("0")
+        mask_batch.append(mask_group)
+    return mask_batch
+
+
+def apply_mask_strategy(z, refs_x, mask_strategys, loop_i):
+    masks = []
+    for i, mask_strategy in enumerate(mask_strategys):
+        mask = torch.ones(z.shape[2], dtype=torch.float, device=z.device)
+        if mask_strategy is None:
+            masks.append(mask)
+            continue
+        mask_strategy = process_mask_strategy(mask_strategy)
+        for mst in mask_strategy:
+            loop_id, m_id, m_ref_start, m_target_start, m_length, edit_ratio = mst
+            loop_id = int(loop_id)
+            if loop_id != loop_i:
+                continue
+            m_id = int(m_id)
+            m_ref_start = int(m_ref_start)
+            m_length = int(m_length)
+            m_target_start = int(m_target_start)
+            edit_ratio = float(edit_ratio)
+            ref = refs_x[i][m_id]  # [C, T, H, W]
+            if m_ref_start < 0:
+                m_ref_start = ref.shape[1] + m_ref_start
+            if m_target_start < 0:
+                # z: [B, C, T, H, W]
+                m_target_start = z.shape[2] + m_target_start
+            z[i, :, m_target_start : m_target_start + m_length] = ref[:, m_ref_start : m_ref_start + m_length]
+            mask[m_target_start : m_target_start + m_length] = edit_ratio
+        masks.append(mask)
+    masks = torch.stack(masks)
+    return masks
+
+
+def process_prompts(prompts, num_loop):
+    from opensora.models.text_encoder.t5 import text_preprocessing
+
+    ret_prompts = []
+    for prompt in prompts:
+        if prompt.startswith("|0|"):
+            prompt_list = prompt.split("|")[1:]
+            text_list = []
+            for i in range(0, len(prompt_list), 2):
+                start_loop = int(prompt_list[i])
+                text = prompt_list[i + 1]
+                text = text_preprocessing(text)
+                end_loop = int(prompt_list[i + 2]) if i + 2 < len(prompt_list) else num_loop
+                text_list.extend([text] * (end_loop - start_loop))
+            assert len(text_list) == num_loop, f"Prompt loop mismatch: {len(text_list)} != {num_loop}"
+            ret_prompts.append(text_list)
+        else:
+            prompt = text_preprocessing(prompt)
+            ret_prompts.append([prompt] * num_loop)
+    return ret_prompts
+
+
+def extract_json_from_prompts(prompts):
+    additional_infos = []
+    ret_prompts = []
+    for prompt in prompts:
+        parts = re.split(r"(?=[{\[])", prompt)
+        assert len(parts) <= 2, f"Invalid prompt: {prompt}"
+        ret_prompts.append(parts[0])
+        if len(parts) == 1:
+            additional_infos.append({})
+        else:
+            additional_infos.append(json.loads(parts[1]))
+    return ret_prompts, additional_infos
+
+
+# ============================
+# Runtime Environment
+# ============================
 def install_dependencies(enable_optimization=False):
     """
     Install the required dependencies for the demo if they are not already installed.
@@ -72,6 +191,9 @@ def install_dependencies(enable_optimization=False):
             )
 
 
+# ============================
+# Model-related
+# ============================
 def read_config(config_path):
     """
     Read the configuration file.
@@ -81,7 +203,7 @@ def read_config(config_path):
     return Config.fromfile(config_path)
 
 
-def build_models(model_type, config):
+def build_models(model_type, config, enable_optimization=False):
     """
     Build the models for the given model type and configuration.
     """
@@ -101,8 +223,7 @@ def build_models(model_type, config):
 
     stdit = AutoModel.from_pretrained(
         HF_STDIT_MAP[model_type],
-        enable_flash_attn=False,
-        enable_layernorm_kernel=False,
+        enable_flash_attn=enable_optimization,
         trust_remote_code=True,
     ).cuda()
 
@@ -115,23 +236,20 @@ def build_models(model_type, config):
     text_encoder.y_embedder = stdit.y_embedder
 
     # move modelst to device
-    vae = vae.to(torch.float16).eval()
+    vae = vae.to(torch.bfloat16).eval()
     text_encoder.t5.model = text_encoder.t5.model.eval()  # t5 must be in fp32
-    stdit = stdit.to(torch.float16).eval()
+    stdit = stdit.to(torch.bfloat16).eval()
+
+    # clear cuda
+    torch.cuda.empty_cache()
     return vae, text_encoder, stdit, scheduler
-
-
-def get_latent_size(config, vae):
-    input_size = (config.num_frames, *config.image_size)
-    latent_size = vae.get_latent_size(input_size)
-    return latent_size
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model-type",
-        default="v1-HQ-16x256x256",
+        default="v1.1",
         choices=MODEL_TYPES,
         help=f"The type of model to run for the Gradio App, can only be {MODEL_TYPES}",
     )
@@ -168,27 +286,129 @@ torch.jit._state.disable()
 # set up
 install_dependencies(enable_optimization=args.enable_optimization)
 
+# import after installation
+from opensora.datasets import IMG_FPS, save_sample
+from opensora.utils.misc import to_torch_dtype
+
+# some global variables
+dtype = to_torch_dtype(config.dtype)
+device = torch.device("cuda")
+
 # build model
-vae, text_encoder, stdit, scheduler = build_models(args.model_type, config)
+vae, text_encoder, stdit, scheduler = build_models(args.model_type, config, enable_optimization=args.enable_optimization)
 
 
 @spaces.GPU(duration=200)
-def run_inference(prompt_text):
-    from opensora.datasets import save_sample
+def run_inference(mode, prompt_text, resolution, length, reference_image):
+    with torch.inference_mode():
+        # ======================
+        # 1. Preparation
+        # ======================
+        # parse the inputs
+        resolution = RESOLUTION_MAP[resolution]
+        
+        # compute number of loops
+        num_seconds = int(length.rstrip('s'))
+        total_number_of_frames = num_seconds * config.fps / config.frame_interval
+        num_loop = math.ceil(total_number_of_frames / config.num_frames)
 
-    latent_size = get_latent_size(config, vae)
-    samples = scheduler.sample(
-        stdit,
-        text_encoder,
-        z_size=(vae.out_channels, *latent_size),
-        prompts=[prompt_text],
-        device="cuda",
-    )
+        # prepare model args
+        model_args = dict()
+        height = torch.tensor([resolution[0]], device=device, dtype=dtype)
+        width = torch.tensor([resolution[1]], device=device, dtype=dtype)
+        num_frames = torch.tensor([config.num_frames], device=device, dtype=dtype)
+        ar = torch.tensor([resolution[0] / resolution[1]], device=device, dtype=dtype)
+        if config.num_frames == 1:
+            config.fps = IMG_FPS
+        fps = torch.tensor([config.fps], device=device, dtype=dtype)
+        model_args["height"] = height
+        model_args["width"] = width
+        model_args["num_frames"] = num_frames
+        model_args["ar"] = ar
+        model_args["fps"] = fps
 
-    samples = vae.decode(samples.to(torch.float16))
-    filename = f"{args.output}/sample"
-    saved_path = save_sample(samples[0], fps=config.fps, save_path=filename)
-    return saved_path
+        # compute latent size
+        input_size = (config.num_frames, *resolution)
+        latent_size = vae.get_latent_size(input_size)
+
+        # process prompt
+        prompt_raw = [prompt_text]
+        prompt_raw, _ = extract_json_from_prompts(prompt_raw)
+        prompt_loops = process_prompts(prompt_raw, num_loop)
+        video_clips = []
+
+        # prepare mask strategy
+        if mode == "Text2Video":
+            mask_strategy = [None]
+        elif mode == "Image2Video":
+            mask_strategy = ['0']
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
+
+        # =========================
+        # 2. Load reference images
+        # =========================
+        if mode == "Text2Video":
+            refs_x = collect_references_batch([None], vae, resolution)
+        elif mode == "Image2Video":
+            # save image to disk
+            from PIL import Image
+            im = Image.fromarray(reference_image)
+            im.save("test.jpg")
+            refs_x = collect_references_batch(["test.jpg"], vae, resolution)
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
+
+        # 4.3. long video generation
+        for loop_i in range(num_loop):
+            # 4.4 sample in hidden space
+            batch_prompts = [prompt[loop_i] for prompt in prompt_loops]
+            z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
+
+            # 4.5. apply mask strategy
+            masks = None
+
+            # if cfg.reference_path is not None:
+            if loop_i > 0:
+                ref_x = vae.encode(video_clips[-1])
+                for j, refs in enumerate(refs_x):
+                    if refs is None:
+                        refs_x[j] = [ref_x[j]]
+                    else:
+                        refs.append(ref_x[j])
+                    if mask_strategy[j] is None:
+                        mask_strategy[j] = ""
+                    else:
+                        mask_strategy[j] += ";"
+                    mask_strategy[
+                        j
+                    ] += f"{loop_i},{len(refs)-1},-{config.condition_frame_length},0,{config.condition_frame_length}"
+
+            masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
+
+            # 4.6. diffusion sampling
+            samples = scheduler.sample(
+                stdit,
+                text_encoder,
+                z=z,
+                prompts=batch_prompts,
+                device=device,
+                additional_args=model_args,
+                mask=masks,  # scheduler must support mask
+            )
+            samples = vae.decode(samples.to(dtype))
+            video_clips.append(samples)
+
+            # 4.7. save video
+            if loop_i == num_loop - 1:
+                video_clips_list = [
+                    video_clips[0][0]] + [video_clips[i][0][:, config.condition_frame_length :] 
+                    for i in range(1, num_loop)
+                ]
+                video = torch.cat(video_clips_list, dim=1)
+                save_path = f"{args.output}/sample"
+                saved_path = save_sample(video, fps=config.fps // config.frame_interval, save_path=save_path, force_video=True)
+                return saved_path
 
 
 def main():
@@ -218,27 +438,48 @@ def main():
 
         with gr.Row():
             with gr.Column():
-                prompt_text = gr.Textbox(show_label=False, placeholder="Describe your video here", lines=4)
-                submit_button = gr.Button("Generate video")
+                mode = gr.Radio(
+                    choices=["Text2Video", "Image2Video"], 
+                    value="Text2Video",
+                    label="Usage", 
+                    info="Choose your usage scenario",
+                )
+                prompt_text = gr.Textbox(
+                    label="Prompt",
+                    placeholder="Describe your video here",
+                    lines=4,
+                )
+                resolution = gr.Radio(
+                     choices=["360p", "480p", "720p", "1080p"],
+                     value="360p",
+                    label="Resolution", 
+                )
+                length = gr.Radio(
+                    choices=["2s", "4s", "8s"], 
+                    value="2s",
+                    label="Video Length", 
+                    info="10s may fail as Hugging Face ZeroGPU has the limitation of max 200 seconds inference time."
+                )
 
+                reference_image = gr.Image(
+                    label="Reference Image (only used for Image2Video)",
+                )
+            
             with gr.Column():
-                output_video = gr.Video()
+                output_video = gr.Video(
+                    label="Output Video",
+                    height="100%"
+                )
 
-        submit_button.click(fn=run_inference, inputs=[prompt_text], outputs=output_video)
+        with gr.Row():
+             submit_button = gr.Button("Generate video")
+        
 
-        gr.Examples(
-            examples=[
-                [
-                    "The video captures the majestic beauty of a waterfall cascading down a cliff into a serene lake. The waterfall, with its powerful flow, is the central focus of the video. The surrounding landscape is lush and green, with trees and foliage adding to the natural beauty of the scene. The camera angle provides a bird's eye view of the waterfall, allowing viewers to appreciate the full height and grandeur of the waterfall. The video is a stunning representation of nature's power and beauty.",
-                ],
-            ],
-            fn=run_inference,
-            inputs=[
-                prompt_text,
-            ],
-            outputs=[output_video],
-            cache_examples=True,
-        )
+        submit_button.click(
+             fn=run_inference, 
+             inputs=[mode, prompt_text, resolution, length, reference_image], 
+             outputs=output_video
+             )
 
     # launch
     demo.launch(server_port=args.port, server_name=args.host, share=args.share)

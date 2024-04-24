@@ -145,14 +145,14 @@ def read_from_path(path, image_size, transform_name="center"):
         return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
 
 
-def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
+def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1), force_video=False):
     """
     Args:
         x (Tensor): shape [C, T, H, W]
     """
     assert x.ndim == 4
 
-    if x.shape[1] == 1:  # T = 1: save as image
+    if not force_video and x.shape[1] == 1:  # T = 1: save as image
         save_path += ".png"
         x = x.squeeze(1)
         save_image([x], save_path, normalize=normalize, value_range=value_range)
