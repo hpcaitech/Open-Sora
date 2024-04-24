@@ -31,6 +31,8 @@ HF_STDIT_MAP = {
     "v1.1-stage3": "hpcai-tech/OpenSora-STDiT-v2-stage3",
 }
 RESOLUTION_MAP = {
+    "144p": (144, 256),
+    "240p": (240, 426),
     "360p": (360, 480),
     "480p": (480, 858),
     "720p": (720, 1280),
@@ -452,8 +454,8 @@ def main():
                     lines=4,
                 )
                 resolution = gr.Radio(
-                     choices=["360p", "480p", "720p", "1080p"],
-                     value="360p",
+                     choices=["144p", "240p", "360p", "480p", "720p", "1080p"],
+                     value="144p",
                     label="Resolution", 
                 )
                 length = gr.Radio(
