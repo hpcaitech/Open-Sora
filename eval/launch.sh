@@ -36,13 +36,13 @@ echo "Logging to $LOG_BASE"
 # CUDA_VISIBLE_DEVICES=7 bash eval/sample.sh $CKPT -4h >${LOG_BASE}_4h.log 2>&1 &
 
 # == vbench i2v ==
-CUDA_VISIBLE_DEVICES=0 bash eval/sample.sh $CKPT -5a >${LOG_BASE}_5a.log 2>&1 &
-CUDA_VISIBLE_DEVICES=1 bash eval/sample.sh $CKPT -5b >${LOG_BASE}_5b.log 2>&1 &
-CUDA_VISIBLE_DEVICES=2 bash eval/sample.sh $CKPT -5c >${LOG_BASE}_5c.log 2>&1 &
-CUDA_VISIBLE_DEVICES=3 bash eval/sample.sh $CKPT -5d >${LOG_BASE}_5d.log 2>&1 &
-CUDA_VISIBLE_DEVICES=4 bash eval/sample.sh $CKPT -5e >${LOG_BASE}_5e.log 2>&1 &
-CUDA_VISIBLE_DEVICES=5 bash eval/sample.sh $CKPT -5f >${LOG_BASE}_5f.log 2>&1 &
-CUDA_VISIBLE_DEVICES=6 bash eval/sample.sh $CKPT -5g >${LOG_BASE}_5g.log 2>&1 &
-CUDA_VISIBLE_DEVICES=7 bash eval/sample.sh $CKPT -5h >${LOG_BASE}_5h.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=0 bash eval/sample.sh $CKPT -5a >${LOG_BASE}_5a.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=1 bash eval/sample.sh $CKPT -5b >${LOG_BASE}_5b.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=2 bash eval/sample.sh $CKPT -5c >${LOG_BASE}_5c.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=3 bash eval/sample.sh $CKPT -5d >${LOG_BASE}_5d.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=4 bash eval/sample.sh $CKPT -5e >${LOG_BASE}_5e.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=5 bash eval/sample.sh $CKPT -5f >${LOG_BASE}_5f.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=6 bash eval/sample.sh $CKPT -5g >${LOG_BASE}_5g.log 2>&1 &
+# CUDA_VISIBLE_DEVICES=7 bash eval/sample.sh $CKPT -5h >${LOG_BASE}_5h.log 2>&1 &
 
 # kill all by: pkill -f "inference"
