@@ -1,12 +1,18 @@
-num_frames = 360
-frame_interval = 1
-image_size = (512, 512)
-
 # Define dataset
-root = None
-data_path = "CSV_PATH"
-use_image_transform = False
+dataset = dict(
+    type="VideoTextDataset",
+    data_path=None,
+    num_frames=360,
+    frame_interval=3,
+    image_size=(512, 512),
+)
+
+# Define acceleration
 num_workers = 4
+dtype = "bf16"
+grad_checkpoint = True
+plugin = "zero2"
+sp_size = 1
 
 # Define acceleration
 dtype = "bf16"

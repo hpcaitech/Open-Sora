@@ -85,19 +85,43 @@ class STDiTBlock(nn.Module):
             enable_flashattn=self.enable_flashattn,
         )
 
-    def forward(self, x, y, t, mask=None, tpe=None):
+    def t_mask_select(self, x, masked_x, x_mask):
+        # x: [B, (T, S), C]
+        # mased_x: [B, (T, S), C]
+        # x_mask: [B, T]
+        x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
+        x = torch.where(x_mask[:, :, None, None], x, masked_x)
+        x = rearrange(x, "B T S C -> B (T S) C")
+        return x
+
+    def forward(self, x, y, t, mask=None, tpe=None, x_mask=None, t0=None):
         B, N, C = x.shape
 
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
             self.scale_shift_table[None] + t.reshape(B, 6, -1)
         ).chunk(6, dim=1)
         x_m = t2i_modulate(self.norm1(x), shift_msa, scale_msa)
+        if x_mask is not None:
+            shift_msa_zero, scale_msa_zero, gate_msa_zero, shift_mlp_zero, scale_mlp_zero, gate_mlp_zero = (
+                self.scale_shift_table[None] + t0.reshape(B, 6, -1)
+            ).chunk(6, dim=1)
+            x_m_zero = t2i_modulate(self.norm1(x), shift_msa_zero, scale_msa_zero)
+            x_m = self.t_mask_select(x_m, x_m_zero, x_mask)
 
         # spatial branch
         x_s = rearrange(x_m, "B (T S) C -> (B T) S C", T=self.d_t, S=self.d_s)
         x_s = self.attn(x_s)
         x_s = rearrange(x_s, "(B T) S C -> B (T S) C", T=self.d_t, S=self.d_s)
-        x = x + self.drop_path(gate_msa * x_s)
+
+        if x_mask is not None:
+            x_s_zero = gate_msa_zero * x_s
+            x_s = gate_msa * x_s
+            x_s = self.t_mask_select(x_s, x_s_zero, x_mask)
+        else:
+            x_s = gate_msa * x_s
+
+        x = x + self.drop_path(x_s)
 
         # temporal branch
         x_t = rearrange(x, "B (T S) C -> (B S) T C", T=self.d_t, S=self.d_s)
@@ -111,7 +135,20 @@ class STDiTBlock(nn.Module):
         x = x + self.cross_attn(x, y, mask)
 
         # mlp
-        x = x + self.drop_path(gate_mlp * self.mlp(t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)))
+        x_m = t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)
+        if x_mask is not None:
+            x_m_zero = t2i_modulate(self.norm2(x), shift_mlp_zero, scale_mlp_zero)
+            x_m = self.t_mask_select(x_m, x_m_zero, x_mask)
+
+        x_mlp = self.mlp(x_m)
+        if x_mask is not None:
+            x_mlp_zero = gate_mlp_zero * x_mlp
+            x_mlp = gate_mlp * x_mlp
+            x_mlp = self.t_mask_select(x_mlp, x_mlp_zero, x_mask)
+        else:
+            x_mlp = gate_mlp * x_mlp
+
+        x = x + self.drop_path(x_mlp)
 
         return x
 
@@ -193,7 +230,13 @@ class STDiT(nn.Module):
                 for i in range(self.depth)
             ]
         )
-        self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
+        self.final_layer = T2IFinalLayer(
+            hidden_size,
+            np.prod(self.patch_size),
+            self.out_channels,
+            d_t=self.num_temporal,
+            d_s=self.num_spatial,
+        )
 
         # init model
         self.initialize_weights()
@@ -212,7 +255,7 @@ class STDiT(nn.Module):
         else:
             self.sp_rank = None
 
-    def forward(self, x, timestep, y, mask=None):
+    def forward(self, x, timestep, y, mask=None, x_mask=None):
         """
         Forward pass of STDiT.
         Args:
@@ -240,7 +283,14 @@ class STDiT(nn.Module):
             x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="down")
 
         t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
-        t0 = self.t_block(t)  # [B, C]
+        t_mlp = self.t_block(t)  # [B, C]
+        if x_mask is not None:
+            t0_timestep = torch.zeros_like(timestep)
+            t0 = self.t_embedder(t0_timestep, dtype=x.dtype)
+            t0_mlp = self.t_block(t0)
+        else:
+            t0 = None
+            t0_mlp = None
         y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
 
         if mask is not None:
@@ -264,14 +314,14 @@ class STDiT(nn.Module):
                     tpe = self.pos_embed_temporal
             else:
                 tpe = None
-            x = auto_grad_checkpoint(block, x, y, t0, y_lens, tpe)
+            x = auto_grad_checkpoint(block, x, y, t_mlp, y_lens, tpe, x_mask, t0_mlp)
 
         if self.enable_sequence_parallelism:
             x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="up")
         # x.shape: [B, N, C]
 
         # final process
-        x = self.final_layer(x, t)  # [B, N, C=T_p * H_p * W_p * C_out]
+        x = self.final_layer(x, t, x_mask, t0)  # [B, N, C=T_p * H_p * W_p * C_out]
         x = self.unpatchify(x)  # [B, C_out, T, H, W]
 
         # cast to float32 for better accuracy

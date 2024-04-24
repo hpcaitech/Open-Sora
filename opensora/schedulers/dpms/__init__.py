@@ -17,13 +17,14 @@ class DMP_SOLVER:
         self,
         model,
         text_encoder,
-        z_size,
+        z,
         prompts,
         device,
         additional_args=None,
+        mask=None,
     ):
+        assert mask is None, "mask is not supported in dpm-solver"
         n = len(prompts)
-        z = torch.randn(n, *z_size, device=device)
         model_args = text_encoder.encode(prompts)
         y = model_args.pop("y")
         null_y = text_encoder.null(n)

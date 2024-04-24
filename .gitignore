@@ -170,9 +170,14 @@ runs/
 checkpoints/
 outputs/
 samples/
+samples
+logs/
 pretrained_models/
+evaluation_results/
+cache/
 *.swp
 
 # Secret files
 hostfile
 gradio_cached_examples/
+wandb/

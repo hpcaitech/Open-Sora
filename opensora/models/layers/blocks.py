@@ -9,7 +9,9 @@
 # MAE:    https://github.com/facebookresearch/mae/blob/main/models_mae.py
 # --------------------------------------------------------
 
+import functools
 import math
+from typing import Optional
 
 import numpy as np
 import torch
@@ -25,6 +27,23 @@ from opensora.acceleration.communications import all_to_all, split_forward_gathe
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
 
 approx_gelu = lambda: nn.GELU(approximate="tanh")
+
+
+class LlamaRMSNorm(nn.Module):
+    def __init__(self, hidden_size, eps=1e-6):
+        """
+        LlamaRMSNorm is equivalent to T5LayerNorm
+        """
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(hidden_size))
+        self.variance_epsilon = eps
+
+    def forward(self, hidden_states):
+        input_dtype = hidden_states.dtype
+        hidden_states = hidden_states.to(torch.float32)
+        variance = hidden_states.pow(2).mean(-1, keepdim=True)
+        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+        return self.weight * hidden_states.to(input_dtype)
 
 
 def get_layernorm(hidden_size: torch.Tensor, eps: float, affine: bool, use_kernel: bool):
@@ -119,8 +138,9 @@ class Attention(nn.Module):
         qk_norm: bool = False,
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
-        norm_layer: nn.Module = nn.LayerNorm,
+        norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
+        rope=None,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -137,20 +157,33 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
+        self.rope = False
+        if rope is not None:
+            self.rope = True
+            self.rotary_emb = rope
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, N, C = x.shape
+        # flash attn is not memory efficient for small sequences, this is empirical
+        enable_flashattn = self.enable_flashattn and (N > B)
         qkv = self.qkv(x)
         qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
-        if self.enable_flashattn:
-            qkv_permute_shape = (2, 0, 1, 3, 4)
-        else:
-            qkv_permute_shape = (2, 0, 3, 1, 4)
-        qkv = qkv.view(qkv_shape).permute(qkv_permute_shape)
+
+        qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
+        # WARNING: this may be a bug
+        if self.rope:
+            q = self.rotary_emb(q)
+            k = self.rotary_emb(k)
         q, k = self.q_norm(q), self.k_norm(k)
-        if self.enable_flashattn:
+
+        if enable_flashattn:
             from flash_attn import flash_attn_func
 
+            # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
+            q = q.permute(0, 2, 1, 3)
+            k = k.permute(0, 2, 1, 3)
+            v = v.permute(0, 2, 1, 3)
             x = flash_attn_func(
                 q,
                 k,
@@ -169,7 +202,7 @@ class Attention(nn.Module):
             x = attn @ v
 
         x_output_shape = (B, N, C)
-        if not self.enable_flashattn:
+        if not enable_flashattn:
             x = x.transpose(1, 2)
         x = x.reshape(x_output_shape)
         x = self.proj(x)
@@ -186,9 +219,11 @@ class SeqParallelAttention(Attention):
         qk_norm: bool = False,
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
-        norm_layer: nn.Module = nn.LayerNorm,
+        norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
+        rope=None,
     ) -> None:
+        assert rope is None, "Rope is not supported in SeqParallelAttention"
         super().__init__(
             dim=dim,
             num_heads=num_heads,
@@ -214,11 +249,24 @@ class SeqParallelAttention(Attention):
         qkv = all_to_all(qkv, sp_group, scatter_dim=3, gather_dim=1)
 
         if self.enable_flashattn:
-            qkv_permute_shape = (2, 0, 1, 3, 4)  # [3, B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]
+            qkv_permute_shape = (
+                2,
+                0,
+                1,
+                3,
+                4,
+            )  # [3, B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]
         else:
-            qkv_permute_shape = (2, 0, 3, 1, 4)  # [3, B, NUM_HEAD_PER_DEVICE, N, HEAD_DIM]
+            qkv_permute_shape = (
+                2,
+                0,
+                3,
+                1,
+                4,
+            )  # [3, B, NUM_HEAD_PER_DEVICE, N, HEAD_DIM]
         qkv = qkv.permute(qkv_permute_shape)
 
+        # ERROR: Should qk_norm first
         q, k, v = qkv.unbind(0)
         q, k = self.q_norm(q), self.k_norm(k)
         if self.enable_flashattn:
@@ -298,7 +346,12 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         attn_drop=0.0,
         proj_drop=0.0,
     ):
-        super().__init__(d_model=d_model, num_heads=num_heads, attn_drop=attn_drop, proj_drop=proj_drop)
+        super().__init__(
+            d_model=d_model,
+            num_heads=num_heads,
+            attn_drop=attn_drop,
+            proj_drop=proj_drop,
+        )
 
     def forward(self, x, cond, mask=None):
         # query/value: img tokens; key: condition; mask: if padding tokens
@@ -328,7 +381,7 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         if mask is not None:
             attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
         x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
-        
+
         # apply all to all to gather back attention heads and scatter sequence
         x = x.view(B, -1, self.num_heads // sp_size, self.head_dim)
         x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
@@ -363,16 +416,36 @@ class T2IFinalLayer(nn.Module):
     The final layer of PixArt.
     """
 
-    def __init__(self, hidden_size, num_patch, out_channels):
+    def __init__(self, hidden_size, num_patch, out_channels, d_t=None, d_s=None):
         super().__init__()
         self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.linear = nn.Linear(hidden_size, num_patch * out_channels, bias=True)
         self.scale_shift_table = nn.Parameter(torch.randn(2, hidden_size) / hidden_size**0.5)
         self.out_channels = out_channels
+        self.d_t = d_t
+        self.d_s = d_s
 
-    def forward(self, x, t):
+    def t_mask_select(self, x_mask, x, masked_x, T, S):
+        # x: [B, (T, S), C]
+        # mased_x: [B, (T, S), C]
+        # x_mask: [B, T]
+        x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
+        masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=T, S=S)
+        x = torch.where(x_mask[:, :, None, None], x, masked_x)
+        x = rearrange(x, "B T S C -> B (T S) C")
+        return x
+
+    def forward(self, x, t, x_mask=None, t0=None, T=None, S=None):
+        if T is None:
+            T = self.d_t
+        if S is None:
+            S = self.d_s
         shift, scale = (self.scale_shift_table[None] + t[:, None]).chunk(2, dim=1)
         x = t2i_modulate(self.norm_final(x), shift, scale)
+        if x_mask is not None:
+            shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(2, dim=1)
+            x_zero = t2i_modulate(self.norm_final(x), shift_zero, scale_zero)
+            x = self.t_mask_select(x_mask, x, x_zero, T, S)
         x = self.linear(x)
         return x
 
@@ -493,12 +566,26 @@ class CaptionEmbedder(nn.Module):
     Embeds class labels into vector representations. Also handles label dropout for classifier-free guidance.
     """
 
-    def __init__(self, in_channels, hidden_size, uncond_prob, act_layer=nn.GELU(approximate="tanh"), token_num=120):
+    def __init__(
+        self,
+        in_channels,
+        hidden_size,
+        uncond_prob,
+        act_layer=nn.GELU(approximate="tanh"),
+        token_num=120,
+    ):
         super().__init__()
         self.y_proj = Mlp(
-            in_features=in_channels, hidden_features=hidden_size, out_features=hidden_size, act_layer=act_layer, drop=0
+            in_features=in_channels,
+            hidden_features=hidden_size,
+            out_features=hidden_size,
+            act_layer=act_layer,
+            drop=0,
         )
-        self.register_buffer("y_embedding", nn.Parameter(torch.randn(token_num, in_channels) / in_channels**0.5))
+        self.register_buffer(
+            "y_embedding",
+            torch.randn(token_num, in_channels) / in_channels**0.5,
+        )
         self.uncond_prob = uncond_prob
 
     def token_drop(self, caption, force_drop_ids=None):
@@ -520,6 +607,58 @@ class CaptionEmbedder(nn.Module):
             caption = self.token_drop(caption, force_drop_ids)
         caption = self.y_proj(caption)
         return caption
+
+
+class PositionEmbedding2D(nn.Module):
+    def __init__(self, dim: int) -> None:
+        super().__init__()
+        self.dim = dim
+        assert dim % 4 == 0, "dim must be divisible by 4"
+        half_dim = dim // 2
+        inv_freq = 1.0 / (10000 ** (torch.arange(0, half_dim, 2).float() / half_dim))
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+
+    def _get_sin_cos_emb(self, t: torch.Tensor):
+        out = torch.einsum("i,d->id", t, self.inv_freq)
+        emb_cos = torch.cos(out)
+        emb_sin = torch.sin(out)
+        return torch.cat((emb_sin, emb_cos), dim=-1)
+
+    @functools.lru_cache(maxsize=512)
+    def _get_cached_emb(
+        self,
+        device: torch.device,
+        dtype: torch.dtype,
+        h: int,
+        w: int,
+        scale: float = 1.0,
+        base_size: Optional[int] = None,
+    ):
+        grid_h = torch.arange(h, device=device) / scale
+        grid_w = torch.arange(w, device=device) / scale
+        if base_size is not None:
+            grid_h *= base_size / h
+            grid_w *= base_size / w
+        grid_h, grid_w = torch.meshgrid(
+            grid_w,
+            grid_h,
+            indexing="ij",
+        )  # here w goes first
+        grid_h = grid_h.t().reshape(-1)
+        grid_w = grid_w.t().reshape(-1)
+        emb_h = self._get_sin_cos_emb(grid_h)
+        emb_w = self._get_sin_cos_emb(grid_w)
+        return torch.concat([emb_h, emb_w], dim=-1).unsqueeze(0).to(dtype)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        h: int,
+        w: int,
+        scale: Optional[float] = 1.0,
+        base_size: Optional[int] = None,
+    ) -> torch.Tensor:
+        return self._get_cached_emb(x.device, x.dtype, h, w, scale, base_size)
 
 
 # ===============================================

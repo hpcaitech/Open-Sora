@@ -1,41 +1,19 @@
-import csv
 import os
 
 import numpy as np
 import torch
 import torchvision
-import torchvision.transforms as transforms
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
-from . import video_transforms
-from .utils import center_crop_arr
+from opensora.registry import DATASETS
+
+from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, read_file, temporal_random_crop
+
+IMG_FPS = 120
 
 
-def get_transforms_video(resolution=256):
-    transform_video = transforms.Compose(
-        [
-            video_transforms.ToTensorVideo(),  # TCHW
-            video_transforms.RandomHorizontalFlipVideo(),
-            video_transforms.UCFCenterCropVideo(resolution),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-        ]
-    )
-    return transform_video
-
-
-def get_transforms_image(image_size=256):
-    transform = transforms.Compose(
-        [
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-        ]
-    )
-    return transform
-
-
-class DatasetFromCSV(torch.utils.data.Dataset):
+@DATASETS.register_module()
+class VideoTextDataset(torch.utils.data.Dataset):
     """load video according to the csv file.
 
     Args:
@@ -46,59 +24,69 @@ class DatasetFromCSV(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        csv_path,
+        data_path,
         num_frames=16,
         frame_interval=1,
-        transform=None,
-        root=None,
+        image_size=(256, 256),
+        transform_name="center",
     ):
-        self.csv_path = csv_path
-        with open(csv_path, "r") as f:
-            reader = csv.reader(f)
-            self.samples = list(reader)
-
-        ext = self.samples[0][0].split(".")[-1]
-        if ext.lower() in ("mp4", "avi", "mov", "mkv"):
-            self.is_video = True
-        else:
-            assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
-            self.is_video = False
-
-        self.transform = transform
-
+        self.data_path = data_path
+        self.data = read_file(data_path)
         self.num_frames = num_frames
         self.frame_interval = frame_interval
-        self.temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
-        self.root = root
+        self.image_size = image_size
+        self.transforms = {
+            "image": get_transforms_image(transform_name, image_size),
+            "video": get_transforms_video(transform_name, image_size),
+        }
+
+    def _print_data_number(self):
+        num_videos = 0
+        num_images = 0
+        for path in self.data["path"]:
+            if self.get_type(path) == "video":
+                num_videos += 1
+            else:
+                num_images += 1
+        print(f"Dataset contains {num_videos} videos and {num_images} images.")
+
+    def get_type(self, path):
+        ext = os.path.splitext(path)[-1].lower()
+        if ext.lower() in VID_EXTENSIONS:
+            return "video"
+        else:
+            assert ext.lower() in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
+            return "image"
 
     def getitem(self, index):
-        sample = self.samples[index]
-        path = sample[0]
-        if self.root:
-            path = os.path.join(self.root, path)
-        text = sample[1]
+        sample = self.data.iloc[index]
+        path = sample["path"]
+        text = sample["text"]
+        file_type = self.get_type(path)
 
-        if self.is_video:
-            vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-            total_frames = len(vframes)
+        if file_type == "video":
+            # loading
+            vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
 
             # Sampling video frames
-            start_frame_ind, end_frame_ind = self.temporal_sample(total_frames)
-            assert (
-                end_frame_ind - start_frame_ind >= self.num_frames
-            ), f"{path} with index {index} has not enough frames."
-            frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, self.num_frames, dtype=int)
+            video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)
 
-            video = vframes[frame_indice]
-            video = self.transform(video)  # T C H W
+            # transform
+            transform = self.transforms["video"]
+            video = transform(video)  # T C H W
         else:
+            # loading
             image = pil_loader(path)
-            image = self.transform(image)
+
+            # transform
+            transform = self.transforms["image"]
+            image = transform(image)
+
+            # repeat
             video = image.unsqueeze(0).repeat(self.num_frames, 1, 1, 1)
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-
         return {"video": video, "text": text}
 
     def __getitem__(self, index):
@@ -106,9 +94,78 @@ class DatasetFromCSV(torch.utils.data.Dataset):
             try:
                 return self.getitem(index)
             except Exception as e:
-                print(e)
+                path = self.data.iloc[index]["path"]
+                print(f"data {path}: {e}")
                 index = np.random.randint(len(self))
         raise RuntimeError("Too many bad data.")
 
     def __len__(self):
-        return len(self.samples)
+        return len(self.data)
+
+
+@DATASETS.register_module()
+class VariableVideoTextDataset(VideoTextDataset):
+    def __init__(
+        self,
+        data_path,
+        num_frames=None,
+        frame_interval=1,
+        image_size=None,
+        transform_name=None,
+    ):
+        super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
+        self.transform_name = transform_name
+        self.data["id"] = np.arange(len(self.data))
+
+    def get_data_info(self, index):
+        T = self.data.iloc[index]["num_frames"]
+        H = self.data.iloc[index]["height"]
+        W = self.data.iloc[index]["width"]
+        return T, H, W
+
+    def getitem(self, index):
+        # a hack to pass in the (time, height, width) info from sampler
+        index, num_frames, height, width = [int(val) for val in index.split("-")]
+
+        sample = self.data.iloc[index]
+        path = sample["path"]
+        text = sample["text"]
+        file_type = self.get_type(path)
+        ar = width / height
+
+        video_fps = 24  # default fps
+        if file_type == "video":
+            # loading
+            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            if "video_fps" in infos:
+                video_fps = infos["video_fps"]
+
+            # Sampling video frames
+            video = temporal_random_crop(vframes, num_frames, self.frame_interval)
+
+            # transform
+            transform = get_transforms_video(self.transform_name, (height, width))
+            video = transform(video)  # T C H W
+        else:
+            # loading
+            image = pil_loader(path)
+            video_fps = IMG_FPS
+
+            # transform
+            transform = get_transforms_image(self.transform_name, (height, width))
+            image = transform(image)
+
+            # repeat
+            video = image.unsqueeze(0)
+
+        # TCHW -> CTHW
+        video = video.permute(1, 0, 2, 3)
+        return {
+            "video": video,
+            "text": text,
+            "num_frames": num_frames,
+            "height": height,
+            "width": width,
+            "ar": ar,
+            "fps": video_fps,
+        }

@@ -8,9 +8,11 @@ from opensora.registry import MODELS
 
 @MODELS.register_module()
 class VideoAutoencoderKL(nn.Module):
-    def __init__(self, from_pretrained=None, micro_batch_size=None):
+    def __init__(self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False):
         super().__init__()
-        self.module = AutoencoderKL.from_pretrained(from_pretrained)
+        self.module = AutoencoderKL.from_pretrained(
+            from_pretrained, cache_dir=cache_dir, local_files_only=local_files_only
+        )
         self.out_channels = self.module.config.latent_channels
         self.patch_size = (1, 8, 8)
         self.micro_batch_size = micro_batch_size
@@ -51,17 +53,30 @@ class VideoAutoencoderKL(nn.Module):
         return x
 
     def get_latent_size(self, input_size):
+        latent_size = []
         for i in range(3):
-            assert input_size[i] % self.patch_size[i] == 0, "Input size must be divisible by patch size"
-        input_size = [input_size[i] // self.patch_size[i] for i in range(3)]
-        return input_size
+            # assert (
+            #     input_size[i] is None or input_size[i] % self.patch_size[i] == 0
+            # ), "Input size must be divisible by patch size"
+            latent_size.append(input_size[i] // self.patch_size[i] if input_size[i] is not None else None)
+        return latent_size
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    @property
+    def dtype(self):
+        return next(self.parameters()).dtype
 
 
 @MODELS.register_module()
 class VideoAutoencoderKLTemporalDecoder(nn.Module):
-    def __init__(self, from_pretrained=None):
+    def __init__(self, from_pretrained=None, cache_dir=None, local_files_only=False):
         super().__init__()
-        self.module = AutoencoderKLTemporalDecoder.from_pretrained(from_pretrained)
+        self.module = AutoencoderKLTemporalDecoder.from_pretrained(
+            from_pretrained, cache_dir=cache_dir, local_files_only=local_files_only
+        )
         self.out_channels = self.module.config.latent_channels
         self.patch_size = (1, 8, 8)
 
@@ -76,7 +91,18 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
         return x
 
     def get_latent_size(self, input_size):
+        latent_size = []
         for i in range(3):
-            assert input_size[i] % self.patch_size[i] == 0, "Input size must be divisible by patch size"
-        input_size = [input_size[i] // self.patch_size[i] for i in range(3)]
-        return input_size
+            # assert (
+            #     input_size[i] is None or input_size[i] % self.patch_size[i] == 0
+            # ), "Input size must be divisible by patch size"
+            latent_size.append(input_size[i] // self.patch_size[i] if input_size[i] is not None else None)
+        return latent_size
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    @property
+    def dtype(self):
+        return next(self.parameters()).dtype

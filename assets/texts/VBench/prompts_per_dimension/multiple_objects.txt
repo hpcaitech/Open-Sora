@@ -1,0 +1,82 @@
+a bird and a cat
+a cat and a dog
+a dog and a horse
+a horse and a sheep
+a sheep and a cow
+a cow and an elephant
+an elephant and a bear
+a bear and a zebra
+a zebra and a giraffe
+a giraffe and a bird
+a chair and a couch
+a couch and a potted plant
+a potted plant and a tv
+a tv and a laptop
+a laptop and a remote
+a remote and a keyboard
+a keyboard and a cell phone
+a cell phone and a book
+a book and a clock
+a clock and a backpack
+a backpack and an umbrella
+an umbrella and a handbag
+a handbag and a tie
+a tie and a suitcase
+a suitcase and a vase
+a vase and scissors
+scissors and a teddy bear
+a teddy bear and a frisbee
+a frisbee and skis
+skis and a snowboard
+a snowboard and a sports ball
+a sports ball and a kite
+a kite and a baseball bat
+a baseball bat and a baseball glove
+a baseball glove and a skateboard
+a skateboard and a surfboard
+a surfboard and a tennis racket
+a tennis racket and a bottle
+a bottle and a chair
+an airplane and a train
+a train and a boat
+a boat and an airplane
+a bicycle and a car
+a car and a motorcycle
+a motorcycle and a bus
+a bus and a traffic light
+a traffic light and a fire hydrant
+a fire hydrant and a stop sign
+a stop sign and a parking meter
+a parking meter and a truck
+a truck and a bicycle
+a toilet and a hair drier
+a hair drier and a toothbrush
+a toothbrush and a sink
+a sink and a toilet
+a wine glass and a chair
+a cup and a couch
+a fork and a potted plant
+a knife and a tv
+a spoon and a laptop
+a bowl and a remote
+a banana and a keyboard
+an apple and a cell phone
+a sandwich and a book
+an orange and a clock
+broccoli and a backpack
+a carrot and an umbrella
+a hot dog and a handbag
+a pizza and a tie
+a donut and a suitcase
+a cake and a vase
+an oven and scissors
+a toaster and a teddy bear
+a microwave and a frisbee
+a refrigerator and skis
+a bicycle and an airplane
+a car and a train
+a motorcycle and a boat
+a person and a toilet
+a person and a hair drier
+a person and a toothbrush
+a person and a sink

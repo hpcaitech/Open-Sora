@@ -1,20 +1,36 @@
-# Repo & Config Structure
-
-## Repo Structure
+# Repo Structure
 
 ```plaintext
 Open-Sora
 ├── README.md
+├── assets
+│   ├── images                     -> images used for image-conditioned generation
+│   ├── texts                      -> prompts used for text-conditioned generation
+│   └── readme                     -> images used in README
+├── configs                        -> Configs for training & inference
 ├── docs
-│   ├── acceleration.md            -> Acceleration & Speed benchmark
+│   ├── acceleration.md            -> Report on acceleration & speed benchmark
 │   ├── command.md                 -> Commands for training & inference
 │   ├── datasets.md                -> Datasets used in this project
+|   ├── data_pipeline.md           -> Data pipeline documents
 │   ├── structure.md               -> This file
-│   └── report_v1.md               -> Report for Open-Sora v1
+│   ├── config.md                  -> Configs meaning
+│   ├── report_01.md               -> Report for Open-Sora 1.1
+│   ├── report_02.md               -> Report for Open-Sora 1.0
+│   └── zh_CN                      -> Chinese version of the above
+├── eval                           -> Evaluation scripts
+│   ├── README.md                  -> Evaluation documentation
+|   ├── sample.sh                  -> script for quickly launching inference on predefined prompts
+|   ├── launch.sh                  -> script for launching 8 cards sampling
+|   ├── vbench                     -> for VBench evaluation
+│   └── vbench_i2v                 -> for VBench i2v evaluation
+├── gradio                         -> Gradio demo related code
+├── notebooks                      -> Jupyter notebooks for generating commands to run
 ├── scripts
 │   ├── train.py                   -> diffusion training script
-│   └── inference.py               -> Report for Open-Sora v1
-├── configs                        -> Configs for training & inference
+│   ├── inference.py               -> diffusion inference script
+│   ├── inference-long.py          -> inference script supporting more advanced features
+│   └── misc                       -> misc scripts, including batch size search
 ├── opensora
 │   ├── __init__.py
 │   ├── registry.py                -> Registry helper
@@ -35,6 +51,7 @@ Open-Sora
 │   │   ├── iddpm                  -> IDDPM for training and inference
 │   │   └── dpms                   -> DPM-Solver for fast inference
 │   └── utils
+├── tests                          -> Tests for the project
 └── tools                          -> Tools for data processing and more
 ```
 
@@ -45,6 +62,17 @@ Our config files follows [MMEgine](https://github.com/open-mmlab/mmengine). MMEn
 ```plaintext
 Open-Sora
 └── configs                        -> Configs for training & inference
+    ├── opensora-v1-1              -> STDiT2 related configs
+    │   ├── inference
+    │   │   ├── sample.py          -> Sample videos and images
+    │   │   └── sample-ref.py      -> Sample videos with image/video condition
+    │   └── train
+    │       ├── stage1.py          -> Stage 1 training config
+    │       ├── stage2.py          -> Stage 2 training config
+    │       ├── stage3.py          -> Stage 3 training config
+    │       ├── image.py           -> Illustration of image training config
+    │       ├── video.py           -> Illustration of video training config
+    │       └── benchmark.py       -> For batch size searching
     ├── opensora                   -> STDiT related configs
     │   ├── inference
     │   │   ├── 16x256x256.py      -> Sample videos 16 frames 256x256
@@ -66,114 +94,17 @@ Open-Sora
     └── pixart                     -> PixArt related configs
 ```
 
-## Inference config demos
-
-To change the inference settings, you can directly modify the corresponding config file. Or you can pass arguments to overwrite the config file ([config_utils.py](/opensora/utils/config_utils.py)). To change sampling prompts, you should modify the `.txt` file passed to the `--prompt_path` argument.
+## Tools
 
 ```plaintext
---prompt_path ./assets/texts/t2v_samples.txt  -> prompt_path
---ckpt-path ./path/to/your/ckpt.pth           -> model["from_pretrained"]
-```
-
-The explanation of each field is provided below.
-
-```python
-# Define sampling size
-num_frames = 64               # number of frames
-fps = 24 // 2                 # frames per second (divided by 2 for frame_interval=2)
-image_size = (512, 512)       # image size (height, width)
-
-# Define model
-model = dict(
-    type="STDiT-XL/2",        # Select model type (STDiT-XL/2, DiT-XL/2, etc.)
-    space_scale=1.0,          # (Optional) Space positional encoding scale (new height / old height)
-    time_scale=2 / 3,         # (Optional) Time positional encoding scale (new frame_interval / old frame_interval)
-    enable_flashattn=True,    # (Optional) Speed up training and inference with flash attention
-    enable_layernorm_kernel=True, # (Optional) Speed up training and inference with fused kernel
-    from_pretrained="PRETRAINED_MODEL",  # (Optional) Load from pretrained model
-    no_temporal_pos_emb=True,  # (Optional) Disable temporal positional encoding (for image)
-)
-vae = dict(
-    type="VideoAutoencoderKL", # Select VAE type
-    from_pretrained="stabilityai/sd-vae-ft-ema", # Load from pretrained VAE
-    micro_batch_size=128,      # VAE with micro batch size to save memory
-)
-text_encoder = dict(
-    type="t5",                 # Select text encoder type (t5, clip)
-    from_pretrained="DeepFloyd/t5-v1_1-xxl", # Load from pretrained text encoder
-    model_max_length=120,      # Maximum length of input text
-)
-scheduler = dict(
-    type="iddpm",              # Select scheduler type (iddpm, dpm-solver)
-    num_sampling_steps=100,    # Number of sampling steps
-    cfg_scale=7.0,             # hyper-parameter for classifier-free diffusion
-    cfg_channel=3,             # how many channels to use for classifier-free diffusion, if None, use all channels
-)
-dtype = "fp16"                 # Computation type (fp16, fp32, bf16)
-
-# Other settings
-batch_size = 1                 # batch size
-seed = 42                      # random seed
-prompt_path = "./assets/texts/t2v_samples.txt"  # path to prompt file
-save_dir = "./samples"         # path to save samples
-```
-
-## Training config demos
-
-```python
-# Define sampling size
-num_frames = 64
-frame_interval = 2             # sample every 2 frames
-image_size = (512, 512)
-
-# Define dataset
-root = None                    # root path to the dataset
-data_path = "CSV_PATH"         # path to the csv file
-use_image_transform = False    # True if training on images
-num_workers = 4                # number of workers for dataloader
-
-# Define acceleration
-dtype = "bf16"                 # Computation type (fp16, bf16)
-grad_checkpoint = True         # Use gradient checkpointing
-plugin = "zero2"               # Plugin for distributed training (zero2, zero2-seq)
-sp_size = 1                    # Sequence parallelism size (1 for no sequence parallelism)
-
-# Define model
-model = dict(
-    type="STDiT-XL/2",
-    space_scale=1.0,
-    time_scale=2 / 3,
-    from_pretrained="YOUR_PRETRAINED_MODEL",
-    enable_flashattn=True,        # Enable flash attention
-    enable_layernorm_kernel=True, # Enable layernorm kernel
-)
-vae = dict(
-    type="VideoAutoencoderKL",
-    from_pretrained="stabilityai/sd-vae-ft-ema",
-    micro_batch_size=128,
-)
-text_encoder = dict(
-    type="t5",
-    from_pretrained="DeepFloyd/t5-v1_1-xxl",
-    model_max_length=120,
-    shardformer=True,           # Enable shardformer for T5 acceleration
-)
-scheduler = dict(
-    type="iddpm",
-    timestep_respacing="",      # Default 1000 timesteps
-)
-
-# Others
-seed = 42
-outputs = "outputs"             # path to save checkpoints
-wandb = False                   # Use wandb for logging
-
-epochs = 1000                   # number of epochs (just large enough, kill when satisfied)
-log_every = 10
-ckpt_every = 250
-load = None                     # path to resume training
-
-batch_size = 4
-lr = 2e-5
-grad_clip = 1.0                 # gradient clipping
-```
+Open-Sora
+└── tools
+    ├── datasets                   -> dataset management related code
+    ├── scene_cut                  -> scene cut related code
+    ├── caption                    -> caption related code
+    ├── scoring                    -> scoring related code
+    │   ├── aesthetic              -> aesthetic scoring related code
+    │   ├── matching               -> matching scoring related code
+    │   ├── ocr                    -> ocr scoring related code
+    │   └── optical_flow           -> optical flow scoring related code
+    └── frame_interpolation        -> frame interpolation related code

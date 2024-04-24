@@ -4,10 +4,13 @@ diffusers
 ftfy
 gdown
 mmengine
+pandas
 pre-commit
+pyarrow
 pyav
 tensorboard
 timm
 tqdm
 transformers
 wandb
+rotary_embedding_torch

@@ -1,0 +1,72 @@
+a person swimming in ocean
+a person giving a presentation to a room full of colleagues
+a person washing the dishes
+a person eating a burger
+a person walking in the snowstorm
+a person drinking coffee in a cafe
+a person playing guitar
+a bicycle leaning against a tree
+a bicycle gliding through a snowy field
+a bicycle slowing down to stop
+a bicycle accelerating to gain speed
+a car stuck in traffic during rush hour
+a car turning a corner
+a car slowing down to stop
+a car accelerating to gain speed
+a motorcycle cruising along a coastal highway
+a motorcycle turning a corner
+a motorcycle slowing down to stop
+a motorcycle gliding through a snowy field
+a motorcycle accelerating to gain speed
+an airplane soaring through a clear blue sky
+an airplane taking off
+an airplane landing smoothly on a runway
+an airplane accelerating to gain speed
+a bus turning a corner
+a bus stuck in traffic during rush hour
+a bus accelerating to gain speed
+a train speeding down the tracks
+a train crossing over a tall bridge
+a train accelerating to gain speed
+a truck turning a corner
+a truck anchored in a tranquil bay
+a truck stuck in traffic during rush hour
+a truck slowing down to stop
+a truck accelerating to gain speed
+a boat sailing smoothly on a calm lake
+a boat slowing down to stop
+a boat accelerating to gain speed
+a bird soaring gracefully in the sky
+a bird building a nest from twigs and leaves
+a bird flying over a snowy forest
+a cat grooming itself meticulously with its tongue
+a cat playing in park
+a cat drinking water
+a cat running happily
+a dog enjoying a peaceful walk
+a dog playing in park
+a dog drinking water
+a dog running happily
+a horse bending down to drink water from a river
+a horse galloping across an open field
+a horse taking a peaceful walk
+a horse running to join a herd of its kind
+a sheep bending down to drink water from a river
+a sheep taking a peaceful walk
+a sheep running to join a herd of its kind
+a cow bending down to drink water from a river
+a cow chewing cud while resting in a tranquil barn
+a cow running to join a herd of its kind
+an elephant spraying itself with water using its trunk to cool down
+an elephant taking a peaceful walk
+an elephant running to join a herd of its kind
+a bear catching a salmon in its powerful jaws
+a bear sniffing the air for scents of food
+a bear climbing a tree
+a bear hunting for prey
+a zebra bending down to drink water from a river
+a zebra running to join a herd of its kind
+a zebra taking a peaceful walk
+a giraffe bending down to drink water from a river
+a giraffe taking a peaceful walk
+a giraffe running to join a herd of its kind

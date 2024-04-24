@@ -92,7 +92,7 @@
 conda create -n opensora python=3.10
 
 # install torch
-# the command below is for CUDA 12.1, choose install commands from 
+# the command below is for CUDA 12.1, choose install commands from
 # https://pytorch.org/get-started/locally/ based on your own CUDA version
 pip3 install torch torchvision
 
