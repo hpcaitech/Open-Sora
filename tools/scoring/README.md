@@ -30,7 +30,7 @@ Then, run the following command. **Make sure** the meta file has column `path` (
 ```bash
 torchrun --nproc_per_node 8 -m tools.scoring.aesthetic.inference /path/to/meta.csv --bs 1024 --num_workers 16
 ```
-This will generate multiple part files. Run `python -m tools.datasets.datautil /path/to/meta_part1.csv /path/to/meta_part2.csv` to merge these part files.
+This will generate multiple part files, each corresponding to a node . Run `python -m tools.datasets.datautil /path/to/meta_aes_part*.csv --output /path/to/meta_aes.csv` to merge them.
 
 ## Optical Flow Score
 

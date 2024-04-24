@@ -7,10 +7,12 @@ from functools import partial
 import numpy as np
 import pandas as pd
 from pandarallel import pandarallel
-from tqdm import tqdm
 import cv2
 from mmengine.logging import print_log
 from moviepy.editor import VideoFileClip
+from tqdm import tqdm
+
+tqdm.pandas()
 
 
 def is_intact_video(video_path, mode="moviepy", verbose=False, logger=None):
