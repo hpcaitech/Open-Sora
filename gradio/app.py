@@ -458,7 +458,7 @@ def main():
                     choices=["2s", "4s", "8s"], 
                     value="2s",
                     label="Video Length", 
-                    info="10s may fail as Hugging Face ZeroGPU has the limitation of max 200 seconds inference time."
+                    info="8s may fail as Hugging Face ZeroGPU has the limitation of max 200 seconds inference time."
                 )
 
                 reference_image = gr.Image(
