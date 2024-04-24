@@ -232,7 +232,6 @@ def main():
         batch_prompts_raw = prompts[i : i + cfg.batch_size]
         batch_prompts_raw, additional_infos = extract_json_from_prompts(batch_prompts_raw)
         batch_prompts_loops = process_prompts(batch_prompts_raw, cfg.loop)
-        video_clips = []
         # handle the last batch
         if len(batch_prompts_raw) < cfg.batch_size and cfg.multi_resolution == "STDiT2":
             model_args["height"] = model_args["height"][: len(batch_prompts_raw)]
@@ -250,37 +249,39 @@ def main():
         refs_x = collect_references_batch(cfg.reference_path[i : i + cfg.batch_size], vae, cfg.image_size)
         mask_strategy = cfg.mask_strategy[i : i + cfg.batch_size]
 
-        # 4.3. long video generation
-        for loop_i in range(cfg.loop):
-            # 4.4 sample in hidden space
-            batch_prompts = [prompt[loop_i] for prompt in batch_prompts_loops]
-            z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
+        # 4.3. diffusion sampling
+        old_sample_idx = sample_idx
+        # generate multiple samples for each prompt
+        for k in range(cfg.num_sample):
+            sample_idx = old_sample_idx
+            video_clips = []
 
-            # 4.5. apply mask strategy
-            masks = None
-            # if cfg.reference_path is not None:
-            if loop_i > 0:
-                ref_x = vae.encode(video_clips[-1])
-                for j, refs in enumerate(refs_x):
-                    if refs is None:
-                        refs_x[j] = [ref_x[j]]
-                    else:
-                        refs.append(ref_x[j])
-                    if mask_strategy[j] is None:
-                        mask_strategy[j] = ""
-                    else:
-                        mask_strategy[j] += ";"
-                    mask_strategy[
-                        j
-                    ] += f"{loop_i},{len(refs)-1},-{cfg.condition_frame_length},0,{cfg.condition_frame_length}"
-            masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
+            # 4.4. long video generation
+            for loop_i in range(cfg.loop):
+                # 4.4 sample in hidden space
+                batch_prompts = [prompt[loop_i] for prompt in batch_prompts_loops]
 
-            # 4.6. diffusion sampling
-            old_sample_idx = sample_idx
-            # generate multiple samples for each prompt
-            for k in range(cfg.num_sample):
-                sample_idx = old_sample_idx
+                # 4.5. apply mask strategy
+                masks = None
+                # if cfg.reference_path is not None:
+                if loop_i > 0:
+                    ref_x = vae.encode(video_clips[-1])
+                    for j, refs in enumerate(refs_x):
+                        if refs is None:
+                            refs_x[j] = [ref_x[j]]
+                        else:
+                            refs.append(ref_x[j])
+                        if mask_strategy[j] is None:
+                            mask_strategy[j] = ""
+                        else:
+                            mask_strategy[j] += ";"
+                        mask_strategy[
+                            j
+                        ] += f"{loop_i},{len(refs)-1},-{cfg.condition_frame_length},0,{cfg.condition_frame_length}"
 
+                # sampling
+                z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
+                masks = apply_mask_strategy(z, refs_x, mask_strategy, loop_i)
                 samples = scheduler.sample(
                     model,
                     text_encoder,
