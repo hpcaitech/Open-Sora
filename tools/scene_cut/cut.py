@@ -9,6 +9,9 @@ from imageio_ffmpeg import get_ffmpeg_exe
 from mmengine.logging import MMLogger, print_log
 from pandarallel import pandarallel
 from scenedetect import FrameTimecode
+from tqdm import tqdm
+
+tqdm.pandas()
 
 
 def process_single_row(row, args, log_name=None):
@@ -92,25 +95,18 @@ def split_video(
         # for the remaining calls.
         # cmd += ['-v', 'error']
 
+        # clip to cut
         # -ss after -i is very slow; put -ss before -i
-        # input path
-        # cmd += ["-i", video_path]
-
-        # clip to cut
-        # cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-t", str(duration.get_seconds())]
-
-        # clip to cut
         cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-i", video_path, "-t", str(duration.get_seconds())]
 
         # target fps
-        # cmd += ['-vf', 'select=mod(n\,2)']
         if target_fps is not None:
             cmd += ["-r", f"{target_fps}"]
 
         # aspect ratio
         if shorter_size is not None:
             cmd += ["-vf", f"scale='if(gt(iw,ih),-2,{shorter_size})':'if(gt(iw,ih),{shorter_size},-2)'"]
-        # cmd += ['-vf', f"scale='if(gt(iw,ih),{shorter_size},trunc(ow/a/2)*2)':-2"]
+            # cmd += ['-vf', f"scale='if(gt(iw,ih),{shorter_size},trunc(ow/a/2)*2)':-2"]
 
         cmd += ["-map", "0", save_path]
 

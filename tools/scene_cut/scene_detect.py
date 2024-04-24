@@ -7,6 +7,8 @@ from pandarallel import pandarallel
 from scenedetect import AdaptiveDetector, detect
 from tqdm import tqdm
 
+tqdm.pandas()
+
 
 def process_single_row(row):
     # windows
