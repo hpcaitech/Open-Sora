@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     if args.folder:
         for file in os.listdir(input_path):
-            if osp.splitext(input_path)[-1].lower() in VID_EXT:
+            if osp.splitext(file)[-1].lower() in VID_EXT:
                 vid_path = os.path.join(input_path, file)
                 process(model, vid_path, output_path, fps, iters)
     else:
