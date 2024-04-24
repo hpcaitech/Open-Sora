@@ -247,39 +247,11 @@ To lower the memory usage, set a smaller `vae.micro_batch_size` in the config (s
 </details>
 
 ## Data Processing
+High-quality data is crucial for training good generation models.
+To this end, we establish a complete pipeline for data processing, which could seamlessly convert raw videos to high-quality video-text pairs.
+The pipeline is shown below. For detailed information, please refer to [data processing](docs/data_processing.md).
+Also check out the [datasets](docs/datasets.md) we use.
 
-Te be modified
-
-High-quality Data is the key to high-quality models. Our used datasets and data collection plan
-is [here](/docs/datasets.md). We provide tools to process video data. Our data processing pipeline includes
-the following steps:
-
-1. Manage datasets. [[docs](/tools/datasets/README.md)]
-2. Scene detection and video splitting. [[docs](/tools/scene_cut/README.md)]
-3. Score and filter videos. [[docs](/tools/scoring/README.md)]
-4. Generate video captions. [[docs](/tools/caption/README.md)]
-
-Below is an example workflow to process data. However, we recommend you to read the detailed documentation for each tool, and decide which tools to use based on your needs. This pipeline applies to both image and video data. Full pipeline is available in [datasets.md](/tools/datasets/README.md#data-process-pipeline).
-
-```bash
-# Suppose videos and images under ~/dataset/
-# 1. Convert dataset to CSV (meta.csv)
-python -m tools.datasets.convert video ~/dataset --output meta.csv
-# 2. Get video information (meta_info_fmin1.csv)
-python -m tools.datasets.datautil meta.csv --info --fmin 1
-# 3. Get caption information
-torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava meta_info_fmin1.csv --dp-size 8 --tp-size 1 --model-path liuhaotian/llava-v1.6-mistral-7b --prompt video
-# merge generated results (meta_caption.csv)
-python -m tools.datasets.datautil meta_info_fmin1_caption_part*.csv --output meta_caption.csv
-# clean caption (meta_caption_processed.csv)
-python -m tools.datasets.datautil meta_caption.csv --clean-caption --refine-llm-caption --remove-empty-caption --output meta_caption_processed.csv
-# 4. Scoring (meta_caption_processed_aes.csv)
-torchrun --nproc_per_node 8  -m tools.scoring.aesthetic.inference meta_caption_processed.csv --bs 1024 --num_workers 16
-# Filter videos by aesthetic scores (meta_aes_aesmin5.csv)
-python -m tools.datasets.csvutil meta_caption_processed_aes.csv --aesmin 5 --output meta_aes_aesmin5.csv
-# 5. Additional filtering
-python -m tools.datasets.csvutil ~/dataset_ready.csv --fmin 48
-```
 
 ![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
 
