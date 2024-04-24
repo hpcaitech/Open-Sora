@@ -1,14 +1,14 @@
-num_frames = 16
-frame_interval = 3
-image_size = (256, 256)
-
 # Define dataset
-root = None
-data_path = "CSV_PATH"
-use_image_transform = False
-num_workers = 4
+dataset = dict(
+    type="VideoTextDataset",
+    data_path=None,
+    num_frames=16,
+    frame_interval=3,
+    image_size=(256, 256),
+)
 
 # Define acceleration
+num_workers = 4
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"

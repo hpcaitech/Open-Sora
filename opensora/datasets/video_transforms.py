@@ -18,6 +18,7 @@
 import numbers
 import random
 
+import numpy as np
 import torch
 
 
@@ -29,23 +30,6 @@ def _is_tensor_video_clip(clip):
         raise ValueError("clip should be 4D. Got %dD" % clip.dim())
 
     return True
-
-
-def center_crop_arr(pil_image, image_size):
-    """
-    Center cropping implementation from ADM.
-    https://github.com/openai/guided-diffusion/blob/8fb3ad9197f16bbc40620447b2742e13458d2831/guided_diffusion/image_datasets.py#L126
-    """
-    while min(*pil_image.size) >= 2 * image_size:
-        pil_image = pil_image.resize(tuple(x // 2 for x in pil_image.size), resample=Image.BOX)
-
-    scale = image_size / min(*pil_image.size)
-    pil_image = pil_image.resize(tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC)
-
-    arr = np.array(pil_image)
-    crop_y = (arr.shape[0] - image_size) // 2
-    crop_x = (arr.shape[1] - image_size) // 2
-    return Image.fromarray(arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size])
 
 
 def crop(clip, i, j, h, w):
@@ -120,6 +104,26 @@ def center_crop_using_short_edge(clip):
     return crop(clip, i, j, th, tw)
 
 
+def resize_crop_to_fill(clip, target_size):
+    if not _is_tensor_video_clip(clip):
+        raise ValueError("clip should be a 4D torch.tensor")
+    h, w = clip.size(-2), clip.size(-1)
+    th, tw = target_size[0], target_size[1]
+    rh, rw = th / h, tw / w
+    if rh > rw:
+        sh, sw = th, round(w * rh)
+        clip = resize(clip, (sh, sw), "bilinear")
+        i = 0
+        j = int(round(sw - tw) / 2.0)
+    else:
+        sh, sw = round(h * rw), tw
+        clip = resize(clip, (sh, sw), "bilinear")
+        i = int(round(sh - th) / 2.0)
+        j = 0
+    assert i + th <= clip.size(-2) and j + tw <= clip.size(-1)
+    return crop(clip, i, j, th, tw)
+
+
 def random_shift_crop(clip):
     """
     Slide along the long edge, with the short edge as crop size
@@ -186,6 +190,21 @@ def hflip(clip):
     if not _is_tensor_video_clip(clip):
         raise ValueError("clip should be a 4D torch.tensor")
     return clip.flip(-1)
+
+
+class ResizeCrop:
+    def __init__(self, size):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+
+    def __call__(self, clip):
+        clip = resize_crop_to_fill(clip, self.size)
+        return clip
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size})"
 
 
 class RandomCropVideo:

@@ -6,6 +6,7 @@ from opensora.registry import SCHEDULERS
 
 from . import gaussian_diffusion as gd
 from .respace import SpacedDiffusion, space_timesteps
+from .speed import SpeeDiffusion
 
 
 @SCHEDULERS.register_module("iddpm")
@@ -56,13 +57,13 @@ class IDDPM(SpacedDiffusion):
         self,
         model,
         text_encoder,
-        z_size,
+        z,
         prompts,
         device,
         additional_args=None,
+        mask=None,
     ):
         n = len(prompts)
-        z = torch.randn(n, *z_size, device=device)
         z = torch.cat([z, z], 0)
         model_args = text_encoder.encode(prompts)
         y_null = text_encoder.null(n)
@@ -79,6 +80,7 @@ class IDDPM(SpacedDiffusion):
             model_kwargs=model_args,
             progress=True,
             device=device,
+            mask=mask,
         )
         samples, _ = samples.chunk(2, dim=0)
         return samples
@@ -88,6 +90,9 @@ def forward_with_cfg(model, x, timestep, y, cfg_scale, cfg_channel=None, **kwarg
     # https://github.com/openai/glide-text2im/blob/main/notebooks/text2im.ipynb
     half = x[: len(x) // 2]
     combined = torch.cat([half, half], dim=0)
+    if "x_mask" in kwargs and kwargs["x_mask"] is not None:
+        if len(kwargs["x_mask"]) != len(x):
+            kwargs["x_mask"] = torch.cat([kwargs["x_mask"], kwargs["x_mask"]], dim=0)
     model_out = model.forward(combined, timestep, y, **kwargs)
     model_out = model_out["x"] if isinstance(model_out, dict) else model_out
     if cfg_channel is None:

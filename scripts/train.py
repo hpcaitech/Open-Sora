@@ -1,6 +1,7 @@
 from copy import deepcopy
+from datetime import timedelta
+from pprint import pprint
 
-import colossalai
 import torch
 import torch.distributed as dist
 import wandb
@@ -8,7 +9,7 @@ from colossalai.booster import Booster
 from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
-from colossalai.utils import get_current_device
+from colossalai.utils import get_current_device, set_seed
 from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
@@ -18,8 +19,8 @@ from opensora.acceleration.parallel_states import (
     set_sequence_parallel_group,
 )
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
-from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
-from opensora.registry import MODELS, SCHEDULERS, build_module
+from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
+from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
     create_experiment_workspace,
@@ -28,7 +29,7 @@ from opensora.utils.config_utils import (
     save_training_config,
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
-from opensora.utils.train_utils import update_ema
+from opensora.utils.train_utils import MaskGenerator, update_ema
 
 
 def main():
@@ -36,7 +37,6 @@ def main():
     # 1. args & cfg
     # ======================================================
     cfg = parse_configs(training=True)
-    print(cfg)
     exp_name, exp_dir = create_experiment_workspace(cfg)
     save_training_config(cfg._cfg_dict, exp_dir)
 
@@ -47,7 +47,10 @@ def main():
     assert cfg.dtype in ["fp16", "bf16"], f"Unknown mixed precision {cfg.dtype}"
 
     # 2.1. colossalai init distributed training
-    colossalai.launch_from_torch({})
+    # we set a very large timeout to avoid some processes exit early
+    dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
+    torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
+    set_seed(1024)
     coordinator = DistCoordinator()
     device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
@@ -56,6 +59,8 @@ def main():
     if not coordinator.is_master():
         logger = create_logger(None)
     else:
+        print("Training configuration:")
+        pprint(cfg._cfg_dict)
         logger = create_logger(exp_dir)
         logger.info(f"Experiment directory created at {exp_dir}")
 
@@ -89,47 +94,39 @@ def main():
     # ======================================================
     # 3. build dataset and dataloader
     # ======================================================
-    dataset = DatasetFromCSV(
-        cfg.data_path,
-        # TODO: change transforms
-        transform=(
-            get_transforms_video(cfg.image_size[0])
-            if not cfg.use_image_transform
-            else get_transforms_image(cfg.image_size[0])
-        ),
-        num_frames=cfg.num_frames,
-        frame_interval=cfg.frame_interval,
-        root=cfg.root,
-    )
-
-    # TODO: use plugin's prepare dataloader
-    # a batch contains:
-    # {
-    #      "video": torch.Tensor,  # [B, C, T, H, W],
-    #      "text": List[str],
-    # }
-    dataloader = prepare_dataloader(
-        dataset,
+    dataset = build_module(cfg.dataset, DATASETS)
+    logger.info(f"Dataset contains {len(dataset)} samples.")
+    dataloader_args = dict(
+        dataset=dataset,
         batch_size=cfg.batch_size,
         num_workers=cfg.num_workers,
+        seed=cfg.seed,
         shuffle=True,
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
     )
-    logger.info(f"Dataset contains {len(dataset):,} videos ({cfg.data_path})")
-
-    total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
-    logger.info(f"Total batch size: {total_batch_size}")
+    # TODO: use plugin's prepare dataloader
+    if cfg.bucket_config is None:
+        dataloader = prepare_dataloader(**dataloader_args)
+    else:
+        dataloader = prepare_variable_dataloader(
+            bucket_config=cfg.bucket_config,
+            num_bucket_build_workers=cfg.num_bucket_build_workers,
+            **dataloader_args,
+        )
+    if cfg.dataset.type == "VideoTextDataset":
+        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
+        logger.info(f"Total batch size: {total_batch_size}")
 
     # ======================================================
     # 4. build model
     # ======================================================
     # 4.1. build model
-    input_size = (cfg.num_frames, *cfg.image_size)
+    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
     vae = build_module(cfg.vae, MODELS)
+    input_size = (dataset.num_frames, *dataset.image_size)
     latent_size = vae.get_latent_size(input_size)
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
     model = build_module(
         cfg.model,
         MODELS,
@@ -158,7 +155,10 @@ def main():
 
     # 4.5. setup optimizer
     optimizer = HybridAdam(
-        filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr=cfg.lr,
+        weight_decay=0,
+        adamw_mode=True,
     )
     lr_scheduler = None
 
@@ -168,61 +168,91 @@ def main():
     model.train()
     update_ema(ema, model, decay=0, sharded=False)
     ema.eval()
+    if cfg.mask_ratios is not None:
+        mask_generator = MaskGenerator(cfg.mask_ratios)
 
     # =======================================================
     # 5. boost model for distributed training with colossalai
     # =======================================================
     torch.set_default_dtype(dtype)
     model, optimizer, _, dataloader, lr_scheduler = booster.boost(
-        model=model, optimizer=optimizer, lr_scheduler=lr_scheduler, dataloader=dataloader
+        model=model,
+        optimizer=optimizer,
+        lr_scheduler=lr_scheduler,
+        dataloader=dataloader,
     )
     torch.set_default_dtype(torch.float)
-    num_steps_per_epoch = len(dataloader)
     logger.info("Boost model for distributed training")
+    if cfg.dataset.type == "VariableVideoTextDataset":
+        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
+    else:
+        num_steps_per_epoch = len(dataloader)
 
     # =======================================================
     # 6. training loop
     # =======================================================
-    start_epoch = start_step = log_step = sampler_start_idx = 0
+    start_epoch = start_step = log_step = sampler_start_idx = acc_step = 0
     running_loss = 0.0
-
+    sampler_to_io = dataloader.batch_sampler if cfg.dataset.type == "VariableVideoTextDataset" else None
     # 6.1. resume training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(booster, model, ema, optimizer, lr_scheduler, cfg.load)
+        ret = load(
+            booster,
+            model,
+            ema,
+            optimizer,
+            lr_scheduler,
+            cfg.load,
+            sampler=sampler_to_io if not cfg.start_from_scratch else None,
+        )
+        if not cfg.start_from_scratch:
+            start_epoch, start_step, sampler_start_idx = ret
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
-    dataloader.sampler.set_start_index(sampler_start_idx)
+    if cfg.dataset.type == "VideoTextDataset":
+        dataloader.sampler.set_start_index(sampler_start_idx)
     model_sharding(ema)
 
     # 6.2. training loop
     for epoch in range(start_epoch, cfg.epochs):
-        dataloader.sampler.set_epoch(epoch)
+        if cfg.dataset.type == "VideoTextDataset":
+            dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
         logger.info(f"Beginning epoch {epoch}...")
 
         with tqdm(
-            range(start_step, num_steps_per_epoch),
+            enumerate(dataloader_iter, start=start_step),
             desc=f"Epoch {epoch}",
             disable=not coordinator.is_master(),
-            total=num_steps_per_epoch,
             initial=start_step,
+            total=num_steps_per_epoch,
         ) as pbar:
-            for step in pbar:
-                batch = next(dataloader_iter)
-                x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                y = batch["text"]
-
+            for step, batch in pbar:
+                x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
+                y = batch.pop("text")
+                # Visual and text encoding
                 with torch.no_grad():
                     # Prepare visual inputs
                     x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y)
 
+                # Mask
+                if cfg.mask_ratios is not None:
+                    mask = mask_generator.get_masks(x)
+                    model_args["x_mask"] = mask
+                else:
+                    mask = None
+
+                # Video info
+                for k, v in batch.items():
+                    model_args[k] = v.to(device, dtype)
+
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
-                loss_dict = scheduler.training_losses(model, x, t, model_args)
+                loss_dict = scheduler.training_losses(model, x, t, model_args, mask=mask)
 
                 # Backward & update
                 loss = loss_dict["loss"].mean()
@@ -238,6 +268,7 @@ def main():
                 running_loss += loss.item()
                 global_step = epoch * num_steps_per_epoch + step
                 log_step += 1
+                acc_step += 1
 
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
@@ -250,10 +281,10 @@ def main():
                         wandb.log(
                             {
                                 "iter": global_step,
-                                "num_samples": global_step * total_batch_size,
                                 "epoch": epoch,
                                 "loss": loss.item(),
                                 "avg_loss": avg_loss,
+                                "acc_step": acc_step,
                             },
                             step=global_step,
                         )
@@ -273,13 +304,18 @@ def main():
                         coordinator,
                         exp_dir,
                         ema_shape_dict,
+                        sampler=sampler_to_io,
                     )
                     logger.info(
                         f"Saved checkpoint at epoch {epoch} step {step + 1} global_step {global_step + 1} to {exp_dir}"
                     )
 
         # the continue epochs are not resumed, so we need to reset the sampler start index and start step
-        dataloader.sampler.set_start_index(0)
+        if cfg.dataset.type == "VideoTextDataset":
+            dataloader.sampler.set_start_index(0)
+        if cfg.dataset.type == "VariableVideoTextDataset":
+            dataloader.batch_sampler.set_epoch(epoch + 1)
+            print("Epoch done, recomputing batch sampler")
         start_step = 0
 
 

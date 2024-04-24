@@ -1,8 +1,62 @@
 # Commands
 
+- [Inference](#inference)
+  - [Inference with Open-Sora 1.1](#inference-with-open-sora-11)
+  - [Inference with DiT pretrained on ImageNet](#inference-with-dit-pretrained-on-imagenet)
+  - [Inference with Latte pretrained on UCF101](#inference-with-latte-pretrained-on-ucf101)
+  - [Inference with PixArt-α pretrained weights](#inference-with-pixart-α-pretrained-weights)
+  - [Inference with checkpoints saved during training](#inference-with-checkpoints-saved-during-training)
+  - [Inference Hyperparameters](#inference-hyperparameters)
+- [Training](#training)
+  - [Training Hyperparameters](#training-hyperparameters)
+- [Search batch size for buckets](#search-batch-size-for-buckets)
+
 ## Inference
 
 You can modify corresponding config files to change the inference settings. See more details [here](/docs/structure.md#inference-config-demos).
+
+### Inference with Open-Sora 1.1
+
+Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
+
+```bash
+# image sampling with prompt path
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt-path assets/texts/t2i_samples.txt --num-frames 1 --image-size 1024 1024
+
+# image sampling with prompt
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 1 --image-size 1024 1024
+
+# video sampling
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 16 --image-size 480 854
+```
+
+You can adjust the `--num-frames` and `--image-size` to generate different results. We recommend you to use the same image size as the training resolution, which is defined in [aspect.py](/opensora/datasets/aspect.py). Some examples are shown below.
+
+- 240p
+  - 16:9 240x426
+  - 3:4 276x368
+  - 1:1 320x320
+- 480p
+  - 16:9 480x854
+  - 3:4 554x738
+  - 1:1 640x640
+- 720p
+  - 16:9 720x1280
+  - 3:4 832x1110
+  - 1:1 960x960
+
+`inference-long.py` is compatible with `inference.py` and supports advanced features.
+
+```bash
+# long video generation
+# image condition
+# video extending
+# video connecting
+# video editing
+```
 
 ### Inference with DiT pretrained on ImageNet
 
@@ -90,3 +144,50 @@ You can modify corresponding config files to change the training settings. See m
 ### Training Hyperparameters
 
 1. `dtype` is the data type for training. Only `fp16` and `bf16` are supported. ColossalAI automatically enables the mixed precision training for `fp16` and `bf16`. During training, we find `bf16` more stable.
+
+## Search batch size for buckets
+
+To search the batch size for buckets, run the following command.
+
+```bash
+torchrun --standalone --nproc_per_node 1 scripts/search_bs.py configs/opensora-v1-1/train/benchmark.py --data-path YOUR_CSV_PATH -o YOUR_OUTPUT_CONFIG_PATH --base-resolution 240p --base-frames 128 --batch-size-start 2 --batch-size-end 256 --batch-size-step 2
+```
+
+If your dataset is extremely large, you extract a subset of the dataset for the search.
+
+```bash
+# each bucket contains 1000 samples
+python tools/datasets/split.py YOUR_CSV_PATH -o YOUR_SUBSET_CSV_PATH -c configs/opensora-v1-1/train/video.py -l 1000
+```
+
+If you want to control the batch size search more granularly, you can configure batch size start, end, and step in the config file.
+
+Bucket config format:
+
+1. `{ resolution: {num_frames: (prob, batch_size)} }`, in this case batch_size is ignored when searching
+2. `{ resolution: {num_frames: (prob, (max_batch_size, ))} }`, batch_size is searched in the range `[batch_size_start, max_batch_size)`, batch_size_start is configured via CLI
+3. `{ resolution: {num_frames: (prob, (min_batch_size, max_batch_size))} }`, batch_size is searched in the range `[min_batch_size, max_batch_size)`
+4. `{ resolution: {num_frames: (prob, (min_batch_size, max_batch_size, step_size))} }`, batch_size is searched in the range `[min_batch_size, max_batch_size)` with step_size (grid search)
+5. `{ resolution: {num_frames: (0.0, None)} }`, this bucket will not be used
+
+Here is an example of the bucket config:
+
+```python
+bucket_config = {
+
+    "240p": {
+        16: (1.0, (2, 32)),
+        32: (1.0, (2, 16)),
+        64: (1.0, (2, 8)),
+        128: (1.0, (2, 6)),
+    },
+    "256": {1: (1.0, (128, 300))},
+    "512": {1: (0.5, (64, 128))},
+    "480p": {1: (0.4, (32, 128)), 16: (0.4, (2, 32)), 32: (0.0, None)},
+    "720p": {16: (0.1, (2, 16)), 32: (0.0, None)},  # No examples now
+    "1024": {1: (0.3, (8, 64))},
+    "1080p": {1: (0.3, (2, 32))},
+}
+```
+
+It will print the best batch size (and corresponding step time) for each bucket and save the output config file.
