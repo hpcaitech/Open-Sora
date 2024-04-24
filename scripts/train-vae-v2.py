@@ -388,7 +388,7 @@ def main():
 
                             lecam_ema_real, lecam_ema_fake = lecam_ema.get()
 
-                            disc_loss = disc_loss_fn(
+                            weighted_d_adversarial_loss, lecam_loss, gradient_penalty_loss = disc_loss_fn(
                                 real_logits, 
                                 fake_logits, 
                                 global_step, 
@@ -396,7 +396,7 @@ def main():
                                 lecam_ema_fake = lecam_ema_fake, 
                                 real_video = real_video if cfg.gradient_penalty_loss_weight is not None else None,
                             )
-
+                            disc_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty_loss
                             if cfg.ema_decay is not None: 
                                 # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.
                                 # lecam_ema_real = lecam_ema_real * cfg.ema_decay + (1 - cfg.ema_decay) * torch.mean(real_logits.clone().detach())
@@ -440,6 +440,8 @@ def main():
                                         "kl_loss": weighted_kl_loss.item(),
                                         "gen_adv_loss": adversarial_loss.item(),
                                         "disc_loss": disc_loss.item(),
+                                        "lecam_loss": lecam_loss.item(),
+                                        "r1_grad_penalty": gradient_penalty_loss.item(),
                                         "avg_loss": avg_loss,
                                     },
                                     step=global_step,

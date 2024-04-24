@@ -1251,8 +1251,7 @@ class DiscriminatorLoss(nn.Module):
         else:
             weighted_d_adversarial_loss = 0
 
-        lecam_loss = 0.0
-
+        lecam_loss = torch.tensor(0.0)
         if self.lecam_loss_weight is not None and self.lecam_loss_weight > 0.0:
             real_pred = torch.mean(real_logits)
             fake_pred = torch.mean(fake_logits)
@@ -1261,24 +1260,22 @@ class DiscriminatorLoss(nn.Module):
                                     lecam_ema_fake)
             lecam_loss = lecam_loss * self.lecam_loss_weight
         
-        gradient_penalty = 0.0
+        gradient_penalty = torch.tensor(0.0)
         if self.gradient_penalty_loss_weight is not None and self.gradient_penalty_loss_weight > 0.0:
             assert real_video is not None
             # gradient_penalty = gradient_penalty_fn(real_video, real_logits)
             gradient_penalty = r1_penalty(real_video, real_logits) # MAGVIT uses r1 penalty
             gradient_penalty *= self.gradient_penalty_loss_weight
             
-        discriminator_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty
-
+        # discriminator_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty
 
         # log = {
-        #     "{}/discriminator_loss".format(split): discriminator_loss.clone().detach().mean(),
         #     "{}/d_adversarial_loss".format(split): weighted_d_adversarial_loss.detach().mean(),
         #     "{}/lecam_loss".format(split): lecam_loss.detach().mean(),
         #     "{}/gradient_penalty".format(split): gradient_penalty.detach().mean(),
         # }
 
-        return discriminator_loss
+        return (weighted_d_adversarial_loss, lecam_loss, gradient_penalty)
 
 @MODELS.register_module("VAE_MAGVIT_V2")
 def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
