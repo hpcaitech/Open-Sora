@@ -227,7 +227,7 @@ def main():
                     real_logits = discriminator(real_video.contiguous().detach()) 
 
                 fake_logits = discriminator(fake_video.contiguous().detach())
-                disc_loss = disc_loss_fn(
+                weighted_d_adversarial_loss, lecam_loss, gradient_penalty_loss = disc_loss_fn(
                     real_logits, 
                     fake_logits, 
                     cfg.discriminator_start+1, # Hack to use discriminator 
@@ -235,6 +235,8 @@ def main():
                     lecam_ema_fake = lecam_ema_fake, 
                     real_video = real_video if cfg.gradient_penalty_loss_weight is not None else None,
                 )
+
+                disc_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty_loss
 
                 if cfg.ema_decay is not None: 
                     # SCH: TODO: is this written properly like this for moving average? e.g. distributed training etc.

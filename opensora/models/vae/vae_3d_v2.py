@@ -65,6 +65,7 @@ def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
   return lecam_loss
 
 # Open-Sora-Plan
+# Very bad, do not use
 def r1_penalty(real_img, real_pred):
     """R1 regularization for discriminator. The core idea is to
         penalize the gradient on real data alone: when the
@@ -82,6 +83,7 @@ def r1_penalty(real_img, real_pred):
     return grad_penalty
 
 # Open-Sora-Plan
+# Implementation as described by https://arxiv.org/abs/1704.00028 # TODO: checkout the codes
 def gradient_penalty_loss(discriminator, real_data, fake_data, weight=None):
     """Calculate gradient penalty for wgan-gp.
 
