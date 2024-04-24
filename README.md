@@ -250,7 +250,7 @@ To lower the memory usage, set a smaller `vae.micro_batch_size` in the config (s
 High-quality data is crucial for training good generation models.
 To this end, we establish a complete pipeline for data processing, which could seamlessly convert raw videos to high-quality video-text pairs.
 The pipeline is shown below. For detailed information, please refer to [data processing](docs/data_processing.md).
-Also check out the [datasets](docs/data_processing.md) we use.
+Also check out the [datasets](docs/datasets.md) we use.
 
 
 ![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
