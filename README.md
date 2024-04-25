@@ -22,6 +22,8 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 [[中文文档]](/docs/zh_CN/README.md)
 
+[潞晨云部署Open-Sora保姆级视频教程](https://www.bilibili.com/video/BV141421R7Ag)
+
 <h4>Open-Sora is still at an early stage and under active development.</h4>
 
 ## 📰 News
