@@ -20,9 +20,7 @@ Open-Sora not only democratizes access to advanced video generation techniques, 
 streamlined and user-friendly platform that simplifies the complexities of video production.
 With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation.
 
-[[中文文档]](/docs/zh_CN/README.md)
-
-[潞晨云部署Open-Sora保姆级视频教程](https://www.bilibili.com/video/BV141421R7Ag)
+[[中文文档]](/docs/zh_CN/README.md) [[潞晨云部署视频教程]](https://www.bilibili.com/video/BV141421R7Ag)
 
 <h4>Open-Sora is still at an early stage and under active development.</h4>
 
@@ -41,9 +39,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 🎥 Latest Demo
 
-🔥 You can experinece Open-Sora on our [🤗 Gradio application on Hugging Face](https://huggingface.co/spaces/hpcai-tech/open-sora)
-
-More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sora/).
+🔥 You can experinece Open-Sora on our [🤗 Gradio application on Hugging Face](https://huggingface.co/spaces/hpcai-tech/open-sora). More samples are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
 | **2s 240×426**                                                                                                                                              | **2s 240×426**                                                                                                                                             |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,6 +53,10 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 | **16s 320×320**                                                                                                                                        | **16s 224×448**                                                                                                                                        | **2s 426×240**                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 
 <details>
 <summary>OpenSora 1.0 Demo</summary>
@@ -114,8 +114,8 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 ### TODO list sorted by priority
 
 * [ ] Training Video-VAE and adapt our model to new VAE. **[WIP]**
-* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3.
-* [ ] Scaling model parameters and dataset size.
+* [ ] Scaling model parameters and dataset size. **[WIP]**
+* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3. **[WIP]**
 
 <details>
 <summary>View more</summary>
@@ -184,21 +184,25 @@ pip install -v .
 
 ### Open-Sora 1.1 Model Weights
 
-| Resolution         | Data                       | #iterations | Batch Size                                        | URL                                                                  |
-| ------------------ | -------------------------- | ----------- | ------------------------------------------------- | -------------------------------------------------------------------- |
-| mainly 144p & 240p | 10M videos + 2M images     | 100k        | [dynamic](/configs/opensora-v1-1/train/stage2.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
-| 144p to 720p       | 500K HQ videos + 1M images | 4k          | [dynamic](/configs/opensora-v1-1/train/stage3.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
+| Resolution         | Model Size | Data                       | #iterations | Batch Size                                        | URL                                                                  |
+| ------------------ | ---------- | -------------------------- | ----------- | ------------------------------------------------- | -------------------------------------------------------------------- |
+| mainly 144p & 240p | 700M       | 10M videos + 2M images     | 100k        | [dynamic](/configs/opensora-v1-1/train/stage2.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
+| 144p to 720p       | 700M       | 500K HQ videos + 1M images | 4k          | [dynamic](/configs/opensora-v1-1/train/stage3.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
+
+See our **[report 1.1](docs/report_02.md)** for more infomation.
+
+:warning: **LIMITATION**: This version contains known issues which we are going to fix in the next version (as we save computation resource for the next release). In addition, the video generation may fail for long duration, and high resolution will have noisy results due to this problem.
 
 ### Open-Sora 1.0 Model Weights
 
 <details>
 <summary>View more</summary>
 
-| Resolution | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-| ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
-| 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
-| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
-| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
+| Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
+| ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
+| 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
+| 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
+| 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 
 Training orders: 16x256x256 $\rightarrow$ 16x256x256 HQ $\rightarrow$ 16x512x512 HQ.
 
@@ -328,24 +332,6 @@ following [all-contributors](https://github.com/all-contributors/all-contributor
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/zhengzangw"><img src="https://avatars.githubusercontent.com/zhengzangw?v=4?s=100" width="100px;" alt="zhengzangw"/><br /><sub><b>zhengzangw</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=zhengzangw" title="Code">💻</a> <a href="https://github.com/hpcaitech/Open-Sora/commits?author=zhengzangw" title="Documentation">📖</a> <a href="#ideas-zhengzangw" title="Ideas, Planning, & Feedback">🤔</a> <a href="#video-zhengzangw" title="Videos">📹</a> <a href="#maintenance-zhengzangw" title="Maintenance">🚧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ver217"><img src="https://avatars.githubusercontent.com/ver217?v=4?s=100" width="100px;" alt="ver217"/><br /><sub><b>ver217</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=ver217" title="Code">💻</a> <a href="#ideas-ver217" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/hpcaitech/Open-Sora/commits?author=ver217" title="Documentation">📖</a> <a href="#bug-ver217" title="Bug reports">🐛</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/FrankLeeeee"><img src="https://avatars.githubusercontent.com/FrankLeeeee?v=4?s=100" width="100px;" alt="FrankLeeeee"/><br /><sub><b>FrankLeeeee</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=FrankLeeeee" title="Code">💻</a> <a href="#infra-FrankLeeeee" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#tool-FrankLeeeee" title="Tools">🔧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/xyupeng"><img src="https://avatars.githubusercontent.com/xyupeng?v=4?s=100" width="100px;" alt="xyupeng"/><br /><sub><b>xyupeng</b></sub></a><br /><a href="https://github.com/hpcaitech/Open-Sora/commits?author=xyupeng" title="Code">💻</a> <a href="#doc-xyupeng" title="Documentation">📖</a> <a href="#design-xyupeng" title="Design">🎨</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Yanjia0"><img src="https://avatars.githubusercontent.com/Yanjia0?v=4?s=100" width="100px;" alt="Yanjia0"/><br /><sub><b>Yanjia0</b></sub></a><br /><a href="#doc-Yanjia0" title="Documentation">📖</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/binmakeswell"><img src="https://avatars.githubusercontent.com/binmakeswell?v=4?s=100" width="100px;" alt="binmakeswell"/><br /><sub><b>binmakeswell</b></sub></a><br /><a href="#doc-binmakeswell" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/eltociear"><img src="https://avatars.githubusercontent.com/eltociear?v=4?s=100" width="100px;" alt="eltociear"/><br /><sub><b>eltociear</b></sub></a><br /><a href="#doc-eltociear" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ganeshkrishnan1"><img src="https://avatars.githubusercontent.com/ganeshkrishnan1?v=4?s=100" width="100px;" alt="ganeshkrishnan1"/><br /><sub><b>ganeshkrishnan1</b></sub></a><br /><a href="#doc-ganeshkrishnan1" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/fastalgo"><img src="https://avatars.githubusercontent.com/fastalgo?v=4?s=100" width="100px;" alt="fastalgo"/><br /><sub><b>fastalgo</b></sub></a><br /><a href="#doc-fastalgo" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/powerzbt"><img src="https://avatars.githubusercontent.com/powerzbt?v=4?s=100" width="100px;" alt="powerzbt"/><br /><sub><b>powerzbt</b></sub></a><br /><a href="#doc-powerzbt" title="Documentation">📖</a></td>
-    </tr>
-  </tbody>
-</table>
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
