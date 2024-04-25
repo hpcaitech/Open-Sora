@@ -181,3 +181,8 @@ cache/
 hostfile
 gradio_cached_examples/
 wandb/
+
+# npm
+node_modules/
+package-lock.json
+package.json
