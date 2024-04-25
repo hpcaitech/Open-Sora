@@ -1,5 +1,6 @@
 num_frames = 16
-fps = 24 // 3
+frame_interval = 3
+fps = 24
 image_size = (240, 426)
 multi_resolution = "STDiT2"
 
@@ -8,6 +9,7 @@ model = dict(
     type="STDiT2-XL/2",
     from_pretrained=None,
     input_sq_size=512,
+    qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )

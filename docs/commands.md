@@ -1,8 +1,62 @@
 # Commands
 
+- [Inference](#inference)
+  - [Inference with Open-Sora 1.1](#inference-with-open-sora-11)
+  - [Inference with DiT pretrained on ImageNet](#inference-with-dit-pretrained-on-imagenet)
+  - [Inference with Latte pretrained on UCF101](#inference-with-latte-pretrained-on-ucf101)
+  - [Inference with PixArt-α pretrained weights](#inference-with-pixart-α-pretrained-weights)
+  - [Inference with checkpoints saved during training](#inference-with-checkpoints-saved-during-training)
+  - [Inference Hyperparameters](#inference-hyperparameters)
+- [Training](#training)
+  - [Training Hyperparameters](#training-hyperparameters)
+- [Search batch size for buckets](#search-batch-size-for-buckets)
+
 ## Inference
 
 You can modify corresponding config files to change the inference settings. See more details [here](/docs/structure.md#inference-config-demos).
+
+### Inference with Open-Sora 1.1
+
+Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
+
+```bash
+# image sampling with prompt path
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt-path assets/texts/t2i_samples.txt --num-frames 1 --image-size 1024 1024
+
+# image sampling with prompt
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 1 --image-size 1024 1024
+
+# video sampling
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
+    --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 16 --image-size 480 854
+```
+
+You can adjust the `--num-frames` and `--image-size` to generate different results. We recommend you to use the same image size as the training resolution, which is defined in [aspect.py](/opensora/datasets/aspect.py). Some examples are shown below.
+
+- 240p
+  - 16:9 240x426
+  - 3:4 276x368
+  - 1:1 320x320
+- 480p
+  - 16:9 480x854
+  - 3:4 554x738
+  - 1:1 640x640
+- 720p
+  - 16:9 720x1280
+  - 3:4 832x1110
+  - 1:1 960x960
+
+`inference-long.py` is compatible with `inference.py` and supports advanced features.
+
+```bash
+# long video generation
+# image condition
+# video extending
+# video connecting
+# video editing
+```
 
 ### Inference with DiT pretrained on ImageNet
 
@@ -69,19 +123,6 @@ vae = dict(
     type="VideoAutoencoderKLTemporalDecoder",
     from_pretrained="pretrained_models/vae_temporal_decoder",
 )
-```
-
-### Evalution
-
-Use the following commands to generate predefined samples.
-
-```bash
-# image
-bash scripts/misc/sample.sh /path/to/ckpt --image
-# video
-bash scripts/misc/sample.sh /path/to/ckpt --video
-# video edit
-bash scripts/misc/sample.sh /path/to/ckpt --video-edit
 ```
 
 ## Training

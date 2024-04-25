@@ -20,14 +20,13 @@ tqdm.pandas()
 try:
     from pandarallel import pandarallel
 
-    pandarallel.initialize(progress_bar=True)
-    pandas_has_parallel = True
+    PANDA_USE_PARALLEL = True
 except ImportError:
-    pandas_has_parallel = False
+    PANDA_USE_PARALLEL = False
 
 
 def apply(df, func, **kwargs):
-    if pandas_has_parallel:
+    if PANDA_USE_PARALLEL:
         return df.parallel_apply(func, **kwargs)
     return df.progress_apply(func, **kwargs)
 
@@ -520,7 +519,6 @@ def main(args):
             height = data["height"]
             width = data["width"]
             data["resolution"] = height * width
-        breakpoint()
         data = data[data["resolution"] <= args.hwmax]
     if args.aesmin is not None:
         assert "aes" in data.columns
@@ -554,6 +552,7 @@ def parse_args():
     parser.add_argument("--output", type=str, default=None, help="output path")
     parser.add_argument("--format", type=str, default="csv", help="output format", choices=["csv", "parquet"])
     parser.add_argument("--disable-parallel", action="store_true", help="disable parallel processing")
+    parser.add_argument("--num-workers", type=int, default=None, help="number of workers")
     parser.add_argument("--seed", type=int, default=None, help="random seed")
 
     # special case
@@ -684,7 +683,12 @@ def get_output_path(args, input_name):
 if __name__ == "__main__":
     args = parse_args()
     if args.disable_parallel:
-        pandas_has_parallel = False
+        PANDA_USE_PARALLEL = False
+    if PANDA_USE_PARALLEL:
+        if args.num_workers is not None:
+            pandarallel.initialize(nb_workers=args.num_workers, progress_bar=True)
+        else:
+            pandarallel.initialize(progress_bar=True)
     if args.seed is not None:
         random.seed(args.seed)
         np.random.seed(args.seed)

@@ -4,14 +4,20 @@ from .trident_conv import MultiScaleTridentConv
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_planes, planes, norm_layer=nn.InstanceNorm2d, stride=1, dilation=1,
-                 ):
+    def __init__(
+        self,
+        in_planes,
+        planes,
+        norm_layer=nn.InstanceNorm2d,
+        stride=1,
+        dilation=1,
+    ):
         super(ResidualBlock, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3,
-                               dilation=dilation, padding=dilation, stride=stride, bias=False)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
-                               dilation=dilation, padding=dilation, bias=False)
+        self.conv1 = nn.Conv2d(
+            in_planes, planes, kernel_size=3, dilation=dilation, padding=dilation, stride=stride, bias=False
+        )
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, dilation=dilation, padding=dilation, bias=False)
         self.relu = nn.ReLU(inplace=True)
 
         self.norm1 = norm_layer(planes)
@@ -22,8 +28,7 @@ class ResidualBlock(nn.Module):
         if stride == 1 and in_planes == planes:
             self.downsample = None
         else:
-            self.downsample = nn.Sequential(
-                nn.Conv2d(in_planes, planes, kernel_size=1, stride=stride), self.norm3)
+            self.downsample = nn.Sequential(nn.Conv2d(in_planes, planes, kernel_size=1, stride=stride), self.norm3)
 
     def forward(self, x):
         y = x
@@ -37,11 +42,13 @@ class ResidualBlock(nn.Module):
 
 
 class CNNEncoder(nn.Module):
-    def __init__(self, output_dim=128,
-                 norm_layer=nn.InstanceNorm2d,
-                 num_output_scales=1,
-                 **kwargs,
-                 ):
+    def __init__(
+        self,
+        output_dim=128,
+        norm_layer=nn.InstanceNorm2d,
+        num_output_scales=1,
+        **kwargs,
+    ):
         super(CNNEncoder, self).__init__()
         self.num_branch = num_output_scales
 
@@ -57,9 +64,11 @@ class CNNEncoder(nn.Module):
 
         # highest resolution 1/4 or 1/8
         stride = 2 if num_output_scales == 1 else 1
-        self.layer3 = self._make_layer(feature_dims[2], stride=stride,
-                                       norm_layer=norm_layer,
-                                       )  # 1/4 or 1/8
+        self.layer3 = self._make_layer(
+            feature_dims[2],
+            stride=stride,
+            norm_layer=norm_layer,
+        )  # 1/4 or 1/8
 
         self.conv2 = nn.Conv2d(feature_dims[2], output_dim, 1, 1, 0)
 
@@ -73,16 +82,18 @@ class CNNEncoder(nn.Module):
             else:
                 raise ValueError
 
-            self.trident_conv = MultiScaleTridentConv(output_dim, output_dim,
-                                                      kernel_size=3,
-                                                      strides=strides,
-                                                      paddings=1,
-                                                      num_branch=self.num_branch,
-                                                      )
+            self.trident_conv = MultiScaleTridentConv(
+                output_dim,
+                output_dim,
+                kernel_size=3,
+                strides=strides,
+                paddings=1,
+                num_branch=self.num_branch,
+            )
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, (nn.BatchNorm2d, nn.InstanceNorm2d, nn.GroupNorm)):
                 if m.weight is not None:
                     nn.init.constant_(m.weight, 1)

@@ -405,6 +405,27 @@ class GaussianDiffusion:
                  - 'sample': a random sample from the model.
                  - 'pred_xstart': a prediction of x_0.
         """
+        if mask is not None:
+            if mask.shape[0] != x.shape[0]:
+                mask = mask.repeat(2, 1)  # HACK
+            mask_t = (mask * len(self.betas)).to(torch.int)
+
+            # x0: copy unchanged x values
+            # x_noise: add noise to x values
+            x0 = x.clone()
+            x_noise = x0 * _extract_into_tensor(self.sqrt_alphas_cumprod, t, x.shape) + torch.randn_like(
+                x
+            ) * _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x.shape)
+
+            # active noise addition
+            mask_t_equall = (mask_t == t.unsqueeze(1))[:, None, :, None, None]
+            x = torch.where(mask_t_equall, x_noise, x0)
+
+            # create x_mask
+            mask_t_upper = (mask_t > t.unsqueeze(1))[:, None, :, None, None]
+            batch_size = x.shape[0]
+            model_kwargs["x_mask"] = mask_t_upper.reshape(batch_size, -1).to(torch.bool)
+
         out = self.p_mean_variance(
             model,
             x,
@@ -418,10 +439,10 @@ class GaussianDiffusion:
         if cond_fn is not None:
             out["mean"] = self.condition_mean(cond_fn, out, x, t, model_kwargs=model_kwargs)
         sample = out["mean"] + nonzero_mask * torch.exp(0.5 * out["log_variance"]) * noise
+
         if mask is not None:
-            if mask.shape[0] != x.shape[0]:
-                mask = mask.repeat(2, 1)  # HACK
-            sample = torch.where(mask[:, None, :, None, None], sample, x)
+            mask_t_lower = (mask_t < t.unsqueeze(1))[:, None, :, None, None]
+            sample = torch.where(mask_t_lower, x0, sample)
 
         return {"sample": sample, "pred_xstart": out["pred_xstart"]}
 

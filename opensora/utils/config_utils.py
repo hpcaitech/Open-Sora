@@ -35,6 +35,8 @@ def parse_args(training=False):
         parser.add_argument("--sample-name", default=None, type=str, help="sample name, default is sample_idx")
         parser.add_argument("--start-index", default=None, type=int, help="start index for sample name")
         parser.add_argument("--end-index", default=None, type=int, help="end index for sample name")
+        parser.add_argument("--num-sample", default=None, type=int, help="number of samples to generate for one prompt")
+        parser.add_argument("--prompt-as-path", action="store_true", help="use prompt as path to save samples")
 
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
@@ -61,6 +63,7 @@ def parse_args(training=False):
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
         parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
+        parser.add_argument("--start-from-scratch", action="store_true", help="start training from scratch")
 
     return parser.parse_args()
 
@@ -72,6 +75,12 @@ def merge_args(cfg, args, training=False):
     if training and args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
+    if not training and args.cfg_scale is not None:
+        cfg.scheduler["cfg_scale"] = args.cfg_scale
+        args.cfg_scale = None
+    if not training and args.num_sampling_steps is not None:
+        cfg.scheduler["num_sampling_steps"] = args.num_sampling_steps
+        args.num_sampling_steps = None
 
     for k, v in vars(args).items():
         if v is not None:
@@ -84,6 +93,14 @@ def merge_args(cfg, args, training=False):
             cfg["reference_path"] = None
         if "loop" not in cfg:
             cfg["loop"] = 1
+        if "frame_interval" not in cfg:
+            cfg["frame_interval"] = 1
+        if "sample_name" not in cfg:
+            cfg["sample_name"] = None
+        if "num_sample" not in cfg:
+            cfg["num_sample"] = 1
+        if "prompt_as_path" not in cfg:
+            cfg["prompt_as_path"] = False
         # - Prompt handling
         if "prompt" not in cfg or cfg["prompt"] is None:
             assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
@@ -99,10 +116,14 @@ def merge_args(cfg, args, training=False):
         # - Allow not set
         if "mask_ratios" not in cfg:
             cfg["mask_ratios"] = None
+        if "start_from_scratch" not in cfg:
+            cfg["start_from_scratch"] = False
         if "bucket_config" not in cfg:
             cfg["bucket_config"] = None
         if "transform_name" not in cfg.dataset:
             cfg.dataset["transform_name"] = "center"
+        if "num_bucket_build_workers" not in cfg:
+            cfg["num_bucket_build_workers"] = 1
 
     # Both training and inference
     if "multi_resolution" not in cfg:
