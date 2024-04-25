@@ -176,7 +176,11 @@ pip install -v .
 
 ### Open-Sora 1.1 Model Weights
 
-TBD
+| Resolution | Data                   | #iterations | Batch Size | URL                                                                                           |
+| ---------- | ---------------------  | ----------- | ---------- | --------------------------------------------------------------------------------------------- |
+| dynamic    | 10M videos + 2M images | 100         | dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
+| dynamic    | 20K HQ                 | 4k          | dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
+
 
 ### Open-Sora 1.0 Model Weights
 
