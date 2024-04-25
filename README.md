@@ -37,7 +37,16 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 🎥 Latest Demo
 
-TBD
+
+| **2s 240×426**   | **2s 240×426**  | 
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | 
+| [<img src="assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2)                                | [<img src="assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2)                         | 
+| [<img src="assets/demo/sora_16x240x426_27.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/f7ce4aaa-528f-40a8-be7a-72e61eaacbbd)                                | [<img src="assets/demo/sora_16x240x426_40.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/5d58d71e-1fda-4d90-9ad3-5f2f7b75c6a9)                         | 
+
+| **2s 426×240**   | **2s 426×240**  | **4s 480×854**  | 
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | 
+| [<img src="assets/demo/sora_16x426x240_24.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/34ecb4a0-4eef-4286-ad4c-8e3a87e5a9fd) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) | [<img src="assets/demo/sample_32x480x854_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c1619333-25d7-42ba-a91c-18dbc1870b18) | 
+
 
 <details>
 <summary>OpenSora 1.0 Demo</summary>
@@ -167,7 +176,11 @@ pip install -v .
 
 ### Open-Sora 1.1 Model Weights
 
-TBD
+| Resolution | Data                   | #iterations | Batch Size | URL                                                                                           |
+| ---------- | ---------------------  | ----------- | ---------- | --------------------------------------------------------------------------------------------- |
+| dynamic    | 10M videos + 2M images | 100         | dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
+| dynamic    | 20K HQ                 | 4k          | dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
+
 
 ### Open-Sora 1.0 Model Weights
 
