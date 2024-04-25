@@ -16,16 +16,10 @@ bucket_config = {  # 6s/it
     "1024": {1: (0.3, 20)},
     "1080p": {1: (0.3, 8)},
 }
-# mask_ratios = {x
-#     "mask_no": 0.9,
-#     "mask_random": 0.06,
-#     "mask_head": 0.01,
-#     "mask_tail": 0.01,
-#     "mask_head_tail": 0.02,
-# }
 
 # Define acceleration
 num_workers = 4
+num_bucket_build_workers = 16
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
@@ -36,6 +30,7 @@ model = dict(
     type="STDiT2-XL/2",
     from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
+    qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
@@ -43,15 +38,17 @@ vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
     micro_batch_size=4,
+    local_files_only=True,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=200,
     shardformer=True,
+    local_files_only=True,
 )
 scheduler = dict(
-    type="iddpm-speed",
+    type="iddpm",
     timestep_respacing="",
 )
 

@@ -1,23 +1,30 @@
 num_frames = 16
-fps = 24 // 3
+frame_interval = 3
+fps = 24
 image_size = (240, 426)
 multi_resolution = "STDiT2"
 
 # Condition
 prompt_path = None
-prompt = None
+prompt = [
+    "A car driving on the ocean.",
+    'Drone view of waves crashing against the rugged cliffs along Big Sur\'s garay point beach. The crashing blue waters create white-tipped waves, while the golden light of the setting sun illuminates the rocky shore. A small island with a lighthouse sits in the distance, and green shrubbery covers the cliff\'s edge. The steep drop from the road down to the beach is a dramatic feat, with the cliff\'s edges jutting out over the sea. This is a view that captures the raw beauty of the coast and the rugged landscape of the Pacific Coast Highway.{"reference_path": "assets/images/condition/cliff.png", "mask_strategy": "0"}',
+    "In an ornate, historical hall, a massive tidal wave peaks and begins to crash. Two surfers, seizing the moment, skillfully navigate the face of the wave.",
+]
 
-loop = 10
+loop = 2
 condition_frame_length = 4
 reference_path = [
-    "assets/images/condition/cliff.png",
+    "https://cdn.openai.com/tmp/s/interp/d0.mp4",
+    None,
     "assets/images/condition/wave.png",
 ]
 # valid when reference_path is not None
-# (loop id, ref id, ref start, length, target start)
+# (loop id, ref id, ref start, target start, length, edit_ratio)
 mask_strategy = [
-    "0,0,0,1,0",
-    "0,0,0,1,0",
+    "0,0,0,0,8,0.3",
+    None,
+    "0",
 ]
 
 # Define model
@@ -25,6 +32,7 @@ model = dict(
     type="STDiT2-XL/2",
     from_pretrained=None,
     input_sq_size=512,
+    qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )

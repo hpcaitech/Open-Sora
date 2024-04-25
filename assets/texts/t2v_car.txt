@@ -1,0 +1,1 @@
+|0|A car driving on the in forest.|2|A car driving in the desert.|4|A car driving near the coast.|6|A car driving in the city.|8|A car driving near a mountain.|10|A car driving on the surface of a river.|12|A car driving on the surface of the earch.|14|A car driving in the universe.{"reference_path": "https://cdn.openai.com/tmp/s/interp/d0.mp4", "mask_strategy": "0,0,0,0,16,0.4"}

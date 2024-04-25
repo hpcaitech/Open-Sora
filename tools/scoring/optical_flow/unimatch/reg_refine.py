@@ -4,9 +4,12 @@ import torch.nn.functional as F
 
 
 class FlowHead(nn.Module):
-    def __init__(self, input_dim=128, hidden_dim=256,
-                 out_dim=2,
-                 ):
+    def __init__(
+        self,
+        input_dim=128,
+        hidden_dim=256,
+        out_dim=2,
+    ):
         super(FlowHead, self).__init__()
 
         self.conv1 = nn.Conv2d(input_dim, hidden_dim, 3, padding=1)
@@ -20,9 +23,12 @@ class FlowHead(nn.Module):
 
 
 class SepConvGRU(nn.Module):
-    def __init__(self, hidden_dim=128, input_dim=192 + 128,
-                 kernel_size=5,
-                 ):
+    def __init__(
+        self,
+        hidden_dim=128,
+        input_dim=192 + 128,
+        kernel_size=5,
+    ):
         padding = (kernel_size - 1) // 2
 
         super(SepConvGRU, self).__init__()
@@ -53,9 +59,11 @@ class SepConvGRU(nn.Module):
 
 
 class BasicMotionEncoder(nn.Module):
-    def __init__(self, corr_channels=324,
-                 flow_channels=2,
-                 ):
+    def __init__(
+        self,
+        corr_channels=324,
+        flow_channels=2,
+    ):
         super(BasicMotionEncoder, self).__init__()
 
         self.convc1 = nn.Conv2d(corr_channels, 256, 1, padding=0)
@@ -76,24 +84,29 @@ class BasicMotionEncoder(nn.Module):
 
 
 class BasicUpdateBlock(nn.Module):
-    def __init__(self, corr_channels=324,
-                 hidden_dim=128,
-                 context_dim=128,
-                 downsample_factor=8,
-                 flow_dim=2,
-                 bilinear_up=False,
-                 ):
+    def __init__(
+        self,
+        corr_channels=324,
+        hidden_dim=128,
+        context_dim=128,
+        downsample_factor=8,
+        flow_dim=2,
+        bilinear_up=False,
+    ):
         super(BasicUpdateBlock, self).__init__()
 
-        self.encoder = BasicMotionEncoder(corr_channels=corr_channels,
-                                          flow_channels=flow_dim,
-                                          )
+        self.encoder = BasicMotionEncoder(
+            corr_channels=corr_channels,
+            flow_channels=flow_dim,
+        )
 
         self.gru = SepConvGRU(hidden_dim=hidden_dim, input_dim=context_dim + hidden_dim)
 
-        self.flow_head = FlowHead(hidden_dim, hidden_dim=256,
-                                  out_dim=flow_dim,
-                                  )
+        self.flow_head = FlowHead(
+            hidden_dim,
+            hidden_dim=256,
+            out_dim=flow_dim,
+        )
 
         if bilinear_up:
             self.mask = None
@@ -101,7 +114,8 @@ class BasicUpdateBlock(nn.Module):
             self.mask = nn.Sequential(
                 nn.Conv2d(hidden_dim, 256, 3, padding=1),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(256, downsample_factor ** 2 * 9, 1, padding=0))
+                nn.Conv2d(256, downsample_factor**2 * 9, 1, padding=0),
+            )
 
     def forward(self, net, inp, corr, flow):
         motion_features = self.encoder(flow, corr)

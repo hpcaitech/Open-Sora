@@ -37,9 +37,7 @@ def split_by_bucket(
                 continue
             if bucket_cnt[bucket_id] < limit:
                 bucket_cnt[bucket_id] += 1
-                output_df = pd.concat(
-                    [output_df, pd.DataFrame([row])], ignore_index=True
-                )
+                output_df = pd.concat([output_df, pd.DataFrame([row])], ignore_index=True)
                 if len(output_df) >= total_limit:
                     break
         if len(output_df) >= total_limit:
@@ -71,6 +69,4 @@ if __name__ == "__main__":
                 p = 1.0
             d[frames] = (p, bs)
     bucket = Bucket(bucket_config)
-    split_by_bucket(
-        bucket, args.input, args.output, args.limit, cfg.dataset.frame_interval
-    )
+    split_by_bucket(bucket, args.input, args.output, args.limit, cfg.dataset.frame_interval)

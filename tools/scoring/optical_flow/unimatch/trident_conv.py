@@ -9,21 +9,21 @@ from torch.nn.modules.utils import _pair
 
 class MultiScaleTridentConv(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=1,
-            strides=1,
-            paddings=0,
-            dilations=1,
-            dilation=1,
-            groups=1,
-            num_branch=1,
-            test_branch_idx=-1,
-            bias=False,
-            norm=None,
-            activation=None,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        strides=1,
+        paddings=0,
+        dilations=1,
+        dilation=1,
+        groups=1,
+        num_branch=1,
+        test_branch_idx=-1,
+        bias=False,
+        norm=None,
+        activation=None,
     ):
         super(MultiScaleTridentConv, self).__init__()
         self.in_channels = in_channels
@@ -49,9 +49,7 @@ class MultiScaleTridentConv(nn.Module):
 
         assert len({self.num_branch, len(self.paddings), len(self.strides)}) == 1
 
-        self.weight = nn.Parameter(
-            torch.Tensor(out_channels, in_channels // groups, *self.kernel_size)
-        )
+        self.weight = nn.Parameter(torch.Tensor(out_channels, in_channels // groups, *self.kernel_size))
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_channels))
         else:

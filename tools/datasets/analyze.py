@@ -17,7 +17,7 @@ def read_file(input_path):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Path to the input dataset")
-    parser.add_argument("--save-img", type=str, default="samples/samples/infos/", help="Path to save the image")
+    parser.add_argument("--save-img", type=str, default="samples/infos/", help="Path to save the image")
     return parser.parse_args()
 
 
@@ -51,6 +51,7 @@ COLUMNS = {
 def main(args):
     data = read_file(args.input)
 
+    # === Image Data Info ===
     image_index = data["num_frames"] == 1
     if image_index.sum() > 0:
         print("=== Image Data Info ===")
@@ -65,10 +66,18 @@ def main(args):
                         plot_categorical_data(img_data, column, os.path.join(args.save_img, f"image_{column}.png"))
                     else:
                         plot_data(img_data, column, COLUMNS[column], os.path.join(args.save_img, f"image_{column}.png"))
+
+    # === Video Data Info ===
     if not image_index.all():
         print("=== Video Data Info ===")
         video_data = data[~image_index]
         print(f"Number of videos: {len(video_data)}")
+        if "num_frames" in video_data.columns:
+            total_num_frames = video_data["num_frames"].sum()
+            print(f"Number of frames: {total_num_frames}")
+            DEFAULT_FPS = 30
+            total_hours = total_num_frames / DEFAULT_FPS / 3600
+            print(f"Total hours (30 FPS): {int(total_hours)}")
         print(video_data.head())
         print(video_data.describe())
         if args.save_img:

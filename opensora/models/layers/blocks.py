@@ -23,18 +23,30 @@ import xformers.ops
 from einops import rearrange
 from timm.models.vision_transformer import Mlp
 
-from opensora.acceleration.communications import (
-    all_to_all,
-    split_forward_gather_backward,
-)
+from opensora.acceleration.communications import all_to_all, split_forward_gather_backward
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
 
 approx_gelu = lambda: nn.GELU(approximate="tanh")
 
 
-def get_layernorm(
-    hidden_size: torch.Tensor, eps: float, affine: bool, use_kernel: bool
-):
+class LlamaRMSNorm(nn.Module):
+    def __init__(self, hidden_size, eps=1e-6):
+        """
+        LlamaRMSNorm is equivalent to T5LayerNorm
+        """
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(hidden_size))
+        self.variance_epsilon = eps
+
+    def forward(self, hidden_states):
+        input_dtype = hidden_states.dtype
+        hidden_states = hidden_states.to(torch.float32)
+        variance = hidden_states.pow(2).mean(-1, keepdim=True)
+        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+        return self.weight * hidden_states.to(input_dtype)
+
+
+def get_layernorm(hidden_size: torch.Tensor, eps: float, affine: bool, use_kernel: bool):
     if use_kernel:
         try:
             from apex.normalization import FusedLayerNorm
@@ -89,9 +101,7 @@ class PatchEmbed3D(nn.Module):
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
-        self.proj = nn.Conv3d(
-            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size
-        )
+        self.proj = nn.Conv3d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
         if norm_layer is not None:
             self.norm = norm_layer(embed_dim)
         else:
@@ -128,7 +138,7 @@ class Attention(nn.Module):
         qk_norm: bool = False,
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
-        norm_layer: nn.Module = nn.LayerNorm,
+        norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
         rope=None,
     ) -> None:
@@ -161,19 +171,19 @@ class Attention(nn.Module):
 
         qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
+        # WARNING: this may be a bug
         if self.rope:
             q = self.rotary_emb(q)
             k = self.rotary_emb(k)
+        q, k = self.q_norm(q), self.k_norm(k)
+
         if enable_flashattn:
+            from flash_attn import flash_attn_func
+
             # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
             q = q.permute(0, 2, 1, 3)
             k = k.permute(0, 2, 1, 3)
             v = v.permute(0, 2, 1, 3)
-
-        q, k = self.q_norm(q), self.k_norm(k)
-        if enable_flashattn:
-            from flash_attn import flash_attn_func
-
             x = flash_attn_func(
                 q,
                 k,
@@ -209,7 +219,7 @@ class SeqParallelAttention(Attention):
         qk_norm: bool = False,
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
-        norm_layer: nn.Module = nn.LayerNorm,
+        norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
         rope=None,
     ) -> None:
@@ -226,9 +236,7 @@ class SeqParallelAttention(Attention):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        B, N, C = (
-            x.shape
-        )  # for sequence parallel here, the N is a local sequence length
+        B, N, C = x.shape  # for sequence parallel here, the N is a local sequence length
         qkv = self.qkv(x)
         qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
 
@@ -258,6 +266,7 @@ class SeqParallelAttention(Attention):
             )  # [3, B, NUM_HEAD_PER_DEVICE, N, HEAD_DIM]
         qkv = qkv.permute(qkv_permute_shape)
 
+        # ERROR: Should qk_norm first
         q, k, v = qkv.unbind(0)
         q, k = self.q_norm(q), self.k_norm(k)
         if self.enable_flashattn:
@@ -321,9 +330,7 @@ class MultiHeadCrossAttention(nn.Module):
         attn_bias = None
         if mask is not None:
             attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
-        x = xformers.ops.memory_efficient_attention(
-            q, k, v, p=self.attn_drop.p, attn_bias=attn_bias
-        )
+        x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
 
         x = x.view(B, -1, C)
         x = self.proj(x)
@@ -362,12 +369,8 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         # apply all_to_all to gather sequence and split attention heads
         q = all_to_all(q, sp_group, scatter_dim=2, gather_dim=1)
 
-        k = split_forward_gather_backward(
-            k, get_sequence_parallel_group(), dim=2, grad_scale="down"
-        )
-        v = split_forward_gather_backward(
-            v, get_sequence_parallel_group(), dim=2, grad_scale="down"
-        )
+        k = split_forward_gather_backward(k, get_sequence_parallel_group(), dim=2, grad_scale="down")
+        v = split_forward_gather_backward(v, get_sequence_parallel_group(), dim=2, grad_scale="down")
 
         q = q.view(1, -1, self.num_heads // sp_size, self.head_dim)
         k = k.view(1, -1, self.num_heads // sp_size, self.head_dim)
@@ -377,9 +380,7 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         attn_bias = None
         if mask is not None:
             attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
-        x = xformers.ops.memory_efficient_attention(
-            q, k, v, p=self.attn_drop.p, attn_bias=attn_bias
-        )
+        x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
 
         # apply all to all to gather back attention heads and scatter sequence
         x = x.view(B, -1, self.num_heads // sp_size, self.head_dim)
@@ -401,9 +402,7 @@ class FinalLayer(nn.Module):
         super().__init__()
         self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.linear = nn.Linear(hidden_size, num_patch * out_channels, bias=True)
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True)
-        )
+        self.adaLN_modulation = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True))
 
     def forward(self, x, c):
         shift, scale = self.adaLN_modulation(c).chunk(2, dim=1)
@@ -421,9 +420,7 @@ class T2IFinalLayer(nn.Module):
         super().__init__()
         self.norm_final = nn.LayerNorm(hidden_size, elementwise_affine=False, eps=1e-6)
         self.linear = nn.Linear(hidden_size, num_patch * out_channels, bias=True)
-        self.scale_shift_table = nn.Parameter(
-            torch.randn(2, hidden_size) / hidden_size**0.5
-        )
+        self.scale_shift_table = nn.Parameter(torch.randn(2, hidden_size) / hidden_size**0.5)
         self.out_channels = out_channels
         self.d_t = d_t
         self.d_s = d_s
@@ -446,9 +443,7 @@ class T2IFinalLayer(nn.Module):
         shift, scale = (self.scale_shift_table[None] + t[:, None]).chunk(2, dim=1)
         x = t2i_modulate(self.norm_final(x), shift, scale)
         if x_mask is not None:
-            shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(
-                2, dim=1
-            )
+            shift_zero, scale_zero = (self.scale_shift_table[None] + t0[:, None]).chunk(2, dim=1)
             x_zero = t2i_modulate(self.norm_final(x), shift_zero, scale_zero)
             x = self.t_mask_select(x_mask, x, x_zero, T, S)
         x = self.linear(x)
@@ -486,18 +481,12 @@ class TimestepEmbedder(nn.Module):
         """
         # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
         half = dim // 2
-        freqs = torch.exp(
-            -math.log(max_period)
-            * torch.arange(start=0, end=half, dtype=torch.float32)
-            / half
-        )
+        freqs = torch.exp(-math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half)
         freqs = freqs.to(device=t.device)
         args = t[:, None].float() * freqs[None]
         embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
         if dim % 2:
-            embedding = torch.cat(
-                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
-            )
+            embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
         return embedding
 
     def forward(self, t, dtype):
@@ -516,9 +505,7 @@ class LabelEmbedder(nn.Module):
     def __init__(self, num_classes, hidden_size, dropout_prob):
         super().__init__()
         use_cfg_embedding = dropout_prob > 0
-        self.embedding_table = nn.Embedding(
-            num_classes + use_cfg_embedding, hidden_size
-        )
+        self.embedding_table = nn.Embedding(num_classes + use_cfg_embedding, hidden_size)
         self.num_classes = num_classes
         self.dropout_prob = dropout_prob
 
@@ -546,9 +533,7 @@ class SizeEmbedder(TimestepEmbedder):
     """
 
     def __init__(self, hidden_size, frequency_embedding_size=256):
-        super().__init__(
-            hidden_size=hidden_size, frequency_embedding_size=frequency_embedding_size
-        )
+        super().__init__(hidden_size=hidden_size, frequency_embedding_size=frequency_embedding_size)
         self.mlp = nn.Sequential(
             nn.Linear(frequency_embedding_size, hidden_size, bias=True),
             nn.SiLU(),
@@ -566,9 +551,7 @@ class SizeEmbedder(TimestepEmbedder):
             assert s.shape[0] == bs
         b, dims = s.shape[0], s.shape[1]
         s = rearrange(s, "b d -> (b d)")
-        s_freq = self.timestep_embedding(s, self.frequency_embedding_size).to(
-            self.dtype
-        )
+        s_freq = self.timestep_embedding(s, self.frequency_embedding_size).to(self.dtype)
         s_emb = self.mlp(s_freq)
         s_emb = rearrange(s_emb, "(b d) d2 -> b (d d2)", b=b, d=dims, d2=self.outdim)
         return s_emb
@@ -684,9 +667,7 @@ class PositionEmbedding2D(nn.Module):
 # https://github.com/facebookresearch/mae/blob/main/util/pos_embed.py
 
 
-def get_2d_sincos_pos_embed(
-    embed_dim, grid_size, cls_token=False, extra_tokens=0, scale=1.0, base_size=None
-):
+def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False, extra_tokens=0, scale=1.0, base_size=None):
     """
     grid_size: int of the grid height and width
     return:
@@ -706,9 +687,7 @@ def get_2d_sincos_pos_embed(
     grid = grid.reshape([2, 1, grid_size[1], grid_size[0]])
     pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
     if cls_token and extra_tokens > 0:
-        pos_embed = np.concatenate(
-            [np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0
-        )
+        pos_embed = np.concatenate([np.zeros([extra_tokens, embed_dim]), pos_embed], axis=0)
     return pos_embed
 
 

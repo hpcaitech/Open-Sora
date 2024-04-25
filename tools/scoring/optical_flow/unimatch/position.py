@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 # https://github.com/facebookresearch/detr/blob/main/models/position_encoding.py
 
+import math
+
 import torch
 import torch.nn as nn
-import math
 
 
 class PositionEmbeddingSine(nn.Module):

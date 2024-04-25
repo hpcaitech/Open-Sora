@@ -17,17 +17,21 @@ from torchvision.datasets.utils import download_url
 
 from opensora.datasets.sampler import VariableVideoBatchSampler
 
+hf_endpoint = os.environ.get("HF_ENDPOINT")
+if hf_endpoint is None:
+    hf_endpoint = "https://huggingface.co"
+
 pretrained_models = {
     "DiT-XL-2-512x512.pt": "https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-512x512.pt",
     "DiT-XL-2-256x256.pt": "https://dl.fbaipublicfiles.com/DiT/models/DiT-XL-2-256x256.pt",
-    "Latte-XL-2-256x256-ucf101.pt": "https://huggingface.co/maxin-cn/Latte/resolve/main/ucf101.pt",
-    "PixArt-XL-2-256x256.pth": "https://huggingface.co/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-256x256.pth",
-    "PixArt-XL-2-SAM-256x256.pth": "https://huggingface.co/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-SAM-256x256.pth",
-    "PixArt-XL-2-512x512.pth": "https://huggingface.co/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-512x512.pth",
-    "PixArt-XL-2-1024-MS.pth": "https://huggingface.co/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-1024-MS.pth",
-    "OpenSora-v1-16x256x256.pth": "https://huggingface.co/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-16x256x256.pth",
-    "OpenSora-v1-HQ-16x256x256.pth": "https://huggingface.co/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x256x256.pth",
-    "OpenSora-v1-HQ-16x512x512.pth": "https://huggingface.co/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x512x512.pth",
+    "Latte-XL-2-256x256-ucf101.pt": hf_endpoint + "/maxin-cn/Latte/resolve/main/ucf101.pt",
+    "PixArt-XL-2-256x256.pth": hf_endpoint + "/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-256x256.pth",
+    "PixArt-XL-2-SAM-256x256.pth": hf_endpoint + "/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-SAM-256x256.pth",
+    "PixArt-XL-2-512x512.pth": hf_endpoint + "/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-512x512.pth",
+    "PixArt-XL-2-1024-MS.pth": hf_endpoint + "/PixArt-alpha/PixArt-alpha/resolve/main/PixArt-XL-2-1024-MS.pth",
+    "OpenSora-v1-16x256x256.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-16x256x256.pth",
+    "OpenSora-v1-HQ-16x256x256.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x256x256.pth",
+    "OpenSora-v1-HQ-16x512x512.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x512x512.pth",
 }
 
 
@@ -83,16 +87,23 @@ def find_model(model_name, model=None):
     return model_ckpt
 
 
-def download_model(model_name):
+def download_model(model_name=None, local_path=None, url=None):
     """
     Downloads a pre-trained DiT model from the web.
     """
-    assert model_name in pretrained_models
-    local_path = f"pretrained_models/{model_name}"
+    if model_name is not None:
+        assert model_name in pretrained_models
+        local_path = f"pretrained_models/{model_name}"
+        web_path = pretrained_models[model_name]
+    else:
+        assert local_path is not None
+        assert url is not None
+        web_path = url
     if not os.path.isfile(local_path):
         os.makedirs("pretrained_models", exist_ok=True)
-        web_path = pretrained_models[model_name]
-        download_url(web_path, "pretrained_models", model_name)
+        dir_name = os.path.dirname(local_path)
+        file_name = os.path.basename(local_path)
+        download_url(web_path, dir_name, file_name)
     model = torch.load(local_path, map_location=lambda storage, loc: storage)
     return model
 
@@ -206,8 +217,10 @@ def load(
 ) -> Tuple[int, int, int]:
     booster.load_model(model, os.path.join(load_dir, "model"))
     # ema is not boosted, so we don't use booster.load_model
-    # ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt")))
-    ema.load_state_dict(torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")))
+    ema.load_state_dict(
+        torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")),
+        strict=False,
+    )
     booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
     if lr_scheduler is not None:
         booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
@@ -243,7 +256,7 @@ def create_logger(logging_dir):
     return logger
 
 
-def load_checkpoint(model, ckpt_path, save_as_pt=True):
+def load_checkpoint(model, ckpt_path, save_as_pt=False):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path, model=model)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
