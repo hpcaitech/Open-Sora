@@ -51,11 +51,30 @@ You can adjust the `--num-frames` and `--image-size` to generate different resul
 `inference-long.py` is compatible with `inference.py` and supports advanced features.
 
 ```bash
-# long video generation
 # image condition
+python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
+  --num-frames 32 --image-size 240 426 --sample-name image-cond \
+  --prompt 'A breathtaking sunrise scene.{"reference_path": "assets/images/condition/wave.png","mask_strategy": "0"}'
+
 # video extending
+python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
+  --num-frames 32 --image-size 240 426 --sample-name image-cond \
+  --prompt 'A car driving on the ocean.{"reference_path": "https://cdn.openai.com/tmp/s/interp/d0.mp4","mask_strategy": "0,0,0,-8,8"}'
+
+# long video generation
+python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
+  --num-frames 32 --image-size 240 426 --loop 16 --condition-frame-length 8 --sample-name long \
+  --prompt '|0|a white jeep equipped with a roof rack driving on a dirt road in a coniferous forest.|2|a white jeep equipped with a roof rack driving on a dirt road in the desert.|4|a white jeep equipped with a roof rack driving on a dirt road in a mountain.|6|A white jeep equipped with a roof rack driving on a dirt road in a city.|8|a white jeep equipped with a roof rack driving on a dirt road on the surface of a river.|10|a white jeep equipped with a roof rack driving on a dirt road under the lake.|12|a white jeep equipped with a roof rack flying into the sky.|14|a white jeep equipped with a roof rack driving in the universe. Earth is the background.{"reference_path": "https://cdn.openai.com/tmp/s/interp/d0.mp4", "mask_strategy": "0,0,0,0,16"}'
+
 # video connecting
+python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
+  --num-frames 32 --image-size 240 426 --sample-name connect \
+  --prompt 'A breathtaking sunrise scene.{"reference_path": "assets/images/condition/sunset1.png;assets/images/condition/sunset2.png","mask_strategy": "0;0,1,0,-1,1"}'
+
 # video editing
+python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
+  --num-frames 32 --image-size 480 853 --sample-name edit \
+  --prompt 'A cyberpunk-style city at night.{"reference_path": "https://cdn.pixabay.com/video/2021/10/12/91744-636709154_large.mp4","mask_strategy": "0,0,0,0,32,0.4"}'
 ```
 
 ### Inference with DiT pretrained on ImageNet
