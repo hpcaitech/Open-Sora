@@ -7,32 +7,31 @@ dataset = dict(
     image_size=(None, None),
     transform_name="resize_crop",
 )
-bucket_config = {  # 6s/it
-    "256": {1: (1.0, 254)},
-    "240p": {16: (1.0, 17), 32: (1.0, 9), 64: (1.0, 4), 128: (1.0, 2)},
-    "512": {1: (0.5, 86)},
-    "480p": {1: (0.4, 54), 16: (0.4, 4), 32: (0.0, None)},
-    "720p": {16: (0.1, 2), 32: (0.0, None)},
-    "1024": {1: (0.3, 20)},
-    "1080p": {1: (0.4, 8)},
+# IMG: 1024 (20%) 512 (30%) 256 (50%) drop (50%)
+bucket_config = {  # 1s/it
+    "144p": {1: (0.5, 48), 16: (1.0, 6), 32: (1.0, 3), 96: (1.0, 1)},
+    "256": {1: (0.5, 24), 16: (0.5, 3), 48: (0.5, 1), 64: (0.0, None)},
+    "240p": {16: (0.3, 2), 32: (0.3, 1), 64: (0.0, None)},
+    "512": {1: (0.4, 12)},
+    "1024": {1: (0.3, 3)},
 }
 mask_ratios = {
-    "mask_no": 0.9,
-    "mask_quarter_random": 0.01,
-    "mask_quarter_head": 0.01,
-    "mask_quarter_tail": 0.01,
-    "mask_quarter_head_tail": 0.02,
-    "mask_image_random": 0.01,
-    "mask_image_head": 0.01,
-    "mask_image_tail": 0.01,
-    "mask_image_head_tail": 0.02,
+    "mask_no": 0.75,
+    "mask_quarter_random": 0.025,
+    "mask_quarter_head": 0.025,
+    "mask_quarter_tail": 0.025,
+    "mask_quarter_head_tail": 0.05,
+    "mask_image_random": 0.025,
+    "mask_image_head": 0.025,
+    "mask_image_tail": 0.025,
+    "mask_image_head_tail": 0.05,
 }
 
 # Define acceleration
 num_workers = 8
 num_bucket_build_workers = 16
 dtype = "bf16"
-grad_checkpoint = True
+grad_checkpoint = False
 plugin = "zero2"
 sp_size = 1
 
@@ -41,6 +40,7 @@ model = dict(
     type="STDiT2-XL/2",
     from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
+    qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
@@ -48,15 +48,17 @@ vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="stabilityai/sd-vae-ft-ema",
     micro_batch_size=4,
+    local_files_only=True,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=200,
     shardformer=True,
+    local_files_only=True,
 )
 scheduler = dict(
-    type="iddpm-speed",
+    type="iddpm",
     timestep_respacing="",
 )
 

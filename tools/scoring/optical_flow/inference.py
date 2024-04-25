@@ -58,15 +58,20 @@ class VideoTextDataset(torch.utils.data.Dataset):
         return len(self.meta)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("--bs", type=int, default=4, help="Batch size")
+    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    args = parser.parse_args()
+    return args
+
+
 def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     colossalai.launch_from_torch({})
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--meta_path", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=4, help="Batch size")
-    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
-    args = parser.parse_args()
+    args = parse_args()
 
     meta_path = args.meta_path
     wo_ext, ext = os.path.splitext(meta_path)

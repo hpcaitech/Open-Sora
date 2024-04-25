@@ -245,32 +245,6 @@ def filter_panda10m_timestamp(meta_path):
     print(f"New meta (shape={meta.shape}) saved to '{out_path}'.")
 
 
-def append_timestamp(meta_path):
-
-    def process_single_row(row):
-        path = row['path']
-        wo_ext, ext = os.path.splitext(path)
-        json_path = f'{wo_ext}.json'
-        try:
-            with open(json_path, 'r') as f:
-                data = json.load(f)
-            timestamp = data['clips'][2:-2]
-            a, b = timestamp.split(', ')
-            timestamp = f"('{a}', '{b}')"
-        except Exception as e:
-            timestamp = ''
-        return timestamp
-
-    meta = pd.read_csv(meta_path)
-    ret = apply(meta, process_single_row, axis=1)
-    meta['timestamp'] = ret
-
-    wo_ext, ext = os.path.splitext(meta_path)
-    out_path = f"{wo_ext}_timestamp{ext}"
-    meta.to_csv(out_path, index=False)
-    print(f"New meta (shape={meta.shape}) saved to '{out_path}'.")
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--meta_path', type=str, nargs='+')
@@ -282,7 +256,6 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    # append_timestamp(args.meta_path)
 
     text_set = get_10m_set()
     for x in args.meta_path:

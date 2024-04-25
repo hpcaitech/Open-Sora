@@ -112,9 +112,15 @@ def main():
     # 4.1. batch generation
     for i in range(0, len(prompts), cfg.batch_size):
         # 4.2 sample in hidden space
-        batch_prompts = prompts[i : i + cfg.batch_size]
-        batch_prompts = [text_preprocessing(prompt) for prompt in batch_prompts]
-        z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
+        batch_prompts_raw = prompts[i : i + cfg.batch_size]
+        batch_prompts = [text_preprocessing(prompt) for prompt in batch_prompts_raw]
+        # handle the last batch
+        if len(batch_prompts_raw) < cfg.batch_size and cfg.multi_resolution == "STDiT2":
+            model_args["height"] = model_args["height"][: len(batch_prompts_raw)]
+            model_args["width"] = model_args["width"][: len(batch_prompts_raw)]
+            model_args["num_frames"] = model_args["num_frames"][: len(batch_prompts_raw)]
+            model_args["ar"] = model_args["ar"][: len(batch_prompts_raw)]
+            model_args["fps"] = model_args["fps"][: len(batch_prompts_raw)]
 
         # 4.3. diffusion sampling
         old_sample_idx = sample_idx
@@ -122,6 +128,23 @@ def main():
         for k in range(cfg.num_sample):
             sample_idx = old_sample_idx
 
+            # Skip if the sample already exists
+            # This is useful for resuming sampling VBench
+            if cfg.prompt_as_path:
+                skip = True
+                for batch_prompt in batch_prompts_raw:
+                    path = os.path.join(save_dir, f"{sample_name}{batch_prompt}")
+                    if cfg.num_sample != 1:
+                        path = f"{path}-{k}"
+                    path = f"{path}.mp4"
+                    if not os.path.exists(path):
+                        skip = False
+                        break
+                if skip:
+                    continue
+
+            # sampling
+            z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
             samples = scheduler.sample(
                 model,
                 text_encoder,
@@ -132,11 +155,12 @@ def main():
             )
             samples = vae.decode(samples.to(dtype))
 
+            # 4.4. save samples
             if not use_dist or coordinator.is_master():
                 for idx, sample in enumerate(samples):
-                    print(f"Prompt: {batch_prompts[idx]}")
+                    print(f"Prompt: {batch_prompts_raw[idx]}")
                     if cfg.prompt_as_path:
-                        sample_name_suffix = batch_prompts[idx]
+                        sample_name_suffix = batch_prompts_raw[idx]
                     else:
                         sample_name_suffix = f"_{sample_idx}"
                     save_path = os.path.join(save_dir, f"{sample_name}{sample_name_suffix}")

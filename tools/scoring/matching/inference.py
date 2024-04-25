@@ -58,13 +58,18 @@ def merge_scores(gathered_list: list, meta: pd.DataFrame):
     meta.loc[unique_indices, "match"] = flat_scores[unique_indices_idx]
 
 
-def main():
-    colossalai.launch_from_torch({})
+def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=16, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     args = parser.parse_args()
+    return args
+
+
+def main():
+    colossalai.launch_from_torch({})
+    args = parse_args()
 
     meta_path = args.meta_path
     wo_ext, ext = os.path.splitext(meta_path)

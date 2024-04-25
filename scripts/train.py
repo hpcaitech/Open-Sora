@@ -197,15 +197,17 @@ def main():
     # 6.1. resume training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(
+        ret = load(
             booster,
             model,
             ema,
             optimizer,
             lr_scheduler,
             cfg.load,
-            sampler=sampler_to_io,
+            sampler=sampler_to_io if not cfg.start_from_scratch else None,
         )
+        if not cfg.start_from_scratch:
+            start_epoch, start_step, sampler_start_idx = ret
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
