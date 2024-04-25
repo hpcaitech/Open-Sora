@@ -24,7 +24,7 @@ import datetime
 
 
 
-MODEL_TYPES = ["v1.1-stage1", "v1.1-stage2", "v1.1-stage3"]
+MODEL_TYPES = ["v1.1-stage2", "v1.1-stage3"]
 CONFIG_MAP = {
     "v1.1-stage2": "configs/opensora-v1-1/inference/sample-ref.py",
     "v1.1-stage3": "configs/opensora-v1-1/inference/sample-ref.py",
