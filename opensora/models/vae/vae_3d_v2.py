@@ -1181,13 +1181,15 @@ class AdversarialLoss(nn.Module):
 class LeCamEMA:
     def __init__(
             self, 
+            ema_real = 0.0,
+            ema_fake = 0.0,
             decay=0.999,
             dtype=torch.bfloat16,
             device="cpu"
         ):
         self.decay = decay
-        self.ema_real = torch.tensor(0.0).to(device, dtype)
-        self.ema_fake = torch.tensor(0.0).to(device, dtype)
+        self.ema_real = torch.tensor(ema_real).to(device, dtype)
+        self.ema_fake = torch.tensor(ema_fake).to(device, dtype)
     
     def update(self, ema_real, ema_fake):
         self.ema_real = self.ema_real * self.decay + ema_real * (1-self.decay)
