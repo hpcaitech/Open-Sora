@@ -3,7 +3,7 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 from einops import rearrange
-from timm.models.layers import DropPath, trunc_normal_
+from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
@@ -86,8 +86,8 @@ class STDiTBlock(nn.Module):
         )
 
     def t_mask_select(self, x, masked_x, x_mask):
-        # x: [B, T, S, C]
-        # mased_x: [B, T, S, C]
+        # x: [B, (T, S), C]
+        # mased_x: [B, (T, S), C]
         # x_mask: [B, T]
         x = rearrange(x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)
         masked_x = rearrange(masked_x, "B (T S) C -> B T S C", T=self.d_t, S=self.d_s)

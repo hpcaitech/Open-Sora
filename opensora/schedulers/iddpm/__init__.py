@@ -6,6 +6,7 @@ from opensora.registry import SCHEDULERS
 
 from . import gaussian_diffusion as gd
 from .respace import SpacedDiffusion, space_timesteps
+from .speed import SpeeDiffusion
 
 
 @SCHEDULERS.register_module("iddpm")
@@ -22,6 +23,7 @@ class IDDPM(SpacedDiffusion):
         rescale_learned_sigmas=False,
         diffusion_steps=1000,
         cfg_scale=4.0,
+        cfg_channel=None,
     ):
         betas = gd.get_named_beta_schedule(noise_schedule, diffusion_steps)
         if use_kl:
@@ -49,6 +51,7 @@ class IDDPM(SpacedDiffusion):
         )
 
         self.cfg_scale = cfg_scale
+        self.cfg_channel = cfg_channel
 
     def sample(
         self,
@@ -68,7 +71,7 @@ class IDDPM(SpacedDiffusion):
         if additional_args is not None:
             model_args.update(additional_args)
 
-        forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)
+        forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale, cfg_channel=self.cfg_channel)
         samples = self.p_sample_loop(
             forward,
             z.shape,
@@ -88,7 +91,8 @@ def forward_with_cfg(model, x, timestep, y, cfg_scale, cfg_channel=None, **kwarg
     half = x[: len(x) // 2]
     combined = torch.cat([half, half], dim=0)
     if "x_mask" in kwargs and kwargs["x_mask"] is not None:
-        kwargs["x_mask"] = torch.cat([kwargs["x_mask"], kwargs["x_mask"]], dim=0)
+        if len(kwargs["x_mask"]) != len(x):
+            kwargs["x_mask"] = torch.cat([kwargs["x_mask"], kwargs["x_mask"]], dim=0)
     model_out = model.forward(combined, timestep, y, **kwargs)
     model_out = model_out["x"] if isinstance(model_out, dict) else model_out
     if cfg_channel is None:

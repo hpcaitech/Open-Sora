@@ -1,0 +1,86 @@
+alley
+amusement park
+aquarium
+arch
+art gallery
+bathroom
+bakery shop
+ballroom
+bar
+barn
+basement
+beach
+bedroom
+bridge
+botanical garden
+cafeteria
+campsite
+campus
+carrousel
+castle
+cemetery
+classroom
+cliff
+crosswalk
+construction site
+corridor
+courtyard
+desert
+downtown
+driveway
+farm
+food court
+football field
+forest road
+fountain
+gas station
+glacier
+golf course
+indoor gymnasium
+harbor
+highway
+hospital
+house
+iceberg
+industrial area
+jail cell
+junkyard
+kitchen
+indoor library
+lighthouse
+laboratory
+mansion
+marsh
+mountain
+indoor movie theater
+indoor museum
+music studio
+nursery
+ocean
+office
+palace
+parking lot
+pharmacy
+phone booth
+raceway
+restaurant
+river
+science museum
+shower
+ski slope
+sky
+skyscraper
+baseball stadium
+staircase
+street
+supermarket
+indoor swimming pool
+tower
+outdoor track
+train railway
+train station platform
+underwater coral reef
+valley
+volcano
+waterfall
+windmill
