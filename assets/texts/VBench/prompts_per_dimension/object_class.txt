@@ -1,0 +1,79 @@
+a person
+a bicycle
+a car
+a motorcycle
+an airplane
+a bus
+a train
+a truck
+a boat
+a traffic light
+a fire hydrant
+a stop sign
+a parking meter
+a bench
+a bird
+a cat
+a dog
+a horse
+a sheep
+a cow
+an elephant
+a bear
+a zebra
+a giraffe
+a backpack
+an umbrella
+a handbag
+a tie
+a suitcase
+a frisbee
+skis
+a snowboard
+a sports ball
+a kite
+a baseball bat
+a baseball glove
+a skateboard
+a surfboard
+a tennis racket
+a bottle
+a wine glass
+a cup
+a fork
+a knife
+a spoon
+a bowl
+a banana
+an apple
+a sandwich
+an orange
+broccoli
+a carrot
+a hot dog
+a pizza
+a donut
+a cake
+a chair
+a couch
+a potted plant
+a bed
+a dining table
+a toilet
+a tv
+a laptop
+a remote
+a keyboard
+a cell phone
+a microwave
+an oven
+a toaster
+a sink
+a refrigerator
+a book
+a clock
+a vase
+scissors
+a teddy bear
+a hair drier
+a toothbrush

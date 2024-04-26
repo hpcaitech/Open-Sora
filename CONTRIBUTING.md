@@ -4,10 +4,9 @@ The Open-Sora project welcomes any constructive contribution from the community 
 
 ## Development Environment Setup
 
-To contribute to Open-Sora, we would like to first guide you to set up a proper development environment so that you can better implement your code. You can install this library from source with the `editable` flag (`-e`, for development mode) so that your change to the source code will be reflected in runtime without re-installation. 
+To contribute to Open-Sora, we would like to first guide you to set up a proper development environment so that you can better implement your code. You can install this library from source with the `editable` flag (`-e`, for development mode) so that your change to the source code will be reflected in runtime without re-installation.
 
 You can refer to the [Installation Section](./README.md#installation) and replace `pip install -v .` with `pip install -v -e .`.
-
 
 ### Code Style
 
@@ -20,7 +19,6 @@ pre-commit install
 ```
 
 Code format checking will be automatically executed when you commit your changes.
-
 
 ## Contribution Guide
 
@@ -68,7 +66,6 @@ git push origin main
 
 You should not make changes to the `main` branch of your forked repository as this might make upstream synchronization difficult. You can create a new branch with the appropriate name. General branch name format should start with `hotfix/` and `feature/`. `hotfix` is for bug fix and `feature` is for addition of a new feature.
 
-
 ```shell
 git checkout -b <NEW-BRANCH-NAME>
 ```
@@ -89,3 +86,15 @@ git push -u origin <NEW-BRANCH-NAME>
 You can now create a pull request on the GitHub webpage of your repository. The source branch is `<NEW-BRANCH-NAME>` of your repository and the target branch should be `main` of `hpcaitech/Open-Sora`. After creating this pull request, you should be able to see it [here](https://github.com/hpcaitech/Open-Sora/pulls).
 
 The Open-Sora team will review your code change and merge your code if applicable.
+
+## FQA
+
+1. `pylint` cannot recognize some members:
+
+Add this into your `settings.json` in VSCode:
+
+```json
+"pylint.args": [
+ "--generated-members=numpy.* ,torch.*,cv2.*",
+],
+```

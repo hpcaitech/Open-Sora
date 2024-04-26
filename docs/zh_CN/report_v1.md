@@ -1,47 +1,49 @@
-# Open-Sora v1 Report
+# Open-Sora v1 技术报告
 
-OpenAI's Sora is amazing at generating one minutes high quality videos. However, it reveals almost no information about its details. To make AI more "open", we are dedicated to build an open-source version of Sora. This report describes our first attempt to train a transformer-based video diffusion model.
+OpenAI的Sora在生成一分钟高质量视频方面非常出色。然而，它几乎没有透露任何关于其细节的信息。为了使人工智能更加“开放”，我们致力于构建一个开源版本的Sora。这份报告描述了我们第一次尝试训练一个基于Transformer的视频扩散模型。
 
-## Efficiency in choosing the architecture
+## 选择高效的架构
 
-To lower the computational cost, we want to utilize existing VAE models. Sora uses spatial-temporal VAE to reduce the temporal dimensions. However, we found that there is no open-source high-quality spatial-temporal VAE model. [MAGVIT](https://github.com/google-research/magvit)'s 4x4x4 VAE is not open-sourced, while [VideoGPT](https://wilson1yan.github.io/videogpt/index.html)'s 2x4x4 VAE has a low quality in our experiments. Thus, we decided to use a 2D VAE (from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original)) in our first version.
+为了降低计算成本，我们希望利用现有的VAE模型。Sora使用时空VAE来减少时间维度。然而，我们发现没有开源的高质量时空VAE模型。[MAGVIT](https://github.com/google-research/magvit)的4x4x4 VAE并未开源，而[VideoGPT](https://wilson1yan.github.io/videogpt/index.html)的2x4x4 VAE在我们的实验中质量较低。因此，我们决定在我们第一个版本中使用2D VAE（来自[Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original)）。
 
-The video training involves a large amount of tokens. Considering 24fps 1min videos, we have 1440 frames. With VAE downsampling 4x and patch size downsampling 2x, we have 1440x1024≈1.5M tokens. Full attention on 1.5M tokens leads to a huge computational cost. Thus, we use spatial-temporal attention to reduce the cost following [Latte](https://github.com/Vchitect/Latte).
+视频训练涉及大量的token。考虑到24fps的1分钟视频，我们有1440帧。通过VAE下采样4倍和patch大小下采样2倍，我们得到了1440x1024≈150万个token。在150万个token上进行全注意力计算将带来巨大的计算成本。因此，我们使用时空注意力来降低成本，这是遵循[Latte](https://github.com/Vchitect/Latte)的方法。
 
-As shown in the figure, we insert a temporal attention right after each spatial attention in STDiT (ST stands for spatial-temporal). This is similar to variant 3 in Latte's paper. However, we do not control a similar number of parameters for these variants. While Latte's paper claims their variant is better than variant 3, our experiments on 16x256x256 videos show that with same number of iterations, the performance ranks as: DiT (full) > STDiT (Sequential) > STDiT (Parallel) ≈ Latte. Thus, we choose STDiT (Sequential) out of efficiency. Speed benchmark is provided [here](/docs/acceleration.md#efficient-stdit).
+如图中所示，在STDiT（ST代表时空）中，我们在每个空间注意力之后立即插入一个时间注意力。这类似于Latte论文中的变种3。然而，我们并没有控制这些变体的相似数量的参数。虽然Latte的论文声称他们的变体比变种3更好，但我们在16x256x256视频上的实验表明，相同数量的迭代次数下，性能排名为：DiT（完整）> STDiT（顺序）> STDiT（并行）≈ Latte。因此，我们出于效率考虑选择了STDiT（顺序）。[这里](/docs/acceleration.md#efficient-stdit)提供了速度基准测试。
+
 
 ![Architecture Comparison](https://i0.imgs.ovh/2024/03/15/eLk9D.png)
 
-To focus on video generation, we hope to train the model based on a powerful image generation model. [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) is an efficiently trained high-quality image generation model with T5-conditioned DiT structure. We initialize our model with PixArt-α and initialize the projection layer of inserted temporal attention with zero. This initialization preserves model's ability of image generation at beginning, while Latte's architecture cannot. The inserted attention increases the number of parameter from 580M to 724M.
+为了专注于视频生成，我们希望基于一个强大的图像生成模型来训练我们的模型。PixArt-α是一个经过高效训练的高质量图像生成模型，具有T5条件化的DiT结构。我们使用[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha)初始化我们的模型，并将插入的时间注意力的投影层初始化为零。这种初始化在开始时保留了模型的图像生成能力，而Latte的架构则不能。插入的注意力将参数数量从5.8亿增加到7.24亿。
 
 ![Architecture](https://i0.imgs.ovh/2024/03/16/erC1d.png)
 
-Drawing from the success of PixArt-α and Stable Video Diffusion, we also adopt a progressive training strategy: 16x256x256 on 366K pretraining datasets, and then 16x256x256, 16x512x512, and 64x512x512 on 20K datasets. With scaled position embedding, this strategy greatly reduces the computational cost.
+借鉴PixArt-α和Stable Video Diffusion的成功，我们还采用了渐进式训练策略：在366K预训练数据集上进行16x256x256的训练，然后在20K数据集上进行16x256x256、16x512x512和64x512x512的训练。通过扩展位置嵌入，这一策略极大地降低了计算成本。
 
-We also try to use a 3D patch embedder in DiT. However, with 2x downsampling on temporal dimension, the generated videos have a low quality. Thus, we leave the downsampling to temporal VAE in our next version. For now, we sample at every 3 frames with 16 frames training and every 2 frames with 64 frames training.
+我们还尝试在DiT中使用3D patch嵌入器。然而，在时间维度上2倍下采样后，生成的视频质量较低。因此，我们将在下一版本中将下采样留给时间VAE。目前，我们在每3帧采样一次进行16帧训练，以及在每2帧采样一次进行64帧训练。
 
-## Data is the key to high quality
 
-We find that the number and quality of data have a great impact on the quality of generated videos, even larger than the model architecture and training strategy. At this time, we only prepared the first split (366K video clips) from [HD-VG-130M](https://github.com/daooshee/HD-VG-130M). The quality of these videos varies greatly, and the captions are not that accurate. Thus, we further collect 20k relatively high quality videos from [Pexels](https://www.pexels.com/), which provides free license videos. We label the video with LLaVA, an image captioning model, with three frames and a designed prompt. With designed prompt, LLaVA can generate good quality of captions.
+## 数据是训练高质量模型的核心
+
+我们发现数据的数量和质量对生成视频的质量有很大的影响，甚至比模型架构和训练策略的影响还要大。目前，我们只从[HD-VG-130M](https://github.com/daooshee/HD-VG-130M)准备了第一批分割（366K个视频片段）。这些视频的质量参差不齐，而且字幕也不够准确。因此，我们进一步从提供免费许可视频的[Pexels](https://www.pexels.com/)收集了20k相对高质量的视频。我们使用LLaVA，一个图像字幕模型，通过三个帧和一个设计好的提示来标记视频。有了设计好的提示，LLaVA能够生成高质量的字幕。
 
 ![Caption](https://i0.imgs.ovh/2024/03/16/eXdvC.png)
 
-As we lay more emphasis on the quality of data, we prepare to collect more data and build a video preprocessing pipeline in our next version.
+由于我们更加注重数据质量，我们准备收集更多数据，并在下一版本中构建一个视频预处理流程。
 
-## Training Details
+## 训练细节
 
-With a limited training budgets, we made only a few exploration. We find learning rate 1e-4 is too large and scales down to 2e-5. When training with a large batch size, we find `fp16` less stable than `bf16` and may lead to generation failure. Thus, we switch to `bf16` for training on 64x512x512. For other hyper-parameters, we follow previous works.
+在有限的训练预算下，我们只进行了一些探索。我们发现学习率1e-4过大，因此将其降低到2e-5。在进行大批量训练时，我们发现`fp16`比`bf16`不太稳定，可能会导致生成失败。因此，我们在64x512x512的训练中切换到`bf16`。对于其他超参数，我们遵循了之前的研究工作。
 
-## Loss curves
+## 损失曲线
 
-16x256x256 Pretraining Loss Curve
+16x256x256 预训练损失曲线
 
 ![16x256x256 Pretraining Loss Curve](https://i0.imgs.ovh/2024/03/16/erXQj.png)
 
-16x256x256 HQ Training Loss Curve
+16x256x256 高质量训练损失曲线
 
 ![16x256x256 HQ Training Loss Curve](https://i0.imgs.ovh/2024/03/16/ernXv.png)
 
-16x512x512 HQ Training Loss Curve
+16x512x512 高质量训练损失曲线
 
 ![16x512x512 HQ Training Loss Curve](https://i0.imgs.ovh/2024/03/16/erHBe.png)

@@ -21,10 +21,10 @@ scheduler = dict(
     num_sampling_steps=20,
     cfg_scale=4.0,
 )
-dtype = "fp16"
+dtype = "bf16"
 
 # Others
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/ucf101_id.txt"
-save_dir = "./outputs/samples/"
+save_dir = "./samples/samples/"

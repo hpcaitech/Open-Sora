@@ -1,0 +1,84 @@
+a bicycle on the left of a car, front view
+a car on the right of a motorcycle, front view
+a motorcycle on the left of a bus, front view
+a bus on the right of a traffic light, front view
+a traffic light on the left of a fire hydrant, front view
+a fire hydrant on the right of a stop sign, front view
+a stop sign on the left of a parking meter, front view
+a parking meter on the right of a bench, front view
+a bench on the left of a truck, front view
+a truck on the right of a bicycle, front view
+a bird on the left of a cat, front view
+a cat on the right of a dog, front view
+a dog on the left of a horse, front view
+a horse on the right of a sheep, front view
+a sheep on the left of a cow, front view
+a cow on the right of an elephant, front view
+an elephant on the left of a bear, front view
+a bear on the right of a zebra, front view
+a zebra on the left of a giraffe, front view
+a giraffe on the right of a bird, front view
+a bottle on the left of a wine glass, front view
+a wine glass on the right of a cup, front view
+a cup on the left of a fork, front view
+a fork on the right of a knife, front view
+a knife on the left of a spoon, front view
+a spoon on the right of a bowl, front view
+a bowl on the left of a bottle, front view
+a potted plant on the left of a remote, front view
+a remote on the right of a clock, front view
+a clock on the left of a vase, front view
+a vase on the right of scissors, front view
+scissors on the left of a teddy bear, front view
+a teddy bear on the right of a potted plant, front view
+a frisbee on the left of a sports ball, front view
+a sports ball on the right of a baseball bat, front view
+a baseball bat on the left of a baseball glove, front view
+a baseball glove on the right of a tennis racket, front view
+a tennis racket on the left of a frisbee, front view
+a toilet on the left of a hair drier, front view
+a hair drier on the right of a toothbrush, front view
+a toothbrush on the left of a sink, front view
+a sink on the right of a toilet, front view
+a chair on the left of a couch, front view
+a couch on the right of a bed, front view
+a bed on the left of a tv, front view
+a tv on the right of a dining table, front view
+a dining table on the left of a chair, front view
+an airplane on the left of a train, front view
+a train on the right of a boat, front view
+a boat on the left of an airplane, front view
+an oven on the top of a toaster, front view
+an oven on the bottom of a toaster, front view
+a toaster on the top of a microwave, front view
+a toaster on the bottom of a microwave, front view
+a microwave on the top of an oven, front view
+a microwave on the bottom of an oven, front view
+a banana on the top of an apple, front view
+a banana on the bottom of an apple, front view
+an apple on the top of a sandwich, front view
+an apple on the bottom of a sandwich, front view
+a sandwich on the top of an orange, front view
+a sandwich on the bottom of an orange, front view
+an orange on the top of a carrot, front view
+an orange on the bottom of a carrot, front view
+a carrot on the top of a hot dog, front view
+a carrot on the bottom of a hot dog, front view
+a hot dog on the top of a pizza, front view
+a hot dog on the bottom of a pizza, front view
+a pizza on the top of a donut, front view
+a pizza on the bottom of a donut, front view
+a donut on the top of broccoli, front view
+a donut on the bottom of broccoli, front view
+broccoli on the top of a banana, front view
+broccoli on the bottom of a banana, front view
+skis on the top of a snowboard, front view
+skis on the bottom of a snowboard, front view
+a snowboard on the top of a kite, front view
+a snowboard on the bottom of a kite, front view
+a kite on the top of a skateboard, front view
+a kite on the bottom of a skateboard, front view
+a skateboard on the top of a surfboard, front view
+a skateboard on the bottom of a surfboard, front view
+a surfboard on the top of skis, front view
+a surfboard on the bottom of skis, front view
