@@ -16,6 +16,7 @@ from tqdm import tqdm
 import os
 from einops import rearrange
 import numpy as np
+from glob import glob
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import (
@@ -63,13 +64,19 @@ def main():
     colossalai.launch_from_torch({})
     coordinator = DistCoordinator()
 
+    exp_dir = None
     if coordinator.is_master(): # only create directory for master
         exp_name, exp_dir = create_experiment_workspace(cfg)
-        print("master creating experiment dir:", exp_dir, exp_name)
         save_training_config(cfg._cfg_dict, exp_dir)
-    print("process going into barrier A")
     dist.barrier()
-    print("process left barrier A")
+
+    # get exp dir for non-master process
+    if exp_dir is None:
+        experiment_index = len(glob(f"{cfg.outputs}/*"))-1
+        model_name = cfg.model["type"].replace("/", "-")
+        exp_name = f"{experiment_index:03d}-F{cfg.num_frames}S{cfg.frame_interval}-{model_name}"
+        exp_dir = f"{cfg.outputs}/{exp_name}"
+        assert os.path.exists(exp_dir)
 
     device = get_current_device()
     assert cfg.dtype in ["fp16", "bf16"], f"Unknown mixed precision {cfg.dtype}"
@@ -236,9 +243,7 @@ def main():
         else:
             lecam_ema = LeCamEMA(decay=cfg.ema_decay, dtype=dtype, device=device)
         running_states = load_json(os.path.join(cfg.load, "running_states.json"))
-        print('going to barrier B')
         dist.barrier()
-        print("left barrier B")
         start_epoch, start_step, sampler_start_idx = running_states["epoch"], running_states["step"], running_states["sample_start_index"]
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
@@ -468,47 +473,41 @@ def main():
 
                         # Save checkpoint
                         if cfg.ckpt_every > 0 and (global_step + 1) % cfg.ckpt_every == 0:
-                            if coordinator.is_master():
-                                save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
-                                os.makedirs(os.path.join(save_dir, "model"), exist_ok=True) # already handled in booster save_model
-                                booster.save_model(vae, os.path.join(save_dir, "model"), shard=True)
-                                print("model saved")
-                                booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
-                                print("discriminator saved")
-                                booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
-                                print("optimizer saved")
-                                booster.save_optimizer(disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096)
-                                print("disc opt saved")
+                            save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
+                            os.makedirs(os.path.join(save_dir, "model"), exist_ok=True) # already handled in booster save_model
+                            booster.save_model(vae, os.path.join(save_dir, "model"), shard=True)
+                            print("model saved")
+                            booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
+                            print("discriminator saved")
+                            booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
+                            print("optimizer saved")
+                            booster.save_optimizer(disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096)
+                            print("disc opt saved")
 
-                                if lr_scheduler is not None:
-                                    booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
-                                    print("lr scheduler saved")
-                                if disc_lr_scheduler is not None:
-                                    booster.save_lr_scheduler(disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler"))
-                                    print("disc scheduler saved")
-                                
-                                lecam_ema_real, lecam_ema_fake = lecam_ema.get()
-                                lecam_state = {
-                                    "lecam_ema_real": lecam_ema_real.item(),
-                                    "lecam_ema_fake": lecam_ema_fake.item(),
-                                }
-                                save_json(lecam_state, os.path.join(save_dir, "lecam_states.json"))
-                                print("lecam state saved")
-                                running_states = {
-                                    "epoch": epoch,
-                                    "step": step+1,
-                                    "global_step": global_step+1,
-                                    "sample_start_index": (step+1) * cfg.batch_size,
-                                }
-                                save_json(running_states, os.path.join(save_dir, "running_states.json"))
-                                logger.info(
-                                    f"Saved checkpoint at epoch {epoch} step {step + 1} global_step {global_step + 1} to {exp_dir}"
-                                )
-                            # use barrier to ask non-master processes to wait, lift barrier when master finish saving and reaches here
-                            print("process going into barrier C")
-                            dist.barrier()
-                            print("process left barrier C")
-
+                            if lr_scheduler is not None:
+                                booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
+                                print("lr scheduler saved")
+                            if disc_lr_scheduler is not None:
+                                booster.save_lr_scheduler(disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler"))
+                                print("disc scheduler saved")
+                            
+                            lecam_ema_real, lecam_ema_fake = lecam_ema.get()
+                            lecam_state = {
+                                "lecam_ema_real": lecam_ema_real.item(),
+                                "lecam_ema_fake": lecam_ema_fake.item(),
+                            }
+                            save_json(lecam_state, os.path.join(save_dir, "lecam_states.json"))
+                            print("lecam state saved")
+                            running_states = {
+                                "epoch": epoch,
+                                "step": step+1,
+                                "global_step": global_step+1,
+                                "sample_start_index": (step+1) * cfg.batch_size,
+                            }
+                            save_json(running_states, os.path.join(save_dir, "running_states.json"))
+                            logger.info(
+                                f"Saved checkpoint at epoch {epoch} step {step + 1} global_step {global_step + 1} to {exp_dir}"
+                            )
 
                     # print(p.key_averages().table(sort_by="self_cuda_time_total", row_limit=-1))
                     
