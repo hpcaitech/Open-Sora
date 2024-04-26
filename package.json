@@ -18,11 +18,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "postbuild": "react-snap"
-  },
-  "reactSnap": {
-    "skipThirdPartyRequests": true
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
