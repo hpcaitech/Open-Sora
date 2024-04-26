@@ -93,3 +93,35 @@ python -m tools.caption.caption_gpt4 DATA.csv --key $OPENAI_API_KEY
 ```
 
 The cost is approximately $0.01 per video (3 frames per video).
+
+## Camera Motion Detection
+
+Install additional required packages: `tools/caption/camera_motion/requirements.txt`.
+
+Run the following command to classify camera motion:
+
+```bash
+# output: meta_cmotion.csv
+python -m tools.caption.camera_motion.detect tools/caption/camera_motion/meta.csv
+```
+
+You may additionally specify `threshold` to indicate how "sensitive" the detection should be as below. For example `threshold = 0.2` means that the video is only counted as `tilt_up` when the pixels moved down by `>20%` of video height between the starting and ending frames.
+```bash
+# output: meta_cmotion.csv
+python -m tools.caption.camera_motion.detect tools/caption/camera_motion/meta.csv --threshold 0.2
+```
+
+
+Each video is classified according to 8 categories:
+            `pan_right,
+            pan_left,
+            tilt_up,
+            tilt_down,
+            zoom_in,
+            zoom_out,
+            static,
+            unclassified`. 
+Categories of `tilt`, `pan` and `zoom` can overlap with each other.
+
+
+
