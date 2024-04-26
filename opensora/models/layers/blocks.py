@@ -141,6 +141,7 @@ class Attention(nn.Module):
         norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
         rope=None,
+        qk_norm_legacy: bool = False,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -153,6 +154,7 @@ class Attention(nn.Module):
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
         self.k_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+        self.qk_norm_legacy = qk_norm_legacy
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
@@ -171,11 +173,17 @@ class Attention(nn.Module):
 
         qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
-        # WARNING: this may be a bug
-        if self.rope:
-            q = self.rotary_emb(q)
-            k = self.rotary_emb(k)
-        q, k = self.q_norm(q), self.k_norm(k)
+        if self.qk_norm_legacy:
+            # WARNING: this may be a bug
+            if self.rope:
+                q = self.rotary_emb(q)
+                k = self.rotary_emb(k)
+            q, k = self.q_norm(q), self.k_norm(k)
+        else:
+            q, k = self.q_norm(q), self.k_norm(k)
+            if self.rope:
+                q = self.rotary_emb(q)
+                k = self.rotary_emb(k)
 
         if enable_flashattn:
             from flash_attn import flash_attn_func
@@ -222,6 +230,7 @@ class SeqParallelAttention(Attention):
         norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
         rope=None,
+        qk_norm_legacy: bool = False,
     ) -> None:
         assert rope is None, "Rope is not supported in SeqParallelAttention"
         super().__init__(
