@@ -21,8 +21,8 @@
     "eject": "react-scripts eject",
     "postbuild": "react-snap"
   },
-  "react-snap": {
-    "crawl": false
+  "reactSnap": {
+    "skipThirdPartyRequests": true
   },
   "eslintConfig": {
     "extends": [
