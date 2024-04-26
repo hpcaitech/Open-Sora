@@ -42,6 +42,7 @@ class STDiT2Block(nn.Module):
         enable_sequence_parallelism=False,
         rope=None,
         qk_norm=False,
+        qk_norm_legacy=False,
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -64,6 +65,7 @@ class STDiT2Block(nn.Module):
             qkv_bias=True,
             enable_flashattn=enable_flashattn,
             qk_norm=qk_norm,
+            qk_norm_legacy=qk_norm_legacy,
         )
         self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
 
@@ -86,6 +88,7 @@ class STDiT2Block(nn.Module):
             enable_flashattn=self.enable_flashattn,
             rope=rope,
             qk_norm=qk_norm,
+            qk_norm_legacy=qk_norm_legacy,
         )
         self.scale_shift_table_temporal = nn.Parameter(torch.randn(3, hidden_size) / hidden_size**0.5)  # new
 
@@ -195,6 +198,7 @@ class STDiT2(nn.Module):
         dtype=torch.float32,
         freeze=None,
         qk_norm=False,
+        qk_norm_legacy=False,
         enable_flashattn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
@@ -244,6 +248,7 @@ class STDiT2(nn.Module):
                     enable_sequence_parallelism=enable_sequence_parallelism,
                     rope=self.rope.rotate_queries_or_keys,
                     qk_norm=qk_norm,
+                    qk_norm_legacy=qk_norm_legacy,
                 )
                 for i in range(self.depth)
             ]
