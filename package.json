@@ -22,7 +22,7 @@
     "postbuild": "react-snap"
   },
   "react-snap": {
-    "crawl": false,
+    "crawl": false
   },
   "eslintConfig": {
     "extends": [
