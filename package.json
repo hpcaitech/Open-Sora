@@ -21,6 +21,9 @@
     "eject": "react-scripts eject",
     "postbuild": "react-snap"
   },
+  "react-snap": {
+    "crawl": false,
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
