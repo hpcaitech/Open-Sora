@@ -84,9 +84,9 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 
 epochs = 200
 log_every = 1
-ckpt_every = 50
+ckpt_every = 1 # 50
 load = None
 
-batch_size = 32
+batch_size = 4 # 32
 lr = 1e-4
 grad_clip = 1.0
