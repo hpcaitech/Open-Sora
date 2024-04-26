@@ -12,8 +12,8 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@v3
-        ref: gallery
-
+        with:
+          ref: gallery
 
       - name: Setup Node
         uses: actions/setup-node@v4
