@@ -2,8 +2,8 @@ import "./App.css";
 import Title from "./components/Title";
 import PubButtonList from "./components/PubButtonList";
 import pub_links from "./data/pub_links";
-import videos from "./data/videos";
-import VideoGrid from "./components/VideoGrid";
+import examples from "./data/examples";
+import ExampleGrid from "./components/ExampleGrid";
 import Footer from "./components/Footer";
 
 function App() {
@@ -28,13 +28,13 @@ function App() {
 
       {/* video sections */}
       <div className="container mx-auto my-8 px-8 md:px-16 md:pt-12 lg:px-36">
-        {videos.map((videoGroup) => (
-          <VideoGrid videoGroup={videoGroup} />
+        {examples.map((exampleGroup) => (
+          <ExampleGrid data={exampleGroup} />
         ))}
       </div>
 
       {/* Footer */}
-      <div>
+      <div className="mt-8">
         <Footer />
       </div>
     </div>

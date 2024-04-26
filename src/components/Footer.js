@@ -6,7 +6,7 @@ const Footer = () => {
       <div className="text-center">
         <div className="flex justify-center space-x-4">
           <a
-            href="./static/videos/nerfies_paper.pdf"
+            href="https://nerfies.github.io/static/videos/nerfies_paper.pdf"
             target="_blank"
             rel="noopener noreferrer"
           >
