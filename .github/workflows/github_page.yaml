@@ -18,22 +18,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18.6
+          node-version: 20
 
-      - name: Get yarn cache
-        id: yarn-cache
-        run: echo "YARN_CACHE_DIR=$(yarn cache dir)" >> "${GITHUB_OUTPUT}"
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.yarn-cache.outputs.YARN_CACHE_DIR }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn
-
-      - run: yarn install
-      - run: yarn build
+      - run: npm install
+      - run: npm run build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
