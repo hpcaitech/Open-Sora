@@ -121,7 +121,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 <summary>View more</summary>
 
 * [x] Evaluation pipeline.
-* [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.).
+* [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.). See [the dataset](/docs/datasets.md) for more information
 * [x] Support image and video conditioning.
 * [x] Support variable aspect ratios, resolutions, durations.
 
