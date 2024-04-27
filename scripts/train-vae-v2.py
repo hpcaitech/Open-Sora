@@ -326,13 +326,15 @@ def main():
                 #  ===== Spatial VAE =====
                 if cfg.get("use_pipeline") == True:
                     with torch.no_grad():
-                        video = vae_2d.encode(video)
+                        t_video = vae_2d.encode(video)
 
                 #  ====== VAE ======
-                recon_video, posterior = vae(
-                    video,
+                t_recon_video, posterior = vae(
+                    t_video,
                     video_contains_first_frame=video_contains_first_frame,
                 )
+
+                recon_video = vae_2d.decode(t_recon_video)
 
                 #  ====== Generator Loss ======
                 # simple nll loss
