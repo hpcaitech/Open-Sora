@@ -158,6 +158,9 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 ## 训练
 
+<details>
+<summary>查看更多</summary>
+
 要启动训练，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后运行以下命令在单个节点上启动训练。
 
 ```bash
@@ -175,6 +178,8 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 
 有关其他模型的训练和高级使用方法，请参阅[此处](commands.md)获取更多说明。
 
+</details>
+
 ## 评估
 
 点击[这里](https://github.com/hpcaitech/Open-Sora/blob/main/eval/README.md)查看评估
@@ -188,6 +193,7 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 * [ ] 更新[最新视频](#-最新视频)
 * [ ] 更新[新功能](#-新功能)。
 * [ ] 翻译[评估](https://github.com/hpcaitech/Open-Sora/blob/main/eval/README.md)文件
+* [ ] 更新[训练](#训练)
 ## 声明
 
 * [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
