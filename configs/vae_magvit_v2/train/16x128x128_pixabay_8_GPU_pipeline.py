@@ -4,6 +4,7 @@ dataset = dict(
     num_frames=16,
     frame_interval=3,
     image_size=(128, 128),
+    get_text=False,
 )
 
 # Define acceleration

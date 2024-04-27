@@ -29,6 +29,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         frame_interval=1,
         image_size=(256, 256),
         transform_name="center",
+        get_text=True,
     ):
         self.data_path = data_path
         self.data = read_file(data_path)
@@ -39,6 +40,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
             "image": get_transforms_image(transform_name, image_size),
             "video": get_transforms_video(transform_name, image_size),
         }
+        self.get_text = get_text
 
     def _print_data_number(self):
         num_videos = 0
@@ -61,7 +63,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
     def getitem(self, index):
         sample = self.data.iloc[index]
         path = sample["path"]
-        text = sample["text"]
+        text = sample["text"] if self.get_text else None
         file_type = self.get_type(path)
 
         if file_type == "video":
@@ -87,7 +89,11 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-        return {"video": video, "text": text}
+
+        if self.get_text:
+            return {"video": video, "text": text}
+        else:
+            return {"video": video}
 
     def __getitem__(self, index):
         for _ in range(10):
