@@ -70,6 +70,7 @@ def main():
     # 3.2. move to device & eval
     vae = vae.to(device, dtype).eval()
     model = model.to(device, dtype).eval()
+    breakpoint()
 
     # 3.3. build scheduler
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
