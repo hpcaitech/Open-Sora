@@ -4,6 +4,12 @@ We rewrite the `nerfies`[https://github.com/google/nerfies] with React and Next.
 
 ## 🚀 Deploy
 
+You can follow the steps below to deploy this website to Github Pages.
+
+![20240427-133232](https://github.com/hpcaitech/Open-Sora/assets/31818963/0d3b8a10-6a35-483d-8ac9-790413ca4ca5)
+
+Wait for about one minute and visit the Github Pages again.
+
 ## ✏️ Edit Examples
 
 The web content will display demo examples given in the `data/examples.js` file. This file contains an `examples` variable and its structure follows this format:
