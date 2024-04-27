@@ -64,7 +64,7 @@ discriminator_loss_type = "non-saturating"
 generator_loss_type = "non-saturating"
 # discriminator_loss_type="hinge"
 # generator_loss_type="hinge"
-discriminator_start = 10000  # 8k data / (8*1) = 1000 steps per epoch
+discriminator_start = 5000  # 8k data / (8*1) = 1000 steps per epoch
 gradient_penalty_loss_weight = None  # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay factor for generator
 
@@ -84,7 +84,7 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 epochs = 20
 log_every = 1
 
-ckpt_every = 1000
+ckpt_every = 500
 load = None
 
 batch_size = 1
