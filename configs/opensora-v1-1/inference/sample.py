@@ -10,6 +10,7 @@ model = dict(
     from_pretrained=None,
     input_sq_size=512,
     qk_norm=True,
+    qk_norm_legacy=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
