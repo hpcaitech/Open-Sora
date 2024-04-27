@@ -10,7 +10,6 @@ from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
-from opensora.utils.ckpt_utils import load_json
 from opensora.utils.misc import to_torch_dtype
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, build_module
@@ -132,17 +131,10 @@ def main():
         )    
 
          # LeCam EMA for discriminator
-        lecam_path = os.path.join(cfg.load, "lecam_states.json")
-        if cfg.lecam_loss_weight is not None and os.path.exists(lecam_path):
-            lecam_state = load_json(lecam_path)
-            lecam_ema_real, lecam_ema_fake = lecam_state["lecam_ema_real"], lecam_state["lecam_ema_fake"]
-            lecam_ema = LeCamEMA(
-                decay=cfg.ema_decay, ema_real=lecam_ema_real, ema_fake=lecam_ema_fake, dtype=dtype, device=device
-            )
-        else:
-            lecam_ema = LeCamEMA(
+
+        lecam_ema = LeCamEMA(
                 decay=cfg.ema_decay, dtype=dtype, device=device
-            )
+        )
 
     
     
