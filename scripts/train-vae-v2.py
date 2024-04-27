@@ -56,10 +56,11 @@ def main():
 
     # get exp dir for non-master process
     if exp_dir is None:
-        experiment_index = len(glob(f"{cfg.outputs}/*")) - 1
-        model_name = cfg.model["type"].replace("/", "-")
-        exp_name = f"{experiment_index:03d}-F{cfg.dataset.num_frames}S{cfg.dataset.frame_interval}-{model_name}"
-        exp_dir = f"{cfg.outputs}/{exp_name}"
+        # experiment_index = len(glob(f"{cfg.outputs}/*")) - 1
+        # model_name = cfg.model["type"].replace("/", "-")
+        # exp_name = f"{experiment_index:03d}-{model_name}"
+        # exp_dir = f"{cfg.outputs}/{exp_name}"
+        exp_name, exp_dir = create_experiment_workspace(cfg, get_last_workspace=True)
         assert os.path.exists(exp_dir)
 
     device = get_current_device()
