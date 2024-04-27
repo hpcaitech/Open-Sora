@@ -81,6 +81,7 @@
 * [推理](#推理)
 * [数据处理](#数据处理)
 * [训练](#训练)
+* [评估](#评估)
 * [贡献](#贡献)
 * [声明](#声明)
 * [引用](#引用)
@@ -172,7 +173,11 @@ torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/6
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-有关其他模型的训练和高级使用方法，请参阅[此处](commands_zh.md)获取更多说明。
+有关其他模型的训练和高级使用方法，请参阅[此处](commands.md)获取更多说明。
+
+## 评估
+
+点击[这里](https://github.com/hpcaitech/Open-Sora/blob/main/eval/README.md)查看评估
 
 ## 贡献
 
@@ -182,7 +187,7 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 * [ ] 更新[资讯](#-资讯)
 * [ ] 更新[最新视频](#-最新视频)
 * [ ] 更新[新功能](#-新功能)。
-
+* [ ] 翻译[评估](https://github.com/hpcaitech/Open-Sora/blob/main/eval/README.md)文件
 ## 声明
 
 * [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
