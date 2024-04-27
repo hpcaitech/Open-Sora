@@ -146,7 +146,6 @@ def main():
     logger.info(
         f"Trainable vae params: {format_numel_str(vae_numel_trainable)}, Total model params: {format_numel_str(vae_numel)}"
     )
-    breakpoint()
 
     discriminator = build_module(cfg.discriminator, MODELS, device=device)
     discriminator_numel, discriminator_numel_trainable = get_model_numel(discriminator)
