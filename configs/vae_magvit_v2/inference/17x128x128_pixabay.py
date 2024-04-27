@@ -88,12 +88,8 @@ magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
 3-6 epochs for pexel, from pexel observation its correct
 '''
 
-epochs = 10
-log_every = 1
-ckpt_every = 500
-load = None
 
-batch_size = 4
+batch_size = 1
 lr = 1e-4
 grad_clip = 1.0
 
