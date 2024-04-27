@@ -12,7 +12,7 @@ from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
-from opensora.datasets import DATASETS, MODELS, build_module
+from opensora.registry import DATASETS, MODELS, build_module
 from opensora.acceleration.parallel_states import (
     get_data_parallel_group,
     set_data_parallel_group,

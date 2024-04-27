@@ -11,23 +11,20 @@ dataset = dict(
 
 fps = 24 // 3
 is_vae = True
-use_pipeline = True
 
 # Define dataset
-root = None
-data_path = "CSV_PATH"
 max_test_samples = -1
-use_image_transform = False
-num_workers = 4
-video_contains_first_frame = True
-
 
 
 # Define acceleration
+num_workers = 4
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
 sp_size = 1
+
+use_pipeline = True
+video_contains_first_frame = True
 
 
 # Define model
@@ -52,7 +49,6 @@ model = dict(
     disable_space = True,
     custom_conv_padding = None,
     encoder_double_z = False,
-    custom_conv_padding=None,
 )
 
 discriminator = dict(

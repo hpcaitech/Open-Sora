@@ -76,7 +76,7 @@ def merge_args(cfg, args, training=False):
         if cfg.get("discriminator") is not None:
             cfg.discriminator["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
-    if training and args.data_path is not None:
+    if (training or cfg.get("is_vae", False)) and args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
     if not training and args.cfg_scale is not None:
