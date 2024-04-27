@@ -144,7 +144,7 @@ def parse_configs(training=False):
     return cfg
 
 
-def create_experiment_workspace(cfg):
+def create_experiment_workspace(cfg, get_last_workspace=False):
     """
     This function creates a folder for experiment tracking.
 
@@ -157,6 +157,8 @@ def create_experiment_workspace(cfg):
     # Make outputs folder (holds all experiment subfolders)
     os.makedirs(cfg.outputs, exist_ok=True)
     experiment_index = len(glob(f"{cfg.outputs}/*"))
+    if get_last_workspace:
+        experiment_index -= 1
 
     # Create an experiment folder
     model_name = cfg.model["type"].replace("/", "-")
