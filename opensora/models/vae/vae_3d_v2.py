@@ -524,7 +524,7 @@ class StyleGANDiscriminatorBlur(nn.Module):
 
         prev_filters = self.filters  # record in_channels
         self.num_blocks = len(self.channel_multipliers)
-        self.res_block_list = []
+        self.res_block_list = nn.ModuleList([])
         for i in range(self.num_blocks):
             filters = self.filters * self.channel_multipliers[i]
             self.res_block_list.append(
@@ -644,16 +644,16 @@ class Encoder(nn.Module):
         # self.conv1 = self.conv_fn(in_out_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
 
         # ResBlocks and conv downsample
-        self.block_res_blocks = []
+        self.block_res_blocks = nn.ModuleList([])
         self.num_blocks = len(self.channel_multipliers)
-        self.conv_blocks = []
+        self.conv_blocks = nn.ModuleList([])
 
         filters = self.filters
         prev_filters = filters  # record for in_channels
         for i in range(self.num_blocks):
             # resblock handling
             filters = self.filters * self.channel_multipliers[i]  # SCH: determine the number out_channels
-            block_items = []
+            block_items = nn.ModuleList([])
             for _ in range(self.num_res_blocks):
                 block_items.append(ResBlock(prev_filters, filters, **self.block_args))
                 prev_filters = filters  # update in_channels
@@ -668,7 +668,7 @@ class Encoder(nn.Module):
                 prev_filters = filters  # update in_channels
 
         # last layer res block
-        self.res_blocks = []
+        self.res_blocks = nn.ModuleList([])
         for _ in range(self.num_res_blocks):
             self.res_blocks.append(ResBlock(prev_filters, filters, **self.block_args))
             prev_filters = filters  # update in_channels
@@ -774,7 +774,7 @@ class Decoder(nn.Module):
         self.conv1 = self.conv_fn(self.embedding_dim, filters, kernel_size=(3, 3, 3), bias=True)
 
         # last layer res block
-        self.res_blocks = []
+        self.res_blocks = nn.ModuleList([])
         for _ in range(self.num_res_blocks):
             self.res_blocks.append(ResBlock(filters, filters, **self.block_args))
 
@@ -786,14 +786,14 @@ class Decoder(nn.Module):
 
         # ResBlocks and conv upsample
         prev_filters = filters  # SCH: in_channels
-        self.block_res_blocks = []
+        self.block_res_blocks = nn.ModuleList([])
         self.num_blocks = len(self.channel_multipliers)
-        self.conv_blocks = []
+        self.conv_blocks = nn.ModuleList([])
         # SCH: reverse to keep track of the in_channels, but append also in a reverse direction
         for i in reversed(range(self.num_blocks)):
             filters = self.filters * self.channel_multipliers[i]
             # resblock handling
-            block_items = []
+            block_items = nn.ModuleList([])
             for _ in range(self.num_res_blocks):
                 block_items.append(ResBlock(prev_filters, filters, **self.block_args))
                 prev_filters = filters  # SCH: update in_channels
