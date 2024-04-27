@@ -22,7 +22,7 @@
  <h4>Open-Sora 项目目前处在早期阶段，并将持续更新。</h4>
 
 ## 📰 资讯 
-> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md)
+> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md#-news)
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
 * Open-Sora 1.0 支持视频数据预处理、加速训练、推理等全套流程。
 * 我们提供的[模型权重](#模型权重)只需 3 天的训练就能生成 2 秒的 512x512 视频。
@@ -40,7 +40,7 @@
 视频经过降采样处理为`.gif`格式，以便显示。点击查看原始视频。为便于显示，文字经过修剪，全文请参见 [此处](/assets/texts/t2v_samples.txt)。在我们的[图片库](https://hpcaitech.github.io/Open-Sora/)中查看更多样本。
 
 ## 🔆 新功能
-> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md)
+> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md#-new-featuresupdates)
 * 📍Open-Sora-v1 已发布。[这里](#模型权重)提供了模型权重。只需 400K 视频片段和在单卡 H800 上训200天（类比Stable Video Diffusion 的 152M 样本），我们就能生成 2 秒的 512×512 视频。
 * ✅ 从图像扩散模型到视频扩散模型的三阶段训练。我们提供每个阶段的权重。
 * ✅ 支持训练加速，包括Transformer加速、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[训练加速](acceleration.md)。
@@ -127,7 +127,7 @@ pip install -v .
 
 ## 推理
 
-要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](structure.md#inference-config-demos)自定义配置。
+要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](structure.md#推理配置演示)自定义配置。
 
 ```bash
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
@@ -145,7 +145,7 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands_zh.md)获取更多说明。减小`vae.micro_batch_size`来降低显存使用（但取样速度会略微减慢）。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands.md)获取更多说明。减小`vae.micro_batch_size`来降低显存使用（但取样速度会略微减慢）。
 
 ## 数据处理
 
@@ -176,7 +176,12 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 
 ## 贡献
 
-如果您希望为该项目做出贡献，可以参考 [贡献指南](/CONTRIBUTING.md).
+本中文翻译还有许多不足，如果您希望为该项目做出贡献，可以参考 [贡献指南](/CONTRIBUTING.md).
+
+目前需要翻译或更新的文件：
+* [ ] 更新[资讯](#-资讯)
+* [ ] 更新[最新视频](#-最新视频)
+* [ ] 更新[新功能](#-新功能)。
 
 ## 声明
 
