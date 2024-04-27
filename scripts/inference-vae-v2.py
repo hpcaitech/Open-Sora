@@ -9,7 +9,8 @@ from mmengine.runner import set_random_seed
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
-from opensora.utils.config_utils import parse_configs, load_json
+from opensora.utils.config_utils import parse_configs
+from opensora.utils.ckpt_utils import load_json
 from opensora.utils.misc import to_torch_dtype
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, build_module
