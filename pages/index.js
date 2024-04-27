@@ -1,12 +1,11 @@
-import "./App.css";
-import Title from "./components/Title";
-import PubButtonList from "./components/PubButtonList";
-import pub_links from "./data/pub_links";
-import examples from "./data/examples";
-import ExampleGrid from "./components/ExampleGrid";
-import Footer from "./components/Footer";
+import Title from "../components/Title";
+import PubButtonList from "../components/PubButtonList";
+import ExampleGrid from "../components/ExampleGrid";
+import Footer from "../components/Footer";
+import pubLinks from "../data/pubLinks";
+import examples from "../data/examples";
 
-function App() {
+export default function Home() {
   return (
     <div className="text-center">
       {/* head section */}
@@ -22,7 +21,7 @@ function App() {
         </div>
 
         <div>
-          <PubButtonList links={pub_links} />
+          <PubButtonList links={pubLinks} />
         </div>
       </div>
 
@@ -40,5 +39,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

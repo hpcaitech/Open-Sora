@@ -1,6 +1,9 @@
 const Button = (item) => {
   return (
-    <a href={item.link} class="flex rounded-full bg-black text-white p-2 items-center gap-x-1 px-4">
+    <a
+      href={item.link}
+      className="flex rounded-full bg-black text-white p-2 items-center gap-x-1 px-4"
+    >
       <item.iconType />
       <span>{item.name}</span>
     </a>
@@ -14,7 +17,6 @@ const ButtonList = ({ links }) => {
         <div className="mx-1">
           <Button {...link} />
         </div>
-        
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 const Title = () => {
   return (
-    <div class="text-5xl font-semibold">
+    <div className="text-5xl font-semibold">
       <u>
         <font color="#F4D03F">G</font>
         <font color="#9B59B6">a</font>

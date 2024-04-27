@@ -152,20 +152,6 @@ const examples = [
     title: "Connecting Images",
     items: [
       {
-        prompt: "A sad small cactus with in the Sahara desert becomes happy.",
-        inputs: [
-          {
-            link: "https://streamable.com/e/4egeu9?quality=highest&autoplay=1",
-          },
-          {
-            link: "https://streamable.com/e/a6nvpn?quality=highest&autoplay=1",
-          },
-        ],
-        output: {
-          link: "https://streamable.com/e/ufw6jn?quality=highest&autoplay=1",
-        },
-      },
-      {
         prompt: "A breathtaking sunrise scene.",
         inputs: [
           {

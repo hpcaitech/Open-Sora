@@ -9,13 +9,13 @@ const VideoItem = ({ video }) => {
           position: "relative",
           width: "100%",
           height: "0px",
-          "padding-bottom": "100.000%",
+          paddingBottom: "100.000%",
         }}
       >
         <iframe
           title={video.link}
           allow="fullscreen;autoplay"
-          allowfullscreen
+          allowFullScreen
           height="100%"
           src={video.link}
           width="100%"
@@ -38,8 +38,8 @@ const renderItem = (item) => {
   const hasInputs = item.inputs.length > 0;
 
   return (
-    <div className={classNames(hasInputs ? "col-span-full" : "")}>
-      <div className="flex justify-center items-center space-x-4">
+    <div className={hasInputs ? "w-full" : "w-64"}>
+      <div className="flex flex-wrap justify-center items-center space-x-4">
         {hasInputs &&
           item.inputs.map((input_, idx) => {
             if (idx < item.inputs.length - 1) {
@@ -63,7 +63,7 @@ const renderItem = (item) => {
       </div>
 
       <div className="flex justify-center">
-      <p className="leading-tight text-justify text-sm">{item.prompt}</p>
+        <p className="leading-tight text-justify text-sm">{item.prompt}</p>
       </div>
     </div>
   );
@@ -73,7 +73,7 @@ const ExampleGrid = ({ data }) => {
   return (
     <div className="mb-4">
       <span className="text-3xl text-semibold">{data.title}</span>
-      <div className="grid mt-4 gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div className="flex flex-wrap justify-around">
         {data.items.map((item) => renderItem(item))}
       </div>
     </div>
