@@ -393,3 +393,11 @@ def PixArtMS_XL_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
+
+
+@MODELS.register_module("PixArtMS-1B/2")
+def PixArtMS_1B_2(from_pretrained=None, **kwargs):
+    model = PixArtMS(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
