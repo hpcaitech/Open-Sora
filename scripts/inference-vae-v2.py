@@ -11,7 +11,8 @@ from opensora.datasets import save_sample
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
-from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
+from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
+from opensora.datasets import DATASETS, MODELS, build_module
 from opensora.acceleration.parallel_states import (
     get_data_parallel_group,
     set_data_parallel_group,
@@ -54,18 +55,7 @@ def main():
     # ======================================================
     # 3. build dataset and dataloader
     # ======================================================
-    dataset = DatasetFromCSV(
-        cfg.data_path,
-        transform=(
-            get_transforms_video(cfg.image_size[0])
-            if not cfg.use_image_transform
-            else get_transforms_image(cfg.image_size[0])
-        ),
-        num_frames=cfg.num_frames,
-        frame_interval=cfg.frame_interval,
-        root=cfg.root,
-    )
-
+    dataset = build_module(cfg.dataset, DATASETS)
 
     dataloader = prepare_dataloader(
         dataset,
@@ -100,7 +90,7 @@ def main():
     # 3.4. support for multi-resolution
     model_args = dict()
     if cfg.multi_resolution:
-        image_size = cfg.image_size
+        image_size = cfg.dataset.image_size
         hw = torch.tensor([image_size], device=device, dtype=dtype).repeat(cfg.batch_size, 1)
         ar = torch.tensor([[image_size[0] / image_size[1]]], device=device, dtype=dtype).repeat(cfg.batch_size, 1)
         model_args["data_info"] = dict(ar=ar, hw=hw)
@@ -146,8 +136,8 @@ def main():
     loss_steps = 0
 
     disc_time_downsample_factor = 2 ** len(cfg.discriminator.channel_multipliers)
-    if cfg.num_frames % disc_time_downsample_factor != 0:
-        disc_time_padding = disc_time_downsample_factor - cfg.num_frames % disc_time_downsample_factor
+    if cfg.datasets.num_frames % disc_time_downsample_factor != 0:
+        disc_time_padding = disc_time_downsample_factor - cfg.datasets.num_frames % disc_time_downsample_factor
     else:
         disc_time_padding = 0
     video_contains_first_frame = cfg.video_contains_first_frame
