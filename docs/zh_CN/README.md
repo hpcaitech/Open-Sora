@@ -152,7 +152,7 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 高质量数据是高质量模型的关键。[这里](datasets.md)有我们使用过的数据集和数据收集计划。我们提供处理视频数据的工具。目前，我们的数据处理流程包括以下步骤：
 
 1. 下载数据集。[[文件](/tools/datasets/README.md)]
-2. 将视频分割成片段。 [[文件](/tools/scenedetect/README.md)]
+2. 将视频分割成片段。 [[文件](/tools/scene_cut/README.md)]
 3. 生成视频字幕。 [[文件](/tools/caption/README.md)]
 
 ## 训练
