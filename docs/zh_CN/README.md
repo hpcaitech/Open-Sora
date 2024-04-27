@@ -22,7 +22,7 @@
  <h4>Open-Sora 项目目前处在早期阶段，并将持续更新。</h4>
 
 ## 📰 资讯 
-> 由于文档需要进行翻译，最新资讯请看[英文文档]([[English Document]](/README.md))
+> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md)
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
 * Open-Sora 1.0 支持视频数据预处理、加速训练、推理等全套流程。
 * 我们提供的[模型权重](/#模型权重)只需 3 天的训练就能生成 2 秒的 512x512 视频。
@@ -62,13 +62,13 @@
 
 * [ ] 训练视频-VAE并让模型适应新的VAE **[项目进行中]**
 * [ ] 缩放模型参数和数据集大小 **[项目进行中]**
-* [ ] 纳入更好的时间表，例如 SD3 中的修正流程。 **[开发中]**
+* [ ] 纳入更好的时间表，例如 SD3 中的修正流程。 **[项目进行中]**
 
 <details>
 <summary>查看更多</summary>
 
 * [x] 评估流程。
-* [x] 完成数据处理流程（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](datasets.md)。**[项目进行中］**
+* [x] 完成数据处理流程（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](datasets.md)
 * [x] 支持图像和视频调节。
 * [x] 支持可变长宽比、分辨率和持续时间。
 
@@ -122,12 +122,12 @@ pip install -v .
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:]() |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:]() |
 
-我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](/docs/report_v1.md)**。有关数据集的更多信息，请参阅[数据](datasets.md)。HQ 表示高质量。
+我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](report_v1.md)**。有关数据集的更多信息，请参阅[数据](datasets.md)。HQ 表示高质量。
 :warning: **局限性**：我们的模型是在有限的预算内训练出来的。质量和文本对齐度相对较差。特别是在生成人类时，模型表现很差，无法遵循详细的指令。我们正在努力改进质量和文本对齐。
 
 ## 推理
 
-要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](docs/structure.md#inference-config-demos)自定义配置。
+要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](structure.md#inference-config-demos)自定义配置。
 
 ```bash
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
