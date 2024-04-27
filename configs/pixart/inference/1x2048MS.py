@@ -4,10 +4,13 @@ image_size = (2560, 1536)
 # image_size = (2048, 2048)
 
 model = dict(
-    type="PixArt-Sigma-XL/2",
+    type="PixArt-XL/2",
+    from_pretrained="PixArt-Sigma-XL-2-2K-MS.pth",
     space_scale=4,
     no_temporal_pos_emb=True,
-    from_pretrained="PixArt-Sigma-XL-2-2K-MS.pth",
+    enable_flashattn=True,
+    enable_layernorm_kernel=True,
+    base_size=2048 // 8,
 )
 vae = dict(
     type="VideoAutoencoderKL",

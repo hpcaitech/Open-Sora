@@ -133,6 +133,7 @@ class PixArt(nn.Module):
         enable_flashattn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
+        base_size=None,
     ):
         super().__init__()
         assert enable_sequence_parallelism is False, "Sequence parallelism is not supported in this version."
@@ -146,7 +147,10 @@ class PixArt(nn.Module):
         self.num_patches = num_patches
         self.num_temporal = input_size[0] // patch_size[0]
         self.num_spatial = num_patches // self.num_temporal
-        self.base_size = int(np.sqrt(self.num_spatial))
+        if base_size is None:
+            self.base_size = int(np.sqrt(self.num_spatial))
+        else:
+            self.base_size = base_size // patch_size[1]
         self.num_heads = num_heads
         self.dtype = dtype
         self.no_temporal_pos_emb = no_temporal_pos_emb
