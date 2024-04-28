@@ -70,7 +70,6 @@ class IDDPM(SpacedDiffusion):
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
         if additional_args is not None:
             model_args.update(additional_args)
-
         forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale, cfg_channel=self.cfg_channel)
         samples = self.p_sample_loop(
             forward,

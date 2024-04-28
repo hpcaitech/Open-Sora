@@ -8,10 +8,11 @@ from opensora.registry import MODELS
 
 @MODELS.register_module()
 class VideoAutoencoderKL(nn.Module):
-    def __init__(self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False):
+    def __init__(self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False, subfolder=None):
         super().__init__()
         self.module = AutoencoderKL.from_pretrained(
-            from_pretrained, cache_dir=cache_dir, local_files_only=local_files_only
+            from_pretrained, cache_dir=cache_dir, local_files_only=local_files_only,
+            subfolder=subfolder,
         )
         self.out_channels = self.module.config.latent_channels
         self.patch_size = (1, 8, 8)
