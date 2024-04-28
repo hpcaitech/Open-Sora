@@ -48,16 +48,17 @@ model = dict(
     separate_first_frame_encoding = False,
     disable_space = True,
     custom_conv_padding = None,
-    encoder_double_z = False,
+    encoder_double_z = True,
 )
 
 discriminator = dict(
     type="DISCRIMINATOR_3D",
-    image_size = 16,
+    image_size = (128, 128),
     num_frames = num_frames,
-    in_channels = 4,
+    in_channels = 3,
     filters = 128,
-    channel_multipliers = (2,4,4), #(2,4,4,4,4) # (2,4,4,4) for 64x64 resolution
+    channel_multipliers = (2,4,4,4,4),
+    # channel_multipliers = (2,4,4), #(2,4,4,4,4) # (2,4,4,4) for 64x64 resolution
 )
 
 
