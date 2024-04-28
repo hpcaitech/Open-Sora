@@ -45,6 +45,7 @@ from opensora.models.layers.blocks import (
     get_2d_sincos_pos_embed,
     get_layernorm,
     t2i_modulate,
+    KVCompressAttention
 )
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
@@ -77,7 +78,7 @@ class PixArtBlock(nn.Module):
             self.attn_cls = SeqParallelAttention
             self.mha_cls = SeqParallelMultiHeadCrossAttention
         else:
-            self.attn_cls = Attention
+            self.attn_cls = KVCompressAttention
             self.mha_cls = MultiHeadCrossAttention
 
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -89,6 +90,7 @@ class PixArtBlock(nn.Module):
             qk_norm=qk_norm,
             sr_ratio=sr_ratio,
             sampling=sampling,
+            attn_half=True,
         )
         self.cross_attn = self.mha_cls(hidden_size, num_heads)
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -114,7 +116,7 @@ class PixArtBlock(nn.Module):
 
 
 @MODELS.register_module()
-class PixArt(nn.Module):
+class PixArt_Sigma(nn.Module):
     """
     Diffusion model with a Transformer backbone.
     """
@@ -333,7 +335,7 @@ class PixArt(nn.Module):
 
 
 @MODELS.register_module()
-class PixArtMS(PixArt):
+class PixArt_SigmaMS(PixArt_Sigma):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -403,17 +405,17 @@ class PixArtMS(PixArt):
         return x
 
 
-@MODELS.register_module("PixArt-XL/2")
-def PixArt_XL_2(from_pretrained=None, **kwargs):
-    model = PixArt(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+@MODELS.register_module("PixArt-Sigma-XL/2")
+def PixArt_Sigma_XL_2(from_pretrained=None, **kwargs):
+    model = PixArt_Sigma(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
 
 
-@MODELS.register_module("PixArtMS-XL/2")
+@MODELS.register_module("PixArt-SigmaMS-XL/2")
 def PixArtMS_XL_2(from_pretrained=None, **kwargs):
-    model = PixArtMS(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    model = PixArt_SigmaMS(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
