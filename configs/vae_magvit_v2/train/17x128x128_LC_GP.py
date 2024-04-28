@@ -61,13 +61,13 @@ kl_loss_weight = 0.000001
 perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
 discriminator_factor = 1.0  # for discriminator adversarial loss
 generator_factor = 0.1  # SCH: generator adversarial loss, MAGVIT v2 uses 0.1
-lecam_loss_weight = None  # NOTE: MAVGIT v2 use 0.001
+lecam_loss_weight = 0.001  # NOTE: MAVGIT v2 use 0.001
 discriminator_loss_type = "non-saturating"
 generator_loss_type = "non-saturating"
 # discriminator_loss_type="hinge"
 # generator_loss_type="hinge"
 discriminator_start = 2000 # 5000  # 8k data / (8*1) = 1000 steps per epoch
-gradient_penalty_loss_weight = None  # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
+gradient_penalty_loss_weight = 10  # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay factor for generator
 
 
