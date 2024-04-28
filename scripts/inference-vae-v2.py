@@ -179,10 +179,14 @@ def main():
                 with torch.no_grad():
                     video_enc_spatial = vae_2d.encode(video)
 
-                recon_video, posterior = vae(
+                recon_dec_spatial, posterior = vae(
                     video_enc_spatial,
                     video_contains_first_frame = video_contains_first_frame
                 )
+
+                recon_video = vae_2d.decode(recon_dec_spatial)
+                recon_2d = vae_2d.decode(video_enc_spatial)
+
             else:
                 recon_video, posterior = vae(
                     video,
@@ -193,7 +197,7 @@ def main():
                 #  ====== Calc Loss ======
                 # simple nll loss
                 nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(
-                    video_enc_spatial,
+                    video,
                     recon_video,
                     posterior,
                     split = "eval"
@@ -212,7 +216,7 @@ def main():
                 vae_loss = weighted_nll_loss + weighted_kl_loss + adversarial_loss
                 
                 #  ====== Discriminator Loss ======
-                real_video = pad_at_dim(video_enc_spatial, (disc_time_padding, 0), value = 0., dim = 2)
+                real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
                 fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
 
                 if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
@@ -246,11 +250,7 @@ def main():
 
             if coordinator.is_master():
                 if cfg.get("use_pipeline") == True:
-                    with torch.no_grad(): # 2nd stage decoding
-                        recon_pipeline = vae_2d.decode(recon_video)
-                        recon_2d = vae_2d.decode(video_enc_spatial)
-
-                    for idx, (sample_original, sample_pipeline, sample_2d) in enumerate(zip(video, recon_pipeline, recon_2d)):
+                    for idx, (sample_original, sample_pipeline, sample_2d) in enumerate(zip(video, recon_video, recon_2d)):
                         pos = step * cfg.batch_size + idx
                         save_path = os.path.join(save_dir, f"sample_{pos}")
                         save_sample(sample_original, fps=cfg.fps, save_path=save_path+"_original")
