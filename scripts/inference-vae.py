@@ -5,7 +5,6 @@ import torch
 import torch.distributed as dist
 from colossalai.cluster import DistCoordinator
 from colossalai.utils import get_current_device
-from einops import rearrange
 from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group
@@ -148,13 +147,7 @@ def main():
         for step in pbar:
             batch = next(dataloader_iter)
             x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-
-            is_image = x.ndim == 4
-            if is_image:
-                video = rearrange(x, "b c ... -> b c 1 ...")
-                video_contains_first_frame = True
-            else:
-                video = x
+            video = x
 
             #  ===== Spatial VAE =====
             if cfg.get("use_pipeline") == True:
