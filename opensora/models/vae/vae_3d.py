@@ -681,7 +681,7 @@ class Decoder(nn.Module):
 
             # conv blocks with upsampling
             if i > 0:
-                if self.temporal_downsample[i]: 
+                if self.temporal_downsample[i-1]: 
                     t_stride = 2 if self.temporal_downsample[i - 1] else 1
                     # SCH: T-Causal Conv 3x3x3, f -> (t_stride * 2 * 2) * f, depth to space t_stride x 2 x 2
                     self.conv_blocks.insert(
@@ -697,7 +697,7 @@ class Decoder(nn.Module):
                             prev_filters
                         ),
                     )
-                    
+
 
         self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device, dtype=dtype)
 
