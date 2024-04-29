@@ -4,7 +4,7 @@ dataset = dict(
     type="VideoTextDataset",
     data_path=None,
     num_frames=num_frames,
-    frame_interval=3,
+    frame_interval=1,
     image_size=image_size,
     get_text=False,
 )
