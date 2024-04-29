@@ -181,3 +181,4 @@ cache/
 hostfile
 gradio_cached_examples/
 wandb/
+taming/
