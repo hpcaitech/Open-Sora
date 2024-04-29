@@ -211,6 +211,7 @@ class PixArt(nn.Module):
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
         x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        breakpoint()
         x = x + self.pos_embed
         if not self.no_temporal_pos_emb:
             x = rearrange(x, "b t s d -> b s t d")
@@ -387,17 +388,17 @@ def PixArt_XL_2(from_pretrained=None, **kwargs):
     return model
 
 
-@MODELS.register_module("PixArtMS-XL/2")
-def PixArtMS_XL_2(from_pretrained=None, **kwargs):
-    model = PixArtMS(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+@MODELS.register_module("PixArt-1B/2")
+def PixArt_1B_2(from_pretrained=None, **kwargs):
+    model = PixArt(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
 
 
-@MODELS.register_module("PixArtMS-1B/2")
-def PixArtMS_1B_2(from_pretrained=None, **kwargs):
-    model = PixArtMS(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
+@MODELS.register_module("PixArtMS-XL/2")
+def PixArtMS_XL_2(from_pretrained=None, **kwargs):
+    model = PixArtMS(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model

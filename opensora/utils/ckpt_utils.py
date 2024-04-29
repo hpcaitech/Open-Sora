@@ -88,6 +88,13 @@ def reparameter(ckpt, name=None, model=None):
                 f"Shrink y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
             )
             ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
+    # stdit3 special case
+    if type(model).__name__ == "STDiT3" and "PixArt-Sigma" in name:
+        ckpt_keys = list(ckpt.keys())
+        for key in ckpt_keys:
+            if "blocks." in key:
+                ckpt[key.replace("blocks.", "spatial_blocks.")] = ckpt[key]
+                del ckpt[key]
 
     return ckpt
 
