@@ -21,7 +21,8 @@ from opensora.acceleration.parallel_states import (
 )
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
-from opensora.models.vae.vae_3d_v2 import AdversarialLoss, DiscriminatorLoss, LeCamEMA, VEALoss, pad_at_dim
+from opensora.models.vae.vae_3d import LeCamEMA, pad_at_dim
+from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VEALoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt_utils import create_logger, load_json, save_json
 from opensora.utils.config_utils import (
