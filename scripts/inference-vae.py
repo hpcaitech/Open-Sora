@@ -171,7 +171,7 @@ def main():
             if cfg.calc_loss:
                 #  ====== Calc Loss ======
                 # simple nll loss
-                nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(video, recon_video, posterior, split="eval")
+                nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(video, recon_video, posterior)
 
                 fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value=0.0, dim=2)
                 fake_logits = discriminator(fake_video.contiguous())

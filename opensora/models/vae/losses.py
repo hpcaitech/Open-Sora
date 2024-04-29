@@ -79,7 +79,6 @@ class VEALoss(nn.Module):
         recon_video,
         posterior,
         nll_weights=None,
-        split="train",
     ):
         video = rearrange(video, "b c t h w -> (b t) c h w").contiguous()
         recon_video = rearrange(recon_video, "b c t h w -> (b t) c h w").contiguous()
