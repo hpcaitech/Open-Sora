@@ -1355,9 +1355,8 @@ def VAE_MAGVIT_V2(from_pretrained=None, **kwargs):
 
 @MODELS.register_module("DISCRIMINATOR_3D")
 def DISCRIMINATOR_3D(from_pretrained=None, inflate_from_2d=False, use_pretrained=True, **kwargs):
-    model = StyleGANDiscriminatorBlur(**kwargs).apply(xavier_uniform_weight_init)
-    # model = StyleGANDiscriminator(**kwargs).apply(xavier_uniform_weight_init) # SCH: DEBUG: to change back
-    # model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)
+    # model = StyleGANDiscriminatorBlur(**kwargs).apply(xavier_uniform_weight_init)
+    model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)
     if from_pretrained is not None:
         if use_pretrained:
             if inflate_from_2d:
