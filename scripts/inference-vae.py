@@ -5,15 +5,12 @@ import torch
 import torch.distributed as dist
 from colossalai.cluster import DistCoordinator
 from colossalai.utils import get_current_device
-from einops import rearrange
 from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, save_sample
-
 from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VEALoss
 from opensora.models.vae.vae_3d import LeCamEMA, pad_at_dim
-
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
@@ -145,13 +142,7 @@ def main():
         for step in pbar:
             batch = next(dataloader_iter)
             x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-
-            is_image = x.ndim == 4
-            if is_image:
-                video = rearrange(x, "b c ... -> b c 1 ...")
-                video_contains_first_frame = True
-            else:
-                video = x
+            video = x
 
             #  ===== Spatial VAE =====
             if cfg.get("use_pipeline") == True:
