@@ -14,11 +14,11 @@
 
 ## Open-Sora: Democratizing Efficient Video Production for All
 
-We present **Open-Sora**, an initiative dedicated to **efficiently** produce high-quality video and make the model,
-tools and contents accessible to all. By embracing **open-source** principles,
+We design and implement **Open-Sora**, an initiative dedicated to **efficiently** producing high-quality video. We hope to make the model,
+tools and all details accessible to all. By embracing **open-source** principles,
 Open-Sora not only democratizes access to advanced video generation techniques, but also offers a
-streamlined and user-friendly platform that simplifies the complexities of video production.
-With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation.
+streamlined and user-friendly platform that simplifies the complexities of video generation.
+With Open-Sora, our goal is to foster innovation, creativity, and inclusivity within the field of content creation.
 
 [[中文文档]](/docs/zh_CN/README.md) [[潞晨云部署视频教程]](https://www.bilibili.com/video/BV141421R7Ag)
 
@@ -77,7 +77,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 * 📍 **Open-Sora 1.1** released. Model weights are available [here](). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
 * 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
-* ✅ Modified ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
+* ✅ Improved ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
 * ✅ Support training with any resolution, aspect ratio, and duration (including images).
 * ✅ Support image and video conditioning and video editing, and thus support animating images, connecting videos, etc.
 * 📍 **Open-Sora 1.0** released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800
@@ -85,7 +85,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 * ✅ Three-stage training from an image diffusion model to a video diffusion model. We provide the weights for each
   stage.
 * ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism.
-  Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates
+  Open-Sora improves **55%** training speed when training on 64x512x512 videos. Details locates
   at [acceleration.md](docs/acceleration.md).
 * 🔧 **Data preprocessing pipeline v1.0**,
   including [downloading](/tools/datasets/README.md), [video cutting](/tools/scenedetect/README.md),
@@ -357,9 +357,6 @@ following [all-contributors](https://github.com/all-contributors/all-contributor
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 If you wish to contribute to this project, you can refer to the [Contribution Guideline](./CONTRIBUTING.md).
-
-[Zangwei Zheng](https://github.com/zhengzangw) and [Xiangyu Peng](https://github.com/xyupeng) equally contributed to
-this work during their internship at [HPC-AI Tech](https://hpc-ai.com/).
 
 ## Acknowledgement
 
