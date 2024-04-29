@@ -256,7 +256,7 @@ def create_logger(logging_dir):
     return logger
 
 
-def load_checkpoint(model, ckpt_path, save_as_pt=True, model_name="model"):
+def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model"):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path, model=model)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)

@@ -48,8 +48,8 @@ model = dict(
     activation_fn="swish",
     separate_first_frame_encoding=False,
     disable_space=True,
-    encoder_double_z=True,
     custom_conv_padding=None,
+    encoder_double_z=True,
 )
 
 
@@ -60,8 +60,8 @@ discriminator = dict(
     in_channels=3,
     filters=128,
     use_pretrained=True,  # NOTE: set to False only if we want to disable load
-    channel_multipliers = (2,4,4,4,4), # (2,4,4,4) for 64x64 resolution
-    # channel_multipliers=(2, 4, 4),  # since on intermediate layer dimension ofs z 
+    channel_multipliers=(2, 4, 4, 4, 4),  # (2,4,4,4) for 64x64 resolution
+    # channel_multipliers=(2, 4, 4),  # since on intermediate layer dimension ofs z
 )
 
 
@@ -76,7 +76,7 @@ discriminator_loss_type = "non-saturating"
 generator_loss_type = "non-saturating"
 # discriminator_loss_type="hinge"
 # generator_loss_type="hinge"
-discriminator_start = 2000 # 5000  # 8k data / (8*1) = 1000 steps per epoch
+discriminator_start = 2000  # 5000  # 8k data / (8*1) = 1000 steps per epoch
 gradient_penalty_loss_weight = None  # 10 # SCH: MAGVIT uses 10, opensora plan doesn't use
 ema_decay = 0.999  # ema decay factor for generator
 

@@ -4,25 +4,16 @@ import colossalai
 import torch
 import torch.distributed as dist
 from colossalai.cluster import DistCoordinator
-from mmengine.runner import set_random_seed
+from colossalai.utils import get_current_device
+from einops import rearrange
+from tqdm import tqdm
 
-from opensora.acceleration.parallel_states import set_sequence_parallel_group
-from opensora.datasets import save_sample
-from opensora.registry import MODELS, SCHEDULERS, build_module
+from opensora.acceleration.parallel_states import get_data_parallel_group
+from opensora.datasets import prepare_dataloader, save_sample
+from opensora.models.vae.vae_3d_v2 import AdversarialLoss, DiscriminatorLoss, LeCamEMA, VEALoss, pad_at_dim
+from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
-from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
-from opensora.registry import DATASETS, MODELS, build_module
-from opensora.acceleration.parallel_states import (
-    get_data_parallel_group,
-    set_data_parallel_group,
-    set_sequence_parallel_group,
-)
-from tqdm import tqdm
-from opensora.models.vae.vae_3d_v2 import VEALoss, DiscriminatorLoss, AdversarialLoss, LeCamEMA, pad_at_dim
-
-from einops import rearrange
-from colossalai.utils import get_current_device
 
 
 def main():
@@ -48,9 +39,6 @@ def main():
     torch.set_grad_enabled(False)
     device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
-
-
-
 
     # ======================================================
     # 3. build dataset and dataloader
@@ -101,43 +89,37 @@ def main():
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
 
-
-
     # 4.1. batch generation
-    
+
     # define loss function
     if cfg.calc_loss:
         vae_loss_fn = VEALoss(
             logvar_init=cfg.logvar_init,
-            perceptual_loss_weight = cfg.perceptual_loss_weight,
-            kl_loss_weight = cfg.kl_loss_weight,
+            perceptual_loss_weight=cfg.perceptual_loss_weight,
+            kl_loss_weight=cfg.kl_loss_weight,
             device=device,
             dtype=dtype,
         )
 
         adversarial_loss_fn = AdversarialLoss(
-            discriminator_factor = cfg.discriminator_factor,
-            discriminator_start = cfg.discriminator_start,
-            generator_factor = cfg.generator_factor,
-            generator_loss_type = cfg.generator_loss_type,
+            discriminator_factor=cfg.discriminator_factor,
+            discriminator_start=cfg.discriminator_start,
+            generator_factor=cfg.generator_factor,
+            generator_loss_type=cfg.generator_loss_type,
         )
 
         disc_loss_fn = DiscriminatorLoss(
-            discriminator_factor = cfg.discriminator_factor,
-            discriminator_start = cfg.discriminator_start,
-            discriminator_loss_type = cfg.discriminator_loss_type,
-            lecam_loss_weight = cfg.lecam_loss_weight,
-            gradient_penalty_loss_weight = cfg.gradient_penalty_loss_weight,
-        )    
-
-         # LeCam EMA for discriminator
-
-        lecam_ema = LeCamEMA(
-                decay=cfg.ema_decay, dtype=dtype, device=device
+            discriminator_factor=cfg.discriminator_factor,
+            discriminator_start=cfg.discriminator_start,
+            discriminator_loss_type=cfg.discriminator_loss_type,
+            lecam_loss_weight=cfg.lecam_loss_weight,
+            gradient_penalty_loss_weight=cfg.gradient_penalty_loss_weight,
         )
 
-    
-    
+        # LeCam EMA for discriminator
+
+        lecam_ema = LeCamEMA(decay=cfg.ema_decay, dtype=dtype, device=device)
+
     running_loss = 0.0
     running_nll = 0.0
     running_disc_loss = 0.0
@@ -152,7 +134,7 @@ def main():
 
     total_steps = len(dataloader)
     if cfg.max_test_samples > 0:
-        total_steps = min(int(cfg.max_test_samples//cfg.batch_size), total_steps)
+        total_steps = min(int(cfg.max_test_samples // cfg.batch_size), total_steps)
         print(f"limiting test dataset to {int(cfg.max_test_samples//cfg.batch_size) * cfg.batch_size}")
     dataloader_iter = iter(dataloader)
 
@@ -169,7 +151,7 @@ def main():
 
             is_image = x.ndim == 4
             if is_image:
-                video = rearrange(x, 'b c ... -> b c 1 ...')
+                video = rearrange(x, "b c ... -> b c 1 ...")
                 video_contains_first_frame = True
             else:
                 video = x
@@ -180,98 +162,88 @@ def main():
                     video_enc_spatial = vae_2d.encode(video)
 
                 recon_dec_spatial, posterior = vae(
-                    video_enc_spatial,
-                    video_contains_first_frame = video_contains_first_frame
+                    video_enc_spatial, video_contains_first_frame=video_contains_first_frame
                 )
 
                 recon_video = vae_2d.decode(recon_dec_spatial)
                 recon_2d = vae_2d.decode(video_enc_spatial)
 
             else:
-                recon_video, posterior = vae(
-                    video,
-                    video_contains_first_frame = video_contains_first_frame
-                )
+                recon_video, posterior = vae(video, video_contains_first_frame=video_contains_first_frame)
 
             if cfg.calc_loss:
                 #  ====== Calc Loss ======
                 # simple nll loss
-                nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(
-                    video,
-                    recon_video,
-                    posterior,
-                    split = "eval"
-                )
+                nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(video, recon_video, posterior, split="eval")
 
-                fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
+                fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value=0.0, dim=2)
                 fake_logits = discriminator(fake_video.contiguous())
                 adversarial_loss = adversarial_loss_fn(
                     fake_logits,
-                    nll_loss, 
+                    nll_loss,
                     vae.get_last_layer(),
-                    cfg.discriminator_start+1, # Hack to use discriminator
-                    is_training = vae.training,
+                    cfg.discriminator_start + 1,  # Hack to use discriminator
+                    is_training=vae.training,
                 )
-                
+
                 vae_loss = weighted_nll_loss + weighted_kl_loss + adversarial_loss
-                
+
                 #  ====== Discriminator Loss ======
-                real_video = pad_at_dim(video, (disc_time_padding, 0), value = 0., dim = 2)
-                fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value = 0., dim = 2)
+                real_video = pad_at_dim(video, (disc_time_padding, 0), value=0.0, dim=2)
+                fake_video = pad_at_dim(recon_video, (disc_time_padding, 0), value=0.0, dim=2)
 
                 if cfg.gradient_penalty_loss_weight is not None and cfg.gradient_penalty_loss_weight > 0.0:
                     real_video = real_video.requires_grad_()
-                    real_logits = discriminator(real_video.contiguous()) # SCH: not detached for now for gradient_penalty calculation
+                    real_logits = discriminator(
+                        real_video.contiguous()
+                    )  # SCH: not detached for now for gradient_penalty calculation
                 else:
-                    real_logits = discriminator(real_video.contiguous().detach()) 
+                    real_logits = discriminator(real_video.contiguous().detach())
 
                 fake_logits = discriminator(fake_video.contiguous().detach())
 
                 lecam_ema_real, lecam_ema_fake = lecam_ema.get()
                 weighted_d_adversarial_loss, lecam_loss, gradient_penalty_loss = disc_loss_fn(
-                    real_logits, 
-                    fake_logits, 
-                    cfg.discriminator_start+1, # Hack to use discriminator 
-                    lecam_ema_real = lecam_ema_real, 
-                    lecam_ema_fake = lecam_ema_fake, 
-                    real_video = real_video if cfg.gradient_penalty_loss_weight is not None else None,
+                    real_logits,
+                    fake_logits,
+                    cfg.discriminator_start + 1,  # Hack to use discriminator
+                    lecam_ema_real=lecam_ema_real,
+                    lecam_ema_fake=lecam_ema_fake,
+                    real_video=real_video if cfg.gradient_penalty_loss_weight is not None else None,
                 )
 
                 disc_loss = weighted_d_adversarial_loss + lecam_loss + gradient_penalty_loss
 
                 loss_steps += 1
-                running_disc_loss = disc_loss.item()/loss_steps + running_disc_loss * ((loss_steps - 1) / loss_steps)
-                running_loss = vae_loss.item()/ loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
+                running_disc_loss = disc_loss.item() / loss_steps + running_disc_loss * ((loss_steps - 1) / loss_steps)
+                running_loss = vae_loss.item() / loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
                 running_nll = nll_loss.item() / loss_steps + running_nll * ((loss_steps - 1) / loss_steps)
-
 
             #  ===== Spatial VAE =====
 
-
             if coordinator.is_master():
                 if cfg.get("use_pipeline") == True:
-                    for idx, (sample_original, sample_pipeline, sample_2d) in enumerate(zip(video, recon_video, recon_2d)):
+                    for idx, (sample_original, sample_pipeline, sample_2d) in enumerate(
+                        zip(video, recon_video, recon_2d)
+                    ):
                         pos = step * cfg.batch_size + idx
                         save_path = os.path.join(save_dir, f"sample_{pos}")
-                        save_sample(sample_original, fps=cfg.fps, save_path=save_path+"_original")
-                        save_sample(sample_2d, fps=cfg.fps, save_path=save_path+"_2d")
-                        save_sample(sample_pipeline, fps=cfg.fps, save_path=save_path+"_pipeline")
+                        save_sample(sample_original, fps=cfg.fps, save_path=save_path + "_original")
+                        save_sample(sample_2d, fps=cfg.fps, save_path=save_path + "_2d")
+                        save_sample(sample_pipeline, fps=cfg.fps, save_path=save_path + "_pipeline")
 
                 else:
                     for idx, (original, recon) in enumerate(zip(video, recon_video)):
                         pos = step * cfg.batch_size + idx
                         save_path = os.path.join(save_dir, f"sample_{pos}")
-                        save_sample(original, fps=cfg.fps, save_path=save_path+"_original")
-                        save_sample(recon, fps=cfg.fps, save_path=save_path+"_recon")
-
-
+                        save_sample(original, fps=cfg.fps, save_path=save_path + "_original")
+                        save_sample(recon, fps=cfg.fps, save_path=save_path + "_recon")
 
     if cfg.calc_loss:
         print("test vae loss:", running_loss)
         print("test nll loss:", running_nll)
         print("test disc loss:", running_disc_loss)
 
-    
 
 if __name__ == "__main__":
     main()
