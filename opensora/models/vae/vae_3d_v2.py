@@ -1027,21 +1027,6 @@ class VAE_3D_V2(nn.Module):  # , ModelMixin
         # CausalConv3d wraps the conv
         return self.conv_out.conv.weight
 
-    # def parameters(self):
-    #     return [
-    #         *self.conv_in.parameters(),
-    #         *self.conv_in_first_frame.parameters(),
-    #         *self.encoder.parameters(),
-    #         *self.quant_conv.parameters(),
-    #         *self.post_quant_conv.parameters(),
-    #         *self.decoder.parameters(),
-    #         *self.conv_out_first_frame.parameters(),
-    #         *self.conv_out.parameters()
-    #     ]
-
-    # def disc_parameters(self):
-    #     return self.discriminator.parameters()
-
     def forward(
         self,
         video,
@@ -1097,14 +1082,6 @@ class VEALoss(nn.Module):
         self.perceptual_loss_weight = perceptual_loss_weight
         self.logvar = nn.Parameter(torch.ones(size=()) * logvar_init)
 
-        # self.vgg = None
-        # if perceptual_loss_weight is not None and perceptual_loss_weight > 0.0:
-        #     if not exists(vgg):
-        #         vgg = torchvision.models.vgg16(
-        #             weights = vgg_weights
-        #         )
-        #         vgg.classifier = Sequential(*vgg.classifier[:-2])
-        #     self.vgg = vgg.to(device, dtype).eval() # SCH: added eval
 
     def forward(
         self,
@@ -1145,49 +1122,15 @@ class VEALoss(nn.Module):
         weighted_nll_loss = torch.sum(weighted_nll_loss) / weighted_nll_loss.shape[0]
         nll_loss = torch.sum(nll_loss) / nll_loss.shape[0]
 
-        # recon_loss = F.mse_loss(video, recon_video)
-        # nll_loss = recon_loss
 
         # KL Loss
         weighted_kl_loss = 0
         if self.kl_loss_weight is not None and self.kl_loss_weight > 0.0:
             kl_loss = posterior.kl()
-            # # NOTE: since we use MSE, here use mean as well, else use sum
-            # kl_loss = torch.mean(kl_loss) / kl_loss.shape[0]
             kl_loss = torch.sum(kl_loss) / kl_loss.shape[0]
             weighted_kl_loss = kl_loss * self.kl_loss_weight
 
         return nll_loss, weighted_nll_loss, weighted_kl_loss
-
-        # # perceptual loss
-        # # TODO: use all frames and take average instead of sampling
-        # weighted_perceptual_loss = 0
-        # if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
-        #     assert exists(self.vgg)
-        #     batch, channels, frames = video.shape[:3]
-        #     frame_indices = torch.randn((batch, frames)).topk(1, dim = -1).indices
-        #     input_vgg_input = pick_video_frame(video, frame_indices)
-        #     recon_vgg_input = pick_video_frame(recon_video, frame_indices)
-        #     if channels == 1:
-        #         input_vgg_input = repeat(input_vgg_input, 'b 1 h w -> b c h w', c = 3)
-        #         recon_vgg_input = repeat(recon_vgg_input, 'b 1 h w -> b c h w', c = 3)
-        #     elif channels == 4: # SCH: take the first 3 for perceptual loss calc
-        #         input_vgg_input = input_vgg_input[:, :3]
-        #         recon_vgg_input = recon_vgg_input[:, :3]
-        #     input_vgg_feats = self.vgg(input_vgg_input)
-        #     recon_vgg_feats = self.vgg(recon_vgg_input)
-        #     perceptual_loss = F.mse_loss(input_vgg_feats, recon_vgg_feats)
-        #     weighted_perceptual_loss = perceptual_loss * self.perceptual_loss_weight
-        #     nll_loss += weighted_perceptual_loss
-
-        # log = {
-        #     "{}/total_loss".format(split): nll_loss.clone().detach().mean(),
-        #     "{}/recon_loss".format(split): recon_loss.detach().mean(),
-        #     "{}/weighted_perceptual_loss".format(split): weighted_perceptual_loss.detach().mean(),
-        #     "{}/weighted_kl_loss".format(split): weighted_kl_loss.detach().mean(),
-        # }
-
-        # return nll_loss, weighted_kl_loss
 
 
 class AdversarialLoss(nn.Module):
