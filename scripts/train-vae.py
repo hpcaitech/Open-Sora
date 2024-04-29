@@ -340,7 +340,11 @@ def main():
                 #  ====== Generator Loss ======
                 # simple nll loss
                 nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(
-                    video, recon_video, posterior, split="train"
+                    video, recon_video, posterior
+                )
+
+                _, weighted_z_nll_loss, _ = vae_loss_fn(
+                    t_video, t_recon_video, posterior
                 )
 
                 adversarial_loss = torch.tensor(0.0)
@@ -357,7 +361,7 @@ def main():
                         is_training=vae.training,
                     )
 
-                vae_loss = weighted_nll_loss + weighted_kl_loss + adversarial_loss
+                vae_loss = weighted_nll_loss + weighted_kl_loss + adversarial_loss + weighted_z_nll_loss
 
                 optimizer.zero_grad()
                 # Backward & update
