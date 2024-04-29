@@ -1,27 +1,27 @@
-num_frames = 1
+num_frames = 2
 fps = 1
-# image_size = (2560, 1536)
-image_size = (2048, 2048)
+image_size = (2560, 1536)
+# image_size = (2048, 2048)
+multi_resolution = "STDiT2"
 
 model = dict(
-    # type="PixArt-1B/2",
-    type="PixArt-XL/2",
+    type="STDiT3-XL/2",
     from_pretrained="PixArt-Sigma-XL-2-2K-MS.pth",
-    space_scale=4,
-    no_temporal_pos_emb=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
-    base_size=2048 // 8,
 )
 vae = dict(
     type="VideoAutoencoderKL",
+    micro_batch_size=4,
     from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
     subfolder="vae",
+    local_files_only=True,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=300,
+    local_files_only=True,
 )
 scheduler = dict(
     type="dpm-solver",
