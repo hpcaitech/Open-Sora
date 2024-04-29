@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from einops import pack, rearrange, repeat, unpack
+from einops import pack, rearrange, repeat
 
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import find_model, load_checkpoint
@@ -675,18 +675,21 @@ class Encoder(nn.Module):
 
         # print("encoder:", x.size())
 
-        for i in range(self.num_blocks):
-            for j in range(self.num_res_blocks):
-                x = self.block_res_blocks[i][j](x)
-                # print("encoder:", x.size())
+        try:
+            for i in range(self.num_blocks):
+                for j in range(self.num_res_blocks):
+                    x = self.block_res_blocks[i][j](x)
+                    # print("encoder:", x.size())
 
-            if i < self.num_blocks - 1:
-                x = self.conv_blocks[i](x)
-                # print("encoder:", x.size())
+                if i < self.num_blocks - 1:
+                    x = self.conv_blocks[i](x)
+                    # print("encoder:", x.size())
 
-        for i in range(self.num_res_blocks):
-            x = self.res_blocks[i](x)
-            # print("encoder:", x.size())
+            for i in range(self.num_res_blocks):
+                x = self.res_blocks[i](x)
+                # print("encoder:", x.size())
+        except:
+            breakpoint()
 
         x = self.norm1(x)
         x = self.activate(x)
@@ -940,27 +943,27 @@ class VAE_3D_V2(nn.Module):  # , ModelMixin
         video,
         video_contains_first_frame=True,
     ):
-        encode_first_frame_separately = self.separate_first_frame_encoding and video_contains_first_frame
+        self.separate_first_frame_encoding and video_contains_first_frame
 
         # whether to pad video or not
-        if video_contains_first_frame:
-            video_len = video.shape[2]
-            video = pad_at_dim(video, (self.time_padding, 0), value=0.0, dim=2)
-            video_packed_shape = [torch.Size([self.time_padding]), torch.Size([]), torch.Size([video_len - 1])]
+        # if video_contains_first_frame:
+        #     video_len = video.shape[2]
+        #     video = pad_at_dim(video, (self.time_padding, 0), value=0.0, dim=2)
+        #     video_packed_shape = [torch.Size([self.time_padding]), torch.Size([]), torch.Size([video_len - 1])]
 
         # print("pre-encoder:", video.size())
 
         # NOTE: moved encoder conv1 here for separate first frame encoding
-        if encode_first_frame_separately:
-            pad, first_frame, video = unpack(video, video_packed_shape, "b c * h w")
-            first_frame = self.conv_in_first_frame(first_frame)
+        # if encode_first_frame_separately:
+        #     pad, first_frame, video = unpack(video, video_packed_shape, "b c * h w")
+        #     first_frame = self.conv_in_first_frame(first_frame)
         video = self.conv_in(video)
 
         # print("pre-encoder:", video.size())
 
-        if encode_first_frame_separately:
-            video, _ = pack([first_frame, video], "b c * h w")
-            video = pad_at_dim(video, (self.time_padding, 0), dim=2)
+        # if encode_first_frame_separately:
+        #     video, _ = pack([first_frame, video], "b c * h w")
+        #     video = pad_at_dim(video, (self.time_padding, 0), dim=2)
 
         encoded_feature = self.encoder(video)
 
@@ -1020,9 +1023,9 @@ class VAE_3D_V2(nn.Module):  # , ModelMixin
         # split = "train",
     ):
         batch, channels, frames = video.shape[:3]
-        assert divisible_by(
-            frames - int(video_contains_first_frame), self.time_downsample_factor
-        ), f"number of frames {frames} minus the first frame ({frames - int(video_contains_first_frame)}) must be divisible by the total downsample factor across time {self.time_downsample_factor}"
+        # assert divisible_by(
+        #     frames - int(video_contains_first_frame), self.time_downsample_factor
+        # ), f"number of frames {frames} minus the first frame ({frames - int(video_contains_first_frame)}) must be divisible by the total downsample factor across time {self.time_downsample_factor}"
 
         posterior = self.encode(
             video,
