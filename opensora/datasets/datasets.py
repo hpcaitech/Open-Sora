@@ -29,10 +29,10 @@ class VideoTextDataset(torch.utils.data.Dataset):
         frame_interval=1,
         image_size=(256, 256),
         transform_name="center",
-        get_text=True,
     ):
         self.data_path = data_path
         self.data = read_file(data_path)
+        self.get_text = "text" in self.data.columns
         self.num_frames = num_frames
         self.frame_interval = frame_interval
         self.image_size = image_size
@@ -40,7 +40,6 @@ class VideoTextDataset(torch.utils.data.Dataset):
             "image": get_transforms_image(transform_name, image_size),
             "video": get_transforms_video(transform_name, image_size),
         }
-        self.get_text = get_text
 
     def _print_data_number(self):
         num_videos = 0
@@ -63,7 +62,6 @@ class VideoTextDataset(torch.utils.data.Dataset):
     def getitem(self, index):
         sample = self.data.iloc[index]
         path = sample["path"]
-        text = sample["text"] if self.get_text else None
         file_type = self.get_type(path)
 
         if file_type == "video":
@@ -90,10 +88,10 @@ class VideoTextDataset(torch.utils.data.Dataset):
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
 
+        ret = {"video": video}
         if self.get_text:
-            return {"video": video, "text": text}
-        else:
-            return {"video": video}
+            ret["text"] = sample["text"]
+        return ret
 
     def __getitem__(self, index):
         for _ in range(10):
@@ -135,7 +133,6 @@ class VariableVideoTextDataset(VideoTextDataset):
 
         sample = self.data.iloc[index]
         path = sample["path"]
-        text = sample["text"]
         file_type = self.get_type(path)
         ar = width / height
 
@@ -166,12 +163,14 @@ class VariableVideoTextDataset(VideoTextDataset):
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-        return {
+        ret = {
             "video": video,
-            "text": text,
             "num_frames": num_frames,
             "height": height,
             "width": width,
             "ar": ar,
             "fps": video_fps,
         }
+        if self.get_text:
+            ret["text"] = sample["text"]
+        return ret
