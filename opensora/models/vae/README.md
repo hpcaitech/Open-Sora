@@ -73,5 +73,7 @@ CUDA_VISIBLE_DEVICES7 torchrun --master_port=29510 --nnodes=1 --nproc_per_node=1
 
 ### 2.4 Data
 
+full data combining the follwing: `/home/shenchenhui/data/pixabay+pexels.csv`
+
 * ~/data/pixabay: `/home/data/sora_data/pixabay/raw/data/split-0`
 * pexels: `/home/litianyi/data/pexels/processed/meta/pexels_caption_vinfo_ready_noempty_clean.csv`
