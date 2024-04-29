@@ -1,8 +1,10 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from .lpips import LPIPS
 from einops import rearrange, repeat
+
+from .lpips import LPIPS
+
 
 def hinge_d_loss(logits_real, logits_fake):
     loss_real = torch.mean(F.relu(1.0 - logits_real))
@@ -27,11 +29,13 @@ def sigmoid_cross_entropy_with_logits(labels, logits):
     neg_abs_logits = torch.where(condition, -logits, logits)
     return relu_logits - logits * labels + torch.log1p(torch.exp(neg_abs_logits))
 
+
 def lecam_reg(real_pred, fake_pred, ema_real_pred, ema_fake_pred):
     assert real_pred.ndim == 0 and ema_fake_pred.ndim == 0
     lecam_loss = torch.mean(torch.pow(nn.ReLU()(real_pred - ema_fake_pred), 2))
     lecam_loss += torch.mean(torch.pow(nn.ReLU()(ema_real_pred - fake_pred), 2))
     return lecam_loss
+
 
 def gradient_penalty_fn(images, output):
     gradients = torch.autograd.grad(
@@ -46,7 +50,8 @@ def gradient_penalty_fn(images, output):
     gradients = rearrange(gradients, "b ... -> b (...)")
     return ((gradients.norm(2, dim=1) - 1) ** 2).mean()
 
-class VEALoss(nn.Module):
+
+class VAELoss(nn.Module):
     def __init__(
         self,
         logvar_init=0.0,
@@ -71,7 +76,6 @@ class VEALoss(nn.Module):
         self.perceptual_loss_fn = LPIPS().eval().to(device, dtype)
         self.perceptual_loss_weight = perceptual_loss_weight
         self.logvar = nn.Parameter(torch.ones(size=()) * logvar_init)
-
 
     def forward(
         self,
@@ -111,7 +115,6 @@ class VEALoss(nn.Module):
         weighted_nll_loss = torch.sum(weighted_nll_loss) / weighted_nll_loss.shape[0]
         nll_loss = torch.sum(nll_loss) / nll_loss.shape[0]
 
-
         # KL Loss
         weighted_kl_loss = 0
         if self.kl_loss_weight is not None and self.kl_loss_weight > 0.0:
@@ -121,10 +124,12 @@ class VEALoss(nn.Module):
 
         return nll_loss, weighted_nll_loss, weighted_kl_loss
 
+
 def adopt_weight(weight, global_step, threshold=0, value=0.0):
     if global_step < threshold:
         weight = value
     return weight
+
 
 class AdversarialLoss(nn.Module):
     def __init__(
@@ -141,10 +146,8 @@ class AdversarialLoss(nn.Module):
         self.generator_loss_type = generator_loss_type
 
     def calculate_adaptive_weight(self, nll_loss, g_loss, last_layer):
-        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0] 
-        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[
-            0
-        ]
+        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
+        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
         d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
         d_weight = d_weight * self.generator_factor

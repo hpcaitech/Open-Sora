@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, save_sample
-from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VEALoss
-from opensora.models.vae.vae_3d import LeCamEMA, pad_at_dim
+from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, LeCamEMA, VAELoss
+from opensora.models.vae.vae_3d import pad_at_dim
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
@@ -87,7 +87,7 @@ def main():
 
     # define loss function
     if cfg.calc_loss:
-        vae_loss_fn = VEALoss(
+        vae_loss_fn = VAELoss(
             logvar_init=cfg.logvar_init,
             perceptual_loss_weight=cfg.perceptual_loss_weight,
             kl_loss_weight=cfg.kl_loss_weight,
