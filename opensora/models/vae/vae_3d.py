@@ -8,25 +8,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import pack, rearrange, repeat, unpack
 
-from .utils import DiagonalGaussianDistribution
-from .lpips import LPIPS  # need to pip install https://github.com/CompVis/taming-transformers
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import find_model, load_checkpoint
 
-# from diffusers.models.modeling_utils import ModelMixin
-
-
-"""Encoder and Decoder stuctures with 3D CNNs."""
-
-"""
-NOTE:
-    removed LayerNorm since not used in this arch
-    GroupNorm: flax uses default `epsilon=1e-06`, whereas torch uses `eps=1e-05`
-    for average pool and upsample, input shape needs to be [N,C,T,H,W] --> if not, adjust the scale factors accordingly
-
-    !!! opensora read video into [B,C,T,H,W] format output
-
-"""
+from .lpips import LPIPS
+from .utils import DiagonalGaussianDistribution
 
 
 def cast_tuple(t, length=1):
@@ -1081,7 +1067,6 @@ class VEALoss(nn.Module):
         self.perceptual_loss_weight = perceptual_loss_weight
         self.logvar = nn.Parameter(torch.ones(size=()) * logvar_init)
 
-
     def forward(
         self,
         video,
@@ -1120,7 +1105,6 @@ class VEALoss(nn.Module):
             weighted_nll_loss = nll_weights * nll_loss
         weighted_nll_loss = torch.sum(weighted_nll_loss) / weighted_nll_loss.shape[0]
         nll_loss = torch.sum(nll_loss) / nll_loss.shape[0]
-
 
         # KL Loss
         weighted_kl_loss = 0
@@ -1310,9 +1294,13 @@ def DISCRIMINATOR_3D(from_pretrained=None, inflate_from_2d=False, use_pretrained
 
     return model
 
+
 @MODELS.register_module("N_Layer_DISCRIMINATOR_3D")
 def DISCRIMINATOR_3D(from_pretrained=None, inflate_from_2d=False, use_pretrained=True, **kwargs):
-    model = NLayerDiscriminator3D(input_nc=3, n_layers=3,).apply(n_layer_disc_weights_init)
+    model = NLayerDiscriminator3D(
+        input_nc=3,
+        n_layers=3,
+    ).apply(n_layer_disc_weights_init)
     if from_pretrained is not None:
         if use_pretrained:
             if inflate_from_2d:
