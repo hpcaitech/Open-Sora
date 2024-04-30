@@ -35,3 +35,27 @@ bash eval/vbench/vbench.sh /path/to/video_folder
 [VBench-i2v](https://github.com/Vchitect/VBench/tree/master/vbench2_beta_i2v) is a benchmark for short image to video generation (beta version).
 
 TBD
+
+## VAE
+
+* Dependencies
+
+- Install cupy: follow https://docs.cupy.dev/en/stable/install.html
+
+- To use flolpips model, download from https://github.com/danier97/flolpips/blob/main/weights/v0.1/alex.pth and place it under: `eval/vae/flolpips/weights/v0.1/alex.pth`
+
+``` bash
+pip install decord
+pip install pytorchvideo
+pip install lpips
+pip install scipy
+# Also, if torchvision.transforms.augentation still use `functional_tensor` and cause error,change to use `_functional_tensor`, follow https://blog.csdn.net/lanxing147/article/details/136625264
+```
+
+
+* Commands: carefule to change the setting to training setting
+
+```bash
+# metric can either be: ssim, psnr, lpips, flolpips
+python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir <path/to/original/videos> --generated_video_dir <path/to/generated/videos> --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric <metric>
+```

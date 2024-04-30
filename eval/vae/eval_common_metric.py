@@ -44,7 +44,7 @@ import sys
 sys.path.append(".")
 from cal_lpips import calculate_lpips
 from cal_psnr import calculate_psnr
-# from cal_flolpips import calculate_flolpips
+from cal_flolpips import calculate_flolpips
 from cal_ssim import calculate_ssim
 
 try:
