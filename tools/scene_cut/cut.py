@@ -6,7 +6,6 @@ from functools import partial
 
 import pandas as pd
 from imageio_ffmpeg import get_ffmpeg_exe
-from mmengine.logging import MMLogger, print_log
 from pandarallel import pandarallel
 from scenedetect import FrameTimecode
 from tqdm import tqdm
@@ -14,12 +13,17 @@ from tqdm import tqdm
 tqdm.pandas()
 
 
-def process_single_row(row, args, log_name=None):
+def print_log(s, logger=None):
+    if logger is not None:
+        logger.info(s)
+    else:
+        print(s)
+
+
+def process_single_row(row, args):
     video_path = row["path"]
 
     logger = None
-    if log_name is not None:
-        logger = MMLogger.get_instance(log_name)
 
     # check mp4 integrity
     # if not is_intact_video(video_path, logger=logger):
@@ -132,6 +136,7 @@ def parse_args():
                         help='if not None, clip longer than max_seconds is truncated')
     parser.add_argument("--target_fps", type=int, default=30, help='target fps of clips')
     parser.add_argument("--shorter_size", type=int, default=720, help='resize the shorter size by keeping ratio')
+    parser.add_argument("--num_workers", type=int, default=None, help='#workers for pandarallel')
 
     args = parser.parse_args()
     return args
@@ -144,16 +149,14 @@ def main():
     os.makedirs(save_dir, exist_ok=True)
 
     # create logger
-    log_dir = os.path.dirname(save_dir)
-    log_name = os.path.basename(save_dir)
-    timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
-    log_path = os.path.join(log_dir, f"{log_name}_{timestamp}.log")
-    logger = MMLogger.get_instance(log_name, log_file=log_path)
-    # logger = None
+    logger = None
 
     # initialize pandarallel
-    pandarallel.initialize(progress_bar=True)
-    process_single_row_partial = partial(process_single_row, args=args, log_name=log_name)
+    if args.num_workers is not None:
+        pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)
+    else:
+        pandarallel.initialize(progress_bar=True)
+    process_single_row_partial = partial(process_single_row, args=args)
 
     # process
     meta = pd.read_csv(args.meta_path)
