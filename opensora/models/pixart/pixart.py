@@ -211,7 +211,6 @@ class PixArt(nn.Module):
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
         x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
-        breakpoint()
         x = x + self.pos_embed
         if not self.no_temporal_pos_emb:
             x = rearrange(x, "b t s d -> b s t d")
