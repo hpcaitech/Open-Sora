@@ -42,11 +42,11 @@ from torchvision.transforms import Lambda, Compose
 from torchvision.transforms._transforms_video import CenterCropVideo
 import sys
 sys.path.append(".")
-from opensora.eval.cal_lpips import calculate_lpips
-from opensora.eval.cal_fvd import calculate_fvd
-from opensora.eval.cal_psnr import calculate_psnr
-from opensora.eval.cal_flolpips import calculate_flolpips
-from opensora.eval.cal_ssim import calculate_ssim
+from .cal_lpips import calculate_lpips
+from .cal_fvd import calculate_fvd
+from .cal_psnr import calculate_psnr
+from .cal_flolpips import calculate_flolpips
+from .cal_ssim import calculate_ssim
 
 try:
     from tqdm import tqdm
