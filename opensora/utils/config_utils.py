@@ -79,6 +79,10 @@ def merge_args(cfg, args, training=False):
     if args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
+    if not training and args.image_size is not None and "dataset" in cfg:
+        cfg.dataset["image_size"] = args.image_size
+    if not training and args.num_frames is not None and "dataset" in cfg:
+        cfg.dataset["num_frames"] = args.num_frames
     if not training and args.cfg_scale is not None:
         cfg.scheduler["cfg_scale"] = args.cfg_scale
         args.cfg_scale = None
