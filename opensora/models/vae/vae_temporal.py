@@ -24,21 +24,10 @@ def is_odd(n):
     return not divisible_by(n, 2)
 
 
-def pad_at_dim(t, pad, dim=-1, value=0.0):
+def pad_at_dim(t, pad, dim=-1):
     dims_from_right = (-dim - 1) if dim < 0 else (t.ndim - dim - 1)
     zeros = (0, 0) * dims_from_right
     return F.pad(t, (*zeros, *pad), mode="replicate")
-
-
-def pick_video_frame(video, frame_indices):
-    """get frame_indices from the video of [B, C, T, H, W] and return images of [B, C, H, W]"""
-    batch, device = video.shape[0], video.device
-    video = rearrange(video, "b c f ... -> b f c ...")
-    batch_indices = torch.arange(batch, device=device)
-    batch_indices = rearrange(batch_indices, "b -> b 1")
-    images = video[batch_indices, frame_indices]
-    images = rearrange(images, "b 1 c ... -> b c ...")
-    return images
 
 
 def exists(v):
@@ -381,7 +370,7 @@ class VAE_Temporal(nn.Module):
         super().__init__()
 
         self.time_downsample_factor = 2 ** sum(temporal_downsample)
-        self.time_padding = self.time_downsample_factor - 1
+        # self.time_padding = self.time_downsample_factor - 1
         self.patch_size = (self.time_downsample_factor, 1, 1)
 
         # NOTE: following MAGVIT, conv in bias=False in encoder first conv
@@ -420,16 +409,18 @@ class VAE_Temporal(nn.Module):
         return input_size
 
     def encode(self, x):
-        x = pad_at_dim(x, (self.time_padding, 0), dim=2)
+        time_padding = self.time_downsample_factor - x.shape[2] % self.time_downsample_factor
+        x = pad_at_dim(x, (time_padding, 0), dim=2)
         encoded_feature = self.encoder(x)
         moments = self.quant_conv(encoded_feature).to(x.dtype)
         posterior = DiagonalGaussianDistribution(moments)
         return posterior
 
-    def decode(self, z):
+    def decode(self, z, num_frames=None):
+        time_padding = self.time_downsample_factor - num_frames % self.time_downsample_factor
         z = self.post_quant_conv(z)
         x = self.decoder(z)
-        x = x[:, :, self.time_padding :]
+        x = x[:, :, time_padding:]
         return x
 
     def forward(self, x, sample_posterior=True):
@@ -438,7 +429,7 @@ class VAE_Temporal(nn.Module):
             z = posterior.sample()
         else:
             z = posterior.mode()
-        recon_video = self.decode(z)
+        recon_video = self.decode(z, num_frames=x.shape[2])
         return recon_video, posterior, z
 
 

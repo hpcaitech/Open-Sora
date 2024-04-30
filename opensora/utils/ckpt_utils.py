@@ -264,6 +264,7 @@ def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model"):
         print(f"Unexpected keys: {unexpected_keys}")
     elif os.path.isdir(ckpt_path):
         load_from_sharded_state_dict(model, ckpt_path, model_name)
+        print(f"Model checkpoint loaded from {ckpt_path}")
         if save_as_pt:
             save_path = os.path.join(ckpt_path, model_name + "_ckpt.pt")
             torch.save(model.state_dict(), save_path)
