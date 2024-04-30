@@ -6,7 +6,7 @@ Human labeling of videos is expensive and time-consuming. We adopt powerful imag
 
 ## LLaVA Captioning
 
-We extract three frames from the video for captioning. With batch inference, we can achieve 10 times speedup. With approximatly 720p resolution and 1 frames, the speed is 2~3 videos/s on 8 GPUs. If we resize the smaller side to 336, the speed can be 8 videos/s. In Open-Sora v1.1, to lower the cost, we use the 7B model.
+We extract three frames from the video for captioning. With batch inference, we can achieve 10 times speedup. With approximately 720p resolution and 1 frames, the speed is 2~3 videos/s on 8 GPUs. If we resize the smaller side to 336, the speed can be 8 videos/s. In Open-Sora v1.1, to lower the cost, we use the 7B model.
 
 ### Requirement
 
