@@ -31,6 +31,7 @@ class VideoAutoencoderKL(nn.Module):
         if self.micro_batch_size is None:
             x = self.module.encode(x).latent_dist.sample().mul_(0.18215)
         else:
+            # NOTE: cannot be used for training
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
@@ -48,6 +49,7 @@ class VideoAutoencoderKL(nn.Module):
         if self.micro_batch_size is None:
             x = self.module.decode(x / 0.18215).sample
         else:
+            # NOTE: cannot be used for training
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):

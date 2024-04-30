@@ -1,10 +1,8 @@
 import numpy as np
 import torch
-import torch.nn as nn
 
 # from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
 # from taming.modules.discriminator.model import NLayerDiscriminator, weights_init
-from einops import rearrange
 
 """Stripped version of https://github.com/richzhang/PerceptualSimilarity/tree/master/models"""
 
@@ -30,7 +28,7 @@ class DiagonalGaussianDistribution(object):
         deterministic=False,
     ):
         self.parameters = parameters
-        self.mean, self.logvar = torch.chunk(parameters, 2, dim=1)  # SCH: channels dim
+        self.mean, self.logvar = torch.chunk(parameters, 2, dim=1)
         self.logvar = torch.clamp(self.logvar, -30.0, 20.0)
         self.deterministic = deterministic
         self.std = torch.exp(0.5 * self.logvar)
@@ -65,6 +63,5 @@ class DiagonalGaussianDistribution(object):
         logtwopi = np.log(2.0 * np.pi)
         return 0.5 * torch.sum(logtwopi + self.logvar + torch.pow(sample - self.mean, 2) / self.var, dim=dims)
 
-    def mode(self):  # SCH: used for vae inference?
+    def mode(self):
         return self.mean
-
