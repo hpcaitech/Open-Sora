@@ -94,13 +94,10 @@ class VAELoss(nn.Module):
         if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
             # handle channels
             channels = video.shape[1]
-            assert channels in {1, 3, 4}
+            assert channels in {1, 3}
             if channels == 1:
                 input_vgg_input = repeat(video, "b 1 h w -> b c h w", c=3)
                 recon_vgg_input = repeat(recon_video, "b 1 h w -> b c h w", c=3)
-            elif channels == 4:  # SCH: take the first 3 for perceptual loss calc
-                input_vgg_input = video[:, :3]
-                recon_vgg_input = recon_video[:, :3]
             else:
                 input_vgg_input = video
                 recon_vgg_input = recon_video
@@ -109,6 +106,7 @@ class VAELoss(nn.Module):
             recon_loss = recon_loss + self.perceptual_loss_weight * perceptual_loss
 
         nll_loss = recon_loss / torch.exp(self.logvar) + self.logvar
+
         weighted_nll_loss = nll_loss
         if nll_weights is not None:
             weighted_nll_loss = nll_weights * nll_loss
