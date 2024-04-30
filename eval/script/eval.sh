@@ -1,6 +1,6 @@
 python eval/eval_common_metric.py \
     --batch_size 2 \
-    --real_video_dir ..//test_eval/release/origin \
+    --real_video_dir ../test_eval/release/origin \
     --generated_video_dir ../test_eval/release \
     --device cuda \
     --sample_fps 10 \

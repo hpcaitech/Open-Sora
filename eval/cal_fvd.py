@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-def trans(x):
+def trans(x): # requires video to be BCTHW
     # if greyscale images add channel
     if x.shape[-3] == 1:
         x = x.repeat(1, 1, 3, 1, 1)
@@ -11,6 +11,7 @@ def trans(x):
     x = x.permute(0, 2, 1, 3, 4) 
 
     return x
+
 
 def calculate_fvd(videos1, videos2, device, method='styleganv'):
 
@@ -39,6 +40,7 @@ def calculate_fvd(videos1, videos2, device, method='styleganv'):
 
     fvd_results = {}
 
+    
     # for calculate FVD, each clip_timestamp must >= 10
     for clip_timestamp in tqdm(range(10, videos1.shape[-3]+1)):
        
@@ -47,10 +49,12 @@ def calculate_fvd(videos1, videos2, device, method='styleganv'):
         videos_clip1 = videos1[:, :, : clip_timestamp]
         videos_clip2 = videos2[:, :, : clip_timestamp]
 
+        breakpoint()
         # get FVD features
         feats1 = get_fvd_feats(videos_clip1, i3d=i3d, device=device)
         feats2 = get_fvd_feats(videos_clip2, i3d=i3d, device=device)
-      
+
+        breakpoint()
         # calculate FVD when timestamps[:clip]
         fvd_results[clip_timestamp] = frechet_distance(feats1, feats2)
 
