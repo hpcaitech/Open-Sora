@@ -38,7 +38,7 @@ TBD
 
 ## VAE
 
-* Dependencies
+### Dependencies
 
 - Install cupy: follow https://docs.cupy.dev/en/stable/install.html
 
@@ -53,7 +53,7 @@ pip install scipy
 ```
 
 
-* Commands: carefule to change the setting to training setting
+### Commands: carefule to change the setting to training setting
 
 ```bash
 # metric can either be: ssim, psnr, lpips, flolpips
