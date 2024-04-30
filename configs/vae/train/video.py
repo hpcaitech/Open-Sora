@@ -25,7 +25,6 @@ model = dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
         subfolder="vae",
-        micro_batch_size=4,
         local_files_only=True,
     ),
     vae_temporal=dict(
