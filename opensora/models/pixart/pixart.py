@@ -402,3 +402,14 @@ def PixArtMS_XL_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
+<<<<<<< Updated upstream
+=======
+
+
+@MODELS.register_module("PixArt-1B/2")
+def PixArt_1B_2(from_pretrained=None, **kwargs):
+    model = PixArt(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+>>>>>>> Stashed changes
