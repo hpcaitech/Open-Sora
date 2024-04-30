@@ -122,6 +122,7 @@ class VideoAutoencoderPipeline(nn.Module):
         super().__init__()
         self.spatial_vae = build_module(vae_2d, MODELS)
         self.temporal_vae = build_module(vae_temporal, MODELS)
+
         if from_pretrained is not None:
             load_checkpoint(self, from_pretrained)
         if freeze_vae_2d:

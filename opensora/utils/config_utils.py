@@ -62,6 +62,7 @@ def parse_args(training=False):
     # Training
     # ======================================================
     else:
+        parser.add_argument("--lr", default=None, type=float, help="learning rate")
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
         parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
