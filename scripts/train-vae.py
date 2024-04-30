@@ -1,4 +1,5 @@
 import os
+import random
 from datetime import timedelta
 from pprint import pprint
 
@@ -268,11 +269,14 @@ def main():
         ) as pbar:
             for step, batch in pbar:
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
+                if random.random() < 0.5:
+                    x = x[:, :, :1, :, :]
 
                 #  ===== Spatial VAE =====
                 if cfg.get("vae_2d", None) is not None:
                     with torch.no_grad():
                         x_z = vae_2d.encode(x)
+                        vae_2d.decode(x_z)
 
                 #  ====== VAE ======
                 x_z_rec, posterior, z = model(x_z)
@@ -281,7 +285,8 @@ def main():
                 #  ====== Generator Loss ======
                 # simple nll loss
                 _, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
-                _, weighted_z_nll_loss, _ = vae_loss_fn(x_z, x_z_rec, posterior)
+                # _, weighted_z_nll_loss, _ = vae_loss_fn(x_z, x_z_rec, posterior)
+                # _, debug_loss, _ = vae_loss_fn(x, x_z_debug, posterior)
                 # _, image_identity_loss, _ = vae_loss_fn(x_z, z, posterior)
 
                 # adversarial_loss = torch.tensor(0.0)
@@ -300,7 +305,10 @@ def main():
 
                 # vae_loss = weighted_nll_loss + weighted_kl_loss + adversarial_loss + weighted_z_nll_loss
                 # vae_loss = weighted_nll_loss + weighted_kl_loss + weighted_z_nll_loss + image_identity_loss
-                vae_loss = weighted_nll_loss + weighted_kl_loss + weighted_z_nll_loss
+                # vae_loss = weighted_z_nll_loss + image_identity_loss
+                # vae_loss = weighted_nll_loss + weighted_kl_loss + weighted_z_nll_loss
+                # vae_loss = weighted_z_nll_loss
+                vae_loss = weighted_nll_loss + weighted_kl_loss
 
                 optimizer.zero_grad()
                 # Backward & update
@@ -391,8 +399,9 @@ def main():
                                 # "lecam_loss": lecam_loss.item(),
                                 # "r1_grad_penalty": gradient_penalty_loss.item(),
                                 "nll_loss": weighted_nll_loss.item(),
-                                "z_nll_loss": weighted_z_nll_loss.item(),
+                                # "z_nll_loss": weighted_z_nll_loss.item(),
                                 # "image_identity_loss": image_identity_loss.item(),
+                                # "debug_loss": debug_loss.item(),
                                 "avg_loss": avg_loss,
                             },
                             step=global_step,

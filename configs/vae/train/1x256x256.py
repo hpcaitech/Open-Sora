@@ -61,13 +61,6 @@ seed = 42
 outputs = "outputs"
 wandb = False
 
-# Training
-""" NOTE:
-magvit uses about # samples (K) * epochs ~ 2-5 K,  num_frames = 4, reso = 128
-==> ours num_frams = 16, reso = 256, so samples (K) * epochs ~ [500 - 1200],
-3-6 epochs for pexel, from pexel observation its correct
-"""
-
 epochs = 100
 log_every = 1
 ckpt_every = 1000
