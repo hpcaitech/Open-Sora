@@ -42,11 +42,11 @@ from torchvision.transforms import Lambda, Compose
 from torchvision.transforms._transforms_video import CenterCropVideo
 import sys
 sys.path.append(".")
-from opensora.eval.cal_lpips import calculate_lpips
-from opensora.eval.cal_fvd import calculate_fvd
-from opensora.eval.cal_psnr import calculate_psnr
-from opensora.eval.cal_flolpips import calculate_flolpips
-from opensora.eval.cal_ssim import calculate_ssim
+# from cal_lpips import calculate_lpips
+from cal_fvd import calculate_fvd
+from cal_psnr import calculate_psnr
+# from cal_flolpips import calculate_flolpips
+from cal_ssim import calculate_ssim
 
 try:
     from tqdm import tqdm
@@ -146,6 +146,7 @@ def calculate_common_metric(args, dataloader, device):
         assert real_videos.shape[2] == generated_videos.shape[2]
         if args.metric == 'fvd':
             tmp_list = list(calculate_fvd(real_videos, generated_videos, args.device, method=args.fvd_method)['value'].values())
+            print("fvd list:", tmp_list)
         elif args.metric == 'ssim':
             tmp_list = list(calculate_ssim(real_videos, generated_videos)['value'].values())
         elif args.metric == 'psnr':
