@@ -1,7 +1,5 @@
-import functools
 from typing import Tuple, Union
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
@@ -82,8 +80,6 @@ class ResBlock(nn.Module):
         activation_fn=nn.SiLU,
         use_conv_shortcut=False,
         num_groups=32,
-        device="cpu",
-        dtype=torch.bfloat16,
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -92,9 +88,9 @@ class ResBlock(nn.Module):
         self.use_conv_shortcut = use_conv_shortcut
 
         # SCH: MAGVIT uses GroupNorm by default
-        self.norm1 = nn.GroupNorm(num_groups, in_channels, device=device, dtype=dtype)
+        self.norm1 = nn.GroupNorm(num_groups, in_channels)
         self.conv1 = conv_fn(in_channels, self.filters, kernel_size=(3, 3, 3), bias=False)
-        self.norm2 = nn.GroupNorm(num_groups, self.filters, device=device, dtype=dtype)
+        self.norm2 = nn.GroupNorm(num_groups, self.filters)
         self.conv2 = conv_fn(self.filters, self.filters, kernel_size=(3, 3, 3), bias=False)
         if in_channels != filters:
             if self.use_conv_shortcut:
@@ -103,8 +99,6 @@ class ResBlock(nn.Module):
                 self.conv3 = conv_fn(in_channels, self.filters, kernel_size=(1, 1, 1), bias=False)
 
     def forward(self, x):
-        # device, dtype = x.device, x.dtype
-        # input_dim = x.shape[1]
         residual = x
         x = self.norm1(x)
         x = self.activate(x)
@@ -140,8 +134,6 @@ class Encoder(nn.Module):
         temporal_downsample=(False, True, True),
         num_groups=32,  # for nn.GroupNorm
         activation_fn="swish",
-        device="cpu",
-        dtype=torch.bfloat16,
     ):
         super().__init__()
         self.filters = filters
@@ -154,18 +146,12 @@ class Encoder(nn.Module):
 
         self.activation_fn = get_activation_fn(activation_fn)
         self.activate = self.activation_fn()
-        self.conv_fn = functools.partial(
-            CausalConv3d,
-            dtype=dtype,
-            device=device,
-        )
+        self.conv_fn = CausalConv3d
         self.block_args = dict(
             conv_fn=self.conv_fn,
-            dtype=dtype,
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
             num_groups=self.num_groups,
-            device=device,
         )
 
         # first layer conv
@@ -174,8 +160,6 @@ class Encoder(nn.Module):
             filters,
             kernel_size=(3, 3, 3),
             bias=False,
-            dtype=dtype,
-            device=device,
         )
 
         # ResBlocks and conv downsample
@@ -214,13 +198,9 @@ class Encoder(nn.Module):
             prev_filters = filters  # update in_channels
 
         # MAGVIT uses Group Normalization
-        self.norm1 = nn.GroupNorm(
-            self.num_groups, prev_filters, dtype=dtype, device=device
-        )  # separate <prev_filters> channels into 32 groups
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters)
 
-        self.conv2 = self.conv_fn(
-            prev_filters, self.embedding_dim, kernel_size=(1, 1, 1), dtype=dtype, device=device, padding="same"
-        )
+        self.conv2 = self.conv_fn(prev_filters, self.embedding_dim, kernel_size=(1, 1, 1), padding="same")
 
     def forward(self, x):
         x = self.conv_in(x)
@@ -252,8 +232,6 @@ class Decoder(nn.Module):
         temporal_downsample=(False, True, True),
         num_groups=32,  # for nn.GroupNorm
         activation_fn="swish",
-        device="cpu",
-        dtype=torch.bfloat16,
     ):
         super().__init__()
         self.filters = filters
@@ -267,18 +245,12 @@ class Decoder(nn.Module):
 
         self.activation_fn = get_activation_fn(activation_fn)
         self.activate = self.activation_fn()
-        self.conv_fn = functools.partial(
-            CausalConv3d,
-            dtype=dtype,
-            device=device,
-        )
+        self.conv_fn = CausalConv3d
         self.block_args = dict(
             conv_fn=self.conv_fn,
             activation_fn=self.activation_fn,
             use_conv_shortcut=False,
             num_groups=self.num_groups,
-            device=device,
-            dtype=dtype,
         )
 
         filters = self.filters * self.channel_multipliers[-1]
@@ -323,9 +295,9 @@ class Decoder(nn.Module):
                         nn.Identity(prev_filters),
                     )
 
-        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters, device=device, dtype=dtype)
+        self.norm1 = nn.GroupNorm(self.num_groups, prev_filters)
 
-        self.conv_out = self.conv_fn(filters, in_out_channels, 3, dtype=dtype, device=device)
+        self.conv_out = self.conv_fn(filters, in_out_channels, 3)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -364,8 +336,6 @@ class VAE_Temporal(nn.Module):
         temporal_downsample=(True, True, False),
         num_groups=32,  # for nn.GroupNorm
         activation_fn="swish",
-        device="cpu",
-        dtype=torch.bfloat16,
     ):
         super().__init__()
 
@@ -383,12 +353,10 @@ class VAE_Temporal(nn.Module):
             temporal_downsample=temporal_downsample,
             num_groups=num_groups,  # for nn.GroupNorm
             activation_fn=activation_fn,
-            device=device,
-            dtype=dtype,
         )
-        self.quant_conv = CausalConv3d(2 * latent_embed_dim, 2 * embed_dim, 1, device=device, dtype=dtype)
+        self.quant_conv = CausalConv3d(2 * latent_embed_dim, 2 * embed_dim, 1)
 
-        self.post_quant_conv = CausalConv3d(embed_dim, latent_embed_dim, 1, device=device, dtype=dtype)
+        self.post_quant_conv = CausalConv3d(embed_dim, latent_embed_dim, 1)
         self.decoder = Decoder(
             in_out_channels=in_out_channels,
             latent_embed_dim=latent_embed_dim,
@@ -398,8 +366,6 @@ class VAE_Temporal(nn.Module):
             temporal_downsample=temporal_downsample,
             num_groups=num_groups,  # for nn.GroupNorm
             activation_fn=activation_fn,
-            device=device,
-            dtype=dtype,
         )
 
     def get_latent_size(self, input_size):
