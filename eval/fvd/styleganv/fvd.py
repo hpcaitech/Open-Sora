@@ -10,6 +10,7 @@ def load_i3d_pretrained(device=torch.device('cpu')):
     i3D_WEIGHTS_URL = "https://www.dropbox.com/s/ge9e5ujwgetktms/i3d_torchscript.pt"
     filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'i3d_torchscript.pt')
     print(filepath)
+    breakpoint()
     if not os.path.exists(filepath):
         print(f"preparing for download {i3D_WEIGHTS_URL}, you can download it by yourself.")
         os.system(f"wget {i3D_WEIGHTS_URL} -O {filepath}")
