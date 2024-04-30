@@ -42,8 +42,7 @@ from torchvision.transforms import Lambda, Compose
 from torchvision.transforms._transforms_video import CenterCropVideo
 import sys
 sys.path.append(".")
-# from cal_lpips import calculate_lpips
-from cal_fvd import calculate_fvd
+from cal_lpips import calculate_lpips
 from cal_psnr import calculate_psnr
 # from cal_flolpips import calculate_flolpips
 from cal_ssim import calculate_ssim
@@ -144,10 +143,7 @@ def calculate_common_metric(args, dataloader, device):
         real_videos = batch_data['real'] 
         generated_videos = batch_data['generated']
         assert real_videos.shape[2] == generated_videos.shape[2]
-        if args.metric == 'fvd':
-            tmp_list = list(calculate_fvd(real_videos, generated_videos, args.device, method=args.fvd_method)['value'].values())
-            print("fvd list:", tmp_list)
-        elif args.metric == 'ssim':
+        if args.metric == 'ssim':
             tmp_list = list(calculate_ssim(real_videos, generated_videos)['value'].values())
         elif args.metric == 'psnr':
             tmp_list = list(calculate_psnr(real_videos, generated_videos)['value'].values())
