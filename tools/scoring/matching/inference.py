@@ -15,6 +15,26 @@ from tqdm import tqdm
 from tools.datasets.utils import extract_frames, is_video
 
 
+def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
+    # reorder
+    indices_list = list(map(lambda x: x[0], gathered_list))
+    scores_list = list(map(lambda x: x[1], gathered_list))
+
+    flat_indices = []
+    for x in zip(*indices_list):
+        flat_indices.extend(x)
+    flat_scores = []
+    for x in zip(*scores_list):
+        flat_scores.extend(x)
+    flat_indices = np.array(flat_indices)
+    flat_scores = np.array(flat_scores)
+
+    # filter duplicates
+    unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
+    meta.loc[unique_indices, column] = flat_scores[unique_indices_idx]
+    return meta
+
+
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, meta_path, transform):
         self.meta_path = meta_path
@@ -39,23 +59,6 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.meta)
-
-
-def merge_scores(gathered_list: list, meta: pd.DataFrame):
-    # reorder
-    indices_list = list(map(lambda x: x[0], gathered_list))
-    scores_list = list(map(lambda x: x[1], gathered_list))
-    flat_indices = []
-    for x in zip(*indices_list):
-        flat_indices.extend(x)
-    flat_scores = []
-    for x in zip(*scores_list):
-        flat_scores.extend(x)
-    flat_indices = np.array(flat_indices)
-    flat_scores = np.array(flat_scores)
-    # filter duplicates
-    unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
-    meta.loc[unique_indices, "match"] = flat_scores[unique_indices_idx]
 
 
 def parse_args():
@@ -96,7 +99,6 @@ def main():
     )
 
     # compute scores
-    dataset.meta["match"] = np.nan
     indices_list = []
     scores_list = []
     model.eval()
@@ -118,8 +120,8 @@ def main():
     gathered_list = [None] * dist.get_world_size()
     dist.all_gather_object(gathered_list, (indices_list, scores_list))
     if dist.get_rank() == 0:
-        merge_scores(gathered_list, dataset.meta)
-        dataset.meta.to_csv(out_path, index=False)
+        meta_new = merge_scores(gathered_list, dataset.meta, column='match')
+        meta_new.to_csv(out_path, index=False)
         print(f"New meta with matching scores saved to '{out_path}'.")
 
 
