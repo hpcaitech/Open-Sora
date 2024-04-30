@@ -76,7 +76,7 @@ def merge_args(cfg, args, training=False):
         if cfg.get("discriminator") is not None:
             cfg.discriminator["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
-    if (training or cfg.get("is_vae", False)) and args.data_path is not None:
+    if args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
     if not training and args.cfg_scale is not None:
@@ -106,9 +106,8 @@ def merge_args(cfg, args, training=False):
         if "prompt_as_path" not in cfg:
             cfg["prompt_as_path"] = False
         # - Prompt handling
-        if not "is_vae" in cfg and ("prompt" not in cfg or cfg["prompt"] is None):
-            if "prompt" not in cfg or cfg["prompt"] is None:
-                assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
+        if "prompt" not in cfg or cfg["prompt"] is None:
+            if ("prompt" not in cfg or cfg["prompt"] is None) and cfg.get("prompt_path", None) is not None:
                 cfg["prompt"] = load_prompts(cfg["prompt_path"])
             if args.start_index is not None and args.end_index is not None:
                 cfg["prompt"] = cfg["prompt"][args.start_index : args.end_index]
