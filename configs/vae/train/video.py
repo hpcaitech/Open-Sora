@@ -19,7 +19,7 @@ plugin = "zero2"
 # Define model
 model = dict(
     type="VideoAutoencoderPipeline",
-    freeze_vae_2d=True,
+    freeze_vae_2d=False,
     from_pretrained=None,
     vae_2d=dict(
         type="VideoAutoencoderKL",

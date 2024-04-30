@@ -34,7 +34,7 @@ model = dict(
 )
 
 # loss weights
-perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
+perceptual_loss_weight = 0.0  # use vgg is not None and more than 0
 kl_loss_weight = 1e-6
 
 mixed_image_ratio = 0.1
