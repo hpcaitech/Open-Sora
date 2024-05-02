@@ -19,7 +19,7 @@ plugin = "zero2"
 # Define model
 model = dict(
     type="VideoAutoencoderPipeline",
-    freeze_vae_2d=False,
+    freeze_vae_2d=True,
     from_pretrained=None,
     vae_2d=dict(
         type="VideoAutoencoderKL",
@@ -37,9 +37,9 @@ model = dict(
 perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
 kl_loss_weight = 1e-6
 
-mixed_image_ratio = 0.1
+mixed_image_ratio = 0.2
 use_real_rec_loss = True
-use_z_rec_loss = False
+use_z_rec_loss = True
 use_image_identity_loss = False
 
 # Others

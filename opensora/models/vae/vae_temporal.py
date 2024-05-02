@@ -25,7 +25,7 @@ def is_odd(n):
 def pad_at_dim(t, pad, dim=-1):
     dims_from_right = (-dim - 1) if dim < 0 else (t.ndim - dim - 1)
     zeros = (0, 0) * dims_from_right
-    return F.pad(t, (*zeros, *pad), mode="replicate")
+    return F.pad(t, (*zeros, *pad), mode="constant")
 
 
 def exists(v):
@@ -65,8 +65,7 @@ class CausalConv3d(nn.Module):
         self.conv = nn.Conv3d(chan_in, chan_out, kernel_size, stride=stride, dilation=dilation, **kwargs)
 
     def forward(self, x):
-        pad_mode = "replicate"
-        x = F.pad(x, self.time_causal_padding, mode=pad_mode)
+        x = F.pad(x, self.time_causal_padding, mode=self.pad_mode)
         x = self.conv(x)
         return x
 
@@ -406,9 +405,9 @@ def VAE_Temporal_SD(from_pretrained=None, **kwargs):
         latent_embed_dim=4,
         embed_dim=4,
         filters=128,
-        num_res_blocks=3,
-        channel_multipliers=(1, 2, 2),
-        temporal_downsample=(True, True),
+        num_res_blocks=4,
+        channel_multipliers=(1, 2, 2, 4),
+        temporal_downsample=(False, True, True),
         **kwargs,
     )
     if from_pretrained is not None:
