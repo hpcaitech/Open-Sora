@@ -2,7 +2,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 from einops import rearrange
-from rotary_embedding_torch import RotaryEmbedding
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
 
@@ -13,7 +12,6 @@ from opensora.models.layers.blocks import (
     MultiHeadCrossAttention,
     PatchEmbed3D,
     PositionEmbedding2D,
-    SizeEmbedder,
     T2IFinalLayer,
     TimestepEmbedder,
     approx_gelu,
@@ -188,12 +186,12 @@ class STDiT3(nn.Module):
         self.patch_size = patch_size
         self.input_sq_size = input_sq_size
         self.pos_embed = PositionEmbedding2D(hidden_size)
-        self.rope = RotaryEmbedding(dim=self.hidden_size // self.num_heads)
+        # self.rope = RotaryEmbedding(dim=self.hidden_size // self.num_heads)
 
         # embedding
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.fps_embedder = SizeEmbedder(self.hidden_size)
+        # self.fps_embedder = SizeEmbedder(self.hidden_size)
         self.t_block = nn.Sequential(
             nn.SiLU(),
             nn.Linear(hidden_size, 6 * hidden_size, bias=True),
@@ -225,25 +223,25 @@ class STDiT3(nn.Module):
         )
 
         # temporal blocks
-        drop_path = [x.item() for x in torch.linspace(0, self.drop_path, depth)]
-        self.temporal_blocks = nn.ModuleList(
-            [
-                STDiT3Block(
-                    hidden_size=hidden_size,
-                    num_heads=num_heads,
-                    mlp_ratio=mlp_ratio,
-                    drop_path=drop_path[i],
-                    qk_norm=qk_norm,
-                    enable_flashattn=enable_flashattn,
-                    enable_layernorm_kernel=enable_layernorm_kernel,
-                    enable_sequence_parallelism=enable_sequence_parallelism,
-                    # temporal
-                    temporal=True,
-                    rope=self.rope.rotate_queries_or_keys,
-                )
-                for i in range(depth)
-            ]
-        )
+        # drop_path = [x.item() for x in torch.linspace(0, self.drop_path, depth)]
+        # self.temporal_blocks = nn.ModuleList(
+        #     [
+        #         STDiT3Block(
+        #             hidden_size=hidden_size,
+        #             num_heads=num_heads,
+        #             mlp_ratio=mlp_ratio,
+        #             drop_path=drop_path[i],
+        #             qk_norm=qk_norm,
+        #             enable_flashattn=enable_flashattn,
+        #             enable_layernorm_kernel=enable_layernorm_kernel,
+        #             enable_sequence_parallelism=enable_sequence_parallelism,
+        #             # temporal
+        #             temporal=True,
+        #             rope=self.rope.rotate_queries_or_keys,
+        #         )
+        #         for i in range(depth)
+        #     ]
+        # )
 
         # final layer
         self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
@@ -262,7 +260,7 @@ class STDiT3(nn.Module):
         return (T, H, W)
 
     def forward(self, x, timestep, y, mask=None, x_mask=None, fps=None, height=None, width=None, **kwargs):
-        B = x.shape[0]
+        x.shape[0]
         x = x.to(self.dtype)
         timestep = timestep.to(self.dtype)
         y = y.to(self.dtype)
@@ -282,9 +280,9 @@ class STDiT3(nn.Module):
 
         # === get timestep embed ===
         t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
-        fps = self.fps_embedder(fps.unsqueeze(1), B)
+        # fps = self.fps_embedder(fps.unsqueeze(1), B)
 
-        t = t + fps  # [debug]
+        # t = t + fps  # [debug]
 
         t_mlp = self.t_block(t)
         t0 = t0_mlp = None
@@ -313,9 +311,10 @@ class STDiT3(nn.Module):
         x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
         # === blocks ===
-        for spatial_block, temporal_block in zip(self.spatial_blocks, self.temporal_blocks):
+        # for spatial_block, temporal_block in zip(self.spatial_blocks, self.temporal_blocks):
+        for spatial_block in self.spatial_blocks:
             x = auto_grad_checkpoint(spatial_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
-            x = auto_grad_checkpoint(temporal_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
+            # x = auto_grad_checkpoint(temporal_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
 
         # === final layer ===
         x = self.final_layer(x, t, x_mask, t0, T, S)
