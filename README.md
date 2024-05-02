@@ -53,11 +53,6 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 | **16s 320×320**                                                                                                                                        | **16s 224×448**                                                                                                                                        | **2s 426×240**                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-
 <details>
 <summary>OpenSora 1.0 Demo</summary>
 
@@ -199,10 +194,11 @@ See our **[report 1.1](docs/report_02.md)** for more infomation.
 <summary>View more</summary>
 
 | Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-| ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
+| ---------- | ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
+
 
 Training orders: 16x256x256 $\rightarrow$ 16x256x256 HQ $\rightarrow$ 16x512x512 HQ.
 
