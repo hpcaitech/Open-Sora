@@ -277,9 +277,9 @@ def main():
                     vae_loss += adversarial_loss
 
                 # Backward & update
+                optimizer.zero_grad()
                 booster.backward(loss=vae_loss, optimizer=optimizer)
                 optimizer.step()
-                optimizer.zero_grad()
 
 
                 # Adversarial Discriminator loss
@@ -295,9 +295,9 @@ def main():
                     )
                     disc_loss = weighted_d_adversarial_loss
                     # Backward & update
+                    disc_optimizer.zero_grad()
                     booster.backward(loss=disc_loss, optimizer=disc_optimizer)
                     disc_optimizer.step()
-                    disc_optimizer.zero_grad()
                     all_reduce_mean(disc_loss)
                     running_disc_loss += disc_loss.item()
 
