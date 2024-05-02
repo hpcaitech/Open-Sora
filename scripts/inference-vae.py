@@ -68,7 +68,6 @@ def main():
     # 5. inference
     # ======================================================
     save_dir = cfg.save_dir
-    os.makedirs(save_dir, exist_ok=True)
 
     # define loss function
     vae_loss_fn = VAELoss(
@@ -86,7 +85,7 @@ def main():
         print(f"limiting test dataset to {int(cfg.max_test_samples//cfg.batch_size) * cfg.batch_size}")
     dataloader_iter = iter(dataloader)
 
-    running_loss = running_nll = 0.0
+    running_loss = running_nll = running_nll_z = 0.0
     loss_steps = 0
     with tqdm(
         range(total_steps),
@@ -100,15 +99,17 @@ def main():
 
             #  ===== VAE =====
             z, posterior, x_z = model.encode(x, training=True)
-            x_rec, _ = model.decode(z, num_frames=x.size(2))
+            x_rec, x_z_rec = model.decode(z, num_frames=x.size(2))
             x_ref = model.spatial_vae.decode(x_z)
 
             # loss calculation
             nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
+            nll_loss_z, _, _ = vae_loss_fn(x_z, x_z_rec, posterior, no_perceptual=True)
             vae_loss = weighted_nll_loss + weighted_kl_loss
             loss_steps += 1
             running_loss = vae_loss.item() / loss_steps + running_loss * ((loss_steps - 1) / loss_steps)
             running_nll = nll_loss.item() / loss_steps + running_nll * ((loss_steps - 1) / loss_steps)
+            running_nll_z = nll_loss_z.item() / loss_steps + running_nll_z * ((loss_steps - 1) / loss_steps)
 
             if not use_dist or coordinator.is_master():
                 ori_dir = f"{save_dir}_ori"
@@ -125,6 +126,7 @@ def main():
 
     print("test vae loss:", running_loss)
     print("test nll loss:", running_nll)
+    print("test nll_z loss:", running_nll_z)
 
 
 if __name__ == "__main__":

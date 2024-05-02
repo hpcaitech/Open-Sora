@@ -83,6 +83,7 @@ class VAELoss(nn.Module):
         recon_video,
         posterior,
         nll_weights=None,
+        no_perceptual=False,
     ):
         video = rearrange(video, "b c t h w -> (b t) c h w").contiguous()
         recon_video = rearrange(recon_video, "b c t h w -> (b t) c h w").contiguous()
@@ -91,7 +92,7 @@ class VAELoss(nn.Module):
         recon_loss = torch.abs(video - recon_video)
 
         # perceptual loss
-        if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0:
+        if self.perceptual_loss_weight is not None and self.perceptual_loss_weight > 0.0 and not no_perceptual:
             # handle channels
             channels = video.shape[1]
             assert channels in {1, 3}

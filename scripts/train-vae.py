@@ -194,17 +194,23 @@ def main():
                 #  ====== Generator Loss ======
                 vae_loss = torch.tensor(0.0, device=device, dtype=dtype)
                 log_dict = {}
+
+                # real image reconstruction loss
+                _, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
+                log_dict["kl_loss"] = weighted_kl_loss.item()
+                log_dict["nll_loss"] = weighted_nll_loss.item()
                 if cfg.get("use_real_rec_loss", False):
-                    _, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
                     vae_loss += weighted_nll_loss + weighted_kl_loss
-                    log_dict["kl_loss"] = weighted_kl_loss.item()
-                    log_dict["nll_loss"] = weighted_nll_loss.item()
+
+                _, weighted_z_nll_loss, _ = vae_loss_fn(x_z, x_z_rec, posterior, no_perceptual=True)
+                log_dict["z_nll_loss"] = weighted_z_nll_loss.item()
+                # z reconstruction loss
                 if cfg.get("use_z_rec_loss", False):
-                    _, weighted_z_nll_loss, _ = vae_loss_fn(x_z, x_z_rec, posterior)
                     vae_loss += weighted_z_nll_loss
-                    log_dict["z_nll_loss"] = weighted_z_nll_loss.item()
-                if cfg.get("use_image_identity_loss", False):
-                    _, image_identity_loss, _ = vae_loss_fn(x_z, z, posterior)
+
+                # only for image
+                if cfg.get("use_image_identity_loss", False) and x.size(2) == 1:
+                    _, image_identity_loss, _ = vae_loss_fn(x_z, z, posterior, no_perceptual=True)
                     vae_loss += image_identity_loss
                     log_dict["image_identity_loss"] = image_identity_loss.item()
 
