@@ -109,6 +109,15 @@ def main():
         f"Trainable model params: {format_numel_str(model_numel_trainable)}, Total model params: {format_numel_str(model_numel)}"
     )
 
+    if cfg.get("discriminator", False) != False:
+        discriminator = build_module(cfg.discriminator, MODELS)
+        discriminator.to(device, dtype)
+        discriminator_numel, discriminator_numel_trainable = get_model_numel(discriminator)
+        logger.info(
+            f"Trainable model params: {format_numel_str(discriminator_numel_trainable)}, Total model params: {format_numel_str(discriminator_numel)}"
+        )
+        breakpoint()
+
     # 4.4 loss functions
     vae_loss_fn = VAELoss(
         logvar_init=cfg.get("logvar_init", 0.0),
