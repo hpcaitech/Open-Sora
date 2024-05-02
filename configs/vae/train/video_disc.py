@@ -41,6 +41,15 @@ discriminator = dict(
     use_actnorm=False,
 )
 
+# discriminator hyper-parames TODO
+discriminator_factor=1,
+discriminator_start=-1
+generator_factor=0.5,
+generator_loss_type="hinge",
+discriminator_loss_type="hinge",
+lecam_loss_weight=None,
+gradient_penalty_loss_weight=None,
+
 # loss weights
 perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
 kl_loss_weight = 1e-6

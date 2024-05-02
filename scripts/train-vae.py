@@ -11,12 +11,13 @@ from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
 from tqdm import tqdm
+from einops import rearrange
 
 import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group, set_data_parallel_group
 from opensora.datasets import prepare_dataloader
-from opensora.models.vae.losses import VAELoss
+from opensora.models.vae.losses import VAELoss, AdversarialLoss, DiscriminatorLoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt_utils import create_logger, load_json, save_json
 from opensora.utils.config_utils import (
@@ -109,15 +110,6 @@ def main():
         f"Trainable model params: {format_numel_str(model_numel_trainable)}, Total model params: {format_numel_str(model_numel)}"
     )
 
-    if cfg.get("discriminator", False) != False:
-        discriminator = build_module(cfg.discriminator, MODELS)
-        discriminator.to(device, dtype)
-        discriminator_numel, discriminator_numel_trainable = get_model_numel(discriminator)
-        logger.info(
-            f"Trainable model params: {format_numel_str(discriminator_numel_trainable)}, Total model params: {format_numel_str(discriminator_numel)}"
-        )
-        breakpoint()
-
     # 4.4 loss functions
     vae_loss_fn = VAELoss(
         logvar_init=cfg.get("logvar_init", 0.0),
@@ -126,6 +118,22 @@ def main():
         device=device,
         dtype=dtype,
     )
+
+    if cfg.get("discriminator", False) != False:
+        adversarial_loss_fn = AdversarialLoss(
+            discriminator_factor=cfg.discriminator_factor,
+            discriminator_start=cfg.discriminator_start,
+            generator_factor=cfg.generator_factor,
+            generator_loss_type=cfg.generator_loss_type,
+        )
+
+        disc_loss_fn = DiscriminatorLoss(
+            discriminator_factor=cfg.discriminator_factor,
+            discriminator_start=cfg.discriminator_start,
+            discriminator_loss_type=cfg.discriminator_loss_type,
+            lecam_loss_weight=cfg.lecam_loss_weight,
+            gradient_penalty_loss_weight=cfg.gradient_penalty_loss_weight,
+        )
 
     # 4.5. setup optimizer
     # vae optimizer
@@ -139,6 +147,21 @@ def main():
         set_grad_checkpoint(model)
     model.train()
 
+
+    # 4.7 add discriminator if specified in config
+    if cfg.get("discriminator", False) != False:
+        discriminator = build_module(cfg.discriminator, MODELS)
+        discriminator.to(device, dtype)
+        discriminator_numel, discriminator_numel_trainable = get_model_numel(discriminator)
+        logger.info(
+            f"Trainable model params: {format_numel_str(discriminator_numel_trainable)}, Total model params: {format_numel_str(discriminator_numel)}"
+        )
+        disc_optimizer = HybridAdam(
+            filter(lambda p: p.requires_grad, discriminator.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
+        )
+        disc_lr_scheduler = None
+        discriminator.train()
+
     # =======================================================
     # 5. boost model for distributed training with colossalai
     # =======================================================
@@ -149,6 +172,13 @@ def main():
         lr_scheduler=lr_scheduler,
         dataloader=dataloader,
     )
+    if cfg.get("discriminator", False) != False:
+        discriminator, disc_optimizer, _, _, disc_lr_scheduler = booster.boost(
+            model=discriminator,
+            optimizer=disc_optimizer,
+            lr_scheduler=disc_lr_scheduler,
+        )
+
     torch.set_default_dtype(torch.float)
     num_steps_per_epoch = len(dataloader)
     logger.info("Boost model for distributed training")
@@ -168,6 +198,11 @@ def main():
         booster.load_optimizer(optimizer, os.path.join(cfg.load, "optimizer"))
 
         running_states = load_json(os.path.join(cfg.load, "running_states.json"))
+
+        if cfg.get("discriminator", False) != False and os.path.exists(os.path.join(cfg.load, "discriminator")):
+            booster.load_model(discriminator, os.path.join(cfg.load, "discriminator"))
+            booster.load_optimizer(disc_optimizer, os.path.join(cfg.load, "disc_optimizer"))
+        
         dist.barrier()
         start_epoch, start_step, sampler_start_idx = (
             running_states["epoch"],
@@ -175,6 +210,8 @@ def main():
             running_states["sample_start_index"],
         )
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
+
+
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
     dataloader.sampler.set_start_index(sampler_start_idx)
@@ -202,10 +239,12 @@ def main():
 
                 #  ====== Generator Loss ======
                 vae_loss = torch.tensor(0.0, device=device, dtype=dtype)
+                disc_loss = torch.tensor(0.0, device=device, dtype=dtype)
+
                 log_dict = {}
 
                 # real image reconstruction loss
-                _, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
+                nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
                 log_dict["kl_loss"] = weighted_kl_loss.item()
                 log_dict["nll_loss"] = weighted_nll_loss.item()
                 if cfg.get("use_real_rec_loss", False):
@@ -223,10 +262,44 @@ def main():
                     vae_loss += image_identity_loss
                     log_dict["image_identity_loss"] = image_identity_loss.item()
 
+                # Adversarial Generator Loss
+                if cfg.get("discriminator", False) != False:
+                    recon_video = rearrange(x_rec, "b c t h w -> (b t) c h w").contiguous()
+                    global_step = epoch * num_steps_per_epoch + step
+                    fake_logits = discriminator(recon_video.contiguous())
+                    adversarial_loss = adversarial_loss_fn(
+                        fake_logits,
+                        nll_loss,
+                        model.module.get_temporal_last_layer(),
+                        global_step,
+                        is_training=model.training,
+                    )
+                    vae_loss += adversarial_loss
+
                 # Backward & update
                 booster.backward(loss=vae_loss, optimizer=optimizer)
                 optimizer.step()
                 optimizer.zero_grad()
+
+
+                # Adversarial Discriminator loss
+                if cfg.get("discriminator", False) != False:
+                    real_video = rearrange(x, "b c t h w -> (b t) c h w").contiguous()
+                    fake_video = rearrange(x_rec, "b c t h w -> (b t) c h w").contiguous()
+                    real_logits = discriminator(real_video.contiguous().detach())
+                    fake_logits = discriminator(fake_video.contiguous().detach())
+                    weighted_d_adversarial_loss, _, _ = disc_loss_fn(
+                            real_logits,
+                            fake_logits,
+                            global_step, 
+                    )
+                    disc_loss = weighted_d_adversarial_loss
+                    # Backward & update
+                    booster.backward(loss=disc_loss, optimizer=disc_optimizer)
+                    disc_optimizer.step()
+                    disc_optimizer.zero_grad()
+                    all_reduce_mean(disc_loss)
+                    running_disc_loss += disc_loss.item()
 
                 # Log loss values:
                 all_reduce_mean(vae_loss)
@@ -267,6 +340,12 @@ def main():
                     booster.save_optimizer(
                         optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096
                     )
+                    if cfg.get("discriminator", False) != False:
+                        booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
+                        booster.save_optimizer(
+                            disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096
+                        )
+
                     running_states = {
                         "epoch": epoch,
                         "step": step + 1,

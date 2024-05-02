@@ -396,6 +396,7 @@ class VAE_Temporal(nn.Module):
             z = posterior.mode()
         recon_video = self.decode(z, num_frames=x.shape[2])
         return recon_video, posterior, z
+    
 
 
 @MODELS.register_module("VAE_Temporal_SD")
