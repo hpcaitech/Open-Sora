@@ -152,6 +152,9 @@ class VideoAutoencoderPipeline(nn.Module):
     def get_latent_size(self, input_size):
         return self.temporal_vae.get_latent_size(self.spatial_vae.get_latent_size(input_size))
 
+    def get_temporal_last_layer(self):
+        return self.temporal_vae.last_layer[0]
+    
     @property
     def device(self):
         return next(self.parameters()).device
