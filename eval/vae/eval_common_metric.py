@@ -138,22 +138,32 @@ def _preprocess(video_data, short_size=128, crop_size=None):
 
 def calculate_common_metric(args, dataloader, device):
 
-    score_list = []
-    for batch_data in tqdm(dataloader): # {'real': real_video_tensor, 'generated':generated_video_tensor }
-        real_videos = batch_data['real'] 
-        generated_videos = batch_data['generated']
-        assert real_videos.shape[2] == generated_videos.shape[2]
-        if args.metric == 'ssim':
-            tmp_list = list(calculate_ssim(real_videos, generated_videos)['value'].values())
-        elif args.metric == 'psnr':
-            tmp_list = list(calculate_psnr(real_videos, generated_videos)['value'].values())
-        elif args.metric == 'flolpips':
-            result = calculate_flolpips(real_videos, generated_videos, args.device)
-            tmp_list = list(result['value'].values())
-        else:
-            tmp_list  = list(calculate_lpips(real_videos, generated_videos, args.device)['value'].values())
-        score_list += tmp_list
-    return np.mean(score_list)
+    metric_dict = {}
+    if type(args.metric) is str:
+        args.metric = [m.strip() for m in args.metric.split(",")]
+    print(args.metric)
+    for metric in args.metric:
+        score_list = []
+        for batch_data in tqdm(dataloader): # {'real': real_video_tensor, 'generated':generated_video_tensor }
+            real_videos = batch_data['real'] 
+            generated_videos = batch_data['generated']
+            assert real_videos.shape[2] == generated_videos.shape[2]
+            if metric == 'ssim':
+                tmp_list = list(calculate_ssim(real_videos, generated_videos)['value'].values())
+            elif metric == 'psnr':
+                tmp_list = list(calculate_psnr(real_videos, generated_videos)['value'].values())
+            elif metric == 'flolpips':
+                result = calculate_flolpips(real_videos, generated_videos, args.device)
+                tmp_list = list(result['value'].values())
+            elif metric == "lpips":
+                tmp_list  = list(calculate_lpips(real_videos, generated_videos, args.device)['value'].values())
+            else:
+                print(f"metric {metric} is not in acceped list, not calculated")
+                continue
+            score_list += tmp_list
+        metric_dict[metric] = np.mean(score_list)
+
+    return metric_dict
         
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -174,7 +184,8 @@ def main():
     parser.add_argument('--num_frames', type=int, default=100)
     parser.add_argument('--sample_rate', type=int, default=1)
     parser.add_argument('--subset_size', type=int, default=None)
-    parser.add_argument("--metric", type=str, default="fvd",choices=['fvd','psnr','ssim','lpips', 'flolpips'])
+    # parser.add_argument("--metric", type=str, default="fvd",choices=['fvd','psnr','ssim','lpips', 'flolpips'])
+    parser.add_argument("--metric", nargs='+', default=[])
     parser.add_argument("--fvd_method", type=str, default='styleganv',choices=['styleganv','videogpt'])
 
 

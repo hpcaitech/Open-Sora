@@ -11,8 +11,20 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 import cv2
 
+import hashlib
+import requests
+from tqdm import tqdm
+
 from .pwcnet import Network as PWCNet
 from .utils import *
+
+URL_MAP = {"alex": "https://raw.githubusercontent.com/danier97/flolpips/main/weights/v0.1/alex.pth"}
+
+CKPT_MAP = {"alex": "alex.pth"}
+
+MD5_MAP = {"alex": "9642209e2b57a85d20f86d812320f9e6"}
+
+
 
 def spatial_average(in_tens, keepdim=True):
     return in_tens.mean([2,3],keepdim=keepdim)
@@ -48,6 +60,33 @@ def m2w_spatial_average(in_tens, flow, keepdim=True):
 def upsample(in_tens, out_HW=(64,64)): # assumes scale factor is same for H and W
     in_H, in_W = in_tens.shape[2], in_tens.shape[3]
     return nn.Upsample(size=out_HW, mode='bilinear', align_corners=False)(in_tens)
+
+
+def md5_hash(path):
+    with open(path, "rb") as f:
+        content = f.read()
+    return hashlib.md5(content).hexdigest()
+
+def download(url, local_path, chunk_size=1024):
+    os.makedirs(os.path.split(local_path)[0], exist_ok=True)
+    with requests.get(url, stream=True) as r:
+        total_size = int(r.headers.get("content-length", 0))
+        with tqdm(total=total_size, unit="B", unit_scale=True) as pbar:
+            with open(local_path, "wb") as f:
+                for data in r.iter_content(chunk_size=chunk_size):
+                    if data:
+                        f.write(data)
+                        pbar.update(chunk_size)
+
+def get_ckpt_path(name, root, check=False):
+    assert name in URL_MAP
+    path = os.path.join(root, CKPT_MAP[name])
+    if not os.path.exists(path) or (check and not md5_hash(path) == MD5_MAP[name]):
+        print("Downloading {} model from {} to {}".format(name, URL_MAP[name], path))
+        download(URL_MAP[name], path)
+        md5 = md5_hash(path)
+        assert md5 == MD5_MAP[name], md5
+    return path
 
 # Learned perceptual metric
 class LPIPS(nn.Module):
@@ -96,17 +135,16 @@ class LPIPS(nn.Module):
             self.lins = nn.ModuleList(self.lins)
 
             if(pretrained):
-                if(model_path is None):
-                    import inspect
-                    import os
-                    model_path = os.path.abspath(os.path.join(inspect.getfile(self.__init__), '..', 'weights/v%s/%s.pth'%(version,net)))
-
+                self.load_from_pretrained(version, net)
                 if(verbose):
-                    print('Loading model from: %s'%model_path)
-                self.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False)          
+                    print('Loaded model from: %s'%model_path)
 
         if(eval_mode):
             self.eval()
+
+    def load_from_pretrained(self, version, net):
+        ckpt = get_ckpt_path(net, "pretrained_models/flolpips/weights/v%s"%(version))
+        self.load_state_dict(torch.load(ckpt, map_location='cpu'), strict=False)  
 
     def forward(self, in0, in1, retPerLayer=False, normalize=False):
         if normalize: # turn on this flag if input is [0,1] so it can be adjusted to [-1, +1]

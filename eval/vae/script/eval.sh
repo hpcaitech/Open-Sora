@@ -9,4 +9,4 @@ python eval/eval_common_metric.py \
     --num_frames 17 \
     --sample_rate 1 \
     --subset_size 100 \
-    --metric ssim
+    --metric ssim psnr lpips flolpips
