@@ -56,6 +56,6 @@ pip install scipy
 ### Commands: carefule to change the setting to training setting
 
 ```bash
-# metric can either be: ssim, psnr, lpips, flolpips
-python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir <path/to/original/videos> --generated_video_dir <path/to/generated/videos> --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric <metric>
+# metric can any one or list of: ssim, psnr, lpips, flolpips
+python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir <path/to/original/videos> --generated_video_dir <path/to/generated/videos> --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
 ```
