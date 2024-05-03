@@ -8,7 +8,7 @@ from .dpm_solver import DPMS
 
 
 @SCHEDULERS.register_module("dpm-solver")
-class DMP_SOLVER:
+class DPM_SOLVER:
     def __init__(self, num_sampling_steps=None, cfg_scale=4.0):
         self.num_sampling_steps = num_sampling_steps
         self.cfg_scale = cfg_scale
