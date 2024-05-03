@@ -25,7 +25,6 @@ class RFlowScheduler:
         Arguments format copied from opensora/schedulers/iddpm/gaussian_diffusion.py/training_losses
         Note: t is int tensor and should be rescaled from [0, num_timesteps-1] to [1,0]
         '''
-        assert weights is None, "weights not support for rectified flow yet"
 
         if model_kwargs is None:
             model_kwargs = {}
