@@ -151,6 +151,8 @@ Other useful documents and links are listed below.
 
 ## Installation
 
+### Install from Source
+
 ```bash
 # create a virtual env
 conda create -n opensora python=3.10
@@ -178,6 +180,20 @@ pip install -U xformers --index-url https://download.pytorch.org/whl/cu121
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
 pip install -v .
+```
+
+### Use Docker
+
+Run the following command to build a docker image from Dockerfile provided.
+
+```bash
+docker build -t opensora ./docker
+```
+
+Run the following command to start the docker container in interactive mode.
+
+```bash
+docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 ```
 
 ## Model Weights
