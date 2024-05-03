@@ -1,4 +1,4 @@
-num_frames = 2
+num_frames = 1
 fps = 1
 image_size = (2560, 1536)
 # image_size = (2048, 2048)
@@ -25,7 +25,7 @@ text_encoder = dict(
 )
 scheduler = dict(
     type="dpm-solver",
-    num_sampling_steps=14,
+    num_sampling_steps=50,
     cfg_scale=4.5,
 )
 dtype = "bf16"
