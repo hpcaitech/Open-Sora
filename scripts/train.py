@@ -159,6 +159,7 @@ def main():
         lr=cfg.lr,
         weight_decay=0,
         adamw_mode=True,
+        eps=cfg.get("adam_eps", 1e-8),
     )
     lr_scheduler = None
 
@@ -260,7 +261,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Update EMA
-                update_ema(ema, model.module, optimizer=optimizer)
+                update_ema(ema, model.module, optimizer=optimizer, decay=cfg.get("ema_decay", 0.9999))
 
                 # Log loss values:
                 all_reduce_mean(loss)

@@ -7,11 +7,13 @@ from ..iddpm.gaussian_diffusion import _extract_into_tensor, mean_flat
 # and https://github.com/magic-research/piecewise-rectified-flow/blob/main/src/scheduler_perflow.py
 
 
-def timestep_transform(t, model_kwargs, base_resolution=512 * 512, base_num_frames=1, scale=1.0):
+def timestep_transform(t, model_kwargs, base_resolution=512 * 512, base_num_frames=1, scale=1.0, num_timesteps=1):
+    t = t / num_timesteps
     resolution = model_kwargs["height"] * model_kwargs["width"]
     num_frames = model_kwargs["num_frames"]
     ratio = (resolution / base_resolution).sqrt() * (num_frames / base_num_frames).sqrt() * scale
     new_t = ratio * t / (1 + (ratio - 1) * t)
+    new_t = new_t * num_timesteps
     return new_t
 
 
@@ -59,9 +61,7 @@ class RFlowScheduler:
             t = self.sample_t(x_start) * self.num_timesteps
 
         if self.use_timestep_transform:
-            t = t / self.num_timesteps
-            t = timestep_transform(t, model_kwargs, scale=self.transform_scale)
-            t = t * self.num_timesteps
+            t = timestep_transform(t, model_kwargs, scale=self.transform_scale, num_timesteps=self.num_timesteps)
 
         if model_kwargs is None:
             model_kwargs = {}

@@ -62,7 +62,10 @@ class RFLOW:
             timesteps = [int(round(t)) for t in timesteps]
 
         if self.use_timestep_transform:
-            timesteps = [timestep_transform(t, additional_args, scale=self.cfg_scale) for t in timesteps]
+            timesteps = [
+                timestep_transform(t, additional_args, scale=self.cfg_scale, num_timesteps=self.num_timesteps)
+                for t in timesteps
+            ]
 
         for i, t in enumerate(timesteps):
             z_in = torch.cat([z, z], 0)
