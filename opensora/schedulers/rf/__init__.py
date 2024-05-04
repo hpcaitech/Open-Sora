@@ -1,6 +1,7 @@
 from functools import partial
 
 import torch
+from tqdm import tqdm
 
 from opensora.registry import SCHEDULERS
 
@@ -67,7 +68,7 @@ class RFLOW:
                 for t in timesteps
             ]
 
-        for i, t in enumerate(timesteps):
+        for i, t in tqdm(enumerate(timesteps)):
             z_in = torch.cat([z, z], 0)
             pred = model(z_in, torch.tensor([t] * z_in.shape[0], device=device), **model_args).chunk(2, dim=1)[0]
             pred_cond, pred_uncond = pred.chunk(2, dim=0)
