@@ -25,7 +25,8 @@ text_encoder = dict(
     local_files_only=True,
 )
 scheduler = dict(
-    type="dpm-solver",
+    type="rflow",
+    use_discrete_timesteps=True,
     num_sampling_steps=50,
     cfg_scale=4.5,
 )
