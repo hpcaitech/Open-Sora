@@ -68,6 +68,7 @@ def parse_args():
     parser.add_argument("meta_path", type=str)
     parser.add_argument("--folder_path", type=str, required=True)
     parser.add_argument("--mode", type=str, default=None)
+    parser.add_argument("--num_workers", type=int, default=None, help='#workers for pandarallel')
 
     args = parser.parse_args()
     return args
@@ -104,7 +105,10 @@ def main():
     meta_fname = os.path.basename(meta_path)
     wo_ext, ext = os.path.splitext(meta_fname)
 
-    pandarallel.initialize(progress_bar=True)
+    if args.num_workers is not None:
+        pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)
+    else:
+        pandarallel.initialize(progress_bar=True)
     is_intact_partial = partial(is_intact, mode=mode)
 
     meta = pd.read_csv(meta_path)

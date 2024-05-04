@@ -32,10 +32,21 @@ pretrained_models = {
     "OpenSora-v1-16x256x256.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-16x256x256.pth",
     "OpenSora-v1-HQ-16x256x256.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x256x256.pth",
     "OpenSora-v1-HQ-16x512x512.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x512x512.pth",
+    "PixArt-Sigma-XL-2-256x256.pth": hf_endpoint
+    + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-256x256.pth",
+    "PixArt-Sigma-XL-2-512-MS.pth": hf_endpoint
+    + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-512-MS.pth",
+    "PixArt-Sigma-XL-2-1024-MS.pth": hf_endpoint
+    + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-1024-MS.pth",
+    "PixArt-Sigma-XL-2-2K-MS.pth": hf_endpoint + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-2K-MS.pth",
+    # "PixArt-1B-2.pth": "PixArt-1B-2.pth",
 }
 
 
 def reparameter(ckpt, name=None, model=None):
+    name = os.path.basename(name)
+    if not dist.is_initialized() or dist.get_rank() == 0:
+        print("loading pretrained model:", name)
     if name in ["DiT-XL-2-512x512.pt", "DiT-XL-2-256x256.pt"]:
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
@@ -44,10 +55,25 @@ def reparameter(ckpt, name=None, model=None):
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
         del ckpt["temp_embed"]
-    if name in ["PixArt-XL-2-256x256.pth", "PixArt-XL-2-SAM-256x256.pth", "PixArt-XL-2-512x512.pth"]:
+    if name in [
+        "PixArt-XL-2-256x256.pth",
+        "PixArt-XL-2-SAM-256x256.pth",
+        "PixArt-XL-2-512x512.pth",
+        "PixArt-XL-2-1024-MS.pth",
+        "PixArt-Sigma-XL-2-256x256.pth",
+        "PixArt-Sigma-XL-2-512-MS.pth",
+        "PixArt-Sigma-XL-2-1024-MS.pth",
+        "PixArt-Sigma-XL-2-2K-MS.pth",
+    ]:
         ckpt = ckpt["state_dict"]
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
-        del ckpt["pos_embed"]
+        if "pos_embed" in ckpt:
+            del ckpt["pos_embed"]
+
+    if name in ["PixArt-1B-2.pth",]:
+        ckpt = ckpt["state_dict"]
+        if "pos_embed" in ckpt:
+            del ckpt["pos_embed"]
 
     # no need pos_embed
     if "pos_embed_temporal" in ckpt:
@@ -69,6 +95,13 @@ def reparameter(ckpt, name=None, model=None):
                 f"Shrink y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
             )
             ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
+    # stdit3 special case
+    if type(model).__name__ == "STDiT3" and "PixArt-Sigma" in name:
+        ckpt_keys = list(ckpt.keys())
+        for key in ckpt_keys:
+            if "blocks." in key:
+                ckpt[key.replace("blocks.", "spatial_blocks.")] = ckpt[key]
+                del ckpt[key]
 
     return ckpt
 

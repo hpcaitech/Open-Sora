@@ -24,7 +24,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        data_path,
+        data_path=None,
         num_frames=16,
         frame_interval=1,
         image_size=(256, 256),
@@ -111,10 +111,10 @@ class VideoTextDataset(torch.utils.data.Dataset):
 class VariableVideoTextDataset(VideoTextDataset):
     def __init__(
         self,
-        data_path,
+        data_path=None,
         num_frames=None,
         frame_interval=1,
-        image_size=None,
+        image_size=(None, None),
         transform_name=None,
     ):
         super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)

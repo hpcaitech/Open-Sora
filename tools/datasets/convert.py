@@ -108,6 +108,7 @@ def process_general_videos(root, output):
     df = pd.DataFrame(dict(path=video_lists))
     if output is None:
         output = "videos.csv"
+    os.makedirs(os.path.dirname(output), exist_ok=True)
     df.to_csv(output, index=False)
     print(f"Saved {len(df)} samples to {output}.")
 

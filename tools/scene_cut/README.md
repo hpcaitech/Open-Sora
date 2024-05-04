@@ -31,6 +31,10 @@ This should output
 ## Scene Detection
 The next step is to detect scenes in a video. 
 We use [`PySceneDetect`](https://github.com/Breakthrough/PySceneDetect) for this job. 
+```bash
+pip install scenedetect[opencv] --upgrade
+```
+
 **Make sure** the input meta file has column `path`, which is the path of a video.
 
 ```bash
