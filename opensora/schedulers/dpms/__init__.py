@@ -22,6 +22,7 @@ class DPM_SOLVER:
         device,
         additional_args=None,
         mask=None,
+        progress=True,
     ):
         assert mask is None, "mask is not supported in dpm-solver"
         n = len(prompts)
@@ -38,7 +39,14 @@ class DPM_SOLVER:
             cfg_scale=self.cfg_scale,
             model_kwargs=model_args,
         )
-        samples = dpms.sample(z, steps=self.num_sampling_steps, order=2, skip_type="time_uniform", method="multistep")
+        samples = dpms.sample(
+            z,
+            steps=self.num_sampling_steps,
+            order=2,
+            skip_type="time_uniform",
+            method="multistep",
+            progress=progress,
+        )
         return samples
 
 
