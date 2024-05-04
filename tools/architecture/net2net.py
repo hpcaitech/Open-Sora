@@ -7,7 +7,7 @@ Numpy modules for Net2Net
 Written by Kyunghyun Paeng
 
 """
-import numpy as np
+
 
 def net2net(teach_param, stu_param):
     # teach param with shape (a, b)
@@ -24,26 +24,29 @@ def net2net(teach_param, stu_param):
     assert len(teach_param_shape) == len(stu_param_shape), "teach_param and stu_param must have same dimension"
 
     if len(teach_param_shape) == 1:
-        stu_param[:teach_param_shape[0]] = teach_param
-
+        stu_param[: teach_param_shape[0]] = teach_param
     elif len(teach_param_shape) == 2:
-        stu_param[:teach_param_shape[0], :teach_param_shape[1]] = teach_param
+        stu_param[: teach_param_shape[0], : teach_param_shape[1]] = teach_param
+    else:
+        breakpoint()
 
     if stu_param.shape != stu_param_shape:
         stu_param = stu_param.reshape(stu_param_shape)
 
     return stu_param
 
-if __name__ == '__main__':
-    """ Net2Net Class Test """
 
-    from opensora.models.pixart import PixArt_Sigma_XL_2, PixArt_1B_2
+if __name__ == "__main__":
+    """Net2Net Class Test"""
+
     import torch
+
+    from opensora.models.pixart import PixArt_1B_2
 
     model = PixArt_1B_2(no_temporal_pos_emb=True, space_scale=4, enable_flashattn=True, enable_layernorm_kernel=True)
     print("load model done")
 
-    ckpt = torch.load('/home/zhouyukun/projs/opensora/pretrained_models/PixArt-Sigma-XL-2-2K-MS.pth')
+    ckpt = torch.load("/home/zhouyukun/projs/opensora/pretrained_models/PixArt-Sigma-XL-2-2K-MS.pth")
     print("load ckpt done")
 
     ckpt = ckpt["state_dict"]

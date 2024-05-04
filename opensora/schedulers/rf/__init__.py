@@ -43,6 +43,7 @@ class RFLOW:
         additional_args=None,
         mask=None,
         guidance_scale=None,
+        progress=True,
     ):
         assert mask is None, "mask is not supported in rectified flow inference yet"
         # if no specific guidance scale is provided, use the default scale when initializing the scheduler
@@ -68,7 +69,8 @@ class RFLOW:
                 for t in timesteps
             ]
 
-        for i, t in tqdm(enumerate(timesteps)):
+        progress_wrap = tqdm if progress else (lambda x: x)
+        for i, t in progress_wrap(enumerate(timesteps)):
             z_in = torch.cat([z, z], 0)
             pred = model(z_in, torch.tensor([t] * z_in.shape[0], device=device), **model_args).chunk(2, dim=1)[0]
             pred_cond, pred_uncond = pred.chunk(2, dim=0)
