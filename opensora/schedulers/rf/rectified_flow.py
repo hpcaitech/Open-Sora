@@ -1,30 +1,67 @@
 import torch
-import numpy as np
-from typing import Union
-from einops import rearrange
-from typing import List
+from torch.distributions import LogisticNormal
+
 from ..iddpm.gaussian_diffusion import _extract_into_tensor, mean_flat
 
 # some code are inspired by https://github.com/magic-research/piecewise-rectified-flow/blob/main/scripts/train_perflow.py
 # and https://github.com/magic-research/piecewise-rectified-flow/blob/main/src/scheduler_perflow.py
 
 
+def timestep_transform(t, model_kwargs, base_resolution=512 * 512, base_num_frames=1, scale=1.0):
+    resolution = model_kwargs["height"] * model_kwargs["width"]
+    num_frames = model_kwargs["num_frames"]
+    ratio = (resolution / base_resolution).sqrt() * (num_frames / base_num_frames).sqrt() * scale
+    new_t = ratio * t / (1 + (ratio - 1) * t)
+    return new_t
+
+
 class RFlowScheduler:
     def __init__(
         self,
-        num_timesteps = 1000,
-        num_sampling_steps = 10,
+        num_timesteps=1000,
+        num_sampling_steps=10,
+        use_discrete_timesteps=False,
+        sample_method="uniform",
+        loc=0.0,
+        scale=1.0,
+        use_timestep_transform=False,
+        transform_scale=1.0,
     ):
         self.num_timesteps = num_timesteps
         self.num_sampling_steps = num_sampling_steps
-        
+        self.use_discrete_timesteps = use_discrete_timesteps
 
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise = None, mask = None, weights = None):
-        '''
-        Compute training losses for a single timestep. 
+        # sample method
+        assert sample_method in ["uniform", "logit-normal"]
+        assert (
+            sample_method == "uniform" or not use_discrete_timesteps
+        ), "Only uniform sampling is supported for discrete timesteps"
+        self.sample_method = sample_method
+        if sample_method == "logit-normal":
+            self.distribution = LogisticNormal(torch.tensor([loc]), torch.tensor([scale]))
+            self.sample_t = lambda x: self.distribution.sample((x.shape[0],))[:, 0].to(x.device)
+
+        # timestep transform
+        self.use_timestep_transform = use_timestep_transform
+        self.transform_scale = transform_scale
+
+    def training_losses(self, model, x_start, model_kwargs=None, noise=None, mask=None, weights=None):
+        """
+        Compute training losses for a single timestep.
         Arguments format copied from opensora/schedulers/iddpm/gaussian_diffusion.py/training_losses
         Note: t is int tensor and should be rescaled from [0, num_timesteps-1] to [1,0]
-        '''
+        """
+        if self.use_discrete_timesteps:
+            t = torch.randint(0, self.num_timesteps, (x_start.shape[0],), device=x_start.device)
+        elif self.sample_method == "uniform":
+            t = torch.rand((x_start.shape[0],), device=x_start.device) * self.num_timesteps
+        elif self.sample_method == "logit-normal":
+            t = self.sample_t(x_start) * self.num_timesteps
+
+        if self.use_timestep_transform:
+            t = t / self.num_timesteps
+            t = timestep_transform(t, model_kwargs, scale=self.transform_scale)
+            t = t * self.num_timesteps
 
         if model_kwargs is None:
             model_kwargs = {}
@@ -38,19 +75,17 @@ class RFlowScheduler:
             x_t0 = self.add_noise(x_start, noise, t0)
             x_t = torch.where(mask[:, None, :, None, None], x_t, x_t0)
 
-
         terms = {}
         model_output = model(x_t, t, **model_kwargs)
-        velocity_pred = model_output.chunk(2, dim = 1)[0]
+        velocity_pred = model_output.chunk(2, dim=1)[0]
         if weights is None:
-            loss = mean_flat((velocity_pred - (x_start - noise)).pow(2), mask = mask)
+            loss = mean_flat((velocity_pred - (x_start - noise)).pow(2), mask=mask)
         else:
             weight = _extract_into_tensor(weights, t, x_start.shape)
-            loss = mean_flat(weight * (velocity_pred - (x_start - noise)).pow(2), mask = mask)
-        terms['loss'] = loss
+            loss = mean_flat(weight * (velocity_pred - (x_start - noise)).pow(2), mask=mask)
+        terms["loss"] = loss
 
         return terms
-
 
     def add_noise(
         self,
@@ -61,8 +96,8 @@ class RFlowScheduler:
         """
         compatible with diffusers add_noise()
         """
-        timepoints = timesteps.float() / self.num_timesteps # [0, 999/1000]
-        timepoints = 1 - timepoints # [1,1/1000]
+        timepoints = timesteps.float() / self.num_timesteps  # [0, 999/1000]
+        timepoints = 1 - timepoints  # [1,1/1000]
 
         # timepoint  (bsz) noise: (bsz, 4, frame, w ,h)
         # expand timepoint to noise shape
@@ -70,7 +105,3 @@ class RFlowScheduler:
         timepoints = timepoints.repeat(1, noise.shape[1], noise.shape[2], noise.shape[3], noise.shape[4])
 
         return timepoints * original_samples + (1 - timepoints) * noise
-    
-
-
-        

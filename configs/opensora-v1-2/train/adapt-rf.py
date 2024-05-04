@@ -53,8 +53,10 @@ text_encoder = dict(
     local_files_only=True,
 )
 scheduler = dict(
-    type="iddpm",
-    timestep_respacing="",
+    type="rflow",
+    use_discrete_timesteps=False,
+    sample_method="logit-normal",
+    use_timestep_transform=True,
 )
 
 # Others

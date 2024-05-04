@@ -47,7 +47,6 @@ class IDDPM(SpacedDiffusion):
                 else gd.ModelVarType.LEARNED_RANGE
             ),
             loss_type=loss_type,
-            # rescale_timesteps=rescale_timesteps,
         )
 
         self.cfg_scale = cfg_scale

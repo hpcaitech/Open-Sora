@@ -251,8 +251,7 @@ def main():
                     model_args[k] = v.to(device, dtype)
 
                 # Diffusion
-                t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
-                loss_dict = scheduler.training_losses(model, x, t, model_args, mask=mask)
+                loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
 
                 # Backward & update
                 loss = loss_dict["loss"].mean()
