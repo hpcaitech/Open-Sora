@@ -15,3 +15,4 @@ transformers
 wandb
 rotary_embedding_torch
 pandarallel
+scenedetect==0.6.3
