@@ -6,7 +6,7 @@ multi_resolution = "STDiT2"
 
 model = dict(
     type="STDiT3-XL/2",
-    from_pretrained="PixArt-Sigma-XL-2-2K-MS.pth",
+    from_pretrained=None,
     qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
@@ -26,7 +26,8 @@ text_encoder = dict(
 )
 scheduler = dict(
     type="rflow",
-    use_discrete_timesteps=True,
+    use_discrete_timesteps=False,
+    use_timestep_transform=True,
     num_sampling_steps=50,
     cfg_scale=4.5,
 )

@@ -55,8 +55,8 @@ text_encoder = dict(
 scheduler = dict(
     type="rflow",
     use_discrete_timesteps=False,
-    sample_method="logit-normal",
     use_timestep_transform=True,
+    sample_method="logit-normal",
 )
 
 # Others
@@ -69,6 +69,8 @@ log_every = 10
 ckpt_every = 500
 load = None
 
-batch_size = 10  # only for logging
-lr = 2e-5
+batch_size = None
+lr = 1e-4
 grad_clip = 1.0
+ema_decay = 0.99
+adam_eps = 1e-15
