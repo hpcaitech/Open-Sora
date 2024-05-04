@@ -67,7 +67,7 @@ class SpeeDiffusion(SpacedDiffusion):
         t = torch.cat([t, dual_t], dim=0)[:n]
         return t
 
-    def training_losses(self, model, x, t, *args, **kwargs):  # pylint: disable=signature-differs
+    def training_losses(self, model, x, *args, **kwargs):  # pylint: disable=signature-differs
         t = self.t_sample(x.shape[0], x.device)
         return super().training_losses(model, x, t, weights=self.weights, *args, **kwargs)
 

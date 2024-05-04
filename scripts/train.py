@@ -159,6 +159,7 @@ def main():
         lr=cfg.lr,
         weight_decay=0,
         adamw_mode=True,
+        eps=cfg.get("adam_eps", 1e-8),
     )
     lr_scheduler = None
 
@@ -251,8 +252,7 @@ def main():
                     model_args[k] = v.to(device, dtype)
 
                 # Diffusion
-                t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
-                loss_dict = scheduler.training_losses(model, x, t, model_args, mask=mask)
+                loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
 
                 # Backward & update
                 loss = loss_dict["loss"].mean()
@@ -261,7 +261,7 @@ def main():
                 optimizer.zero_grad()
 
                 # Update EMA
-                update_ema(ema, model.module, optimizer=optimizer)
+                update_ema(ema, model.module, optimizer=optimizer, decay=cfg.get("ema_decay", 0.9999))
 
                 # Log loss values:
                 all_reduce_mean(loss)
