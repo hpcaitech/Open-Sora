@@ -28,7 +28,7 @@ scheduler = dict(
     type="rflow",
     use_discrete_timesteps=False,
     use_timestep_transform=True,
-    num_sampling_steps=50,
+    num_sampling_steps=8,
     cfg_scale=4.5,
 )
 dtype = "bf16"

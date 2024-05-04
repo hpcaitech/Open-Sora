@@ -12,6 +12,7 @@ from opensora.models.layers.blocks import (
     MultiHeadCrossAttention,
     PatchEmbed3D,
     PositionEmbedding2D,
+    SizeEmbedder,
     T2IFinalLayer,
     TimestepEmbedder,
     approx_gelu,
@@ -191,7 +192,7 @@ class STDiT3(nn.Module):
         # embedding
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
-        # self.fps_embedder = SizeEmbedder(self.hidden_size)
+        self.fps_embedder = SizeEmbedder(self.hidden_size)
         self.t_block = nn.Sequential(
             nn.SiLU(),
             nn.Linear(hidden_size, 6 * hidden_size, bias=True),
@@ -246,6 +247,15 @@ class STDiT3(nn.Module):
         # final layer
         self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
 
+        self.initialize_weights()
+
+    def initialize_weights(self):
+        # Initialize fps_embedder
+        nn.init.normal_(self.fps.mlp[0].weight, std=0.02)
+        nn.init.constant_(self.fps.mlp[0].bias, 0)
+        nn.init.constant_(self.fps.mlp[2].weight, 0)
+        nn.init.constant_(self.fps.mlp[2].bias, 0)
+
     def get_dynamic_size(self, x):
         _, _, T, H, W = x.size()
         if T % self.patch_size[0] != 0:
@@ -260,7 +270,7 @@ class STDiT3(nn.Module):
         return (T, H, W)
 
     def forward(self, x, timestep, y, mask=None, x_mask=None, fps=None, height=None, width=None, **kwargs):
-        x.shape[0]
+        B = x.size(0)
         x = x.to(self.dtype)
         timestep = timestep.to(self.dtype)
         y = y.to(self.dtype)
@@ -272,18 +282,12 @@ class STDiT3(nn.Module):
         base_size = round(S**0.5)
         resolution_sq = (height[0].item() * width[0].item()) ** 0.5
         scale = resolution_sq / self.input_sq_size
-
-        # scale = 4.0 # [debug]
-        # base_size = 2048 // 8 // 2 # [debug]
-
         pos_emb = self.pos_embed(x, H, W, scale=scale, base_size=base_size)
 
         # === get timestep embed ===
         t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
-        # fps = self.fps_embedder(fps.unsqueeze(1), B)
-
-        # t = t + fps  # [debug]
-
+        fps = self.fps_embedder(fps.unsqueeze(1), B)
+        t = t + fps
         t_mlp = self.t_block(t)
         t0 = t0_mlp = None
         if x_mask is not None:

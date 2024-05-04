@@ -57,17 +57,14 @@ class RFLOW:
         if additional_args is not None:
             model_args.update(additional_args)
 
-        timesteps = [(1.0 - i / self.num_sampling_steps) * 1000.0 for i in range(self.num_sampling_steps)]
+        timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
 
         # convert float timesteps to most close int timesteps
         if self.use_discrete_timesteps:
             timesteps = [int(round(t)) for t in timesteps]
 
         if self.use_timestep_transform:
-            timesteps = [
-                timestep_transform(t, additional_args, scale=self.cfg_scale, num_timesteps=self.num_timesteps)
-                for t in timesteps
-            ]
+            timesteps = [timestep_transform(t, additional_args, num_timesteps=self.num_timesteps) for t in timesteps]
 
         progress_wrap = tqdm if progress else (lambda x: x)
         for i, t in progress_wrap(enumerate(timesteps)):
@@ -76,11 +73,8 @@ class RFLOW:
             pred_cond, pred_uncond = pred.chunk(2, dim=0)
             v_pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
 
-            dt = (
-                (timesteps[i] - timesteps[i + 1]) / self.num_timesteps
-                if i < len(timesteps) - 1
-                else 1 / self.num_timesteps
-            )
+            dt = timesteps[i] - timesteps[i + 1] if i < len(timesteps) - 1 else timesteps[i]
+            dt = dt / self.num_timesteps
             z = z + v_pred * dt
 
         return z
