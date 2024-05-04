@@ -47,7 +47,7 @@ torchrun --nproc_per_node 8 -m tools.scoring.aesthetic.inference \
 # 3.2 Merge files; This should output ${ROOT_META}/meta_clips_info_fmin1_aes.csv
 python -m tools.datasets.datautil ${ROOT_META}/meta_clips_info_fmin1_aes_part*.csv --output ${ROOT_META}/meta_clips_info_fmin1_aes.csv
 
-# 3.2 Filter by aesthetic scores. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.csv
+# 3.3 Filter by aesthetic scores. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.csv
 python -m tools.datasets.datautil ${ROOT_META}/meta_clips_info_fmin1_aes.csv --aesmin 5
 
 # 4.1 Generate caption. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5_caption_part*.csv
