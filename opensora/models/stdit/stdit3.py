@@ -251,10 +251,10 @@ class STDiT3(nn.Module):
 
     def initialize_weights(self):
         # Initialize fps_embedder
-        nn.init.normal_(self.fps.mlp[0].weight, std=0.02)
-        nn.init.constant_(self.fps.mlp[0].bias, 0)
-        nn.init.constant_(self.fps.mlp[2].weight, 0)
-        nn.init.constant_(self.fps.mlp[2].bias, 0)
+        nn.init.normal_(self.fps_embedder.mlp[0].weight, std=0.02)
+        nn.init.constant_(self.fps_embedder.mlp[0].bias, 0)
+        nn.init.constant_(self.fps_embedder.mlp[2].weight, 0)
+        nn.init.constant_(self.fps_embedder.mlp[2].bias, 0)
 
     def get_dynamic_size(self, x):
         _, _, T, H, W = x.size()

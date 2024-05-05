@@ -42,7 +42,7 @@ class VideoAutoencoderKL(nn.Module):
         x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
         return x
 
-    def decode(self, x):
+    def decode(self, x, **kwargs):
         # x: (B, C, T, H, W)
         B = x.shape[0]
         x = rearrange(x, "B C T H W -> (B T) C H W")
@@ -91,7 +91,7 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
     def encode(self, x):
         raise NotImplementedError
 
-    def decode(self, x):
+    def decode(self, x, **kwargs):
         B, _, T = x.shape[:3]
         x = rearrange(x, "B C T H W -> (B T) C H W")
         x = self.module.decode(x / 0.18215, num_frames=T).sample
@@ -118,10 +118,11 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
 
 @MODELS.register_module()
 class VideoAutoencoderPipeline(nn.Module):
-    def __init__(self, vae_2d=None, vae_temporal=None, freeze_vae_2d=False, from_pretrained=None):
+    def __init__(self, vae_2d=None, vae_temporal=None, freeze_vae_2d=False, from_pretrained=None, training=True):
         super().__init__()
         self.spatial_vae = build_module(vae_2d, MODELS)
         self.temporal_vae = build_module(vae_temporal, MODELS)
+        self.training = training
 
         if from_pretrained is not None:
             load_checkpoint(self, from_pretrained)
@@ -129,24 +130,29 @@ class VideoAutoencoderPipeline(nn.Module):
             for param in self.spatial_vae.parameters():
                 param.requires_grad = False
 
-    def encode(self, x, training=True):
+        self.out_channels = self.temporal_vae.out_channels
+        self.scale = 2.5  # make std = 1.0
+
+    def encode(self, x):
         x_z = self.spatial_vae.encode(x)
         posterior = self.temporal_vae.encode(x_z)
         z = posterior.sample()
-        if training:
+        if self.training:
             return z, posterior, x_z
-        return z
+        return z / self.scale
 
-    def decode(self, z, num_frames=None, training=True):
+    def decode(self, z, num_frames=None):
+        if not self.training:
+            z = z * self.scale
         x_z = self.temporal_vae.decode(z, num_frames=num_frames)
         x = self.spatial_vae.decode(x_z)
-        if training:
+        if self.training:
             return x, x_z
         return x
 
     def forward(self, x):
-        z, posterior, x_z = self.encode(x, training=True)
-        x_rec, x_z_rec = self.decode(z, num_frames=x_z.shape[2], training=True)
+        z, posterior, x_z = self.encode(x)
+        x_rec, x_z_rec = self.decode(z, num_frames=x_z.shape[2])
         return x_rec, x_z_rec, z, posterior, x_z
 
     def get_latent_size(self, input_size):
@@ -154,7 +160,7 @@ class VideoAutoencoderPipeline(nn.Module):
 
     def get_temporal_last_layer(self):
         return self.temporal_vae.decoder.conv_out.conv.weight
-    
+
     @property
     def device(self):
         return next(self.parameters()).device

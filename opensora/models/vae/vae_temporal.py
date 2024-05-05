@@ -341,6 +341,7 @@ class VAE_Temporal(nn.Module):
         self.time_downsample_factor = 2 ** sum(temporal_downsample)
         # self.time_padding = self.time_downsample_factor - 1
         self.patch_size = (self.time_downsample_factor, 1, 1)
+        self.out_channels = in_out_channels
 
         # NOTE: following MAGVIT, conv in bias=False in encoder first conv
         self.encoder = Encoder(
@@ -368,10 +369,17 @@ class VAE_Temporal(nn.Module):
         )
 
     def get_latent_size(self, input_size):
-        for i in range(len(input_size)):
-            assert input_size[i] % self.patch_size[i] == 0, "Input size must be divisible by patch size"
-        input_size = [input_size[i] // self.patch_size[i] for i in range(3)]
-        return input_size
+        latent_size = []
+        for i in range(3):
+            if input_size[i] is None:
+                lsize = None
+            elif i == 0:
+                time_padding = self.time_downsample_factor - input_size[i] % self.time_downsample_factor
+                lsize = (input_size[i] + time_padding) // self.patch_size[i]
+            else:
+                lsize = input_size[i] // self.patch_size[i]
+            latent_size.append(lsize)
+        return latent_size
 
     def encode(self, x):
         time_padding = self.time_downsample_factor - x.shape[2] % self.time_downsample_factor
@@ -396,7 +404,6 @@ class VAE_Temporal(nn.Module):
             z = posterior.mode()
         recon_video = self.decode(z, num_frames=x.shape[2])
         return recon_video, posterior, z
-    
 
 
 @MODELS.register_module("VAE_Temporal_SD")

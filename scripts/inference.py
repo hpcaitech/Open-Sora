@@ -157,7 +157,7 @@ def main():
                 additional_args=model_args,
                 progress=verbose >= 2,
             )
-            samples = vae.decode(samples.to(dtype))
+            samples = vae.decode(samples.to(dtype), num_frames=cfg.num_frames)
 
             # 4.4. save samples
             if not use_dist or coordinator.is_master():
