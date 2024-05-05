@@ -21,6 +21,7 @@ model = dict(
     type="VideoAutoencoderPipeline",
     freeze_vae_2d=True,
     from_pretrained=None,
+    cal_loss=True,
     vae_2d=dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",

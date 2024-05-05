@@ -48,7 +48,6 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderPipeline",
     from_pretrained="pretrained_models/vae-v1",
-    training=False,
     vae_2d=dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
