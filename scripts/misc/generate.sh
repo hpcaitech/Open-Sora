@@ -8,7 +8,7 @@ OUTPUT_PATH=/home/data/sora_data/pixart-sigma-generated/raw
 CMD="python scripts/inference.py configs/pixart/inference/1x2048MS.py"
 LOG_BASE=logs/sample/generate
 NUM_PER_GPU=10000
-N_LAUNCH=6
+N_LAUNCH=2
 NUM_START=$(($N_LAUNCH * $NUM_PER_GPU * 8))
 
 CUDA_VISIBLE_DEVICES=0 $CMD --prompt-path $TEXT_PATH --save-dir $OUTPUT_PATH --start-index $(($NUM_START + $NUM_PER_GPU * 0)) --end-index $(($NUM_START + $NUM_PER_GPU * 1)) --image-size 2048 2048 --verbose 1 --batch-size 2 >${LOG_BASE}_${N_LAUNCH}_1.log 2>&1 &

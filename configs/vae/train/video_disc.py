@@ -21,6 +21,7 @@ model = dict(
     type="VideoAutoencoderPipeline",
     freeze_vae_2d=False,
     from_pretrained=None,
+    cal_loss=True,
     vae_2d=dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
@@ -37,18 +38,18 @@ discriminator = dict(
     type="NLayerDiscriminator",
     from_pretrained="/home/shenchenhui/opensoraplan-v1.0.0-discriminator.pt",
     input_nc=3,
-    n_layers=3, 
+    n_layers=3,
     use_actnorm=False,
 )
 
 # discriminator hyper-parames TODO
-discriminator_factor=1
-discriminator_start=-1
-generator_factor=0.5
-generator_loss_type="hinge"
-discriminator_loss_type="hinge"
-lecam_loss_weight=None
-gradient_penalty_loss_weight=None
+discriminator_factor = 1
+discriminator_start = -1
+generator_factor = 0.5
+generator_loss_type = "hinge"
+discriminator_loss_type = "hinge"
+lecam_loss_weight = None
+gradient_penalty_loss_weight = None
 
 # loss weights
 perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
