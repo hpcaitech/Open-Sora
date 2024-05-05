@@ -145,7 +145,7 @@ def read_from_path(path, image_size, transform_name="center"):
         return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
 
 
-def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1), force_video=False, verbose=True):
+def save_sample(x, save_path=None, fps=8, normalize=True, value_range=(-1, 1), force_video=False, verbose=True):
     """
     Args:
         x (Tensor): shape [C, T, H, W]
