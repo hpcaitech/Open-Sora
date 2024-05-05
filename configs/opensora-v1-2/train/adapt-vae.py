@@ -7,7 +7,7 @@ bucket_config = {
     "144p": {1: (1.0, 64)},
     # ---
     "256": {1: (0.5, 48)},
-    "240p": {1: (0.5, 48)},
+    "240p": {1: (0.5, 48), 16: (1.0, 8)},
     # ---
     "360p": {1: (0.5, 18)},
     "512": {1: (0.5, 18)},
@@ -38,16 +38,10 @@ model = dict(
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
-# vae = dict(
-#     type="VideoAutoencoderKL",
-#     micro_batch_size=4,
-#     from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-#     subfolder="vae",
-#     local_files_only=True,
-# )
 vae = dict(
     type="VideoAutoencoderPipeline",
-    from_pretrained="pretrained_models/vae-v1",
+    from_pretrained="pretrained_models/vae-v2",
+    micro_frame_size=16,
     vae_2d=dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
