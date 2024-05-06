@@ -25,6 +25,7 @@ def parse_args(training=False):
     parser.add_argument("--seed", default=42, type=int, help="generation seed")
     parser.add_argument("--ckpt-path", type=str, help="path to model ckpt; will overwrite cfg.ckpt_path if specified")
     parser.add_argument("--batch-size", default=None, type=int, help="batch size")
+    parser.add_argument("--outputs", default=None, type=str, help="the dir to save model weights")
 
     # ======================================================
     # Inference
@@ -37,7 +38,9 @@ def parse_args(training=False):
         parser.add_argument("--end-index", default=None, type=int, help="end index for sample name")
         parser.add_argument("--num-sample", default=None, type=int, help="number of samples to generate for one prompt")
         parser.add_argument("--prompt-as-path", action="store_true", help="use prompt as path to save samples")
+        parser.add_argument("--verbose", default=None, type=int, help="verbose level")
 
+        parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
         parser.add_argument("--prompt", default=None, type=str, nargs="+", help="prompt list")
@@ -60,6 +63,7 @@ def parse_args(training=False):
     # Training
     # ======================================================
     else:
+        parser.add_argument("--lr", default=None, type=float, help="learning rate")
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
         parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
@@ -71,10 +75,16 @@ def parse_args(training=False):
 def merge_args(cfg, args, training=False):
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
+        if cfg.get("discriminator") is not None:
+            cfg.discriminator["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
-    if training and args.data_path is not None:
+    if args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
+    if not training and args.image_size is not None and "dataset" in cfg:
+        cfg.dataset["image_size"] = args.image_size
+    if not training and args.num_frames is not None and "dataset" in cfg:
+        cfg.dataset["num_frames"] = args.num_frames
     if not training and args.cfg_scale is not None:
         cfg.scheduler["cfg_scale"] = args.cfg_scale
         args.cfg_scale = None
@@ -103,14 +113,14 @@ def merge_args(cfg, args, training=False):
             cfg["prompt_as_path"] = False
         # - Prompt handling
         if "prompt" not in cfg or cfg["prompt"] is None:
-            assert cfg["prompt_path"] is not None, "prompt or prompt_path must be provided"
-            cfg["prompt"] = load_prompts(cfg["prompt_path"])
-        if args.start_index is not None and args.end_index is not None:
-            cfg["prompt"] = cfg["prompt"][args.start_index : args.end_index]
-        elif args.start_index is not None:
-            cfg["prompt"] = cfg["prompt"][args.start_index :]
-        elif args.end_index is not None:
-            cfg["prompt"] = cfg["prompt"][: args.end_index]
+            if ("prompt" not in cfg or cfg["prompt"] is None) and cfg.get("prompt_path", None) is not None:
+                cfg["prompt"] = load_prompts(cfg["prompt_path"])
+            if args.start_index is not None and args.end_index is not None:
+                cfg["prompt"] = cfg["prompt"][args.start_index : args.end_index]
+            elif args.start_index is not None:
+                cfg["prompt"] = cfg["prompt"][args.start_index :]
+            elif args.end_index is not None:
+                cfg["prompt"] = cfg["prompt"][: args.end_index]
     else:
         # Training only
         # - Allow not set
@@ -139,7 +149,7 @@ def parse_configs(training=False):
     return cfg
 
 
-def create_experiment_workspace(cfg):
+def create_experiment_workspace(cfg, get_last_workspace=False):
     """
     This function creates a folder for experiment tracking.
 
@@ -152,6 +162,8 @@ def create_experiment_workspace(cfg):
     # Make outputs folder (holds all experiment subfolders)
     os.makedirs(cfg.outputs, exist_ok=True)
     experiment_index = len(glob(f"{cfg.outputs}/*"))
+    if get_last_workspace:
+        experiment_index -= 1
 
     # Create an experiment folder
     model_name = cfg.model["type"].replace("/", "-")

@@ -32,10 +32,14 @@ pretrained_models = {
     "OpenSora-v1-16x256x256.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-16x256x256.pth",
     "OpenSora-v1-HQ-16x256x256.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x256x256.pth",
     "OpenSora-v1-HQ-16x512x512.pth": hf_endpoint + "/hpcai-tech/Open-Sora/resolve/main/OpenSora-v1-HQ-16x512x512.pth",
-    "PixArt-Sigma-XL-2-256x256.pth": hf_endpoint + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-256x256.pth",
-    "PixArt-Sigma-XL-2-512-MS.pth": hf_endpoint + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-512-MS.pth",
-    "PixArt-Sigma-XL-2-1024-MS.pth": hf_endpoint + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-1024-MS.pth",
-    "PixArt-Sigma-XL-2-2K-MS.pth": hf_endpoint+ "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-2K-MS.pth",
+    "PixArt-Sigma-XL-2-256x256.pth": hf_endpoint
+    + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-256x256.pth",
+    "PixArt-Sigma-XL-2-512-MS.pth": hf_endpoint
+    + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-512-MS.pth",
+    "PixArt-Sigma-XL-2-1024-MS.pth": hf_endpoint
+    + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-1024-MS.pth",
+    "PixArt-Sigma-XL-2-2K-MS.pth": hf_endpoint + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-2K-MS.pth",
+    # "PixArt-1B-2.pth": "PixArt-1B-2.pth",
 }
 
 
@@ -51,11 +55,26 @@ def reparameter(ckpt, name=None, model=None):
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
         del ckpt["temp_embed"]
-    if name in ["PixArt-XL-2-256x256.pth", "PixArt-XL-2-SAM-256x256.pth", "PixArt-XL-2-512x512.pth", "PixArt-Sigma-XL-2-256x256.pth", "PixArt-Sigma-XL-2-512-MS.pth", "PixArt-Sigma-XL-2-1024-MS.pth", "PixArt-Sigma-XL-2-2K-MS.pth"]:
+    if name in [
+        "PixArt-XL-2-256x256.pth",
+        "PixArt-XL-2-SAM-256x256.pth",
+        "PixArt-XL-2-512x512.pth",
+        "PixArt-XL-2-1024-MS.pth",
+        "PixArt-Sigma-XL-2-256x256.pth",
+        "PixArt-Sigma-XL-2-512-MS.pth",
+        "PixArt-Sigma-XL-2-1024-MS.pth",
+        "PixArt-Sigma-XL-2-2K-MS.pth",
+    ]:
         ckpt = ckpt["state_dict"]
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         if "pos_embed" in ckpt:
             del ckpt["pos_embed"]
+
+    if name in ["PixArt-1B-2.pth",]:
+        ckpt = ckpt["state_dict"]
+        if "pos_embed" in ckpt:
+            del ckpt["pos_embed"]
+
     # no need pos_embed
     if "pos_embed_temporal" in ckpt:
         del ckpt["pos_embed_temporal"]
@@ -76,6 +95,13 @@ def reparameter(ckpt, name=None, model=None):
                 f"Shrink y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
             )
             ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
+    # stdit3 special case
+    if type(model).__name__ == "STDiT3" and "PixArt-Sigma" in name:
+        ckpt_keys = list(ckpt.keys())
+        for key in ckpt_keys:
+            if "blocks." in key:
+                ckpt[key.replace("blocks.", "spatial_blocks.")] = ckpt[key]
+                del ckpt[key]
 
     return ckpt
 
@@ -115,9 +141,9 @@ def download_model(model_name=None, local_path=None, url=None):
     return model
 
 
-def load_from_sharded_state_dict(model, ckpt_path):
+def load_from_sharded_state_dict(model, ckpt_path, model_name="model"):
     ckpt_io = GeneralCheckpointIO()
-    ckpt_io.load_model(model, os.path.join(ckpt_path, "model"))
+    ckpt_io.load_model(model, os.path.join(ckpt_path, model_name))
 
 
 def model_sharding(model: torch.nn.Module):
@@ -263,16 +289,17 @@ def create_logger(logging_dir):
     return logger
 
 
-def load_checkpoint(model, ckpt_path, save_as_pt=False):
+def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model"):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path, model=model)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
         print(f"Missing keys: {missing_keys}")
         print(f"Unexpected keys: {unexpected_keys}")
     elif os.path.isdir(ckpt_path):
-        load_from_sharded_state_dict(model, ckpt_path)
+        load_from_sharded_state_dict(model, ckpt_path, model_name)
+        print(f"Model checkpoint loaded from {ckpt_path}")
         if save_as_pt:
-            save_path = os.path.join(ckpt_path, "model_ckpt.pt")
+            save_path = os.path.join(ckpt_path, model_name + "_ckpt.pt")
             torch.save(model.state_dict(), save_path)
             print(f"Model checkpoint saved to {save_path}")
     else:

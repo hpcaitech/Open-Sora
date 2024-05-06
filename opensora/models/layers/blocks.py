@@ -128,6 +128,7 @@ class PatchEmbed3D(nn.Module):
             x = x.flatten(2).transpose(1, 2)  # BCTHW -> BNC
         return x
 
+
 class Attention(nn.Module):
     def __init__(
         self,
@@ -228,11 +229,10 @@ class KVCompressAttention(nn.Module):
         proj_drop: float = 0.0,
         norm_layer: nn.Module = LlamaRMSNorm,
         enable_flashattn: bool = False,
-        rope=None,
         sampling="conv",
         sr_ratio=1,
         mem_eff_attention=False,
-        attn_half=False
+        attn_half=False,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -246,10 +246,10 @@ class KVCompressAttention(nn.Module):
 
         self.sr_ratio = sr_ratio
         self.sampling = sampling
-        if sr_ratio > 1 and sampling == 'conv':
+        if sr_ratio > 1 and sampling == "conv":
             # Avg Conv Init.
             self.sr = nn.Conv2d(dim, dim, groups=dim, kernel_size=sr_ratio, stride=sr_ratio)
-            self.sr.weight.data.fill_(1 / sr_ratio ** 2)
+            self.sr.weight.data.fill_(1 / sr_ratio**2)
             self.sr.bias.data.zero_()
             self.norm = nn.LayerNorm(dim)
 
@@ -259,11 +259,6 @@ class KVCompressAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-        self.rope = False
-        if rope is not None:
-            self.rope = True
-            self.rotary_emb = rope
-
         self.mem_eff_attention = mem_eff_attention
         self.attn_half = attn_half
 
@@ -272,20 +267,18 @@ class KVCompressAttention(nn.Module):
             return tensor
         B, N, C = tensor.shape
 
-        if sampling == 'uniform_every':
+        if sampling == "uniform_every":
             return tensor[:, ::scale_factor], int(N // scale_factor)
 
         tensor = tensor.reshape(B, H, W, C).permute(0, 3, 1, 2)
         new_H, new_W = int(H / scale_factor), int(W / scale_factor)
         new_N = new_H * new_W
 
-        if sampling == 'ave':
-            tensor = F.interpolate(
-                tensor, scale_factor=1 / scale_factor, mode='nearest'
-            ).permute(0, 2, 3, 1)
-        elif sampling == 'uniform':
+        if sampling == "ave":
+            tensor = F.interpolate(tensor, scale_factor=1 / scale_factor, mode="nearest").permute(0, 2, 3, 1)
+        elif sampling == "uniform":
             tensor = tensor[:, :, ::scale_factor, ::scale_factor].permute(0, 2, 3, 1)
-        elif sampling == 'conv':
+        elif sampling == "conv":
             tensor = self.sr(tensor).reshape(B, C, -1).permute(0, 2, 1)
             tensor = self.norm(tensor)
         else:
@@ -295,41 +288,28 @@ class KVCompressAttention(nn.Module):
 
     def forward(self, x: torch.Tensor, mask=None, HW=None, block_id=None, **kwargs) -> torch.Tensor:
         B, N, C = x.shape
-
         new_N = N
-        if HW is None:
-            H = W = int(N ** 0.5)
-        else:
-            H, W = HW
-
+        H, W = HW
         # flash attn is not memory efficient for small sequences, this is empirical
         enable_flashattn = self.enable_flashattn and (N > B)
-        qkv = self.qkv(x)
-        qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
 
-        qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv.unbind(0)
-        # WARNING: this may be a bug
-        if self.rope:
-            q = self.rotary_emb(q)
-            k = self.rotary_emb(k)
-        q, k = self.q_norm(q), self.k_norm(k)
-
+        qkv = self.qkv(x).reshape(B, N, 3, C)
+        q, k, v = qkv.unbind(2)
+        dtype = q.dtype
+        # KV compression
         if self.sr_ratio > 1:
             k, new_N = self.downsample_2d(k, H, W, self.sr_ratio, sampling=self.sampling)
             v, new_N = self.downsample_2d(v, H, W, self.sr_ratio, sampling=self.sampling)
 
-            q = q.reshape(B, N, self.num_heads, C // self.num_heads)
-            k = k.reshape(B, new_N, self.num_heads, C // self.num_heads)
-            v = v.reshape(B, new_N, self.num_heads, C // self.num_heads)
+        q = q.reshape(B, N, self.num_heads, C // self.num_heads).to(dtype)
+        k = k.reshape(B, new_N, self.num_heads, C // self.num_heads).to(dtype)
+        v = v.reshape(B, new_N, self.num_heads, C // self.num_heads).to(dtype)
+
+        q, k = self.q_norm(q), self.k_norm(k)
 
         if enable_flashattn:
             from flash_attn import flash_attn_func
 
-            # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
-            q = q.permute(0, 2, 1, 3)
-            k = k.permute(0, 2, 1, 3)
-            v = v.permute(0, 2, 1, 3)
             x = flash_attn_func(
                 q,
                 k,
@@ -342,10 +322,13 @@ class KVCompressAttention(nn.Module):
             attn_bias = None
             if mask is not None:
                 attn_bias = torch.zeros([B * self.num_heads, q.shape[1], k.shape[1]], dtype=q.dtype, device=q.device)
-                attn_bias.masked_fill_(mask.squeeze(1).repeat(self.num_heads, 1, 1) == 0, float('-inf'))
+                attn_bias.masked_fill_(mask.squeeze(1).repeat(self.num_heads, 1, 1) == 0, float("-inf"))
             x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
-
         else:
+            # (B, N, #heads, #dim) -> (B, #heads, N, #dim)
+            q = q.permute(0, 2, 1, 3)
+            k = k.permute(0, 2, 1, 3)
+            v = v.permute(0, 2, 1, 3)
             dtype = q.dtype
             q = q * self.scale
             attn = q @ k.transpose(-2, -1)  # translate attn to float32

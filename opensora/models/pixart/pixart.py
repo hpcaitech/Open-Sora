@@ -64,9 +64,6 @@ class PixArtBlock(nn.Module):
         enable_flashattn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
-        qk_norm=False,
-        sampling="conv",
-        sr_ratio=1
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -86,9 +83,6 @@ class PixArtBlock(nn.Module):
             num_heads=num_heads,
             qkv_bias=True,
             enable_flashattn=enable_flashattn,
-            qk_norm=qk_norm,
-            sr_ratio=sr_ratio,
-            sampling=sampling,
         )
         self.cross_attn = self.mha_cls(hidden_size, num_heads)
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -97,8 +91,6 @@ class PixArtBlock(nn.Module):
         )
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
-        self.sampling = sampling
-        self.sr_ratio = sr_ratio
 
     def forward(self, x, y, t, mask=None):
         B, N, C = x.shape
@@ -136,13 +128,12 @@ class PixArt(nn.Module):
         model_max_length=120,
         dtype=torch.float32,
         freeze=None,
-        qk_norm=False,
         space_scale=1.0,
         time_scale=1.0,
         enable_flashattn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
-        kv_compress_config=None,
+        base_size=None,
     ):
         super().__init__()
         assert enable_sequence_parallelism is False, "Sequence parallelism is not supported in this version."
@@ -156,7 +147,10 @@ class PixArt(nn.Module):
         self.num_patches = num_patches
         self.num_temporal = input_size[0] // patch_size[0]
         self.num_spatial = num_patches // self.num_temporal
-        self.base_size = int(np.sqrt(self.num_spatial))
+        if base_size is None:
+            self.base_size = int(np.sqrt(self.num_spatial))
+        else:
+            self.base_size = base_size // patch_size[1]
         self.num_heads = num_heads
         self.dtype = dtype
         self.no_temporal_pos_emb = no_temporal_pos_emb
@@ -182,15 +176,6 @@ class PixArt(nn.Module):
         self.register_buffer("pos_embed_temporal", self.get_temporal_pos_embed())
 
         drop_path = [x.item() for x in torch.linspace(0, drop_path, depth)]  # stochastic depth decay rule
-
-        self.kv_compress_config = kv_compress_config
-        if kv_compress_config is None:
-            self.kv_compress_config = {
-                'sampling': None,
-                'scale_factor': 1,
-                'kv_compress_layer': [],
-            }
-
         self.blocks = nn.ModuleList(
             [
                 PixArtBlock(
@@ -200,10 +185,6 @@ class PixArt(nn.Module):
                     drop_path=drop_path[i],
                     enable_flashattn=enable_flashattn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
-                    qk_norm=qk_norm,
-                    sr_ratio=int(
-                    self.kv_compress_config['scale_factor']) if i in self.kv_compress_config['kv_compress_layer'] else 1,
-                    sampling=self.kv_compress_config['sampling'],
                 )
                 for i in range(depth)
             ]
@@ -216,7 +197,7 @@ class PixArt(nn.Module):
             if freeze == "text":
                 self.freeze_text()
 
-    def forward(self, x, timestep, y, mask=None, **kwargs):
+    def forward(self, x, timestep, y, mask=None):
         """
         Forward pass of PixArt.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
@@ -341,24 +322,19 @@ class PixArtMS(PixArt):
         self.csize_embedder = SizeEmbedder(self.hidden_size // 3)
         self.ar_embedder = SizeEmbedder(self.hidden_size // 3)
 
-    def forward(self, x, timestep, y, mask=None, height=None, width=None, ar=None, **kwargs):
+    def forward(self, x, timestep, y, mask=None, data_info=None):
         """
         Forward pass of PixArt.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
         t: (N,) tensor of diffusion timesteps
         y: (N, 1, 120, C) tensor of class labels
         """
-        B = x.shape[0]
         x = x.to(self.dtype)
         timestep = timestep.to(self.dtype)
         y = y.to(self.dtype)
 
-        hw = torch.cat([height[:, None], width[:, None]], dim=1)
-        # 2. get aspect ratio
-        ar = ar.unsqueeze(1)
-
-        c_size = hw
-        ar = ar
+        c_size = data_info["hw"]
+        ar = data_info["ar"]
         pos_embed = self.get_spatial_pos_embed((x.shape[-2], x.shape[-1])).to(x.dtype)
 
         # embedding
@@ -406,6 +382,14 @@ class PixArtMS(PixArt):
 @MODELS.register_module("PixArt-XL/2")
 def PixArt_XL_2(from_pretrained=None, **kwargs):
     model = PixArt(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+
+
+@MODELS.register_module("PixArt-1B/2")
+def PixArt_1B_2(from_pretrained=None, **kwargs):
+    model = PixArt(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model

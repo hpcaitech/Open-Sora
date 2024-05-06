@@ -217,7 +217,7 @@ def main():
     # ======================================================
     # 4. inference
     # ======================================================
-    sample_idx = 0
+    sample_idx = cfg.get("start_index", 0)
     if cfg.sample_name is not None:
         sample_name = cfg.sample_name
     elif cfg.prompt_as_path:

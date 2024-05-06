@@ -45,6 +45,8 @@ class MaskGenerator:
             "mask_image_head",
             "mask_image_tail",
             "mask_image_head_tail",
+            "mask_random",
+            "mask_intepolate",
         ]
         assert all(
             mask_name in valid_mask_names for mask_name in mask_ratios.keys()
@@ -56,6 +58,8 @@ class MaskGenerator:
             mask_ratio <= 1 for mask_ratio in mask_ratios.values()
         ), f"mask_ratio should be less than or equal to 1, got {mask_ratios.values()}"
         # sum of mask_ratios should be 1
+        if "mask_no" not in mask_ratios:
+            mask_ratios["mask_no"] = 1.0 - sum(mask_ratios.values())
         assert math.isclose(
             sum(mask_ratios.values()), 1.0, abs_tol=1e-6
         ), f"sum of mask_ratios should be 1, got {sum(mask_ratios.values())}"
@@ -108,6 +112,12 @@ class MaskGenerator:
             random_size = 1
             mask[:random_size] = 0
             mask[-random_size:] = 0
+        elif mask_name == "mask_intepolate":
+            random_start = random.randint(0, 1)
+            mask[random_start::2] = 0
+        elif mask_name == "mask_random":
+            mask_ratio = random.uniform(0.3, 0.7)
+            mask = torch.rand(num_frames, device=x.device) > mask_ratio
 
         return mask
 
