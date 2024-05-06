@@ -4,32 +4,32 @@ dataset = dict(
     transform_name="resize_crop",
     frame_interval=1,
 )
-bucket_config = {
+bucket_config = {  # 12s/it
     "144p": {1: (1.0, 100)},
-    # # ---
+    # ---
     "256": {1: (0.5, 100)},
     "240p": {1: (0.5, 100)},
-    # # ---
+    # ---
     "360p": {1: (0.5, 60)},
     "512": {1: (0.5, 60)},
-    # # ---
+    # ---
     "480p": {1: (0.5, 40)},
-    # # ---
+    # ---
     "720p": {1: (0.2, 20)},
     "1024": {1: (0.1, 20)},
-    # # ---
+    # ---
     "1080p": {1: (0.1, 10)},
     # ---
     "2048": {1: (0.1, 5)},
 }
 grad_checkpoint = True
+batch_size = None
 
 # Acceleration settings
-num_workers = 4
+num_workers = 8
 num_bucket_build_workers = 16
 dtype = "bf16"
 plugin = "zero2"
-sp_size = 1
 
 # Model settings
 model = dict(
@@ -79,7 +79,6 @@ ckpt_every = 500
 
 # optimization settings
 load = None
-batch_size = None
 grad_clip = 1.0
 lr = 1e-4
 ema_decay = 0.99
