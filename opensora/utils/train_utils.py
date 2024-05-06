@@ -118,6 +118,9 @@ class MaskGenerator:
         elif mask_name == "mask_random":
             mask_ratio = random.uniform(0.3, 0.7)
             mask = torch.rand(num_frames, device=x.device) > mask_ratio
+            # if mask is all False, set the last frame to True
+            if not mask.any():
+                mask[-1] = 1
 
         return mask
 
