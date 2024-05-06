@@ -191,7 +191,7 @@ class VideoAutoencoderPipeline(nn.Module):
         return x_rec, x_z_rec, z, posterior, x_z
 
     def get_latent_size(self, input_size):
-        if self.micro_frame_size is None:
+        if self.micro_frame_size is None or input_size[0] is None:
             return self.temporal_vae.get_latent_size(self.spatial_vae.get_latent_size(input_size))
         else:
             sub_input_size = [self.micro_frame_size, input_size[1], input_size[2]]

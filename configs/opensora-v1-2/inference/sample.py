@@ -1,7 +1,6 @@
 num_frames = 1
 fps = 1
 image_size = (2560, 1536)
-# image_size = (2048, 2048)
 multi_resolution = "STDiT2"
 
 model = dict(
@@ -11,13 +10,6 @@ model = dict(
     enable_flashattn=True,
     enable_layernorm_kernel=True,
 )
-# vae = dict(
-#     type="VideoAutoencoderKL",
-#     micro_batch_size=4,
-#     from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-#     subfolder="vae",
-#     local_files_only=True,
-# )
 vae = dict(
     type="VideoAutoencoderPipeline",
     from_pretrained="pretrained_models/vae-v1",
