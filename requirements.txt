@@ -7,7 +7,7 @@ mmengine
 pandas
 pre-commit
 pyarrow
-pyav
+av
 tensorboard
 timm
 tqdm
