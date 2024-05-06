@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 from einops import rearrange
 from rotary_embedding_torch import RotaryEmbedding
@@ -8,16 +7,12 @@ from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
-from opensora.acceleration.communications import gather_forward_split_backward, split_forward_gather_backward
-from opensora.acceleration.parallel_states import get_sequence_parallel_group
 from opensora.models.layers.blocks import (
     Attention,
     CaptionEmbedder,
     MultiHeadCrossAttention,
     PatchEmbed3D,
     PositionEmbedding2D,
-    SeqParallelAttention,
-    SeqParallelMultiHeadCrossAttention,
     SizeEmbedder,
     T2IFinalLayer,
     TimestepEmbedder,
@@ -27,7 +22,7 @@ from opensora.models.layers.blocks import (
     t2i_modulate,
 )
 from opensora.registry import MODELS
-from opensora.utils.ckpt_utils import load_checkpoint
+from transformers import PretrainedConfig, PreTrainedModel
 
 
 class STDiT2Block(nn.Module):
@@ -37,7 +32,7 @@ class STDiT2Block(nn.Module):
         num_heads,
         mlp_ratio=4.0,
         drop_path=0.0,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
         rope=None,
@@ -45,30 +40,22 @@ class STDiT2Block(nn.Module):
     ):
         super().__init__()
         self.hidden_size = hidden_size
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self._enable_sequence_parallelism = enable_sequence_parallelism
-
-        assert not self._enable_sequence_parallelism, "Sequence parallelism is not supported."
-        if enable_sequence_parallelism:
-            self.attn_cls = SeqParallelAttention
-            self.mha_cls = SeqParallelMultiHeadCrossAttention
-        else:
-            self.attn_cls = Attention
-            self.mha_cls = MultiHeadCrossAttention
 
         # spatial branch
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
-        self.attn = self.attn_cls(
+        self.attn = Attention(
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flash_attn,
             qk_norm=qk_norm,
         )
         self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
 
         # cross attn
-        self.cross_attn = self.mha_cls(hidden_size, num_heads)
+        self.cross_attn = MultiHeadCrossAttention(hidden_size, num_heads)
 
         # mlp branch
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -79,11 +66,11 @@ class STDiT2Block(nn.Module):
 
         # temporal branch
         self.norm_temp = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)  # new
-        self.attn_temp = self.attn_cls(
+        self.attn_temp = Attention(
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=self.enable_flashattn,
+            enable_flash_attn=self.enable_flash_attn,
             rope=rope,
             qk_norm=qk_norm,
         )
@@ -174,8 +161,10 @@ class STDiT2Block(nn.Module):
         return x
 
 
-@MODELS.register_module()
-class STDiT2(nn.Module):
+class STDiT2Config(PretrainedConfig):
+    
+    model_type = "STDiT2"
+
     def __init__(
         self,
         input_size=(None, None, None),
@@ -192,45 +181,73 @@ class STDiT2(nn.Module):
         no_temporal_pos_emb=False,
         caption_channels=4096,
         model_max_length=120,
-        dtype=torch.float32,
         freeze=None,
         qk_norm=False,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
-        enable_sequence_parallelism=False,
+        **kwargs,
     ):
-        super().__init__()
-        self.pred_sigma = pred_sigma
-        self.in_channels = in_channels
-        self.out_channels = in_channels * 2 if pred_sigma else in_channels
-        self.hidden_size = hidden_size
-        self.num_heads = num_heads
-        self.dtype = dtype
-        self.no_temporal_pos_emb = no_temporal_pos_emb
-        self.depth = depth
-        self.mlp_ratio = mlp_ratio
-        self.enable_flashattn = enable_flashattn
-        self.enable_layernorm_kernel = enable_layernorm_kernel
-
-        # support dynamic input
-        self.patch_size = patch_size
         self.input_size = input_size
         self.input_sq_size = input_sq_size
-        self.pos_embed = PositionEmbedding2D(hidden_size)
+        self.in_channels = in_channels
+        self.patch_size = patch_size
+        self.hidden_size = hidden_size
+        self.depth = depth
+        self.num_heads = num_heads
+        self.mlp_ratio = mlp_ratio
+        self.class_dropout_prob = class_dropout_prob
+        self.pred_sigma = pred_sigma
+        self.drop_path = drop_path
+        self.no_temporal_pos_emb = no_temporal_pos_emb
+        self.caption_channels = caption_channels
+        self.model_max_length = model_max_length
+        self.freeze = freeze
+        self.qk_norm = qk_norm
+        self.enable_flash_attn = enable_flash_attn
+        self.enable_layernorm_kernel = enable_layernorm_kernel
+        super().__init__(**kwargs)
 
-        self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
-        self.t_embedder = TimestepEmbedder(hidden_size)
-        self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True))
-        self.t_block_temp = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 3 * hidden_size, bias=True))  # new
+
+@MODELS.register_module()
+class STDiT2(PreTrainedModel):
+
+    config_class = STDiT2Config
+
+    def __init__(
+        self,
+        config
+    ):
+        super().__init__(config)
+        self.pred_sigma = config.pred_sigma
+        self.in_channels = config.in_channels
+        self.out_channels = config.in_channels * 2 if config.pred_sigma else config.in_channels
+        self.hidden_size = config.hidden_size
+        self.num_heads = config.num_heads
+        self.no_temporal_pos_emb = config.no_temporal_pos_emb
+        self.depth = config.depth
+        self.mlp_ratio = config.mlp_ratio
+        self.enable_flash_attn = config.enable_flash_attn
+        self.enable_layernorm_kernel = config.enable_layernorm_kernel
+
+        # support dynamic input
+        self.patch_size = config.patch_size
+        self.input_size = config.input_size
+        self.input_sq_size = config.input_sq_size
+        self.pos_embed = PositionEmbedding2D(config.hidden_size)
+
+        self.x_embedder = PatchEmbed3D(config.patch_size, config.in_channels, config.hidden_size)
+        self.t_embedder = TimestepEmbedder(config.hidden_size)
+        self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(config.hidden_size, 6 * config.hidden_size, bias=True))
+        self.t_block_temp = nn.Sequential(nn.SiLU(), nn.Linear(config.hidden_size, 3 * config.hidden_size, bias=True))  # new
         self.y_embedder = CaptionEmbedder(
-            in_channels=caption_channels,
-            hidden_size=hidden_size,
-            uncond_prob=class_dropout_prob,
+            in_channels=config.caption_channels,
+            hidden_size=config.hidden_size,
+            uncond_prob=config.class_dropout_prob,
             act_layer=approx_gelu,
-            token_num=model_max_length,
+            token_num=config.model_max_length,
         )
 
-        drop_path = [x.item() for x in torch.linspace(0, drop_path, depth)]
+        drop_path = [x.item() for x in torch.linspace(0, config.drop_path, config.depth)]
         self.rope = RotaryEmbedding(dim=self.hidden_size // self.num_heads)  # new
         self.blocks = nn.ModuleList(
             [
@@ -239,16 +256,15 @@ class STDiT2(nn.Module):
                     self.num_heads,
                     mlp_ratio=self.mlp_ratio,
                     drop_path=drop_path[i],
-                    enable_flashattn=self.enable_flashattn,
+                    enable_flash_attn=self.enable_flash_attn,
                     enable_layernorm_kernel=self.enable_layernorm_kernel,
-                    enable_sequence_parallelism=enable_sequence_parallelism,
                     rope=self.rope.rotate_queries_or_keys,
-                    qk_norm=qk_norm,
+                    qk_norm=config.qk_norm,
                 )
                 for i in range(self.depth)
             ]
         )
-        self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
+        self.final_layer = T2IFinalLayer(config.hidden_size, np.prod(self.patch_size), self.out_channels)
 
         # multi_res
         assert self.hidden_size % 3 == 0, "hidden_size must be divisible by 3"
@@ -260,19 +276,12 @@ class STDiT2(nn.Module):
         # init model
         self.initialize_weights()
         self.initialize_temporal()
-        if freeze is not None:
-            assert freeze in ["not_temporal", "text"]
-            if freeze == "not_temporal":
+        if config.freeze is not None:
+            assert config.freeze in ["not_temporal", "text"]
+            if config.freeze == "not_temporal":
                 self.freeze_not_temporal()
-            elif freeze == "text":
+            elif config.freeze == "text":
                 self.freeze_text()
-
-        # sequence parallel related configs
-        self.enable_sequence_parallelism = enable_sequence_parallelism
-        if enable_sequence_parallelism:
-            self.sp_rank = dist.get_rank(get_sequence_parallel_group())
-        else:
-            self.sp_rank = None
 
     def get_dynamic_size(self, x):
         _, _, T, H, W = x.size()
@@ -302,9 +311,10 @@ class STDiT2(nn.Module):
             x (torch.Tensor): output latent representation; of shape [B, C, T, H, W]
         """
         B = x.shape[0]
-        x = x.to(self.dtype)
-        timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
+        dtype = self.x_embedder.proj.weight.dtype
+        x = x.to(dtype)
+        timestep = timestep.to(dtype)
+        y = y.to(dtype)
 
         # === process data info ===
         # 1. get dynamic size
@@ -336,10 +346,6 @@ class STDiT2(nn.Module):
         x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
         x = x + pos_emb
         x = rearrange(x, "B T S C -> B (T S) C")
-
-        # shard over the sequence dim if sp is enabled
-        if self.enable_sequence_parallelism:
-            x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="down")
 
         # prepare adaIN
         t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
@@ -388,10 +394,7 @@ class STDiT2(nn.Module):
                 T,
                 S,
             )
-
-        if self.enable_sequence_parallelism:
-            x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="up")
-        # x.shape: [B, N, C]
+            # x.shape: [B, N, C]
 
         # final process
         x = self.final_layer(x, t, x_mask, t0_spc, T, S)  # [B, N, C=T_p * H_p * W_p * C_out]
@@ -498,7 +501,14 @@ class STDiT2(nn.Module):
 
 @MODELS.register_module("STDiT2-XL/2")
 def STDiT2_XL_2(from_pretrained=None, **kwargs):
-    model = STDiT2(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
+        model = STDiT2.from_pretrained(from_pretrained, **kwargs)
+    else:
+        config = STDiT2Config(
+            depth=28,
+            hidden_size=1152,
+            patch_size=(1, 2, 2),
+            num_heads=16, **kwargs
+        )
+        model = STDiT2(config)
     return model
