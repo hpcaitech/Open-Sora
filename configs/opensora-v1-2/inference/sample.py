@@ -1,7 +1,14 @@
-num_frames = 1
-fps = 1
-image_size = (2560, 1536)
+image_size = (240, 426)
+num_frames = 34
+fps = 30
+frame_interval = 1
+
+prompt_path = "./assets/texts/t2v_samples.txt"
+save_dir = "./samples/samples/"
+seed = 42
+batch_size = 1
 multi_resolution = "STDiT2"
+dtype = "bf16"
 
 model = dict(
     type="STDiT3-XL/2",
@@ -12,7 +19,8 @@ model = dict(
 )
 vae = dict(
     type="VideoAutoencoderPipeline",
-    from_pretrained="pretrained_models/vae-v1",
+    from_pretrained="pretrained_models/vae-v2",
+    micro_frame_size=17,
     vae_2d=dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
@@ -38,10 +46,3 @@ scheduler = dict(
     num_sampling_steps=30,
     cfg_scale=4.5,
 )
-dtype = "bf16"
-
-# Others
-batch_size = 1
-seed = 42
-prompt_path = "./assets/texts/t2i_sigma.txt"
-save_dir = "./samples/samples/"
