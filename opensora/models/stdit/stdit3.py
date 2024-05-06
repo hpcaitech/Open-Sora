@@ -166,6 +166,7 @@ class STDiT3(nn.Module):
         enable_flashattn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
+        only_train_temporal=False,
     ):
         super().__init__()
         self.pred_sigma = pred_sigma
@@ -249,6 +250,12 @@ class STDiT3(nn.Module):
         self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
 
         self.initialize_weights()
+        if only_train_temporal:
+            for param in self.parameters():
+                param.requires_grad = False
+            for block in self.temporal_blocks:
+                for param in block.parameters():
+                    param.requires_grad = True
 
     def initialize_weights(self):
         # Initialize transformer layers:

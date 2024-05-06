@@ -124,7 +124,7 @@ def main():
         set_data_parallel_group(dist.group.WORLD)
     elif cfg.plugin == "zero2-seq":
         plugin = ZeroSeqParallelPlugin(
-            sp_size=cfg.sp_size,
+            sp_size=cfg.get("sp_size", 1),
             stage=2,
             precision=cfg.dtype,
             initial_scale=2**16,

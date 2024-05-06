@@ -4,32 +4,30 @@ dataset = dict(
     transform_name="resize_crop",
     frame_interval=1,
 )
-bucket_config = {
-    "144p": {1: (1.0, 64)},
+bucket_config = {  # 2s/it
+    "144p": {1: (0.5, 48), 32: (1.0, 2), 48: (1.0, 4), 96: (1.0, 2), 192: (1.0, 1)},
     # ---
-    "256": {1: (0.5, 48), 48: (1.0, 2)},
-    "240p": {1: (0.5, 48), 48: (0.5, 2)},
+    "256": {1: (0.6, 20), 32: (0.5, 2), 48: (0.5, 1), 64: (0.5, 1), 128: (0.0, None)},
+    "240p": {1: (0.6, 20), 32: (0.5, 2), 48: (0.5, 1), 64: (0.5, 1), 128: (0.0, None)},
     # ---
-    "360p": {1: (0.5, 18)},
-    "512": {1: (0.5, 18)},
+    "360p": {1: (0.5, 8), 32: (0.2, 1), 96: (0.0, None)},
+    "512": {1: (0.5, 8), 32: (0.2, 1), 96: (0.0, None)},
     # ---
-    "480p": {1: (0.5, 8)},
+    "480p": {1: (0.2, 4), 16: (0.3, 1), 64: (0.0, None)},
     # ---
-    "720p": {1: (0.2, 4)},
-    "1024": {1: (0.2, 4)},
+    "720p": {1: (0.1, 2)},
+    "1024": {1: (0.1, 2)},
     # ---
-    "1080p": {1: (0.3, 2)},
-    # ---
-    "2048": {1: (0.3, 1)},
+    "1080p": {1: (0.1, 1)},
 }
-grad_checkpoint = False
+grad_checkpoint = False  # determine batch size
+batch_size = None
 
 # Acceleration settings
-num_workers = 4
+num_workers = 8
 num_bucket_build_workers = 16
 dtype = "bf16"
 plugin = "zero2"
-sp_size = 1
 
 # Model settings
 model = dict(
@@ -38,6 +36,7 @@ model = dict(
     qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
+    only_train_temporal=True,
 )
 vae = dict(
     type="VideoAutoencoderPipeline",
@@ -69,6 +68,20 @@ scheduler = dict(
     sample_method="logit-normal",
 )
 
+# Mask settings
+# mask_ratios = {
+#     "mask_random": 0.4,
+#     "mask_intepolate": 0.01,
+#     "mask_quarter_random": 0.01,
+#     "mask_quarter_head": 0.01,
+#     "mask_quarter_tail": 0.01,
+#     "mask_quarter_head_tail": 0.01,
+#     "mask_image_random": 0.01,
+#     "mask_image_head": 0.01,
+#     "mask_image_tail": 0.01,
+#     "mask_image_head_tail": 0.01,
+# }
+
 # Log settings
 seed = 42
 outputs = "outputs"
@@ -79,7 +92,6 @@ ckpt_every = 500
 
 # optimization settings
 load = None
-batch_size = None
 grad_clip = 1.0
 lr = 1e-4
 ema_decay = 0.99
