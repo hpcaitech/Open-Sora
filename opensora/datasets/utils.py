@@ -145,7 +145,7 @@ def read_from_path(path, image_size, transform_name="center"):
         return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
 
 
-def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1), force_video=False):
+def save_sample(x, save_path=None, fps=8, normalize=True, value_range=(-1, 1), force_video=False, verbose=True):
     """
     Args:
         x (Tensor): shape [C, T, H, W]
@@ -165,7 +165,8 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1), f
 
         x = x.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
         write_video(save_path, x, fps=fps, video_codec="h264")
-    print(f"Saved to {save_path}")
+    if verbose:
+        print(f"Saved to {save_path}")
     return save_path
 
 

@@ -3,15 +3,20 @@ import torch.nn as nn
 from diffusers.models import AutoencoderKL, AutoencoderKLTemporalDecoder
 from einops import rearrange
 
-from opensora.registry import MODELS
+from opensora.registry import MODELS, build_module
+from opensora.utils.ckpt_utils import load_checkpoint
 
 
 @MODELS.register_module()
 class VideoAutoencoderKL(nn.Module):
-    def __init__(self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False, subfolder=None):
+    def __init__(
+        self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False, subfolder=None
+    ):
         super().__init__()
         self.module = AutoencoderKL.from_pretrained(
-            from_pretrained, cache_dir=cache_dir, local_files_only=local_files_only,
+            from_pretrained,
+            cache_dir=cache_dir,
+            local_files_only=local_files_only,
             subfolder=subfolder,
         )
         self.out_channels = self.module.config.latent_channels
@@ -26,6 +31,7 @@ class VideoAutoencoderKL(nn.Module):
         if self.micro_batch_size is None:
             x = self.module.encode(x).latent_dist.sample().mul_(0.18215)
         else:
+            # NOTE: cannot be used for training
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
@@ -36,13 +42,14 @@ class VideoAutoencoderKL(nn.Module):
         x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
         return x
 
-    def decode(self, x):
+    def decode(self, x, **kwargs):
         # x: (B, C, T, H, W)
         B = x.shape[0]
         x = rearrange(x, "B C T H W -> (B T) C H W")
         if self.micro_batch_size is None:
             x = self.module.decode(x / 0.18215).sample
         else:
+            # NOTE: cannot be used for training
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
@@ -84,7 +91,7 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
     def encode(self, x):
         raise NotImplementedError
 
-    def decode(self, x):
+    def decode(self, x, **kwargs):
         B, _, T = x.shape[:3]
         x = rearrange(x, "B C T H W -> (B T) C H W")
         x = self.module.decode(x / 0.18215, num_frames=T).sample
@@ -99,6 +106,105 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
             # ), "Input size must be divisible by patch size"
             latent_size.append(input_size[i] // self.patch_size[i] if input_size[i] is not None else None)
         return latent_size
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    @property
+    def dtype(self):
+        return next(self.parameters()).dtype
+
+
+@MODELS.register_module()
+class VideoAutoencoderPipeline(nn.Module):
+    def __init__(
+        self,
+        vae_2d=None,
+        vae_temporal=None,
+        from_pretrained=None,
+        freeze_vae_2d=False,
+        cal_loss=False,
+        micro_frame_size=None,
+    ):
+        super().__init__()
+        self.spatial_vae = build_module(vae_2d, MODELS)
+        self.temporal_vae = build_module(vae_temporal, MODELS)
+        self.cal_loss = cal_loss
+        self.micro_frame_size = micro_frame_size
+        self.micro_z_frame_size = self.temporal_vae.get_latent_size([micro_frame_size, None, None])[0]
+
+        if from_pretrained is not None:
+            load_checkpoint(self, from_pretrained)
+        if freeze_vae_2d:
+            for param in self.spatial_vae.parameters():
+                param.requires_grad = False
+
+        self.out_channels = self.temporal_vae.out_channels
+        self.scale = 2.5  # make std = 1.0
+
+    def encode(self, x):
+        x_z = self.spatial_vae.encode(x)
+
+        if self.micro_frame_size is None:
+            posterior = self.temporal_vae.encode(x_z)
+            z = posterior.sample()
+        else:
+            z_list = []
+            for i in range(0, x_z.shape[2], self.micro_frame_size):
+                x_z_bs = x_z[:, :, i : i + self.micro_frame_size]
+                posterior = self.temporal_vae.encode(x_z_bs)
+                z_list.append(posterior.sample())
+            z = torch.cat(z_list, dim=2)
+
+        if self.cal_loss:
+            return z, posterior, x_z
+        else:
+            return z / self.scale
+
+    def decode(self, z, num_frames=None):
+        if not self.cal_loss:
+            z = z * self.scale
+
+        if self.micro_frame_size is None:
+            x_z = self.temporal_vae.decode(z, num_frames=num_frames)
+            x = self.spatial_vae.decode(x_z)
+        else:
+            x_z_list = []
+            for i in range(0, z.size(2), self.micro_z_frame_size):
+                z_bs = z[:, :, i : i + self.micro_z_frame_size]
+                x_z_bs = self.temporal_vae.decode(z_bs, num_frames=min(self.micro_frame_size, num_frames))
+                x_z_list.append(x_z_bs)
+                num_frames -= self.micro_frame_size
+            x_z = torch.cat(x_z_list, dim=2)
+            x = self.spatial_vae.decode(x_z)
+
+        if self.cal_loss:
+            return x, x_z
+        else:
+            return x
+
+    def forward(self, x):
+        assert self.cal_loss, "This method is only available when cal_loss is True"
+        z, posterior, x_z = self.encode(x)
+        x_rec, x_z_rec = self.decode(z, num_frames=x_z.shape[2])
+        return x_rec, x_z_rec, z, posterior, x_z
+
+    def get_latent_size(self, input_size):
+        if self.micro_frame_size is None or input_size[0] is None:
+            return self.temporal_vae.get_latent_size(self.spatial_vae.get_latent_size(input_size))
+        else:
+            sub_input_size = [self.micro_frame_size, input_size[1], input_size[2]]
+            sub_latent_size = self.temporal_vae.get_latent_size(self.spatial_vae.get_latent_size(sub_input_size))
+            sub_latent_size[0] = sub_latent_size[0] * (input_size[0] // self.micro_frame_size)
+            remain_temporal_size = [input_size[0] % self.micro_frame_size, None, None]
+            if remain_temporal_size[0] > 0:
+                remain_size = self.temporal_vae.get_latent_size(remain_temporal_size)
+                sub_latent_size[0] += remain_size[0]
+            return sub_latent_size
+
+    def get_temporal_last_layer(self):
+        return self.temporal_vae.decoder.conv_out.conv.weight
 
     @property
     def device(self):

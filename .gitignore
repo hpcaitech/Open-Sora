@@ -173,6 +173,7 @@ samples/
 samples
 logs/
 pretrained_models/
+pretrained_models
 evaluation_results/
 cache/
 *.swp
@@ -181,3 +182,6 @@ cache/
 hostfile
 gradio_cached_examples/
 wandb/
+
+# vae weights
+eval/vae/flolpips/weights/

@@ -5,6 +5,7 @@ import torch
 import torch.distributed as dist
 from colossalai.cluster import DistCoordinator
 from mmengine.runner import set_random_seed
+from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import IMG_FPS, save_sample
@@ -19,6 +20,7 @@ def main():
     # 1. cfg and init distributed env
     # ======================================================
     cfg = parse_configs(training=False)
+    verbose = cfg.get("verbose", 2)
     print(cfg)
 
     # init distributed
@@ -99,7 +101,7 @@ def main():
     # ======================================================
     # 4. inference
     # ======================================================
-    sample_idx = 0
+    sample_idx = cfg.get("start_index", 0)
     if cfg.sample_name is not None:
         sample_name = cfg.sample_name
     elif cfg.prompt_as_path:
@@ -110,7 +112,8 @@ def main():
     os.makedirs(save_dir, exist_ok=True)
 
     # 4.1. batch generation
-    for i in range(0, len(prompts), cfg.batch_size):
+    progress_wrap = tqdm if verbose == 1 else (lambda x: x)
+    for i in progress_wrap(range(0, len(prompts), cfg.batch_size)):
         # 4.2 sample in hidden space
         batch_prompts_raw = prompts[i : i + cfg.batch_size]
         batch_prompts = [text_preprocessing(prompt) for prompt in batch_prompts_raw]
@@ -152,13 +155,15 @@ def main():
                 prompts=batch_prompts,
                 device=device,
                 additional_args=model_args,
+                progress=verbose >= 2,
             )
-            samples = vae.decode(samples.to(dtype))
+            samples = vae.decode(samples.to(dtype), num_frames=cfg.num_frames)
 
             # 4.4. save samples
             if not use_dist or coordinator.is_master():
                 for idx, sample in enumerate(samples):
-                    print(f"Prompt: {batch_prompts_raw[idx]}")
+                    if verbose >= 2:
+                        print(f"Prompt: {batch_prompts_raw[idx]}")
                     if cfg.prompt_as_path:
                         sample_name_suffix = batch_prompts_raw[idx]
                     else:
@@ -166,7 +171,12 @@ def main():
                     save_path = os.path.join(save_dir, f"{sample_name}{sample_name_suffix}")
                     if cfg.num_sample != 1:
                         save_path = f"{save_path}-{k}"
-                    save_sample(sample, fps=cfg.fps // cfg.frame_interval, save_path=save_path)
+                    save_sample(
+                        sample,
+                        fps=cfg.fps // cfg.frame_interval,
+                        save_path=save_path,
+                        verbose=verbose >= 2,
+                    )
                     sample_idx += 1
 
 
