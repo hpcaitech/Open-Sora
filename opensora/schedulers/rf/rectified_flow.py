@@ -7,12 +7,26 @@ from ..iddpm.gaussian_diffusion import _extract_into_tensor, mean_flat
 # and https://github.com/magic-research/piecewise-rectified-flow/blob/main/src/scheduler_perflow.py
 
 
-def timestep_transform(t, model_kwargs, base_resolution=512 * 512, base_num_frames=1, scale=1.0, num_timesteps=1):
+def timestep_transform(
+    t,
+    model_kwargs,
+    base_resolution=512 * 512,
+    base_num_frames=1,
+    scale=1.0,
+    num_timesteps=1,
+    temporal_reduction=4,
+):
     t = t / num_timesteps
+    # NOTE: temporal_reduction is hardcoded to 4, this should be equal to the temporal reduction factor of the vae
     resolution = model_kwargs["height"] * model_kwargs["width"]
-    num_frames = model_kwargs["num_frames"]
-    ratio = (resolution / base_resolution).sqrt() * (num_frames / base_num_frames).sqrt() * scale
+    ratio_space = (resolution / base_resolution).sqrt()
+    # NOTE: currently, we do not take fps into account
+    num_frames = (model_kwargs["num_frames"] - 1) // temporal_reduction + 1
+    ratio_time = (num_frames / base_num_frames).sqrt()
+
+    ratio = ratio_space * ratio_time * scale
     new_t = ratio * t / (1 + (ratio - 1) * t)
+
     new_t = new_t * num_timesteps
     return new_t
 
