@@ -96,9 +96,12 @@ def main():
         for step in pbar:
             batch = next(dataloader_iter)
             x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
+            input_size = x.shape[2:]
+            latent_size = model.get_latent_size(input_size)
 
             #  ===== VAE =====
-            z, posterior, x_z = model.encode(x, training=True)
+            z, posterior, x_z = model.encode(x)
+            assert list(z.shape[2:]) == latent_size, f"z shape: {z.shape}, latent_size: {latent_size}"
             x_rec, x_z_rec = model.decode(z, num_frames=x.size(2))
             x_ref = model.spatial_vae.decode(x_z)
 

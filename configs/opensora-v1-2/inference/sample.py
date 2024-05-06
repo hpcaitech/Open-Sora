@@ -1,7 +1,6 @@
 num_frames = 1
 fps = 1
 image_size = (2560, 1536)
-# image_size = (2048, 2048)
 multi_resolution = "STDiT2"
 
 model = dict(
@@ -12,11 +11,19 @@ model = dict(
     enable_layernorm_kernel=True,
 )
 vae = dict(
-    type="VideoAutoencoderKL",
-    micro_batch_size=4,
-    from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-    subfolder="vae",
-    local_files_only=True,
+    type="VideoAutoencoderPipeline",
+    from_pretrained="pretrained_models/vae-v1",
+    vae_2d=dict(
+        type="VideoAutoencoderKL",
+        from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
+        subfolder="vae",
+        micro_batch_size=4,
+        local_files_only=True,
+    ),
+    vae_temporal=dict(
+        type="VAE_Temporal_SD",
+        from_pretrained=None,
+    ),
 )
 text_encoder = dict(
     type="t5",
@@ -28,7 +35,7 @@ scheduler = dict(
     type="rflow",
     use_discrete_timesteps=False,
     use_timestep_transform=True,
-    num_sampling_steps=8,
+    num_sampling_steps=30,
     cfg_scale=4.5,
 )
 dtype = "bf16"
