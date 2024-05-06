@@ -5,15 +5,15 @@ dataset = dict(
     frame_interval=1,
 )
 bucket_config = {  # 2s/it
-    "144p": {1: (0.5, 48), 32: (1.0, 2), 48: (1.0, 4), 96: (1.0, 2), 192: (1.0, 1)},
+    "144p": {1: (0.5, 48), 34: (1.0, 2), 51: (1.0, 4), 102: (1.0, 2), 204: (1.0, 1)},
     # ---
-    "256": {1: (0.6, 20), 32: (0.5, 2), 48: (0.5, 1), 64: (0.5, 1), 128: (0.0, None)},
-    "240p": {1: (0.6, 20), 32: (0.5, 2), 48: (0.5, 1), 64: (0.5, 1), 128: (0.0, None)},
+    "256": {1: (0.6, 20), 34: (0.5, 2), 51: (0.5, 1), 68: (0.5, 1), 136: (0.0, None)},
+    "240p": {1: (0.6, 20), 34: (0.5, 2), 51: (0.5, 1), 68: (0.5, 1), 136: (0.0, None)},
     # ---
-    "360p": {1: (0.5, 8), 32: (0.2, 1), 96: (0.0, None)},
-    "512": {1: (0.5, 8), 32: (0.2, 1), 96: (0.0, None)},
+    "360p": {1: (0.5, 8), 34: (0.2, 1), 102: (0.0, None)},
+    "512": {1: (0.5, 8), 34: (0.2, 1), 102: (0.0, None)},
     # ---
-    "480p": {1: (0.2, 4), 16: (0.3, 1), 64: (0.0, None)},
+    "480p": {1: (0.2, 4), 17: (0.3, 1), 68: (0.0, None)},
     # ---
     "720p": {1: (0.1, 2)},
     "1024": {1: (0.1, 2)},
@@ -41,7 +41,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderPipeline",
     from_pretrained="pretrained_models/vae-v2",
-    micro_frame_size=16,
+    micro_frame_size=17,
     vae_2d=dict(
         type="VideoAutoencoderKL",
         from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
@@ -69,18 +69,18 @@ scheduler = dict(
 )
 
 # Mask settings
-# mask_ratios = {
-#     "mask_random": 0.4,
-#     "mask_intepolate": 0.01,
-#     "mask_quarter_random": 0.01,
-#     "mask_quarter_head": 0.01,
-#     "mask_quarter_tail": 0.01,
-#     "mask_quarter_head_tail": 0.01,
-#     "mask_image_random": 0.01,
-#     "mask_image_head": 0.01,
-#     "mask_image_tail": 0.01,
-#     "mask_image_head_tail": 0.01,
-# }
+mask_ratios = {
+    "mask_random": 0.4,
+    "mask_intepolate": 0.01,
+    "mask_quarter_random": 0.01,
+    "mask_quarter_head": 0.01,
+    "mask_quarter_tail": 0.01,
+    "mask_quarter_head_tail": 0.01,
+    "mask_image_random": 0.01,
+    "mask_image_head": 0.01,
+    "mask_image_tail": 0.01,
+    "mask_image_head_tail": 0.01,
+}
 
 # Log settings
 seed = 42

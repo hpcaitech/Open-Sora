@@ -14,14 +14,16 @@ def timestep_transform(
     base_num_frames=1,
     scale=1.0,
     num_timesteps=1,
-    temporal_reduction=4,
 ):
     t = t / num_timesteps
-    # NOTE: temporal_reduction is hardcoded to 4, this should be equal to the temporal reduction factor of the vae
     resolution = model_kwargs["height"] * model_kwargs["width"]
     ratio_space = (resolution / base_resolution).sqrt()
     # NOTE: currently, we do not take fps into account
-    num_frames = (model_kwargs["num_frames"] - 1) // temporal_reduction + 1
+    # NOTE: temporal_reduction is hardcoded, this should be equal to the temporal reduction factor of the vae
+    if model_kwargs["num_frames"][0] == 1:
+        num_frames = torch.ones_like(model_kwargs["num_frames"])
+    else:
+        num_frames = model_kwargs["num_frames"] // 17 * 5
     ratio_time = (num_frames / base_num_frames).sqrt()
 
     ratio = ratio_space * ratio_time * scale
