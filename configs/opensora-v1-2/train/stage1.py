@@ -36,11 +36,10 @@ model = dict(
     qk_norm=True,
     enable_flashattn=True,
     enable_layernorm_kernel=True,
-    only_train_temporal=True,
 )
 vae = dict(
     type="VideoAutoencoderPipeline",
-    from_pretrained="pretrained_models/vae-v2",
+    from_pretrained="pretrained_models/vae-v3",
     micro_frame_size=17,
     vae_2d=dict(
         type="VideoAutoencoderKL",
@@ -70,16 +69,16 @@ scheduler = dict(
 
 # Mask settings
 mask_ratios = {
-    "mask_random": 0.4,
+    "mask_random": 0.2,
     "mask_intepolate": 0.01,
     "mask_quarter_random": 0.01,
     "mask_quarter_head": 0.01,
     "mask_quarter_tail": 0.01,
     "mask_quarter_head_tail": 0.01,
-    "mask_image_random": 0.01,
-    "mask_image_head": 0.01,
-    "mask_image_tail": 0.01,
-    "mask_image_head_tail": 0.01,
+    "mask_image_random": 0.05,
+    "mask_image_head": 0.1,
+    "mask_image_tail": 0.05,
+    "mask_image_head_tail": 0.05,
 }
 
 # Log settings
