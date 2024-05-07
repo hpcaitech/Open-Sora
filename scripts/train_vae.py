@@ -5,19 +5,19 @@ from pprint import pprint
 
 import torch
 import torch.distributed as dist
+import wandb
 from colossalai.booster import Booster
 from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
-from tqdm import tqdm
 from einops import rearrange
+from tqdm import tqdm
 
-import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group, set_data_parallel_group
 from opensora.datasets import prepare_dataloader
-from opensora.models.vae.losses import VAELoss, AdversarialLoss, DiscriminatorLoss
+from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt_utils import create_logger, load_json, save_json
 from opensora.utils.config_utils import (
@@ -147,7 +147,6 @@ def main():
         set_grad_checkpoint(model)
     model.train()
 
-
     # 4.7 add discriminator if specified in config
     if cfg.get("discriminator", False) != False:
         discriminator = build_module(cfg.discriminator, MODELS)
@@ -202,7 +201,7 @@ def main():
         if cfg.get("discriminator", False) != False and os.path.exists(os.path.join(cfg.load, "discriminator")):
             booster.load_model(discriminator, os.path.join(cfg.load, "discriminator"))
             booster.load_optimizer(disc_optimizer, os.path.join(cfg.load, "disc_optimizer"))
-        
+
         dist.barrier()
         start_epoch, start_step, sampler_start_idx = (
             running_states["epoch"],
@@ -210,7 +209,6 @@ def main():
             running_states["sample_start_index"],
         )
         logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
-
 
     logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
@@ -283,7 +281,6 @@ def main():
                 booster.backward(loss=vae_loss, optimizer=optimizer)
                 optimizer.step()
 
-
                 # Adversarial Discriminator loss
                 if cfg.get("discriminator", False) != False:
                     real_video = rearrange(x, "b c t h w -> (b t) c h w").contiguous()
@@ -291,9 +288,9 @@ def main():
                     real_logits = discriminator(real_video.contiguous().detach())
                     fake_logits = discriminator(fake_video.contiguous().detach())
                     weighted_d_adversarial_loss, _, _ = disc_loss_fn(
-                            real_logits,
-                            fake_logits,
-                            global_step, 
+                        real_logits,
+                        fake_logits,
+                        global_step,
                     )
                     disc_loss = weighted_d_adversarial_loss
                     # Backward & update
