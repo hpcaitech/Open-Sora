@@ -5,6 +5,7 @@ from einops import rearrange
 from rotary_embedding_torch import RotaryEmbedding
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
+from transformers import PretrainedConfig, PreTrainedModel
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
 from opensora.models.layers.blocks import (
@@ -145,7 +146,9 @@ class STDiT3Block(nn.Module):
         return x
 
 
-class STDiT3(nn.Module):
+class STDiT3Config(PretrainedConfig):
+    model_type = "STDiT3"
+
     def __init__(
         self,
         input_size=(None, None, None),
@@ -167,90 +170,116 @@ class STDiT3(nn.Module):
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
         only_train_temporal=False,
+        **kwargs,
     ):
-        super().__init__()
-        self.pred_sigma = pred_sigma
+        self.input_size = input_size
+        self.input_sq_size = input_sq_size
         self.in_channels = in_channels
-        self.out_channels = in_channels * 2 if pred_sigma else in_channels
-
-        # model size related
-        self.depth = depth
-        self.mlp_ratio = mlp_ratio
+        self.patch_size = patch_size
         self.hidden_size = hidden_size
+        self.depth = depth
         self.num_heads = num_heads
-
-        # computation related
+        self.mlp_ratio = mlp_ratio
+        self.class_dropout_prob = class_dropout_prob
+        self.pred_sigma = pred_sigma
         self.drop_path = drop_path
+        self.caption_channels = caption_channels
+        self.model_max_length = model_max_length
         self.dtype = dtype
+        self.qk_norm = qk_norm
         self.enable_flash_attn = enable_flash_attn
         self.enable_layernorm_kernel = enable_layernorm_kernel
+        self.enable_sequence_parallelism = enable_sequence_parallelism
+        self.only_train_temporal = only_train_temporal
+        super().__init__(**kwargs)
+
+
+class STDiT3(PreTrainedModel):
+    config_class = STDiT3Config
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.pred_sigma = config.pred_sigma
+        self.in_channels = config.in_channels
+        self.out_channels = config.in_channels * 2 if config.pred_sigma else config.in_channels
+
+        # model size related
+        self.depth = config.depth
+        self.mlp_ratio = config.mlp_ratio
+        self.hidden_size = config.hidden_size
+        self.num_heads = config.num_heads
+
+        # computation related
+        self.drop_path = config.drop_path
+        self.enable_flash_attn = config.enable_flash_attn
+        self.enable_layernorm_kernel = config.enable_layernorm_kernel
 
         # input size related
-        self.patch_size = patch_size
-        self.input_sq_size = input_sq_size
-        self.pos_embed = PositionEmbedding2D(hidden_size)
+        self.patch_size = config.patch_size
+        self.input_sq_size = config.input_sq_size
+        self.pos_embed = PositionEmbedding2D(config.hidden_size)
         self.rope = RotaryEmbedding(dim=self.hidden_size // self.num_heads)
 
         # embedding
-        self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
-        self.t_embedder = TimestepEmbedder(hidden_size)
+        self.x_embedder = PatchEmbed3D(config.patch_size, config.in_channels, config.hidden_size)
+        self.t_embedder = TimestepEmbedder(config.hidden_size)
         self.fps_embedder = SizeEmbedder(self.hidden_size)
         self.t_block = nn.Sequential(
             nn.SiLU(),
-            nn.Linear(hidden_size, 6 * hidden_size, bias=True),
+            nn.Linear(config.hidden_size, 6 * config.hidden_size, bias=True),
         )
         self.y_embedder = CaptionEmbedder(
-            in_channels=caption_channels,
-            hidden_size=hidden_size,
-            uncond_prob=class_dropout_prob,
+            in_channels=config.caption_channels,
+            hidden_size=config.hidden_size,
+            uncond_prob=config.class_dropout_prob,
             act_layer=approx_gelu,
-            token_num=model_max_length,
+            token_num=config.model_max_length,
         )
 
         # spatial blocks
-        drop_path = [x.item() for x in torch.linspace(0, self.drop_path, depth)]
+        drop_path = [x.item() for x in torch.linspace(0, self.drop_path, config.depth)]
         self.spatial_blocks = nn.ModuleList(
             [
                 STDiT3Block(
-                    hidden_size=hidden_size,
-                    num_heads=num_heads,
-                    mlp_ratio=mlp_ratio,
+                    hidden_size=config.hidden_size,
+                    num_heads=config.num_heads,
+                    mlp_ratio=config.mlp_ratio,
                     drop_path=drop_path[i],
-                    qk_norm=qk_norm,
-                    enable_flash_attn=enable_flash_attn,
-                    enable_layernorm_kernel=enable_layernorm_kernel,
-                    enable_sequence_parallelism=enable_sequence_parallelism,
+                    qk_norm=config.qk_norm,
+                    enable_flash_attn=config.enable_flash_attn,
+                    enable_layernorm_kernel=config.enable_layernorm_kernel,
+                    enable_sequence_parallelism=config.enable_sequence_parallelism,
                 )
-                for i in range(depth)
+                for i in range(config.depth)
             ]
         )
 
         # temporal blocks
-        drop_path = [x.item() for x in torch.linspace(0, self.drop_path, depth)]
+        drop_path = [x.item() for x in torch.linspace(0, self.drop_path, config.depth)]
         self.temporal_blocks = nn.ModuleList(
             [
                 STDiT3Block(
-                    hidden_size=hidden_size,
-                    num_heads=num_heads,
-                    mlp_ratio=mlp_ratio,
+                    hidden_size=config.hidden_size,
+                    num_heads=config.num_heads,
+                    mlp_ratio=config.mlp_ratio,
                     drop_path=drop_path[i],
-                    qk_norm=qk_norm,
-                    enable_flash_attn=enable_flash_attn,
-                    enable_layernorm_kernel=enable_layernorm_kernel,
-                    enable_sequence_parallelism=enable_sequence_parallelism,
+                    qk_norm=config.qk_norm,
+                    enable_flash_attn=config.enable_flash_attn,
+                    enable_layernorm_kernel=config.enable_layernorm_kernel,
+                    enable_sequence_parallelism=config.enable_sequence_parallelism,
                     # temporal
                     temporal=True,
                     rope=self.rope.rotate_queries_or_keys,
                 )
-                for i in range(depth)
+                for i in range(config.depth)
             ]
         )
 
         # final layer
-        self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
+        self.final_layer = T2IFinalLayer(config.hidden_size, np.prod(self.patch_size), self.out_channels)
 
         self.initialize_weights()
-        if only_train_temporal:
+        if config.only_train_temporal:
             for param in self.parameters():
                 param.requires_grad = False
             for block in self.temporal_blocks:
@@ -293,11 +322,11 @@ class STDiT3(nn.Module):
         return (T, H, W)
 
     def forward(self, x, timestep, y, mask=None, x_mask=None, fps=None, height=None, width=None, **kwargs):
+        dtype = self.x_embedder.proj.weight.dtype
         B = x.size(0)
-        x = x.to(self.dtype)
-        timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
-        breakpoint()
+        x = x.to(dtype)
+        timestep = timestep.to(dtype)
+        y = y.to(dtype)
 
         # === get pos embed ===
         _, _, Tx, Hx, Wx = x.size()
@@ -380,7 +409,8 @@ class STDiT3(nn.Module):
 
 @MODELS.register_module("STDiT3-XL/2")
 def STDiT3_XL_2(from_pretrained=None, **kwargs):
-    model = STDiT3(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    config = STDiT3Config(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    model = STDiT3(config)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
@@ -388,7 +418,8 @@ def STDiT3_XL_2(from_pretrained=None, **kwargs):
 
 @MODELS.register_module("STDiT3-3B/2")
 def STDiT3_3B_2(from_pretrained=None, **kwargs):
-    model = STDiT3(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
+    config = STDiT3Config(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
+    model = STDiT3(config)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
