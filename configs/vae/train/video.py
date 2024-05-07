@@ -1,4 +1,4 @@
-num_frames = 17
+num_frames = 33
 image_size = (256, 256)
 
 # Define dataset
