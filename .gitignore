@@ -183,5 +183,12 @@ hostfile
 gradio_cached_examples/
 wandb/
 
+<<<<<<< HEAD
 # vae weights
 eval/vae/flolpips/weights/
+=======
+# npm
+node_modules/
+package-lock.json
+package.json
+>>>>>>> upstream/main
