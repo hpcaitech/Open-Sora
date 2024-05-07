@@ -39,7 +39,6 @@ pretrained_models = {
     "PixArt-Sigma-XL-2-1024-MS.pth": hf_endpoint
     + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-1024-MS.pth",
     "PixArt-Sigma-XL-2-2K-MS.pth": hf_endpoint + "/PixArt-alpha/PixArt-Sigma/resolve/main/PixArt-Sigma-XL-2-2K-MS.pth",
-    # "PixArt-1B-2.pth": "PixArt-1B-2.pth",
 }
 
 
@@ -70,7 +69,9 @@ def reparameter(ckpt, name=None, model=None):
         if "pos_embed" in ckpt:
             del ckpt["pos_embed"]
 
-    if name in ["PixArt-1B-2.pth",]:
+    if name in [
+        "PixArt-1B-2.pth",
+    ]:
         ckpt = ckpt["state_dict"]
         if "pos_embed" in ckpt:
             del ckpt["pos_embed"]

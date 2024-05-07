@@ -22,8 +22,6 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 [[中文文档]](/docs/zh_CN/README.md) [[潞晨云部署视频教程]](https://www.bilibili.com/video/BV141421R7Ag)
 
-<h4>Open-Sora is still at an early stage and under active development.</h4>
-
 ## 📰 News
 
 * **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
@@ -109,13 +107,12 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 ### TODO list sorted by priority
 
-* [ ] Training Video-VAE and adapt our model to new VAE. **[WIP]**
-* [ ] Scaling model parameters and dataset size. **[WIP]**
-* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3. **[WIP]**
-
 <details>
 <summary>View more</summary>
 
+* [x] Training Video-VAE and adapt our model to new VAE.
+* [x] Scaling model parameters and dataset size.
+* [x] Incoporate a better scheduler (rectified flow).
 * [x] Evaluation pipeline.
 * [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.).
 * [x] Support image and video conditioning.
