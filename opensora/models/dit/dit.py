@@ -58,7 +58,7 @@ class DiTBlock(nn.Module):
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flashattn,
         )
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.mlp = Mlp(in_features=hidden_size, hidden_features=mlp_hidden_dim, act_layer=approx_gelu, drop=0)
