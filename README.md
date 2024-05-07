@@ -9,24 +9,26 @@
     <a href="https://twitter.com/yangyou1991/status/1769411544083996787?s=61&t=jT0Dsx2d-MS5vS9rNM5e5g"><img src="https://img.shields.io/badge/Twitter-Discuss-blue?logo=twitter&amp"></a>
     <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-小助手加群-green?logo=wechat&amp"></a>
     <a href="https://hpc-ai.com/blog/open-sora-v1.0"><img src="https://img.shields.io/badge/Open_Sora-Blog-blue"></a>
+    <a href="https://huggingface.co/spaces/hpcai-tech/open-sora"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Gradio Demo-blue"></a>
 </div>
 
 ## Open-Sora: Democratizing Efficient Video Production for All
 
-We present **Open-Sora**, an initiative dedicated to **efficiently** produce high-quality video and make the model,
-tools and contents accessible to all. By embracing **open-source** principles,
+We design and implement **Open-Sora**, an initiative dedicated to **efficiently** producing high-quality video. We hope to make the model,
+tools and all details accessible to all. By embracing **open-source** principles,
 Open-Sora not only democratizes access to advanced video generation techniques, but also offers a
-streamlined and user-friendly platform that simplifies the complexities of video production.
-With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation.
+streamlined and user-friendly platform that simplifies the complexities of video generation.
+With Open-Sora, our goal is to foster innovation, creativity, and inclusivity within the field of content creation.
 
-[[中文文档]](/docs/zh_CN/README.md)
+[[中文文档]](/docs/zh_CN/README.md) [[潞晨云部署视频教程]](https://www.bilibili.com/video/BV141421R7Ag)
 
 <h4>Open-Sora is still at an early stage and under active development.</h4>
 
 ## 📰 News
 
-* **[2024.04.22]** 🔥 We release **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
-* **[2024.03.18]** We release **Open-Sora 1.0**, a fully open-source project for video generation.
+* **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
+* **[2024.04.25]** 🔥 We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
+* **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
   <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
   acceleration,
@@ -37,16 +39,20 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 ## 🎥 Latest Demo
 
+🔥 You can experience Open-Sora on our [🤗 Gradio application on Hugging Face](https://huggingface.co/spaces/hpcai-tech/open-sora). More samples are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
-| **2s 240×426**   | **2s 240×426**  | 
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | 
-| [<img src="assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2)                                | [<img src="assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2)                         | 
-| [<img src="assets/demo/sora_16x240x426_27.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/f7ce4aaa-528f-40a8-be7a-72e61eaacbbd)                                | [<img src="assets/demo/sora_16x240x426_40.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/5d58d71e-1fda-4d90-9ad3-5f2f7b75c6a9)                         | 
+| **2s 240×426**                                                                                                                                              | **2s 240×426**                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) | [<img src="assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) |
+| [<img src="assets/demo/sora_16x240x426_27.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/f7ce4aaa-528f-40a8-be7a-72e61eaacbbd)  | [<img src="assets/demo/sora_16x240x426_40.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/5d58d71e-1fda-4d90-9ad3-5f2f7b75c6a9) |
 
-| **2s 426×240**   | **2s 426×240**  | **4s 480×854**  | 
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | 
-| [<img src="assets/demo/sora_16x426x240_24.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/34ecb4a0-4eef-4286-ad4c-8e3a87e5a9fd) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) | [<img src="assets/demo/sample_32x480x854_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c1619333-25d7-42ba-a91c-18dbc1870b18) | 
+| **2s 426×240**                                                                                                                                             | **4s 480×854**                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/demo/sora_16x426x240_24.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/34ecb4a0-4eef-4286-ad4c-8e3a87e5a9fd) | [<img src="assets/demo/sample_32x480x854_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c1619333-25d7-42ba-a91c-18dbc1870b18) |
 
+| **16s 320×320**                                                                                                                                        | **16s 224×448**                                                                                                                                        | **2s 426×240**                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
 
 <details>
 <summary>OpenSora 1.0 Demo</summary>
@@ -63,13 +69,11 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 </details>
 
-More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sora/).
-
 ## 🔆 New Features/Updates
 
 * 📍 **Open-Sora 1.1** released. Model weights are available [here](). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
 * 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
-* ✅ Modified ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
+* ✅ Improved ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
 * ✅ Support training with any resolution, aspect ratio, and duration (including images).
 * ✅ Support image and video conditioning and video editing, and thus support animating images, connecting videos, etc.
 * 📍 **Open-Sora 1.0** released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800
@@ -77,7 +81,7 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 * ✅ Three-stage training from an image diffusion model to a video diffusion model. We provide the weights for each
   stage.
 * ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism.
-  Open-Sora improve **55%** training speed when training on 64x512x512 videos. Details locates
+  Open-Sora improves **55%** training speed when training on 64x512x512 videos. Details locates
   at [acceleration.md](docs/acceleration.md).
 * 🔧 **Data preprocessing pipeline v1.0**,
   including [downloading](/tools/datasets/README.md), [video cutting](/tools/scenedetect/README.md),
@@ -106,8 +110,8 @@ More samples are available in our [gallery](https://hpcaitech.github.io/Open-Sor
 ### TODO list sorted by priority
 
 * [ ] Training Video-VAE and adapt our model to new VAE. **[WIP]**
-* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3.
-* [ ] Scaling model parameters and dataset size.
+* [ ] Scaling model parameters and dataset size. **[WIP]**
+* [ ] Incoporate a better scheduler, e.g., rectified flow in SD3. **[WIP]**
 
 <details>
 <summary>View more</summary>
@@ -143,7 +147,7 @@ Other useful documents and links are listed below.
 
 ## Installation
 
-TODO: discuss how to include data installation here.
+### Install from Source
 
 ```bash
 # create a virtual env
@@ -174,22 +178,43 @@ cd Open-Sora
 pip install -v .
 ```
 
+### Use Docker
+
+Run the following command to build a docker image from Dockerfile provided.
+
+```bash
+docker build -t opensora ./docker
+```
+
+Run the following command to start the docker container in interactive mode.
+
+```bash
+docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
+```
+
 ## Model Weights
 
 ### Open-Sora 1.1 Model Weights
 
-TBD
+| Resolution         | Model Size | Data                       | #iterations | Batch Size                                        | URL                                                                  |
+| ------------------ | ---------- | -------------------------- | ----------- | ------------------------------------------------- | -------------------------------------------------------------------- |
+| mainly 144p & 240p | 700M       | 10M videos + 2M images     | 100k        | [dynamic](/configs/opensora-v1-1/train/stage2.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
+| 144p to 720p       | 700M       | 500K HQ videos + 1M images | 4k          | [dynamic](/configs/opensora-v1-1/train/stage3.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
+
+See our **[report 1.1](docs/report_02.md)** for more infomation.
+
+:warning: **LIMITATION**: This version contains known issues which we are going to fix in the next version (as we save computation resource for the next release). In addition, the video generation may fail for long duration, and high resolution will have noisy results due to this problem.
 
 ### Open-Sora 1.0 Model Weights
 
 <details>
 <summary>View more</summary>
 
-| Resolution | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-| ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
-| 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
-| 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
-| 16×256×256 | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
+| Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
+| ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
+| 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
+| 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
+| 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 
 Training orders: 16x256x256 $\rightarrow$ 16x256x256 HQ $\rightarrow$ 16x512x512 HQ.
 
@@ -207,7 +232,9 @@ on improving the quality and text alignment.
 
 ### Gradio Demo
 
-We have provided a [Gradio application](./gradio) in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
+🔥 You can experience Open-Sora on our [🤗 Gradio application](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face online.
+
+If you want to deploy gradio locally, we have also provided a [Gradio application](./gradio) in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
 
 ```bash
 pip install gradio spaces
@@ -221,12 +248,12 @@ This will launch a Gradio application on your localhost. If you want to know mor
 Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
 
 ```bash
-# video sampling
+# text to video
 python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
     --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
 ```
 
-See [here](docs/commands.md#inference-with-open-sora-11) for more instructions.
+See [here](docs/commands.md#inference-with-open-sora-11) for more instructions including text-to-image, image-to-video, video-to-video, and infinite time generation.
 
 ### Open-Sora 1.0 Command Line Inference
 
@@ -256,11 +283,11 @@ To lower the memory usage, set a smaller `vae.micro_batch_size` in the config (s
 </details>
 
 ## Data Processing
+
 High-quality data is crucial for training good generation models.
 To this end, we establish a complete pipeline for data processing, which could seamlessly convert raw videos to high-quality video-text pairs.
 The pipeline is shown below. For detailed information, please refer to [data processing](docs/data_processing.md).
 Also check out the [datasets](docs/datasets.md) we use.
-
 
 ![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
 
@@ -342,9 +369,6 @@ following [all-contributors](https://github.com/all-contributors/all-contributor
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 If you wish to contribute to this project, you can refer to the [Contribution Guideline](./CONTRIBUTING.md).
-
-[Zangwei Zheng](https://github.com/zhengzangw) and [Xiangyu Peng](https://github.com/xyupeng) equally contributed to
-this work during their internship at [HPC-AI Tech](https://hpc-ai.com/).
 
 ## Acknowledgement
 
