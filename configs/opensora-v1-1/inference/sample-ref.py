@@ -14,27 +14,35 @@ prompt = [
 
 loop = 2
 condition_frame_length = 4
-reference_path = [
-    "https://cdn.openai.com/tmp/s/interp/d0.mp4",
-    None,
-    "assets/images/condition/wave.png",
-]
-# valid when reference_path is not None
-# (loop id, ref id, ref start, target start, length, edit_ratio)
+# (
+#   loop id, [the loop index of the condition image or video]
+#   reference id, [the index of the condition image or video in the reference_path]
+#   reference start, [the start frame of the condition image or video]
+#   target start, [the location to insert]
+#   length, [the number of frames to insert]
+#   edit_ratio [the edit rate of the condition image or video]
+# )
+# See https://github.com/hpcaitech/Open-Sora/blob/main/docs/config.md#advanced-inference-config for more details
+# See https://github.com/hpcaitech/Open-Sora/blob/main/docs/commands.md#inference-with-open-sora-11 for more examples
 mask_strategy = [
     "0,0,0,0,8,0.3",
     None,
     "0",
 ]
+reference_path = [
+    "https://cdn.openai.com/tmp/s/interp/d0.mp4",
+    None,
+    "assets/images/condition/wave.png",
+]
 
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    from_pretrained=None,
+    from_pretrained="hpcai-tech/OpenSora-STDiT-v2-stage3",
     input_sq_size=512,
     qk_norm=True,
     qk_norm_legacy=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
