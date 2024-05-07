@@ -109,9 +109,8 @@ def main():
             dummy, _, _ = model.encode(x)
             latent_size = list(dummy.shape)
 
-
-            z = torch.cat((z_front, z_back[:,:, 1:, :, :]), dim=2)
-            x_z = torch.cat((x_z_front, x_z_back[:,:, 1:, :, :]), dim=2)
+            z = torch.cat((z_front, z_back), dim=2)
+            x_z = torch.cat((x_z_front, x_z_back), dim=2)
             assert list(z.shape) == latent_size, f"z shape: {z.shape}, latent_size: {latent_size}"
             x_rec, x_z_rec = model.decode(z, num_frames=x.size(2))
             x_ref = model.spatial_vae.decode(x_z)
