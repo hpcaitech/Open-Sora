@@ -1,13 +1,14 @@
 num_frames = 1
 fps = 1
 image_size = (256, 256)
-
+import torch
 # Define model
 model = dict(
     type="PixArt-XL/2",
     space_scale=1.0,
     time_scale=1.0,
     no_temporal_pos_emb=True,
+    dtype=torch.bfloat16,
     from_pretrained="PixArt-XL-2-256x256.pth",
 )
 vae = dict(
@@ -30,4 +31,5 @@ dtype = "bf16"
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/t2i_samples.txt"
+sample_name = "pixart_1x256x256"
 save_dir = "./samples/samples/"

@@ -1,7 +1,10 @@
+import torch
+
 num_frames = 1
 fps = 1
 image_size = (512, 512)
 
+dtype = torch.bfloat16
 # Define model
 model = dict(
     type="PixArt-XL/2",
@@ -9,6 +12,7 @@ model = dict(
     time_scale=1.0,
     no_temporal_pos_emb=True,
     from_pretrained="PixArt-XL-2-512x512.pth",
+    dtype=dtype
 )
 vae = dict(
     type="VideoAutoencoderKL",
@@ -24,7 +28,7 @@ scheduler = dict(
     num_sampling_steps=20,
     cfg_scale=7.0,
 )
-dtype = "bf16"
+
 
 # prompt_path = "./assets/texts/t2i_samples.txt"
 prompt = [
@@ -37,3 +41,4 @@ prompt = [
 batch_size = 2
 seed = 42
 save_dir = "./samples/samples/"
+sample_name = "pixart_1x512x512"

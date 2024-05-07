@@ -1,12 +1,16 @@
+import torch
+
 num_frames = 16
 fps = 8
 image_size = (256, 256)
 
 # Define model
+dtype = torch.bfloat16
 model = dict(
     type="DiT-XL/2",
     condition="text",
     from_pretrained="PRETRAINED_MODEL",
+    dtype=dtype
 )
 vae = dict(
     type="VideoAutoencoderKL",
@@ -22,10 +26,11 @@ scheduler = dict(
     num_sampling_steps=20,
     cfg_scale=4.0,
 )
-dtype = "bf16"
+
 
 # Others
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/ucf101_labels.txt"
 save_dir = "./samples/samples/"
+sample_name = "pixart_16x256x256"
