@@ -7,10 +7,11 @@ mmengine
 pandas
 pre-commit
 pyarrow
-pyav
+av
 tensorboard
 timm
 tqdm
 transformers
 wandb
 rotary_embedding_torch
+pandarallel

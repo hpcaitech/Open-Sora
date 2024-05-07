@@ -133,8 +133,7 @@ def main():
         input_size=latent_size,
         in_channels=vae.out_channels,
         caption_channels=text_encoder.output_dim,
-        model_max_length=text_encoder.model_max_length,
-        dtype=dtype,
+        model_max_length=text_encoder.model_max_length
     )
     model_numel, model_numel_trainable = get_model_numel(model)
     logger.info(
