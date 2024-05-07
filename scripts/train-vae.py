@@ -231,8 +231,10 @@ def main():
         ) as pbar:
             for step, batch in pbar:
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                if random.random() < cfg.get("mixed_image_ratio", 0.0):
-                    x = x[:, :, :1, :, :]
+                # if random.random() < cfg.get("mixed_image_ratio", 0.0):
+                #     x = x[:, :, :1, :, :]
+                length = random.randint(1, x.size(2))
+                x = x[:, :, :length, :, :]
 
                 #  ===== VAE =====
                 x_rec, x_z_rec, z, posterior, x_z = model(x)
