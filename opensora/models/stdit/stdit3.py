@@ -164,7 +164,6 @@ class STDiT3Config(PretrainedConfig):
         drop_path=0.0,
         caption_channels=4096,
         model_max_length=300,
-        dtype=torch.float32,
         qk_norm=False,
         enable_flash_attn=False,
         enable_layernorm_kernel=False,
@@ -185,7 +184,6 @@ class STDiT3Config(PretrainedConfig):
         self.drop_path = drop_path
         self.caption_channels = caption_channels
         self.model_max_length = model_max_length
-        self.dtype = dtype
         self.qk_norm = qk_norm
         self.enable_flash_attn = enable_flash_attn
         self.enable_layernorm_kernel = enable_layernorm_kernel
