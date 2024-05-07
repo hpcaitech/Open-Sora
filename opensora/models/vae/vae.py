@@ -126,6 +126,7 @@ class VideoAutoencoderPipeline(nn.Module):
         freeze_vae_2d=False,
         cal_loss=False,
         micro_frame_size=None,
+        scale=2.5,
     ):
         super().__init__()
         self.spatial_vae = build_module(vae_2d, MODELS)
@@ -141,7 +142,7 @@ class VideoAutoencoderPipeline(nn.Module):
                 param.requires_grad = False
 
         self.out_channels = self.temporal_vae.out_channels
-        self.scale = 2.5  # make std = 1.0
+        self.scale = scale  # make std = 1.0
 
     def encode(self, x):
         x_z = self.spatial_vae.encode(x)

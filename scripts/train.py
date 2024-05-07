@@ -238,7 +238,6 @@ def main():
                     x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y)
-                breakpoint()
 
                 # Mask
                 if cfg.mask_ratios is not None:
