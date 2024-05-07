@@ -139,7 +139,7 @@ class Attention(nn.Module):
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
         norm_layer: nn.Module = LlamaRMSNorm,
-        enable_flashattn: bool = False,
+        enable_flash_attn: bool = False,
         rope=None,
         qk_norm_legacy: bool = False,
     ) -> None:
@@ -149,7 +149,7 @@ class Attention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
         self.scale = self.head_dim**-0.5
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
@@ -167,7 +167,7 @@ class Attention(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, N, C = x.shape
         # flash attn is not memory efficient for small sequences, this is empirical
-        enable_flashattn = self.enable_flashattn and (N > B)
+        enable_flash_attn = self.enable_flash_attn and (N > B)
         qkv = self.qkv(x)
         qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
 
@@ -185,7 +185,7 @@ class Attention(nn.Module):
                 q = self.rotary_emb(q)
                 k = self.rotary_emb(k)
 
-        if enable_flashattn:
+        if enable_flash_attn:
             from flash_attn import flash_attn_func
 
             # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
@@ -210,7 +210,7 @@ class Attention(nn.Module):
             x = attn @ v
 
         x_output_shape = (B, N, C)
-        if not enable_flashattn:
+        if not enable_flash_attn:
             x = x.transpose(1, 2)
         x = x.reshape(x_output_shape)
         x = self.proj(x)
@@ -358,7 +358,7 @@ class SeqParallelAttention(Attention):
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
         norm_layer: nn.Module = LlamaRMSNorm,
-        enable_flashattn: bool = False,
+        enable_flash_attn: bool = False,
         rope=None,
         qk_norm_legacy: bool = False,
     ) -> None:
@@ -371,7 +371,7 @@ class SeqParallelAttention(Attention):
             attn_drop=attn_drop,
             proj_drop=proj_drop,
             norm_layer=norm_layer,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flash_attn,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -387,7 +387,7 @@ class SeqParallelAttention(Attention):
         # [B, SUB_N, 3, NUM_HEAD, HEAD_DIM] -> [B, N, 3, NUM_HEAD_PER_DEVICE, HEAD_DIM]
         qkv = all_to_all(qkv, sp_group, scatter_dim=3, gather_dim=1)
 
-        if self.enable_flashattn:
+        if self.enable_flash_attn:
             qkv_permute_shape = (
                 2,
                 0,
@@ -408,7 +408,7 @@ class SeqParallelAttention(Attention):
         # ERROR: Should qk_norm first
         q, k, v = qkv.unbind(0)
         q, k = self.q_norm(q), self.k_norm(k)
-        if self.enable_flashattn:
+        if self.enable_flash_attn:
             from flash_attn import flash_attn_func
 
             x = flash_attn_func(
@@ -428,7 +428,7 @@ class SeqParallelAttention(Attention):
             attn = self.attn_drop(attn)
             x = attn @ v
 
-        if not self.enable_flashattn:
+        if not self.enable_flash_attn:
             x = x.transpose(1, 2)
 
         # apply all to all to gather back attention heads and split sequence
