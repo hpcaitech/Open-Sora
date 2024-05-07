@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import os
 from einops import rearrange
 from rotary_embedding_torch import RotaryEmbedding
 from timm.models.layers import DropPath
@@ -23,6 +24,7 @@ from opensora.models.layers.blocks import (
 )
 from opensora.registry import MODELS
 from transformers import PretrainedConfig, PreTrainedModel
+from opensora.utils.ckpt_utils import load_checkpoint
 
 
 class STDiT2Block(nn.Module):
@@ -502,8 +504,22 @@ class STDiT2(PreTrainedModel):
 @MODELS.register_module("STDiT2-XL/2")
 def STDiT2_XL_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
-        model = STDiT2.from_pretrained(from_pretrained, **kwargs)
+        if os.path.isdir(from_pretrained) or os.path.isfile(from_pretrained):
+            # if it is a directory or a file, we load the checkpoint manually
+            config = STDiT2Config(
+                depth=28,
+                hidden_size=1152,
+                patch_size=(1, 2, 2),
+                num_heads=16, **kwargs
+            )
+            model = STDiT2(config)
+            load_checkpoint(model, from_pretrained)
+            return model
+        else:
+            # otherwise, we load the model from hugging face hub
+            return STDiT2.from_pretrained(from_pretrained)
     else:
+        # create a new model
         config = STDiT2Config(
             depth=28,
             hidden_size=1152,
