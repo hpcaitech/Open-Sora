@@ -58,7 +58,7 @@ class PixArtBlock(nn.Module):
         num_heads,
         mlp_ratio=4.0,
         drop_path=0.0,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
         qk_norm=False,
@@ -67,7 +67,7 @@ class PixArtBlock(nn.Module):
     ):
         super().__init__()
         self.hidden_size = hidden_size
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self._enable_sequence_parallelism = enable_sequence_parallelism
         assert not enable_sequence_parallelism, "Sequence parallelism is not supported in this version."
 
@@ -79,7 +79,7 @@ class PixArtBlock(nn.Module):
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flash_attn,
             qk_norm=qk_norm,
             sr_ratio=sr_ratio,
             sampling=sampling,
@@ -136,7 +136,7 @@ class PixArt_Sigma(nn.Module):
         qk_norm=False,
         space_scale=1.0,
         time_scale=1.0,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
         kv_compress_config=None,
@@ -159,7 +159,7 @@ class PixArt_Sigma(nn.Module):
         self.no_temporal_pos_emb = no_temporal_pos_emb
         self.depth = depth
         self.mlp_ratio = mlp_ratio
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self.enable_layernorm_kernel = enable_layernorm_kernel
         self.space_scale = space_scale
         self.time_scale = time_scale
@@ -195,7 +195,7 @@ class PixArt_Sigma(nn.Module):
                     num_heads,
                     mlp_ratio=mlp_ratio,
                     drop_path=drop_path[i],
-                    enable_flashattn=enable_flashattn,
+                    enable_flash_attn=enable_flash_attn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
                     qk_norm=qk_norm,
                     sr_ratio=(
