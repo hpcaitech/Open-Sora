@@ -1,10 +1,10 @@
+import os
 from copy import deepcopy
 from datetime import timedelta
 from pprint import pprint
 
 import torch
 import torch.distributed as dist
-import wandb
 from colossalai.booster import Booster
 from colossalai.booster.plugin import LowLevelZeroPlugin
 from colossalai.cluster import DistCoordinator
@@ -12,6 +12,7 @@ from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
 from tqdm import tqdm
 
+import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import (
     get_data_parallel_group,
@@ -23,8 +24,8 @@ from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
-    create_experiment_workspace,
     create_tensorboard_writer,
+    define_experiment_workspace,
     parse_configs,
     save_training_config,
 )
@@ -37,8 +38,6 @@ def main():
     # 1. args & cfg
     # ======================================================
     cfg = parse_configs(training=True)
-    exp_name, exp_dir = create_experiment_workspace(cfg)
-    save_training_config(cfg._cfg_dict, exp_dir)
 
     # ======================================================
     # 2. runtime variables & colossalai launch
@@ -55,7 +54,14 @@ def main():
     device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
 
-    # 2.2. init logger, tensorboard & wandb
+    # 2.2. init exp_dir, logger, tensorboard & wandb
+    exp_name, exp_dir = define_experiment_workspace(cfg)
+    coordinator.block_all()
+    if coordinator.is_master():
+        os.makedirs(exp_dir, exist_ok=True)
+        save_training_config(cfg._cfg_dict, exp_dir)
+    coordinator.block_all()
+
     if not coordinator.is_master():
         logger = create_logger(None)
     else:
