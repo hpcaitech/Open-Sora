@@ -291,7 +291,7 @@ def main():
                     additional_args=model_args,
                     mask=masks,  # scheduler must support mask
                 )
-                samples = vae.decode(samples.to(dtype))
+                samples = vae.decode(samples.to(dtype), num_frames=cfg.num_frames)
                 video_clips.append(samples)
 
                 # 4.7. save video
