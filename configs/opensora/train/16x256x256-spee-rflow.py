@@ -22,8 +22,8 @@ model = dict(
     # from_pretrained="PixArt-XL-2-512x512.pth",
     # from_pretrained = "/home/zhaowangbo/wangbo/PixArt-alpha/pretrained_models/OpenSora-v1-HQ-16x512x512.pth",
     # from_pretrained = "OpenSora-v1-HQ-16x512x512.pth",
-    from_pretrained =  "PRETRAINED_MODEL",
-    enable_flashattn=True,
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 # mask_ratios = [0.5, 0.29, 0.07, 0.07, 0.07]

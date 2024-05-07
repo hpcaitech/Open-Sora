@@ -133,7 +133,7 @@ def main():
         input_size=latent_size,
         in_channels=vae.out_channels,
         caption_channels=text_encoder.output_dim,
-        model_max_length=text_encoder.model_max_length
+        model_max_length=text_encoder.model_max_length,
     )
     model_numel, model_numel_trainable = get_model_numel(model)
     logger.info(
@@ -238,6 +238,7 @@ def main():
                     x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y)
+                breakpoint()
 
                 # Mask
                 if cfg.mask_ratios is not None:

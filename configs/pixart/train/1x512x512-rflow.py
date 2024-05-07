@@ -21,8 +21,8 @@ model = dict(
     time_scale=1.0,
     no_temporal_pos_emb=True,
     # from_pretrained="PixArt-XL-2-512x512.pth",
-    from_pretrained =  "PRETRAINED_MODEL",
-    enable_flashattn=True,
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(

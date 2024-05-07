@@ -228,7 +228,7 @@ class KVCompressAttention(nn.Module):
         attn_drop: float = 0.0,
         proj_drop: float = 0.0,
         norm_layer: nn.Module = LlamaRMSNorm,
-        enable_flashattn: bool = False,
+        enable_flash_attn: bool = False,
         sampling="conv",
         sr_ratio=1,
         mem_eff_attention=False,
@@ -240,7 +240,7 @@ class KVCompressAttention(nn.Module):
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
         self.scale = self.head_dim**-0.5
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
 
@@ -291,7 +291,7 @@ class KVCompressAttention(nn.Module):
         new_N = N
         H, W = HW
         # flash attn is not memory efficient for small sequences, this is empirical
-        enable_flashattn = self.enable_flashattn and (N > B)
+        enable_flash_attn = self.enable_flash_attn and (N > B)
 
         qkv = self.qkv(x).reshape(B, N, 3, C)
         q, k, v = qkv.unbind(2)
@@ -307,7 +307,7 @@ class KVCompressAttention(nn.Module):
 
         q, k = self.q_norm(q), self.k_norm(k)
 
-        if enable_flashattn:
+        if enable_flash_attn:
             from flash_attn import flash_attn_func
 
             x = flash_attn_func(
@@ -340,7 +340,7 @@ class KVCompressAttention(nn.Module):
             x = attn @ v
 
         x_output_shape = (B, N, C)
-        if not enable_flashattn:
+        if not enable_flash_attn:
             x = x.transpose(1, 2)
         x = x.reshape(x_output_shape)
         x = self.proj(x)

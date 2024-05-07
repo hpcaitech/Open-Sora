@@ -34,12 +34,12 @@ model = dict(
     type="STDiT3-XL/2",
     from_pretrained=None,
     qk_norm=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
     type="VideoAutoencoderPipeline",
-    from_pretrained="pretrained_models/vae-v3",
+    from_pretrained="pretrained_models/vae-v2",
     micro_frame_size=17,
     vae_2d=dict(
         type="VideoAutoencoderKL",

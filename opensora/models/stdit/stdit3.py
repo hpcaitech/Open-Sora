@@ -34,14 +34,14 @@ class STDiT3Block(nn.Module):
         rope=None,
         qk_norm=False,
         temporal=False,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
     ):
         super().__init__()
         self.temporal = temporal
         self.hidden_size = hidden_size
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self._enable_sequence_parallelism = enable_sequence_parallelism
         assert not enable_sequence_parallelism, "Sequence parallelism is not supported in STDiT3Block"
 
@@ -55,7 +55,7 @@ class STDiT3Block(nn.Module):
             qkv_bias=True,
             qk_norm=qk_norm,
             rope=rope,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flash_attn,
         )
         self.cross_attn = mha_cls(hidden_size, num_heads)
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -163,7 +163,7 @@ class STDiT3(nn.Module):
         model_max_length=300,
         dtype=torch.float32,
         qk_norm=False,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
         only_train_temporal=False,
@@ -182,7 +182,7 @@ class STDiT3(nn.Module):
         # computation related
         self.drop_path = drop_path
         self.dtype = dtype
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self.enable_layernorm_kernel = enable_layernorm_kernel
 
         # input size related
@@ -217,7 +217,7 @@ class STDiT3(nn.Module):
                     mlp_ratio=mlp_ratio,
                     drop_path=drop_path[i],
                     qk_norm=qk_norm,
-                    enable_flashattn=enable_flashattn,
+                    enable_flash_attn=enable_flash_attn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
                     enable_sequence_parallelism=enable_sequence_parallelism,
                 )
@@ -235,7 +235,7 @@ class STDiT3(nn.Module):
                     mlp_ratio=mlp_ratio,
                     drop_path=drop_path[i],
                     qk_norm=qk_norm,
-                    enable_flashattn=enable_flashattn,
+                    enable_flash_attn=enable_flash_attn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
                     enable_sequence_parallelism=enable_sequence_parallelism,
                     # temporal
@@ -297,6 +297,7 @@ class STDiT3(nn.Module):
         x = x.to(self.dtype)
         timestep = timestep.to(self.dtype)
         y = y.to(self.dtype)
+        breakpoint()
 
         # === get pos embed ===
         _, _, Tx, Hx, Wx = x.size()
