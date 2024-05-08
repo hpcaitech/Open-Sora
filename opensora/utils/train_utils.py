@@ -3,6 +3,35 @@ import random
 from collections import OrderedDict
 
 import torch
+import torch.distributed as dist
+from colossalai.booster.plugin import LowLevelZeroPlugin
+
+from opensora.acceleration.parallel_states import set_data_parallel_group, set_sequence_parallel_group
+from opensora.acceleration.plugin import ZeroSeqParallelPlugin
+
+
+def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
+    if plugin == "zero2":
+        plugin = LowLevelZeroPlugin(
+            stage=2,
+            precision=dtype,
+            initial_scale=2**16,
+            max_norm=grad_clip,
+        )
+        set_data_parallel_group(dist.group.WORLD)
+    elif plugin == "zero2-seq":
+        plugin = ZeroSeqParallelPlugin(
+            sp_size=sp_size,
+            stage=2,
+            precision=dtype,
+            initial_scale=2**16,
+            max_norm=grad_clip,
+        )
+        set_sequence_parallel_group(plugin.sp_group)
+        set_data_parallel_group(plugin.dp_group)
+    else:
+        raise ValueError(f"Unknown plugin {plugin}")
+    return plugin
 
 
 @torch.no_grad()
@@ -18,7 +47,7 @@ def update_ema(
     for name, param in model_params.items():
         if name == "pos_embed":
             continue
-        if param.requires_grad == False:
+        if not param.requires_grad:
             continue
         if not sharded:
             param_data = param.data
