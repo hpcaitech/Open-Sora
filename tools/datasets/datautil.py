@@ -486,13 +486,15 @@ def main(args):
     if args.refine_llm_caption:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
+    if args.append_text is not None:
+        assert "text" in data.columns
+        data["text"] = data["text"] + args.append_text
     if args.clean_caption:
         assert "text" in data.columns
         data["text"] = apply(
             data["text"],
             partial(text_preprocessing, use_text_preprocessing=True),
         )
-
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
@@ -597,6 +599,7 @@ def parse_args():
     parser.add_argument(
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
     )
+    parser.add_argument("--append-text", type=str, default=None, help="append text to the caption")
 
     # score filtering
     parser.add_argument("--fmin", type=int, default=None, help="filter the dataset by minimum number of frames")
@@ -661,6 +664,8 @@ def get_output_path(args, input_name):
         name += "_cmcaption"
     if args.count_num_token:
         name += "_ntoken"
+    if args.append_text is not None:
+        name += "_appendtext"
 
     # score filtering
     if args.fmin is not None:
