@@ -27,7 +27,7 @@ model = dict(
 )
 vae = dict(
     type="VideoAutoencoderPipeline",
-    from_pretrained="pretrained_models/vae-v2",
+    from_pretrained="pretrained_models/vae-v3",
     micro_frame_size=17,
     vae_2d=dict(
         type="VideoAutoencoderKL",
