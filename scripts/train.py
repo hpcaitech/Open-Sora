@@ -98,7 +98,7 @@ def main():
     )
     if cfg.dataset.type == DEFAULT_DATASET_NAME:
         dataloader = prepare_dataloader(**dataloader_args)
-        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.sp_size
+        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
         logger.info("Total batch size: %s", total_batch_size)
     else:
         dataloader = prepare_variable_dataloader(
