@@ -5,7 +5,7 @@ set -e
 
 CKPT=$1
 
-CMD="python scripts/inference.py configs/opensora-v1-1/inference/sample.py"
+CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
 CMD_REF="python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py"
 if [[ $CKPT == *"ema"* ]]; then
   parentdir=$(dirname $CKPT)
@@ -141,8 +141,8 @@ function run_video_h() { # 23min
 
 # vbench has 950 samples
 
-VBENCH_BS=32 # 80GB
-VBENCH_FRAMES=16
+VBENCH_BS=1 # 80GB
+VBENCH_FRAMES=51
 VBENCH_H=240
 VBENCH_W=426
 
