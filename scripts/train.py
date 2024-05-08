@@ -45,7 +45,7 @@ def main():
     # NOTE: A very large timeout is set to avoid some processes exit early
     dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
     torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
-    set_seed(1024)
+    set_seed(cfg.get("seed", 1024))
     coordinator = DistCoordinator()
     device = get_current_device()
 
@@ -102,8 +102,8 @@ def main():
         logger.info("Total batch size: %s", total_batch_size)
     else:
         dataloader = prepare_variable_dataloader(
-            bucket_config=cfg.bucket_config,
-            num_bucket_build_workers=cfg.num_bucket_build_workers,
+            bucket_config=cfg.get("bucket_config", None),
+            num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
             **dataloader_args,
         )
 

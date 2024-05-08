@@ -22,8 +22,13 @@ def parse_args(training=False):
     # ======================================================
     # General
     # ======================================================
-    parser.add_argument("--seed", default=42, type=int, help="generation seed")
-    parser.add_argument("--ckpt-path", type=str, help="path to model ckpt; will overwrite cfg.ckpt_path if specified")
+    parser.add_argument("--seed", default=None, type=int, help="seed for reproducibility")
+    parser.add_argument(
+        "--ckpt-path",
+        default=None,
+        type=str,
+        help="path to model ckpt; will overwrite cfg.model.from_pretrained if specified",
+    )
     parser.add_argument("--batch-size", default=None, type=int, help="batch size")
     parser.add_argument("--outputs", default=None, type=str, help="the dir to save model weights")
 
@@ -121,23 +126,13 @@ def merge_args(cfg, args, training=False):
                 cfg["prompt"] = cfg["prompt"][args.start_index :]
             elif args.end_index is not None:
                 cfg["prompt"] = cfg["prompt"][: args.end_index]
+        if "multi_resolution" not in cfg:
+            cfg["multi_resolution"] = False
     else:
         # Training only
         # - Allow not set
-        if "mask_ratios" not in cfg:
-            cfg["mask_ratios"] = None
-        if "start_from_scratch" not in cfg:
-            cfg["start_from_scratch"] = False
-        if "bucket_config" not in cfg:
-            cfg["bucket_config"] = None
         if "transform_name" not in cfg.dataset:
             cfg.dataset["transform_name"] = "center"
-        if "num_bucket_build_workers" not in cfg:
-            cfg["num_bucket_build_workers"] = 1
-
-    # Both training and inference
-    if "multi_resolution" not in cfg:
-        cfg["multi_resolution"] = False
 
     return cfg
 
