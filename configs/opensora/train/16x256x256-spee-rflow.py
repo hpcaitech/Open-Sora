@@ -28,8 +28,8 @@ model = dict(
 )
 # mask_ratios = [0.5, 0.29, 0.07, 0.07, 0.07]
 # mask_ratios = {
-#     "mask_no": 0.9,
-#     "mask_random": 0.06,
+#     "identity": 0.9,
+#     "random": 0.06,
 #     "mask_head": 0.01,
 #     "mask_tail": 0.01,
 #     "mask_head_tail": 0.02,

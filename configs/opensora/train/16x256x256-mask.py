@@ -24,8 +24,8 @@ model = dict(
     enable_layernorm_kernel=True,
 )
 mask_ratios = {
-    "mask_no": 0.7,
-    "mask_random": 0.15,
+    "identity": 0.7,
+    "random": 0.15,
     "mask_head": 0.05,
     "mask_tail": 0.05,
     "mask_head_tail": 0.05,

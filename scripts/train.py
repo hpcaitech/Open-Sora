@@ -23,8 +23,15 @@ from opensora.utils.config_utils import (
     parse_configs,
     save_training_config,
 )
-from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
-from opensora.utils.train_utils import MaskGenerator, create_colossalai_plugin, create_logger, update_ema
+from opensora.utils.misc import (
+    all_reduce_mean,
+    create_logger,
+    format_numel_str,
+    get_model_numel,
+    requires_grad,
+    to_torch_dtype,
+)
+from opensora.utils.train_utils import MaskGenerator, create_colossalai_plugin, update_ema
 
 DEFAULT_DATASET_NAME = "VideoTextDataset"
 
@@ -79,6 +86,7 @@ def main():
     # ======================================================
     # 2. build dataset and dataloader
     # ======================================================
+    logger.info("Building dataset...")
     # == build dataset ==
     dataset = build_module(cfg.dataset, DATASETS)
     logger.info("Dataset contains %s samples.", len(dataset))
@@ -98,16 +106,21 @@ def main():
         dataloader = prepare_dataloader(**dataloader_args)
         total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
         logger.info("Total batch size: %s", total_batch_size)
+        num_steps_per_epoch = len(dataloader)
+        sampler_to_io = None
     else:
         dataloader = prepare_variable_dataloader(
             bucket_config=cfg.get("bucket_config", None),
             num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
             **dataloader_args,
         )
+        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
+        sampler_to_io = None if cfg.get("start_from_scratch ", False) else dataloader.batch_sampler
 
     # ======================================================
     # 3. build model
     # ======================================================
+    logger.info("Building models...")
     # == build text-encoder and vae ==
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
     vae = build_module(cfg.vae, MODELS).to(device, dtype)
@@ -159,8 +172,9 @@ def main():
         mask_generator = MaskGenerator(cfg.mask_ratios)
 
     # =======================================================
-    # 5. distributed training preparation with colossalai
+    # 4. distributed training preparation with colossalai
     # =======================================================
+    logger.info("Preparing for distributed training...")
     # == boosting ==
     # NOTE: we set dtype first to make initialization of model consistent with the dtype; then reset it to the fp32 as we make diffusion scheduler in fp32
     torch.set_default_dtype(dtype)
@@ -172,19 +186,12 @@ def main():
     )
     torch.set_default_dtype(torch.float)
     logger.info("Boosting model for distributed training")
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        num_steps_per_epoch = len(dataloader)
-        sampler_to_io = None
-    else:
-        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
-        sampler_to_io = None if cfg.get("start_from_scratch ", False) else dataloader.batch_sampler
-
-    cfg_epochs = cfg.get("epochs", 1000)
-    logger.info("Training for %s epochs with %s steps per epoch", cfg_epochs, num_steps_per_epoch)
 
     # == global variables ==
+    cfg_epochs = cfg.get("epochs", 1000)
     start_epoch = start_step = log_step = sampler_start_idx = acc_step = 0
     running_loss = 0.0
+    logger.info("Training for %s epochs with %s steps per epoch", cfg_epochs, num_steps_per_epoch)
 
     # == resume ==
     if cfg.get("load", None) is not None:
@@ -207,7 +214,7 @@ def main():
     model_sharding(ema)
 
     # =======================================================
-    # 6. training loop
+    # 5. training loop
     # =======================================================
     dist.barrier()
     for epoch in range(start_epoch, cfg_epochs):

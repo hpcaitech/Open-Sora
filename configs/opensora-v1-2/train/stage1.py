@@ -69,16 +69,16 @@ scheduler = dict(
 
 # Mask settings
 mask_ratios = {
-    "mask_random": 0.2,
-    "mask_intepolate": 0.01,
-    "mask_quarter_random": 0.01,
-    "mask_quarter_head": 0.01,
-    "mask_quarter_tail": 0.01,
-    "mask_quarter_head_tail": 0.01,
-    "mask_image_random": 0.05,
-    "mask_image_head": 0.1,
-    "mask_image_tail": 0.05,
-    "mask_image_head_tail": 0.05,
+    "random": 0.2,
+    "intepolate": 0.01,
+    "quarter_random": 0.01,
+    "quarter_head": 0.01,
+    "quarter_tail": 0.01,
+    "quarter_head_tail": 0.01,
+    "image_random": 0.05,
+    "image_head": 0.1,
+    "image_tail": 0.05,
+    "image_head_tail": 0.05,
 }
 
 # Log settings

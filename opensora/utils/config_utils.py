@@ -86,16 +86,17 @@ def merge_args(cfg, args, training=False):
     if args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
-    if not training and args.image_size is not None and "dataset" in cfg:
-        cfg.dataset["image_size"] = args.image_size
-    if not training and args.num_frames is not None and "dataset" in cfg:
-        cfg.dataset["num_frames"] = args.num_frames
-    if not training and args.cfg_scale is not None:
-        cfg.scheduler["cfg_scale"] = args.cfg_scale
-        args.cfg_scale = None
-    if not training and args.num_sampling_steps is not None:
-        cfg.scheduler["num_sampling_steps"] = args.num_sampling_steps
-        args.num_sampling_steps = None
+    if not training:
+        if args.image_size is not None and "dataset" in cfg:
+            cfg.dataset["image_size"] = args.image_size
+        if args.num_frames is not None and "dataset" in cfg:
+            cfg.dataset["num_frames"] = args.num_frames
+        if args.cfg_scale is not None:
+            cfg.scheduler["cfg_scale"] = args.cfg_scale
+            args.cfg_scale = None
+        if args.num_sampling_steps is not None:
+            cfg.scheduler["num_sampling_steps"] = args.num_sampling_steps
+            args.num_sampling_steps = None
 
     for k, v in vars(args).items():
         if v is not None:
@@ -128,11 +129,6 @@ def merge_args(cfg, args, training=False):
                 cfg["prompt"] = cfg["prompt"][: args.end_index]
         if "multi_resolution" not in cfg:
             cfg["multi_resolution"] = False
-    else:
-        # Training only
-        # - Allow not set
-        if "transform_name" not in cfg.dataset:
-            cfg.dataset["transform_name"] = "center"
 
     return cfg
 
