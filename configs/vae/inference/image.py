@@ -36,6 +36,7 @@ dtype = "bf16"
 # loss weights
 perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
 kl_loss_weight = 1e-6
+calc_std = True
 
 # Others
 batch_size = 1

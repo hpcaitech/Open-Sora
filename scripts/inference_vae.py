@@ -87,6 +87,12 @@ def main():
 
     running_loss = running_nll = running_nll_z = 0.0
     loss_steps = 0
+
+    calc_std = cfg.get("calc_std", False)
+    if calc_std:
+        running_std_sum = 0.0
+        num_samples = 0.0
+
     with tqdm(
         range(total_steps),
         disable=not coordinator.is_master(),
@@ -101,6 +107,13 @@ def main():
 
             #  ===== VAE =====
             z, posterior, x_z = model.encode(x)
+
+            # calc std
+            if calc_std:
+                num_samples += z.size(0)
+                running_std_sum += z.std(dim=(1, 2, 3, 4)).sum().item()
+                pbar.set_postfix({"z std": running_std_sum / num_samples, "std sum": running_std_sum})
+
             assert list(z.shape[2:]) == latent_size, f"z shape: {z.shape}, latent_size: {latent_size}"
             x_rec, x_z_rec = model.decode(z, num_frames=x.size(2))
             x_ref = model.spatial_vae.decode(x_z)
@@ -130,6 +143,8 @@ def main():
     print("test vae loss:", running_loss)
     print("test nll loss:", running_nll)
     print("test nll_z loss:", running_nll_z)
+    if calc_std:
+        print("z std:", running_std_sum / num_samples)
 
 
 if __name__ == "__main__":
