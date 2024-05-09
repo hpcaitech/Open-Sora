@@ -249,8 +249,7 @@ Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the
 
 ```bash
 # text to video
-python scripts/inference.py configs/opensora-v1-1/inference/sample.py \
-    --ckpt-path CKPT_PATH --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
 ```
 
 See [here](docs/commands.md#inference-with-open-sora-11) for more instructions including text-to-image, image-to-video, video-to-video, and infinite time generation.
