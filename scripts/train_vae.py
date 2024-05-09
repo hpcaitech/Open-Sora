@@ -5,6 +5,7 @@ from pprint import pformat
 
 import torch
 import torch.distributed as dist
+import wandb
 from colossalai.booster import Booster
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
@@ -12,13 +13,12 @@ from colossalai.utils import get_current_device, set_seed
 from einops import rearrange
 from tqdm import tqdm
 
-import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader
 from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
-from opensora.utils.ckpt_utils import load_json, save_json
+from opensora.utils.ckpt_utils import load, save
 from opensora.utils.config_utils import (
     create_tensorboard_writer,
     define_experiment_workspace,
@@ -26,16 +26,16 @@ from opensora.utils.config_utils import (
     save_training_config,
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, to_torch_dtype
-from opensora.utils.train_utils import create_colossalai_plugin
+from opensora.utils.train_utils import create_colossalai_plugin, create_logger
 
 DEFAULT_DATASET_NAME = "VideoTextDataset"
-from opensora.utils.train_utils import create_logger
 
 
 def main():
     # ======================================================
-    # 1. configs & runtime variables & colossalai launch
+    # 1. configs & runtime variables
     # ======================================================
+    # == parse configs ==
     cfg = parse_configs(training=True)
 
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
@@ -47,7 +47,7 @@ def main():
     # NOTE: A very large timeout is set to avoid some processes exit early
     dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
     torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
-    set_seed(1024)
+    set_seed(cfg.get("seed", 1024))
     coordinator = DistCoordinator()
     device = get_current_device()
 
@@ -60,15 +60,14 @@ def main():
     coordinator.block_all()
 
     # == init logger, tensorboard & wandb ==
+    logger = create_logger(exp_dir)
     if coordinator.is_master():
-        logger = create_logger(exp_dir)
-        logger.info(f"Experiment directory created at {exp_dir}")
+        logger.info("Experiment directory created at %s", exp_dir)
         logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
+
         tb_writer = create_tensorboard_writer(exp_dir)
         if cfg.get("wandb", False):
-            wandb.init(project="minisora", name=exp_name, config=cfg.to_dict())
-    else:
-        logger = create_logger(None)
+            wandb.init(project="minisora", name=exp_name, config=cfg.to_dict(), dir="./outputs/wandb")
 
     # == init ColossalAI booster ==
     plugin = create_colossalai_plugin(
@@ -82,29 +81,25 @@ def main():
     # ======================================================
     # 2. build dataset and dataloader
     # ======================================================
+    # == build dataset ==
+    assert cfg.dataset.type == DEFAULT_DATASET_NAME, "Only support VideoTextDataset for vae training"
     dataset = build_module(cfg.dataset, DATASETS)
     logger.info("Dataset contains %s samples.", len(dataset))
+
     # == build dataloader ==
     dataloader_args = dict(
         dataset=dataset,
         batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
-        seed=cfg.seed,
+        num_workers=cfg.get("num_workers", 4),
+        seed=cfg.get("seed", 1024),
         shuffle=True,
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
     )
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        dataloader = prepare_dataloader(**dataloader_args)
-        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
-        logger.info("Total batch size: %s", total_batch_size)
-    else:
-        dataloader = prepare_variable_dataloader(
-            bucket_config=cfg.bucket_config,
-            num_bucket_build_workers=cfg.num_bucket_build_workers,
-            **dataloader_args,
-        )
+    dataloader = prepare_dataloader(**dataloader_args)
+    total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
+    logger.info("Total batch size: %s", total_batch_size)
 
     # ======================================================
     # 3. build model
@@ -114,17 +109,19 @@ def main():
     model.train()
     model_numel, model_numel_trainable = get_model_numel(model)
     logger.info(
-        "Trainable model params: %s, Total model params: %s",
+        "[VAE] Trainable model params: %s, Total model params: %s",
         format_numel_str(model_numel_trainable),
         format_numel_str(model_numel),
     )
+
     # == build discriminator model ==
-    if cfg.get("discriminator", False) != False:
+    use_discriminator = cfg.get("discriminator", None) is not None
+    if use_discriminator:
         discriminator = build_module(cfg.discriminator, MODELS).to(device, dtype)
         discriminator.train()
         discriminator_numel, discriminator_numel_trainable = get_model_numel(discriminator)
         logger.info(
-            "Trainable model params: %s, Total model params: %s",
+            "[Discriminator] Trainable model params: %s, Total model params: %s",
             format_numel_str(discriminator_numel_trainable),
             format_numel_str(discriminator_numel),
         )
@@ -138,7 +135,7 @@ def main():
         dtype=dtype,
     )
 
-    if cfg.get("discriminator", False) != False:
+    if use_discriminator:
         adversarial_loss_fn = AdversarialLoss(
             discriminator_factor=cfg.get("discriminator_factor", 1),
             discriminator_start=cfg.get("discriminator_start", -1),
@@ -164,7 +161,7 @@ def main():
     lr_scheduler = None
 
     # == setup discriminator optimizer ==
-    if cfg.get("discriminator", False) != False:
+    if use_discriminator:
         disc_optimizer = HybridAdam(
             filter(lambda p: p.requires_grad, discriminator.parameters()),
             adamw_mode=True,
@@ -189,7 +186,7 @@ def main():
         lr_scheduler=lr_scheduler,
         dataloader=dataloader,
     )
-    if cfg.get("discriminator", False) != False:
+    if use_discriminator:
         discriminator, disc_optimizer, _, _, disc_lr_scheduler = booster.boost(
             model=discriminator,
             optimizer=disc_optimizer,
@@ -197,47 +194,40 @@ def main():
         )
     torch.set_default_dtype(torch.float)
     logger.info("Boosting model for distributed training")
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        num_steps_per_epoch = len(dataloader)
-    else:
-        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
-        None if cfg.get("start_from_scratch ", False) else dataloader.batch_sampler
+    num_steps_per_epoch = len(dataloader)
 
     cfg_epochs = cfg.get("epochs", 1000)
     logger.info("Training for %s epochs with %s steps per epoch", cfg_epochs, num_steps_per_epoch)
 
     # == global variables ==
     start_epoch = start_step = log_step = sampler_start_idx = acc_step = 0
-    running_loss = 0.0
-    running_disc_loss = 0.0
+    running_loss = running_disc_loss = 0.0
 
     # == resume ==
     if cfg.get("load", None) is not None:
         logger.info("Loading checkpoint")
-        booster.load_model(model, os.path.join(cfg.load, "model"))
-        booster.load_optimizer(optimizer, os.path.join(cfg.load, "optimizer"))
-        if cfg.get("discriminator", False) != False and os.path.exists(os.path.join(cfg.load, "discriminator")):
+        start_epoch, start_step, sampler_start_idx = load(
+            booster,
+            cfg.load,
+            model=model,
+            optimizer=optimizer,
+            lr_scheduler=lr_scheduler,
+        )
+        if use_discriminator and os.path.exists(os.path.join(cfg.load, "discriminator")):
             booster.load_model(discriminator, os.path.join(cfg.load, "discriminator"))
             booster.load_optimizer(disc_optimizer, os.path.join(cfg.load, "disc_optimizer"))
-        running_states = load_json(os.path.join(cfg.load, "running_states.json"))
-        start_epoch, start_step, sampler_start_idx = (
-            running_states["epoch"],
-            running_states["step"],
-            running_states["sample_start_index"],
-        )
-        logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
         dist.barrier()
+        logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
 
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        dataloader.sampler.set_start_index(sampler_start_idx)
+    dataloader.sampler.set_start_index(sampler_start_idx)
 
     # =======================================================
     # 5. training loop
     # =======================================================
+    dist.barrier()
     for epoch in range(start_epoch, cfg_epochs):
         # == set dataloader to new epoch ==
-        if cfg.dataset.type == DEFAULT_DATASET_NAME:
-            dataloader.sampler.set_epoch(epoch)
+        dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
         logger.info("Beginning epoch %s...", epoch)
 
@@ -251,10 +241,15 @@ def main():
         ) as pbar:
             for step, batch in pbar:
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                # if random.random() < cfg.get("mixed_image_ratio", 0.0):
-                #     x = x[:, :, :1, :, :]
-                length = random.randint(1, x.size(2))
-                x = x[:, :, :length, :, :]
+
+                # == mixed training setting ==
+                mixed_strategy = cfg.get("mixed_strategy", None)
+                if mixed_strategy == "mixed_video_image":
+                    if random.random() < cfg.get("mixed_image_ratio", 0.0):
+                        x = x[:, :, :1, :, :]
+                elif mixed_strategy == "mixed_video_random":
+                    length = random.randint(1, x.size(2))
+                    x = x[:, :, :length, :, :]
 
                 # == vae encoding ===
                 x_rec, x_z_rec, z, posterior, x_z = model(x)
@@ -264,29 +259,27 @@ def main():
                 disc_loss = torch.tensor(0.0, device=device, dtype=dtype)
                 log_dict = {}
 
-                # == real image reconstruction loss computation ==
+                # == loss: real image reconstruction ==
                 nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
                 log_dict["kl_loss"] = weighted_kl_loss.item()
                 log_dict["nll_loss"] = weighted_nll_loss.item()
                 if cfg.get("use_real_rec_loss", False):
                     vae_loss += weighted_nll_loss + weighted_kl_loss
 
-                # == temporal vae reconstruction loss computation ==
+                # == loss: temporal vae reconstruction ==
                 _, weighted_z_nll_loss, _ = vae_loss_fn(x_z, x_z_rec, posterior, no_perceptual=True)
                 log_dict["z_nll_loss"] = weighted_z_nll_loss.item()
-
-                # == use z reconstruction loss ==
                 if cfg.get("use_z_rec_loss", False):
                     vae_loss += weighted_z_nll_loss
 
-                # == use image loss only ==
+                # == loss: image only distillation ==
                 if cfg.get("use_image_identity_loss", False) and x.size(2) == 1:
                     _, image_identity_loss, _ = vae_loss_fn(x_z, z, posterior, no_perceptual=True)
                     vae_loss += image_identity_loss
                     log_dict["image_identity_loss"] = image_identity_loss.item()
 
-                # == generator adversarial loss ==
-                if cfg.get("discriminator", False) != False:
+                # == loss: generator adversarial ==
+                if use_discriminator:
                     recon_video = rearrange(x_rec, "b c t h w -> (b t) c h w").contiguous()
                     global_step = epoch * num_steps_per_epoch + step
                     fake_logits = discriminator(recon_video.contiguous())
@@ -297,15 +290,18 @@ def main():
                         global_step,
                         is_training=model.training,
                     )
+                    log_dict["adversarial_loss"] = adversarial_loss.item()
                     vae_loss += adversarial_loss
 
                 # == generator backward & update ==
                 optimizer.zero_grad()
                 booster.backward(loss=vae_loss, optimizer=optimizer)
                 optimizer.step()
+                all_reduce_mean(vae_loss)
+                running_loss += vae_loss.item()
 
-                # == discriminator adversarial loss ==
-                if cfg.get("discriminator", False) != False:
+                # == loss: discriminator adversarial ==
+                if use_discriminator:
                     real_video = rearrange(x, "b c t h w -> (b t) c h w").contiguous()
                     fake_video = rearrange(x_rec, "b c t h w -> (b t) c h w").contiguous()
                     real_logits = discriminator(real_video.contiguous().detach())
@@ -316,6 +312,7 @@ def main():
                         global_step,
                     )
                     disc_loss = weighted_d_adversarial_loss
+                    log_dict["disc_loss"] = disc_loss.item()
 
                     # == discriminator backward & update ==
                     disc_optimizer.zero_grad()
@@ -325,21 +322,21 @@ def main():
                     running_disc_loss += disc_loss.item()
 
                 # == update log info ==
-                all_reduce_mean(vae_loss)
-                running_loss += vae_loss.item()
                 global_step = epoch * num_steps_per_epoch + step
                 log_step += 1
                 acc_step += 1
 
                 # == logging ==
-                if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
+                if coordinator.is_master() and (global_step + 1) % cfg.get("log_every", 1) == 0:
                     avg_loss = running_loss / log_step
                     avg_disc_loss = running_disc_loss / log_step
+                    # progress bar
                     pbar.set_postfix(
                         {"loss": avg_loss, "disc_loss": avg_disc_loss, "step": step, "global_step": global_step}
                     )
                     # tensorboard
                     tb_writer.add_scalar("loss", vae_loss.item(), global_step)
+                    # wandb
                     if cfg.wandb:
                         wandb.log(
                             {
@@ -352,33 +349,30 @@ def main():
                             },
                             step=global_step,
                         )
-                    running_loss = 0
-                    running_disc_loss = 0
+                    running_loss = running_disc_loss = 0.0
                     log_step = 0
 
                 # == checkpoint saving ==
-                if cfg.ckpt_every > 0 and (global_step + 1) % cfg.ckpt_every == 0:
-                    save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
-                    os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)  # already handled in booster save_model
-                    booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
-                    booster.save_optimizer(
-                        optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096
+                ckpt_every = cfg.get("ckpt_every", 0)
+                if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0:
+                    save(
+                        booster,
+                        exp_dir,
+                        model=model,
+                        optimizer=optimizer,
+                        lr_scheduler=lr_scheduler,
+                        epoch=epoch,
+                        step=step + 1,
+                        global_step=global_step + 1,
+                        batch_size=cfg.get("batch_size", None),
                     )
-                    if cfg.get("discriminator", False) != False:
+
+                    save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
+                    if use_discriminator:
                         booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
                         booster.save_optimizer(
                             disc_optimizer, os.path.join(save_dir, "disc_optimizer"), shard=True, size_per_shard=4096
                         )
-
-                    running_states = {
-                        "epoch": epoch,
-                        "step": step + 1,
-                        "global_step": global_step + 1,
-                        "sample_start_index": (step + 1) * cfg.batch_size,
-                    }
-
-                    if coordinator.is_master():
-                        save_json(running_states, os.path.join(save_dir, "running_states.json"))
                     dist.barrier()
 
                     logger.info(
@@ -389,12 +383,8 @@ def main():
                         exp_dir,
                     )
 
-        # the continue epochs are not resumed, so we need to reset the sampler start index and start step
-        if cfg.dataset.type == DEFAULT_DATASET_NAME:
-            dataloader.sampler.set_start_index(0)
-        else:
-            dataloader.batch_sampler.set_epoch(epoch + 1)
-            logger.info("Epoch done, recomputing batch sampler")
+        # NOTE: the continue epochs are not resumed, so we need to reset the sampler start index and start step
+        dataloader.sampler.set_start_index(0)
         start_step = 0
 
 
