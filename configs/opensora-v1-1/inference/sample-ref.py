@@ -38,10 +38,10 @@ reference_path = [
 # Define model
 model = dict(
     type="STDiT2-XL/2",
-    from_pretrained=None,
+    from_pretrained="hpcai-tech/OpenSora-STDiT-v2-stage3",
     input_sq_size=512,
     qk_norm=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
