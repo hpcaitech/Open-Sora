@@ -113,5 +113,5 @@ As we get one step closer to the replication of Sora, we find many limitations f
 - **Low aesthetic score**: we find the model's aesthetic score is not high. The problem is due to the lack of aesthetic score filtering, which is not conducted due to IO bottleneck. We plan to filter the data by aesthetic score and finetuning the model to improve the aesthetic score.
 - **Worse quality for longer video genration**: we find with a same prompt, the longer video has worse quality. This means the image quality is not equally adapted to different lengths of sequences.
 
-> - **Algorithm & Acceleration**: Zangwei Zheng, Xiangyu Peng, Shenggui Li, Hongxing Liu, Yukun Zhou
+> - **Algorithm & Acceleration**: Zangwei Zheng, Xiangyu Peng, Shenggui Li, Hongxing Liu, Yukun Zhou, Tianyi Li
 > - **Data Collection & Pipeline**: Xiangyu Peng, Zangwei Zheng, Chenhui Shen, Tom Young, Junjie Wang, Chenfeng Yu
