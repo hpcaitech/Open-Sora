@@ -1,12 +1,9 @@
-from functools import partial
-
 import torch
 from tqdm import tqdm
 
 from opensora.registry import SCHEDULERS
 
 from .rectified_flow import RFlowScheduler, timestep_transform
-from ..iddpm.gaussian_diffusion import _extract_into_tensor
 
 
 @SCHEDULERS.register_module("rflow")
@@ -66,12 +63,11 @@ class RFLOW:
         if self.use_timestep_transform:
             timesteps = [timestep_transform(t, additional_args, num_timesteps=self.num_timesteps) for t in timesteps]
 
-
         progress_wrap = tqdm if progress else (lambda x: x)
         for i, t in progress_wrap(enumerate(timesteps)):
             if mask is not None:
                 if mask.shape[0] != z.shape[0]:
-                    mask = mask.repeat(2, 1)  
+                    mask = mask.repeat(2, 1)
                 mask_t = (mask * self.num_timesteps).to(torch.int)
                 x0 = z.clone()
                 x_noise = self.scheduler.add_noise(x0, torch.randn_like(x0), t)
