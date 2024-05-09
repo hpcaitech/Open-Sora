@@ -82,8 +82,8 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
   Open-Sora improves **55%** training speed when training on 64x512x512 videos. Details locates
   at [acceleration.md](docs/acceleration.md).
 * 🔧 **Data preprocessing pipeline v1.0**,
-  including [downloading](/tools/datasets/README.md), [video cutting](/tools/scenedetect/README.md),
-  and [captioning](/tools/caption/README.md) tools. Our data collection plan can be found
+  including [downloading](tools/datasets/README.md), [video cutting](tools/scene_cut/README.md),
+  and [captioning](tools/caption/README.md) tools. Our data collection plan can be found
   at [datasets.md](docs/datasets.md).
 
 <details>
@@ -114,7 +114,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 * [x] Scaling model parameters and dataset size.
 * [x] Incoporate a better scheduler (rectified flow).
 * [x] Evaluation pipeline.
-* [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.).
+* [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.). See [the dataset](/docs/datasets.md) for more information
 * [x] Support image and video conditioning.
 * [x] Support variable aspect ratios, resolutions, durations.
 

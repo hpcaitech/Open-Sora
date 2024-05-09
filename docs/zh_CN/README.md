@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="../assets/readme/icon.png" width="250"/>
+    <img src="../../assets/readme/icon.png" width="250"/>
 <p>
 
 <div align="center">
@@ -21,11 +21,11 @@
 
  <h4>Open-Sora 项目目前处在早期阶段，并将持续更新。</h4>
 
-## 📰 资讯
-
+## 📰 资讯 
+> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md#-news)
 * **[2024.03.18]** 🔥 我们发布了**Open-Sora 1.0**，这是一个完全开源的视频生成项目。
-* Open-Sora 1.0 支持视频数据预处理、<a href="https://github.com/hpcaitech/ColossalAI"><img src="../assets/readme/colossal_ai.png" width="8%" ></a> 加速训练、推理等全套流程。
-* 我们提供的[模型权重](/#model-weights)只需 3 天的训练就能生成 2 秒的 512x512 视频。
+* Open-Sora 1.0 支持视频数据预处理、加速训练、推理等全套流程。
+* 我们提供的[模型权重](#模型权重)只需 3 天的训练就能生成 2 秒的 512x512 视频。
 * **[2024.03.04]** Open-Sora：开源Sora复现方案，成本降低46%，序列扩充至近百万。[[英文博客]](https://hpc-ai.com/blog/open-sora)
 
 ## 🎥 最新视频
@@ -40,13 +40,13 @@
 视频经过降采样处理为`.gif`格式，以便显示。点击查看原始视频。为便于显示，文字经过修剪，全文请参见 [此处](/assets/texts/t2v_samples.txt)。在我们的[图片库](https://hpcaitech.github.io/Open-Sora/)中查看更多样本。
 
 ## 🔆 新功能
-
-* 📍Open-Sora-v1 已发布。[这里](/#model-weights)提供了模型权重。只需 400K 视频片段和在单卡 H800 上训200天（类比Stable Video Diffusion 的 152M 样本），我们就能生成 2 秒的 512×512 视频。
+> 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md#-new-featuresupdates)
+* 📍Open-Sora-v1 已发布。[这里](#模型权重)提供了模型权重。只需 400K 视频片段和在单卡 H800 上训200天（类比Stable Video Diffusion 的 152M 样本），我们就能生成 2 秒的 512×512 视频。
 * ✅ 从图像扩散模型到视频扩散模型的三阶段训练。我们提供每个阶段的权重。
-* ✅ 支持训练加速，包括Transformer加速、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[训练加速](/acceleration.md)。
-* ✅ 我们提供用于数据预处理的视频切割和字幕工具。有关说明请点击[此处](tools/data/README.md)，我们的数据收集计划请点击 [数据集](docs/datasets.md)。
+* ✅ 支持训练加速，包括Transformer加速、更快的 T5 和 VAE 以及序列并行。在对 64x512x512 视频进行训练时，Open-Sora 可将训练速度提高**55%**。详细信息请参见[训练加速](acceleration.md)。
+* 🔧 我们提供用于数据预处理的视频切割和字幕工具。有关说明请点击[此处](tools/data/README.md)，我们的数据收集计划请点击 [数据集](datasets.md)。
 * ✅ 我们发现来自[VideoGPT](https://wilson1yan.github.io/videogpt/index.html)的 VQ-VAE 质量较低，因此采用了来自[Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original) 的高质量 VAE。我们还发现使用添加了时间维度的采样会导致生成质量降低。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
-* ✅ 我们研究了不同的架构，包括 DiT、Latte 和我们提出的 **STDiT**。我们的STDiT在质量和速度之间实现了更好的权衡。更多讨论，请参阅我们的 **[报告](docs/report_v1.md)**。
+* ✅ 我们研究了不同的架构，包括 DiT、Latte 和我们提出的 **STDiT**。我们的STDiT在质量和速度之间实现了更好的权衡。更多讨论，请参阅我们的 **[报告](report_v1.md)**。
 * ✅ 支持剪辑和 T5 文本调节。
 * ✅ 通过将图像视为单帧视频，我们的项目支持在图像和视频（如 ImageNet 和 UCF101）上训练 DiT。更多说明请参见 [指令解析](command.md)。
 * ✅ 利用[DiT](https://github.com/facebookresearch/DiT)、[Latte](https://github.com/Vchitect/Latte) 和 [PixArt](https://pixart-alpha.github.io/) 的官方权重支持推理。
@@ -60,30 +60,31 @@
 
 ### 下一步计划【按优先级排序】
 
-* [ ] 完成数据处理流程（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](/docs/datasets.md)。**[项目进行中］**
-* [ ] 训练视频-VAE。 **[项目进行中]**
+* [ ] 训练视频-VAE并让模型适应新的VAE **[项目进行中]**
+* [ ] 缩放模型参数和数据集大小 **[项目进行中]**
+* [ ] 纳入更好的时间表，例如 SD3 中的修正流程。 **[项目进行中]**
 
 <details>
 <summary>查看更多</summary>
 
-* [ ] 支持图像和视频调节。
-* [ ] 评估流程。
-* [ ] 加入更好的调度程序，如 SD3 中的rectified flow程序。
-* [ ] 支持可变长宽比、分辨率和持续时间。
-* [ ] 发布后支持 SD3。
+* [x] 评估流程。
+* [x] 完成数据处理流程（包括密集光流、美学评分、文本图像相似性、重复数据删除等）。更多信息请参见[数据集](datasets.md)
+* [x] 支持图像和视频调节。
+* [x] 支持可变长宽比、分辨率和持续时间。
 
 </details>
 
 ## 目录
 
-* [安装](#installation)
-* [模型权重](/#model-weights)
-* [推理](/#inference)
-* [数据处理](/#data-processing)
-* [训练](/#training)
-* [贡献](/#contribution)
-* [声明](/#acknowledgement)
-* [引用](/#citation)
+* [安装](#安装)
+* [模型权重](#模型权重)
+* [推理](#推理)
+* [数据处理](#数据处理)
+* [训练](#训练)
+* [评估](#评估)
+* [贡献](#贡献)
+* [声明](#声明)
+* [引用](#引用)
 
 ## 安装
 
@@ -137,12 +138,12 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 | 16×256×256 | 20K HQ | 24k         | 8×64       | 45              | [:link:]() |
 | 16×512×512 | 20K HQ | 20k         | 2×64       | 35              | [:link:]() |
 
-我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](/docs/report_v1.md)**。有关数据集的更多信息，请参阅[数据](datasets.md)。HQ 表示高质量。
+我们模型的权重部分由[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha) 初始化。参数数量为 724M。有关训练的更多信息，请参阅我们的 **[报告](report_v1.md)**。有关数据集的更多信息，请参阅[数据](datasets.md)。HQ 表示高质量。
 :warning: **局限性**：我们的模型是在有限的预算内训练出来的。质量和文本对齐度相对较差。特别是在生成人类时，模型表现很差，无法遵循详细的指令。我们正在努力改进质量和文本对齐。
 
 ## 推理
 
-要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](docs/structure.md#inference-config-demos)自定义配置。
+要使用我们提供的权重进行推理，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后下载模型权重。运行以下命令生成样本。请参阅[此处](structure.md#推理配置演示)自定义配置。
 
 ```bash
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
@@ -160,17 +161,21 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 ```
 
-我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands_zh.md)获取更多说明。减小`vae.micro_batch_size`来降低显存使用（但取样速度会略微减慢）。
+我们在 H800 GPU 上进行了速度测试。如需使用其他模型进行推理，请参阅[此处](commands.md)获取更多说明。减小`vae.micro_batch_size`来降低显存使用（但取样速度会略微减慢）。
 
 ## 数据处理
 
 高质量数据是高质量模型的关键。[这里](datasets.md)有我们使用过的数据集和数据收集计划。我们提供处理视频数据的工具。目前，我们的数据处理流程包括以下步骤：
 
 1. 下载数据集。[[文件](/tools/datasets/README.md)]
-2. 将视频分割成片段。 [[文件](/tools/scenedetect/README.md)]
+2. 将视频分割成片段。 [[文件](/tools/scene_cut/README.md)]
 3. 生成视频字幕。 [[文件](/tools/caption/README.md)]
 
 ## 训练
+
+### Open-Sora 1.0 训练
+<details>
+<summary>查看更多</summary>
 
 要启动训练，首先要将[T5](https://huggingface.co/DeepFloyd/t5-v1_1-xxl/tree/main)权重下载到pretrained_models/t5_ckpts/t5-v1_1-xxl 中。然后运行以下命令在单个节点上启动训练。
 
@@ -187,12 +192,24 @@ torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/6
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-有关其他模型的训练和高级使用方法，请参阅[此处](commands_zh.md)获取更多说明。
+有关其他模型的训练和高级使用方法，请参阅[此处](commands.md)获取更多说明。
+
+</details>
+
+## 评估
+
+点击[这里](https://github.com/hpcaitech/Open-Sora/blob/main/eval/README.md)查看评估
 
 ## 贡献
 
-如果您希望为该项目做出贡献，可以参考 [贡献指南](/CONTRIBUTING.md).
+本中文翻译还有许多不足，如果您希望为该项目做出贡献，可以参考 [贡献指南](/CONTRIBUTING.md).
 
+目前需要翻译或更新的文件：
+* [ ] 更新[资讯](#-资讯)
+* [ ] 更新[最新视频](#-最新视频)
+* [ ] 更新[新功能](#-新功能)。
+* [ ] 翻译[评估](https://github.com/hpcaitech/Open-Sora/blob/main/eval/README.md)文件
+* [ ] 更新Open-Sora 1.1[训练](#训练)
 ## 声明
 
 * [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization

@@ -23,7 +23,7 @@ def make_colorwheel():
         Baker et al. "A Database and Evaluation Methodology for Optical Flow" (ICCV, 2007)
         URL: http://vision.middlebury.edu/flow/flowEval-iccv07.pdf
     Code follows the original C++ source code of Daniel Scharstein.
-    Code follows the the Matlab source code of Deqing Sun.
+    Code follows the Matlab source code of Deqing Sun.
     Returns:
         np.ndarray: Color wheel
     """
