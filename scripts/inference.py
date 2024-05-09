@@ -55,6 +55,7 @@ def main():
     vae = build_module(cfg.vae, MODELS)
     latent_size = vae.get_latent_size(input_size)
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
+
     model = build_module(
         cfg.model,
         MODELS,
@@ -62,7 +63,6 @@ def main():
         in_channels=vae.out_channels,
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
-        dtype=dtype,
         enable_sequence_parallelism=enable_sequence_parallelism,
     )
     text_encoder.y_embedder = model.y_embedder  # hack for classifier-free guidance

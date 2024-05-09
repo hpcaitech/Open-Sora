@@ -53,6 +53,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 | **16s 320×320**                                                                                                                                        | **16s 224×448**                                                                                                                                        | **2s 426×240**                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
+
 <details>
 <summary>OpenSora 1.0 Demo</summary>
 
@@ -146,6 +147,8 @@ Other useful documents and links are listed below.
 
 ## Installation
 
+### Install from Source
+
 ```bash
 # create a virtual env
 conda create -n opensora python=3.10
@@ -173,6 +176,20 @@ pip install -U xformers --index-url https://download.pytorch.org/whl/cu121
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
 pip install -v .
+```
+
+### Use Docker
+
+Run the following command to build a docker image from Dockerfile provided.
+
+```bash
+docker build -t opensora ./docker
+```
+
+Run the following command to start the docker container in interactive mode.
+
+```bash
+docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 ```
 
 ## Model Weights

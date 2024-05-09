@@ -255,9 +255,9 @@ def build_models(model_type, config, enable_optimization=False):
     # build stdit
     # we load model from HuggingFace directly so that we don't need to
     # handle model download logic in HuggingFace Space
-    from transformers import AutoModel
+    from opensora.models.stdit.stdit2 import STDiT2
 
-    stdit = AutoModel.from_pretrained(
+    stdit = STDiT2.from_pretrained(
         HF_STDIT_MAP[model_type],
         enable_flash_attn=enable_optimization,
         trust_remote_code=True,
@@ -410,7 +410,6 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, reference
                 # save image to disk
                 from PIL import Image
                 im = Image.fromarray(reference_image)
-                idx = os.environ['CUDA_VISIBLE_DEVICES']
 
                 with NamedTemporaryFile(suffix=".jpg") as temp_file:
                     im.save(temp_file.name)

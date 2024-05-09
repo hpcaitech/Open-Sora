@@ -87,6 +87,7 @@
 
 ## 安装
 
+### 从源码安装
 ```bash
 # create a virtual env
 conda create -n opensora python=3.10
@@ -110,6 +111,20 @@ pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
 pip install -v .
+```
+
+### 使用Docker镜像
+
+运行如下指令使用提供的Dockerfile构建镜像：
+
+```bash
+docker build -t opensora ./docker
+```
+
+运行以下命令以启动交互模式下的 Docker 容器：
+
+```bash
+docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 ```
 
 安装完成后，建议阅读[结构](structure.md)，了解项目结构以及如何使用配置文件。
