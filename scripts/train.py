@@ -5,13 +5,13 @@ from pprint import pformat
 
 import torch
 import torch.distributed as dist
+import wandb
 from colossalai.booster import Booster
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
 from tqdm import tqdm
 
-import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
@@ -200,7 +200,7 @@ def main():
             cfg.load,
             sampler=sampler_to_io,
         )
-        if cfg.get("start_from_scratch ", False):
+        if not cfg.get("start_from_scratch ", False):
             start_epoch, start_step, sampler_start_idx = ret
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
     if cfg.dataset.type == DEFAULT_DATASET_NAME:
