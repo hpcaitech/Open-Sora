@@ -13,6 +13,8 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torchvision.datasets.utils import download_url
 
+from .misc import get_logger
+
 hf_endpoint = os.environ.get("HF_ENDPOINT")
 if hf_endpoint is None:
     hf_endpoint = "https://huggingface.co"
@@ -41,7 +43,7 @@ pretrained_models = {
 def reparameter(ckpt, name=None, model=None):
     name = os.path.basename(name)
     if not dist.is_initialized() or dist.get_rank() == 0:
-        print("loading pretrained model:", name)
+        get_logger().info("loading pretrained model: %s", name)
     if name in ["DiT-XL-2-512x512.pt", "DiT-XL-2-256x256.pt"]:
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
@@ -80,16 +82,20 @@ def reparameter(ckpt, name=None, model=None):
     # different text length
     if "y_embedder.y_embedding" in ckpt:
         if ckpt["y_embedder.y_embedding"].shape[0] < model.y_embedder.y_embedding.shape[0]:
-            print(
-                f"Extend y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
+            get_logger().info(
+                "Extend y_embedding from %s to %s",
+                ckpt["y_embedder.y_embedding"].shape[0],
+                model.y_embedder.y_embedding.shape[0],
             )
             additional_length = model.y_embedder.y_embedding.shape[0] - ckpt["y_embedder.y_embedding"].shape[0]
             new_y_embedding = torch.zeros(additional_length, model.y_embedder.y_embedding.shape[1])
             new_y_embedding[:] = ckpt["y_embedder.y_embedding"][-1]
             ckpt["y_embedder.y_embedding"] = torch.cat([ckpt["y_embedder.y_embedding"], new_y_embedding], dim=0)
         elif ckpt["y_embedder.y_embedding"].shape[0] > model.y_embedder.y_embedding.shape[0]:
-            print(
-                f"Shrink y_embedding from {ckpt['y_embedder.y_embedding'].shape[0]} to {model.y_embedder.y_embedding.shape[0]}"
+            get_logger().info(
+                "Shrink y_embedding from %s to %s",
+                ckpt["y_embedder.y_embedding"].shape[0],
+                model.y_embedder.y_embedding.shape[0],
             )
             ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
     # stdit3 special case
@@ -169,16 +175,6 @@ def model_gathering(model: torch.nn.Module, model_shape_dict: dict):
     dist.barrier()
 
 
-def load_json(file_path: str):
-    with open(file_path, "r") as f:
-        return json.load(f)
-
-
-def save_json(data, file_path: str):
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
-
-
 def remove_padding(tensor: torch.Tensor, original_shape: Tuple) -> torch.Tensor:
     return tensor[: functools.reduce(operator.mul, original_shape)]
 
@@ -194,17 +190,27 @@ def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model"):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path, model=model)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-        print(f"Missing keys: {missing_keys}")
-        print(f"Unexpected keys: {unexpected_keys}")
+        get_logger().info("Missing keys: %s", missing_keys)
+        get_logger().info("Unexpected keys: %s", unexpected_keys)
     elif os.path.isdir(ckpt_path):
         load_from_sharded_state_dict(model, ckpt_path, model_name)
-        print(f"Model checkpoint loaded from {ckpt_path}")
+        get_logger().info("Model checkpoint loaded from %s", ckpt_path)
         if save_as_pt:
             save_path = os.path.join(ckpt_path, model_name + "_ckpt.pt")
             torch.save(model.state_dict(), save_path)
-            print(f"Model checkpoint saved to {save_path}")
+            get_logger().info("Model checkpoint saved to %s", save_path)
     else:
         raise ValueError(f"Invalid checkpoint path: {ckpt_path}")
+
+
+def load_json(file_path: str):
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+
+def save_json(data, file_path: str):
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
 
 
 # save and load for training

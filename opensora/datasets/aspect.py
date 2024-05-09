@@ -1,18 +1,6 @@
 import math
 
-# Ours
-
-
-def get_h_w(a, ts, eps=1e-4):
-    h = (ts * a) ** 0.5
-    h = h + eps
-    h = math.ceil(h) if math.ceil(h) % 2 == 0 else math.floor(h)
-    w = h / a
-    w = w + eps
-    w = math.ceil(w) if math.ceil(w) % 2 == 0 else math.floor(w)
-    return h, w
-
-
+# computation
 AR = (
     3 / 8,
     9 / 21,
@@ -32,7 +20,17 @@ AR = (
     2 / 1,
     1 / 0.48,
 )
-ARV = (0.375, 0.43, 0.48, 0.50, 0.53, 0.54, 0.56, 0.62, 0.67, 0.75, 1, 1.33, 1.50, 1.78, 1.89, 2, 2.08)
+AR_fraction = (0.375, 0.43, 0.48, 0.50, 0.53, 0.54, 0.56, 0.62, 0.67, 0.75, 1, 1.33, 1.50, 1.78, 1.89, 2, 2.08)
+
+
+def get_h_w(a, ts, eps=1e-4):
+    h = (ts * a) ** 0.5
+    h = h + eps
+    h = math.ceil(h) if math.ceil(h) % 2 == 0 else math.floor(h)
+    w = h / a
+    w = w + eps
+    w = math.ceil(w) if math.ceil(w) % 2 == 0 else math.floor(w)
+    return h, w
 
 
 def get_aspect_ratios_dict(ts=360 * 640, ars=AR):
@@ -40,6 +38,7 @@ def get_aspect_ratios_dict(ts=360 * 640, ars=AR):
     return est
 
 
+# computed from above code
 # S = 8294400
 ASPECT_RATIO_4K = {
     "0.38": (1764, 4704),
@@ -451,3 +450,7 @@ ASPECT_RATIOS = {
     "2880": (8294400, ASPECT_RATIO_2880),
     "4k": (8294400, ASPECT_RATIO_4K),
 }
+
+
+def get_num_pixels(name):
+    return ASPECT_RATIOS[name][0]

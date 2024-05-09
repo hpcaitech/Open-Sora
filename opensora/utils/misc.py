@@ -1,7 +1,6 @@
 import collections
 import importlib
 import logging
-import os
 import time
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -11,6 +10,35 @@ from typing import Tuple
 import numpy as np
 import torch
 import torch.distributed as dist
+
+# ======================================================
+# Logging
+# ======================================================
+
+
+def create_logger(logging_dir):
+    """
+    Create a logger that writes to a log file and stdout.
+    """
+    if dist.get_rank() == 0:  # real logger
+        logging.basicConfig(
+            level=logging.INFO,
+            format="[\033[34m%(asctime)s\033[0m] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+            handlers=[
+                logging.StreamHandler(),
+                logging.FileHandler(f"{logging_dir}/log.txt"),
+            ],
+        )
+        logger = logging.getLogger(__name__)
+    else:  # dummy logger (does nothing)
+        logger = logging.getLogger(__name__)
+        logger.addHandler(logging.NullHandler())
+    return logger
+
+
+def get_logger():
+    return logging.getLogger(__name__)
 
 
 def print_rank(var_name, var_value, rank=0):
@@ -23,12 +51,9 @@ def print_0(*args, **kwargs):
         print(*args, **kwargs)
 
 
-def requires_grad(model: torch.nn.Module, flag: bool = True) -> None:
-    """
-    Set requires_grad flag for all parameters in a model.
-    """
-    for p in model.parameters():
-        p.requires_grad = flag
+# ======================================================
+# String
+# ======================================================
 
 
 def format_numel_str(numel: int) -> str:
@@ -43,48 +68,6 @@ def format_numel_str(numel: int) -> str:
         return f"{numel / K:.2f} K"
     else:
         return f"{numel}"
-
-
-def all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
-    dist.all_reduce(tensor=tensor, op=dist.ReduceOp.SUM)
-    tensor.div_(dist.get_world_size())
-    return tensor
-
-
-def get_model_numel(model: torch.nn.Module) -> Tuple[int, int]:
-    num_params = 0
-    num_params_trainable = 0
-    for p in model.parameters():
-        num_params += p.numel()
-        if p.requires_grad:
-            num_params_trainable += p.numel()
-    return num_params, num_params_trainable
-
-
-def try_import(name):
-    """Try to import a module.
-
-    Args:
-        name (str): Specifies what module to import in absolute or relative
-            terms (e.g. either pkg.mod or ..mod).
-    Returns:
-        ModuleType or None: If importing successfully, returns the imported
-        module, otherwise returns None.
-    """
-    try:
-        return importlib.import_module(name)
-    except ImportError:
-        return None
-
-
-def transpose(x):
-    """
-    transpose a list of list
-    Args:
-        x (list[list]):
-    """
-    ret = list(map(list, zip(*x)))
-    return ret
 
 
 def get_timestamp():
@@ -123,6 +106,39 @@ def format_time(seconds):
     if f == "":
         f = "0ms"
     return f
+
+
+# ======================================================
+# PyTorch
+# ======================================================
+
+
+def requires_grad(model: torch.nn.Module, flag: bool = True) -> None:
+    """
+    Set requires_grad flag for all parameters in a model.
+    """
+    for p in model.parameters():
+        p.requires_grad = flag
+
+
+def all_reduce_mean(tensor: torch.Tensor) -> torch.Tensor:
+    dist.all_reduce(tensor=tensor, op=dist.ReduceOp.SUM)
+    tensor.div_(dist.get_world_size())
+    return tensor
+
+
+def get_model_numel(model: torch.nn.Module) -> Tuple[int, int]:
+    num_params = 0
+    num_params_trainable = 0
+    for p in model.parameters():
+        num_params += p.numel()
+        if p.requires_grad:
+            num_params_trainable += p.numel()
+    return num_params, num_params_trainable
+
+
+def count_params(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def to_tensor(data):
@@ -184,10 +200,6 @@ def to_torch_dtype(dtype):
         return dtype
     else:
         raise ValueError
-
-
-def count_params(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def _ntuple(n):
@@ -252,6 +264,11 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
+# ======================================================
+# Python
+# ======================================================
+
+
 def count_columns(df, columns):
     cnt_dict = OrderedDict()
     num_samples = len(df)
@@ -265,23 +282,27 @@ def count_columns(df, columns):
     return cnt_dict
 
 
-def build_logger(work_dir, cfgname):
-    log_file = cfgname + ".log"
-    log_path = os.path.join(work_dir, log_file)
+def try_import(name):
+    """Try to import a module.
 
-    logger = logging.getLogger(cfgname)
-    logger.setLevel(logging.INFO)
-    # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    formatter = logging.Formatter("%(asctime)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    Args:
+        name (str): Specifies what module to import in absolute or relative
+            terms (e.g. either pkg.mod or ..mod).
+    Returns:
+        ModuleType or None: If importing successfully, returns the imported
+        module, otherwise returns None.
+    """
+    try:
+        return importlib.import_module(name)
+    except ImportError:
+        return None
 
-    handler1 = logging.FileHandler(log_path)
-    handler1.setFormatter(formatter)
 
-    handler2 = logging.StreamHandler()
-    handler2.setFormatter(formatter)
-
-    logger.addHandler(handler1)
-    logger.addHandler(handler2)
-    logger.propagate = False
-
-    return logger
+def transpose(x):
+    """
+    transpose a list of list
+    Args:
+        x (list[list]):
+    """
+    ret = list(map(list, zip(*x)))
+    return ret

@@ -25,8 +25,8 @@ from opensora.utils.config_utils import (
     parse_configs,
     save_training_config,
 )
-from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, to_torch_dtype
-from opensora.utils.train_utils import create_colossalai_plugin, create_logger
+from opensora.utils.misc import all_reduce_mean, create_logger, format_numel_str, get_model_numel, to_torch_dtype
+from opensora.utils.train_utils import create_colossalai_plugin
 
 DEFAULT_DATASET_NAME = "VideoTextDataset"
 
@@ -81,6 +81,7 @@ def main():
     # ======================================================
     # 2. build dataset and dataloader
     # ======================================================
+    logger.info("Building dataset...")
     # == build dataset ==
     assert cfg.dataset.type == DEFAULT_DATASET_NAME, "Only support VideoTextDataset for vae training"
     dataset = build_module(cfg.dataset, DATASETS)
@@ -100,10 +101,12 @@ def main():
     dataloader = prepare_dataloader(**dataloader_args)
     total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
     logger.info("Total batch size: %s", total_batch_size)
+    num_steps_per_epoch = len(dataloader)
 
     # ======================================================
     # 3. build model
     # ======================================================
+    logger.info("Building models...")
     # == build vae model ==
     model = build_module(cfg.model, MODELS).to(device, dtype)
     model.train()
@@ -177,6 +180,7 @@ def main():
     # =======================================================
     # 4. distributed training preparation with colossalai
     # =======================================================
+    logger.info("Preparing for distributed training...")
     # == boosting ==
     # NOTE: we set dtype first to make initialization of model consistent with the dtype; then reset it to the fp32 as we make diffusion scheduler in fp32
     torch.set_default_dtype(dtype)
@@ -194,14 +198,12 @@ def main():
         )
     torch.set_default_dtype(torch.float)
     logger.info("Boosting model for distributed training")
-    num_steps_per_epoch = len(dataloader)
-
-    cfg_epochs = cfg.get("epochs", 1000)
-    logger.info("Training for %s epochs with %s steps per epoch", cfg_epochs, num_steps_per_epoch)
 
     # == global variables ==
+    cfg_epochs = cfg.get("epochs", 1000)
     start_epoch = start_step = log_step = sampler_start_idx = acc_step = 0
     running_loss = running_disc_loss = 0.0
+    logger.info("Training for %s epochs with %s steps per epoch", cfg_epochs, num_steps_per_epoch)
 
     # == resume ==
     if cfg.get("load", None) is not None:

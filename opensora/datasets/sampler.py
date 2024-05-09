@@ -1,19 +1,22 @@
 import warnings
 from collections import OrderedDict, defaultdict
-from pprint import pprint
+from pprint import pformat
 from typing import Iterator, List, Optional
 
 import torch
 import torch.distributed as dist
 from pandarallel import pandarallel
-from torch.utils.data import DistributedSampler
+from torch.utils.data import Dataset, DistributedSampler
 
+from opensora.utils.misc import format_numel_str, get_logger
+
+from .aspect import get_num_pixels
 from .bucket import Bucket
 from .datasets import VariableVideoTextDataset
 
 
-# HACK: use pandarallel
-# pandarallel should only access local variables
+# use pandarallel to accelerate bucket processing
+# NOTE: pandarallel should only access local variables
 def apply(data, method=None, frame_interval=None, seed=None, num_bucket=None):
     return method(
         data["num_frames"],
@@ -22,6 +25,32 @@ def apply(data, method=None, frame_interval=None, seed=None, num_bucket=None):
         frame_interval,
         seed + data["id"] * num_bucket,
     )
+
+
+class StatefulDistributedSampler(DistributedSampler):
+    def __init__(
+        self,
+        dataset: Dataset,
+        num_replicas: Optional[int] = None,
+        rank: Optional[int] = None,
+        shuffle: bool = True,
+        seed: int = 0,
+        drop_last: bool = False,
+    ) -> None:
+        super().__init__(dataset, num_replicas, rank, shuffle, seed, drop_last)
+        self.start_index: int = 0
+
+    def __iter__(self) -> Iterator:
+        iterator = super().__iter__()
+        indices = list(iterator)
+        indices = indices[self.start_index :]
+        return iter(indices)
+
+    def __len__(self) -> int:
+        return self.num_samples - self.start_index
+
+    def set_start_index(self, start_index: int) -> None:
+        self.start_index = start_index
 
 
 class VariableVideoBatchSampler(DistributedSampler):
@@ -53,6 +82,7 @@ class VariableVideoBatchSampler(DistributedSampler):
         bucket_sample_dict = OrderedDict()
 
         pandarallel.initialize(nb_workers=self.num_bucket_build_workers, progress_bar=False)
+        get_logger().info("Building buckets...")
         bucket_ids = self.dataset.data.parallel_apply(
             apply,
             axis=1,
@@ -199,29 +229,51 @@ class VariableVideoBatchSampler(DistributedSampler):
     def load_state_dict(self, state_dict: dict) -> None:
         self.__dict__.update(state_dict)
 
-    def _print_bucket_info(self, bucket_sample_dict: dict, verbose=True) -> None:
+    def _print_bucket_info(self, bucket_sample_dict: dict) -> None:
+        # collect statistics
         total_samples = 0
-        num_batch = 0
-        num_dict = {}
-        num_aspect_dict = defaultdict(int)
-        num_hwt_dict = defaultdict(int)
+        total_batch = 0
+        num_aspect_dict = defaultdict(lambda: [0, 0])
+        num_hwt_dict = defaultdict(lambda: [0, 0])
         for k, v in bucket_sample_dict.items():
             size = len(v)
+            num_batch = size // self.bucket.get_batch_size(k[:-1])
+
             total_samples += size
-            num_dict[k] = size
-            num_aspect_dict[k[-1]] += size
-            num_hwt_dict[k[:-1]] += size
-            num_batch += size // self.bucket.get_batch_size(k[:-1])
-        if dist.get_rank() == 0 and verbose:
-            print(f"Total training samples: {total_samples}, num buckets: {len(num_dict)}")
-            print("Bucket samples:")
-            pprint(num_dict)
-            print("Bucket samples by aspect ratio:")
-            pprint(num_aspect_dict)
-            print("Bucket samples by HxWxT:")
-            pprint(num_hwt_dict)
-            print(f"Number of batches: {num_batch}")
-        self.approximate_num_batch = num_batch
+            total_batch += num_batch
+
+            num_aspect_dict[k[-1]][0] += size
+            num_aspect_dict[k[-1]][1] += num_batch
+            num_hwt_dict[k[:-1]][0] += size
+            num_hwt_dict[k[:-1]][1] += num_batch
+
+        # sort
+        num_aspect_dict = dict(sorted(num_aspect_dict.items(), key=lambda x: x[0]))
+        num_hwt_dict = dict(
+            sorted(num_hwt_dict.items(), key=lambda x: (get_num_pixels(x[0][0]), x[0][1]), reverse=True)
+        )
+        num_hwt_img_dict = {k: v for k, v in num_hwt_dict.items() if k[1] == 1}
+        num_hwt_vid_dict = {k: v for k, v in num_hwt_dict.items() if k[1] > 1}
+
+        # log
+        if dist.get_rank() == 0 and self.verbose:
+            get_logger().info("Bucket Info:")
+            get_logger().info(
+                "Bucket [#sample, #batch] by aspect ratio:\n%s", pformat(num_aspect_dict, sort_dicts=False)
+            )
+            get_logger().info(
+                "Image Bucket [#sample, #batch] by HxWxT:\n%s", pformat(num_hwt_img_dict, sort_dicts=False)
+            )
+            get_logger().info(
+                "Video Bucket [#sample, #batch] by HxWxT:\n%s", pformat(num_hwt_vid_dict, sort_dicts=False)
+            )
+            get_logger().info(
+                "#training batch: %s, #training sample: %s, #non empty bucket: %s",
+                format_numel_str(total_batch),
+                format_numel_str(total_samples),
+                len(bucket_sample_dict),
+            )
+        self.approximate_num_batch = total_batch
 
     def set_epoch(self, epoch: int) -> None:
         super().set_epoch(epoch)

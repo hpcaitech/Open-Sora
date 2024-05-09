@@ -1,4 +1,3 @@
-import logging
 import math
 import random
 from collections import OrderedDict
@@ -9,6 +8,8 @@ from colossalai.booster.plugin import LowLevelZeroPlugin
 
 from opensora.acceleration.parallel_states import set_data_parallel_group, set_sequence_parallel_group
 from opensora.acceleration.plugin import ZeroSeqParallelPlugin
+
+from .misc import get_logger
 
 
 def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
@@ -66,17 +67,17 @@ def update_ema(
 class MaskGenerator:
     def __init__(self, mask_ratios):
         valid_mask_names = [
-            "mask_no",
-            "mask_quarter_random",
-            "mask_quarter_head",
-            "mask_quarter_tail",
-            "mask_quarter_head_tail",
-            "mask_image_random",
-            "mask_image_head",
-            "mask_image_tail",
-            "mask_image_head_tail",
-            "mask_random",
-            "mask_intepolate",
+            "identity",
+            "quarter_random",
+            "quarter_head",
+            "quarter_tail",
+            "quarter_head_tail",
+            "image_random",
+            "image_head",
+            "image_tail",
+            "image_head_tail",
+            "random",
+            "intepolate",
         ]
         assert all(
             mask_name in valid_mask_names for mask_name in mask_ratios.keys()
@@ -88,12 +89,12 @@ class MaskGenerator:
             mask_ratio <= 1 for mask_ratio in mask_ratios.values()
         ), f"mask_ratio should be less than or equal to 1, got {mask_ratios.values()}"
         # sum of mask_ratios should be 1
-        if "mask_no" not in mask_ratios:
-            mask_ratios["mask_no"] = 1.0 - sum(mask_ratios.values())
+        if "identity" not in mask_ratios:
+            mask_ratios["identity"] = 1.0 - sum(mask_ratios.values())
         assert math.isclose(
             sum(mask_ratios.values()), 1.0, abs_tol=1e-6
         ), f"sum of mask_ratios should be 1, got {sum(mask_ratios.values())}"
-        print(f"mask ratios: {mask_ratios}")
+        get_logger().info("mask ratios: %s", mask_ratios)
         self.mask_ratios = mask_ratios
 
     def get_mask(self, x):
@@ -114,39 +115,39 @@ class MaskGenerator:
         if num_frames <= 1:
             return mask
 
-        if mask_name == "mask_quarter_random":
+        if mask_name == "quarter_random":
             random_size = random.randint(1, condition_frames_max)
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
-        elif mask_name == "mask_image_random":
+        elif mask_name == "image_random":
             random_size = 1
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
-        elif mask_name == "mask_quarter_head":
+        elif mask_name == "quarter_head":
             random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
-        elif mask_name == "mask_image_head":
+        elif mask_name == "image_head":
             random_size = 1
             mask[:random_size] = 0
-        elif mask_name == "mask_quarter_tail":
+        elif mask_name == "quarter_tail":
             random_size = random.randint(1, condition_frames_max)
             mask[-random_size:] = 0
-        elif mask_name == "mask_image_tail":
+        elif mask_name == "image_tail":
             random_size = 1
             mask[-random_size:] = 0
-        elif mask_name == "mask_quarter_head_tail":
+        elif mask_name == "quarter_head_tail":
             random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
             mask[-random_size:] = 0
-        elif mask_name == "mask_image_head_tail":
+        elif mask_name == "image_head_tail":
             random_size = 1
             mask[:random_size] = 0
             mask[-random_size:] = 0
-        elif mask_name == "mask_intepolate":
+        elif mask_name == "intepolate":
             random_start = random.randint(0, 1)
             mask[random_start::2] = 0
-        elif mask_name == "mask_random":
-            mask_ratio = random.uniform(0.3, 0.7)
+        elif mask_name == "random":
+            mask_ratio = random.uniform(0.1, 0.9)
             mask = torch.rand(num_frames, device=x.device) > mask_ratio
             # if mask is all False, set the last frame to True
             if not mask.any():
@@ -161,24 +162,3 @@ class MaskGenerator:
             masks.append(mask)
         masks = torch.stack(masks, dim=0)
         return masks
-
-
-def create_logger(logging_dir):
-    """
-    Create a logger that writes to a log file and stdout.
-    """
-    if dist.get_rank() == 0:  # real logger
-        logging.basicConfig(
-            level=logging.INFO,
-            format="[\033[34m%(asctime)s\033[0m] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-            handlers=[
-                logging.StreamHandler(),
-                logging.FileHandler(f"{logging_dir}/log.txt"),
-            ],
-        )
-        logger = logging.getLogger(__name__)
-    else:  # dummy logger (does nothing)
-        logger = logging.getLogger(__name__)
-        logger.addHandler(logging.NullHandler())
-    return logger
