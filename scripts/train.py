@@ -16,7 +16,7 @@ from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
+from opensora.utils.ckpt_utils import load, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
     create_tensorboard_writer,
     define_experiment_workspace,
@@ -24,14 +24,14 @@ from opensora.utils.config_utils import (
     save_training_config,
 )
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
-from opensora.utils.train_utils import MaskGenerator, create_colossalai_plugin, update_ema
+from opensora.utils.train_utils import MaskGenerator, create_colossalai_plugin, create_logger, update_ema
 
 DEFAULT_DATASET_NAME = "VideoTextDataset"
 
 
 def main():
     # ======================================================
-    # 1. configs & runtime variables & colossalai launch
+    # 1. configs & runtime variables
     # ======================================================
     # == parse configs ==
     cfg = parse_configs(training=True)
@@ -58,16 +58,14 @@ def main():
     coordinator.block_all()
 
     # == init logger, tensorboard & wandb ==
+    logger = create_logger(exp_dir)
     if coordinator.is_master():
-        logger = create_logger(exp_dir)
         logger.info("Experiment directory created at %s", exp_dir)
         logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
 
         tb_writer = create_tensorboard_writer(exp_dir)
         if cfg.get("wandb", False):
             wandb.init(project="minisora", name=exp_name, config=cfg.to_dict())
-    else:
-        logger = create_logger(None)
 
     # == init ColossalAI booster ==
     plugin = create_colossalai_plugin(

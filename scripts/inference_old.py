@@ -17,7 +17,7 @@ from opensora.utils.misc import to_torch_dtype
 
 def main():
     # ======================================================
-    # 1. configs & runtime variables
+    # 1. cfg and init distributed env
     # ======================================================
     cfg = parse_configs(training=False)
     verbose = cfg.get("verbose", 2)

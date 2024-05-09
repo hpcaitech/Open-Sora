@@ -18,7 +18,7 @@ from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader
 from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
-from opensora.utils.ckpt_utils import create_logger, load_json, save_json
+from opensora.utils.ckpt_utils import load_json, save_json
 from opensora.utils.config_utils import (
     create_tensorboard_writer,
     define_experiment_workspace,
@@ -29,6 +29,7 @@ from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_num
 from opensora.utils.train_utils import create_colossalai_plugin
 
 DEFAULT_DATASET_NAME = "VideoTextDataset"
+from opensora.utils.train_utils import create_logger
 
 
 def main():
