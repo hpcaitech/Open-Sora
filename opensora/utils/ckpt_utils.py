@@ -9,12 +9,9 @@ import torch.distributed as dist
 import torch.nn as nn
 from colossalai.booster import Booster
 from colossalai.checkpoint_io import GeneralCheckpointIO
-from colossalai.cluster import DistCoordinator
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torchvision.datasets.utils import download_url
-
-from opensora.datasets.sampler import VariableVideoBatchSampler
 
 hf_endpoint = os.environ.get("HF_ENDPOINT")
 if hf_endpoint is None:
@@ -160,6 +157,18 @@ def model_sharding(model: torch.nn.Module):
         param.data = splited_params
 
 
+def model_gathering(model: torch.nn.Module, model_shape_dict: dict):
+    global_rank = dist.get_rank()
+    global_size = dist.get_world_size()
+    for name, param in model.named_parameters():
+        all_params = [torch.empty_like(param.data) for _ in range(global_size)]
+        dist.all_gather(all_params, param.data, group=dist.group.WORLD)
+        if int(global_rank) == 0:
+            all_params = torch.cat(all_params)
+            param.data = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name])
+    dist.barrier()
+
+
 def load_json(file_path: str):
     with open(file_path, "r") as f:
         return json.load(f)
@@ -174,98 +183,11 @@ def remove_padding(tensor: torch.Tensor, original_shape: Tuple) -> torch.Tensor:
     return tensor[: functools.reduce(operator.mul, original_shape)]
 
 
-def model_gathering(model: torch.nn.Module, model_shape_dict: dict):
-    global_rank = dist.get_rank()
-    global_size = dist.get_world_size()
-    for name, param in model.named_parameters():
-        all_params = [torch.empty_like(param.data) for _ in range(global_size)]
-        dist.all_gather(all_params, param.data, group=dist.group.WORLD)
-        if int(global_rank) == 0:
-            all_params = torch.cat(all_params)
-            param.data = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name])
-    dist.barrier()
-
-
 def record_model_param_shape(model: torch.nn.Module) -> dict:
     param_shape = {}
     for name, param in model.named_parameters():
         param_shape[name] = param.shape
     return param_shape
-
-
-def save(
-    booster: Booster,
-    model: nn.Module,
-    ema: nn.Module,
-    optimizer: Optimizer,
-    lr_scheduler: _LRScheduler,
-    epoch: int,
-    step: int,
-    global_step: int,
-    batch_size: int,
-    coordinator: DistCoordinator,
-    save_dir: str,
-    shape_dict: dict,
-    sampler=None,
-):
-    save_dir = os.path.join(save_dir, f"epoch{epoch}-global_step{global_step}")
-    os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
-
-    booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
-    # ema is not boosted, so we don't need to use booster.save_model
-    model_gathering(ema, shape_dict)
-    global_rank = dist.get_rank()
-    if int(global_rank) == 0:
-        torch.save(ema.state_dict(), os.path.join(save_dir, "ema.pt"))
-        model_sharding(ema)
-
-    booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
-    if lr_scheduler is not None:
-        booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
-    sampler_start_idx = step * batch_size if batch_size is not None else None
-    running_states = {
-        "epoch": epoch,
-        "step": step,
-        "global_step": global_step,
-        "sample_start_index": sampler_start_idx,
-    }
-    if coordinator.is_master():
-        save_json(running_states, os.path.join(save_dir, "running_states.json"))
-        if sampler is not None:
-            if isinstance(sampler, VariableVideoBatchSampler):
-                torch.save(sampler.state_dict(step), os.path.join(save_dir, "sampler"))
-            else:
-                torch.save(sampler.state_dict(), os.path.join(save_dir, "sampler"))
-    dist.barrier()
-
-
-def load(
-    booster: Booster,
-    model: nn.Module,
-    ema: nn.Module,
-    optimizer: Optimizer,
-    lr_scheduler: _LRScheduler,
-    load_dir: str,
-    sampler=None,
-) -> Tuple[int, int, int]:
-    booster.load_model(model, os.path.join(load_dir, "model"))
-    # ema is not boosted, so we don't use booster.load_model
-    ema.load_state_dict(
-        torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")),
-        strict=False,
-    )
-    booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
-    if lr_scheduler is not None:
-        booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
-    running_states = load_json(os.path.join(load_dir, "running_states.json"))
-    if sampler is not None:
-        sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
-    dist.barrier()
-    return (
-        running_states["epoch"],
-        running_states["step"],
-        running_states["sample_start_index"],
-    )
 
 
 def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model"):
@@ -283,3 +205,82 @@ def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model"):
             print(f"Model checkpoint saved to {save_path}")
     else:
         raise ValueError(f"Invalid checkpoint path: {ckpt_path}")
+
+
+# save and load for training
+
+
+def save(
+    booster: Booster,
+    save_dir: str,
+    model: nn.Module = None,
+    ema: nn.Module = None,
+    optimizer: Optimizer = None,
+    lr_scheduler: _LRScheduler = None,
+    sampler=None,
+    epoch: int = None,
+    step: int = None,
+    global_step: int = None,
+    batch_size: int = None,
+):
+    save_dir = os.path.join(save_dir, f"epoch{epoch}-global_step{global_step}")
+    os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
+
+    if model is not None:
+        booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
+    if optimizer is not None:
+        booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
+    if lr_scheduler is not None:
+        booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
+    if dist.get_rank() == 0:
+        sampler_start_idx = step * batch_size if batch_size is not None else None
+        running_states = {
+            "epoch": epoch,
+            "step": step,
+            "global_step": global_step,
+            "sample_start_index": sampler_start_idx,
+        }
+        save_json(running_states, os.path.join(save_dir, "running_states.json"))
+
+        if ema is not None:
+            torch.save(ema.state_dict(), os.path.join(save_dir, "ema.pt"))
+
+        if sampler is not None:
+            # only for VariableVideoBatchSampler
+            torch.save(sampler.state_dict(step), os.path.join(save_dir, "sampler"))
+    dist.barrier()
+
+
+def load(
+    booster: Booster,
+    load_dir: str,
+    model: nn.Module = None,
+    ema: nn.Module = None,
+    optimizer: Optimizer = None,
+    lr_scheduler: _LRScheduler = None,
+    sampler=None,
+) -> Tuple[int, int, int]:
+    assert os.path.exists(load_dir), f"Checkpoint directory {load_dir} does not exist"
+    assert os.path.exists(os.path.join(load_dir, "running_states.json")), "running_states.json does not exist"
+    running_states = load_json(os.path.join(load_dir, "running_states.json"))
+    if model is not None:
+        booster.load_model(model, os.path.join(load_dir, "model"))
+    if ema is not None:
+        # ema is not boosted, so we don't use booster.load_model
+        ema.load_state_dict(
+            torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")),
+            strict=False,
+        )
+    if optimizer is not None:
+        booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
+    if lr_scheduler is not None:
+        booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
+    if sampler is not None:
+        sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
+    dist.barrier()
+
+    return (
+        running_states["epoch"],
+        running_states["step"],
+        running_states["sample_start_index"],
+    )

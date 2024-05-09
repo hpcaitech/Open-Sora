@@ -16,7 +16,7 @@ from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import load, model_sharding, record_model_param_shape, save
+from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import (
     create_tensorboard_writer,
     define_experiment_workspace,
@@ -65,7 +65,7 @@ def main():
 
         tb_writer = create_tensorboard_writer(exp_dir)
         if cfg.get("wandb", False):
-            wandb.init(project="minisora", name=exp_name, config=cfg.to_dict())
+            wandb.init(project="minisora", name=exp_name, config=cfg.to_dict(), dir="./outputs/wandb")
 
     # == init ColossalAI booster ==
     plugin = create_colossalai_plugin(
@@ -86,9 +86,9 @@ def main():
     # == build dataloader ==
     dataloader_args = dict(
         dataset=dataset,
-        batch_size=cfg.batch_size,
-        num_workers=cfg.num_workers,
-        seed=cfg.seed,
+        batch_size=cfg.get("batch_size", None),
+        num_workers=cfg.get("num_workers", 4),
+        seed=cfg.get("seed", 1024),
         shuffle=True,
         drop_last=True,
         pin_memory=True,
@@ -127,7 +127,7 @@ def main():
     model.train()
     model_numel, model_numel_trainable = get_model_numel(model)
     logger.info(
-        "Trainable model params: %s, Total model params: %s",
+        "[Diffusion] Trainable model params: %s, Total model params: %s",
         format_numel_str(model_numel_trainable),
         format_numel_str(model_numel),
     )
@@ -139,7 +139,7 @@ def main():
     ema.eval()
     update_ema(ema, model, decay=0, sharded=False)
 
-    # == build scheduler ==
+    # == setup loss function, build scheduler ==
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
     # == setup optimizer ==
@@ -191,11 +191,11 @@ def main():
         logger.info("Loading checkpoint")
         ret = load(
             booster,
-            model,
-            ema,
-            optimizer,
-            lr_scheduler,
             cfg.load,
+            model=model,
+            ema=ema,
+            optimizer=optimizer,
+            lr_scheduler=lr_scheduler,
             sampler=sampler_to_io,
         )
         if not cfg.get("start_from_scratch ", False):
@@ -209,6 +209,7 @@ def main():
     # =======================================================
     # 6. training loop
     # =======================================================
+    dist.barrier()
     for epoch in range(start_epoch, cfg_epochs):
         # == set dataloader to new epoch ==
         if cfg.dataset.type == DEFAULT_DATASET_NAME:
@@ -265,14 +266,14 @@ def main():
                 acc_step += 1
 
                 # == logging ==
-                if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
+                if coordinator.is_master() and (global_step + 1) % cfg.get("log_every", 1) == 0:
                     avg_loss = running_loss / log_step
                     # progress bar
                     pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step})
                     # tensorboard
                     tb_writer.add_scalar("loss", loss.item(), global_step)
                     # wandb
-                    if cfg.wandb:
+                    if cfg.get("wandb", False):
                         wandb.log(
                             {
                                 "iter": global_step,
@@ -284,26 +285,27 @@ def main():
                             step=global_step,
                         )
 
-                    running_loss = 0
+                    running_loss = 0.0
                     log_step = 0
 
                 # == checkpoint saving ==
-                if cfg.ckpt_every > 0 and (global_step + 1) % cfg.ckpt_every == 0:
+                ckpt_every = cfg.get("ckpt_every", 0)
+                if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0:
+                    model_gathering(ema, ema_shape_dict)
                     save(
                         booster,
-                        model,
-                        ema,
-                        optimizer,
-                        lr_scheduler,
-                        epoch,
-                        step + 1,
-                        global_step + 1,
-                        cfg.batch_size,
-                        coordinator,
                         exp_dir,
-                        ema_shape_dict,
+                        model=model,
+                        ema=ema,
+                        optimizer=optimizer,
+                        lr_scheduler=lr_scheduler,
                         sampler=sampler_to_io,
+                        epoch=epoch,
+                        step=step + 1,
+                        global_step=global_step + 1,
+                        batch_size=cfg.get("batch_size", None),
                     )
+                    model_sharding(ema)
                     logger.info(
                         "Saved checkpoint at epoch %s step %s global_step %s to %s",
                         epoch,
