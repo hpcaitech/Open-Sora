@@ -15,6 +15,10 @@ from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import to_torch_dtype
+from opensora.utils.device_utils import is_npu_available
+if is_npu_available():
+    from torch_npu.contrib import transfer_to_npu
+    torch.npu.config.allow_internal_format = False
 
 
 def collect_references_batch(reference_paths, vae, image_size):

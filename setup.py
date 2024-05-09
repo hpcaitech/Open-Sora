@@ -1,6 +1,8 @@
 from typing import List
+import importlib
 
 from setuptools import find_packages, setup
+import torch
 
 
 def fetch_requirements(path) -> List[str]:
@@ -28,6 +30,26 @@ def fetch_readme() -> str:
         return f.read()
 
 
+def is_npu_available():
+    "Checks if `torch_npu` is installed and potentially if a NPU is in the environment"
+    if importlib.util.find_spec("torch") is None or importlib.util.find_spec("torch_npu") is None:
+        return False
+
+    import torch_npu
+
+    try:
+        # Will raise a RuntimeError if no NPU is found
+        _ = torch.npu.device_count()
+        return torch.npu.is_available()
+    except RuntimeError:
+        return False
+
+
+if is_npu_available():
+    requirements_file = "requirements_npu.txt"
+else:
+    requirements_file = "requirements.txt"
+
 setup(
     name="opensora",
     version="1.1.0",
@@ -48,7 +70,7 @@ setup(
     long_description=fetch_readme(),
     long_description_content_type="text/markdown",
     license="Apache Software License 2.0",
-    install_requires=fetch_requirements("requirements.txt"),
+    install_requires=fetch_requirements(requirements_file),
     python_requires=">=3.6",
     classifiers=[
         "Programming Language :: Python :: 3",

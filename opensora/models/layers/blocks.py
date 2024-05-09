@@ -19,12 +19,17 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-import xformers.ops
 from einops import rearrange
 from timm.models.vision_transformer import Mlp
 
 from opensora.acceleration.communications import all_to_all, split_forward_gather_backward
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
+from opensora.utils.device_utils import is_npu_available
+if not is_npu_available():
+    import xformers.ops
+else:
+    import torch_npu
+
 
 approx_gelu = lambda: nn.GELU(approximate="tanh")
 
@@ -178,19 +183,32 @@ class Attention(nn.Module):
         q, k = self.q_norm(q), self.k_norm(k)
 
         if enable_flash_attn:
-            from flash_attn import flash_attn_func
+            if is_npu_available() and q.dtype in [torch.float16, torch.bfloat16]:
+                x = torch_npu.npu_fusion_attention(
+                    q, k, v, self.num_heads, input_layout="BNSD",
+                    pse=None,
+                    scale=self.scale,
+                    pre_tockens=65536,
+                    next_tockens=65536,
+                    keep_prob=1. - self.attn_drop.p if self.training else 1.,
+                    sync=False,
+                    inner_precise=0,
+                )[0]
+                x = x.transpose(1, 2)
+            else:
+                from flash_attn import flash_attn_func
 
-            # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
-            q = q.permute(0, 2, 1, 3)
-            k = k.permute(0, 2, 1, 3)
-            v = v.permute(0, 2, 1, 3)
-            x = flash_attn_func(
-                q,
-                k,
-                v,
-                dropout_p=self.attn_drop.p if self.training else 0.0,
-                softmax_scale=self.scale,
-            )
+                # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
+                q = q.permute(0, 2, 1, 3)
+                k = k.permute(0, 2, 1, 3)
+                v = v.permute(0, 2, 1, 3)
+                x = flash_attn_func(
+                    q,
+                    k,
+                    v,
+                    dropout_p=self.attn_drop.p if self.training else 0.0,
+                    softmax_scale=self.scale,
+                )
         else:
             dtype = q.dtype
             q = q * self.scale
@@ -270,15 +288,27 @@ class SeqParallelAttention(Attention):
         q, k, v = qkv.unbind(0)
         q, k = self.q_norm(q), self.k_norm(k)
         if self.enable_flash_attn:
-            from flash_attn import flash_attn_func
+            if is_npu_available() and q.dtype in [torch.float16, torch.bfloat16]:
+                x = torch_npu.npu_fusion_attention(
+                    q, k, v, q.shape[-2], input_layout="BSND",
+                    pse=None,
+                    scale=self.scale,
+                    pre_tockens=65536,
+                    next_tockens=65536,
+                    keep_prob=1.-self.attn_drop.p if self.training else 1.,
+                    sync=False,
+                    inner_precise=0,
+                )[0]
+            else:
+                from flash_attn import flash_attn_func
 
-            x = flash_attn_func(
-                q,
-                k,
-                v,
-                dropout_p=self.attn_drop.p if self.training else 0.0,
-                softmax_scale=self.scale,
-            )
+                x = flash_attn_func(
+                    q,
+                    k,
+                    v,
+                    dropout_p=self.attn_drop.p if self.training else 0.0,
+                    softmax_scale=self.scale,
+                )
         else:
             dtype = q.dtype
             q = q * self.scale
@@ -323,14 +353,42 @@ class MultiHeadCrossAttention(nn.Module):
         # query/value: img tokens; key: condition; mask: if padding tokens
         B, N, C = x.shape
 
-        q = self.q_linear(x).view(1, -1, self.num_heads, self.head_dim)
-        kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
-        k, v = kv.unbind(2)
+        if is_npu_available() and x.dtype in [torch.float16, torch.bfloat16]:
+            q = self.q_linear(x).view(-1, self.num_heads, self.head_dim)
+            kv = self.kv_linear(cond).view(-1, 2, self.num_heads, self.head_dim)
+            k, v = kv.unbind(1)
 
-        attn_bias = None
-        if mask is not None:
-            attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
-        x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
+            actual_seq_qlen = []
+            actual_seq_kvlen = []
+            if mask is not None:
+                ans = 0
+                for _ in range(B):
+                    ans += N
+                    actual_seq_qlen.append(ans)
+                ans = 0
+                for m in mask:
+                    ans += m
+                    actual_seq_kvlen.append(ans)
+            x = torch_npu.npu_fusion_attention(
+                q, k, v, self.num_heads, input_layout="TND",
+                pse=None,
+                scale=1.0 / math.sqrt(self.head_dim),
+                pre_tockens=65536,
+                next_tockens=65536,
+                actual_seq_qlen=tuple(actual_seq_qlen),
+                actual_seq_kvlen=tuple(actual_seq_kvlen),
+                keep_prob=1. - self.attn_drop.p,
+                sparse_mode=0,
+            )[0]
+        else:
+            q = self.q_linear(x).view(1, -1, self.num_heads, self.head_dim)
+            kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
+            k, v = kv.unbind(2)
+
+            attn_bias = None
+            if mask is not None:
+                attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
+            x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
 
         x = x.view(B, -1, C)
         x = self.proj(x)
@@ -372,15 +430,42 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         k = split_forward_gather_backward(k, get_sequence_parallel_group(), dim=2, grad_scale="down")
         v = split_forward_gather_backward(v, get_sequence_parallel_group(), dim=2, grad_scale="down")
 
-        q = q.view(1, -1, self.num_heads // sp_size, self.head_dim)
-        k = k.view(1, -1, self.num_heads // sp_size, self.head_dim)
-        v = v.view(1, -1, self.num_heads // sp_size, self.head_dim)
-
         # compute attention
-        attn_bias = None
-        if mask is not None:
-            attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
-        x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
+        if is_npu_available() and q.dtype in [torch.float16, torch.bfloat16]:
+            q = q.view(-1, self.num_heads // sp_size, self.head_dim)
+            k = k.view(-1, self.num_heads // sp_size, self.head_dim)
+            v = v.view(-1, self.num_heads // sp_size, self.head_dim)
+
+            actual_seq_qlen = []
+            actual_seq_kvlen = []
+            if mask is not None:
+                ans = 0
+                for _ in range(B):
+                    ans += N
+                    actual_seq_qlen.append(ans)
+                ans = 0
+                for m in mask:
+                    ans += m
+                    actual_seq_kvlen.append(ans)
+            x = torch_npu.npu_fusion_attention(
+                q, k, v, q.shape[-2], input_layout="TND",
+                pse=None,
+                scale=1.0 / math.sqrt(self.head_dim),
+                pre_tockens=65536,
+                next_tockens=65536,
+                actual_seq_qlen=tuple(actual_seq_qlen),
+                actual_seq_kvlen=tuple(actual_seq_kvlen),
+                keep_prob=1. - self.attn_drop.p,
+                sparse_mode=0,
+            )[0]
+        else:
+            q = q.view(1, -1, self.num_heads // sp_size, self.head_dim)
+            k = k.view(1, -1, self.num_heads // sp_size, self.head_dim)
+            v = v.view(1, -1, self.num_heads // sp_size, self.head_dim)
+            attn_bias = None
+            if mask is not None:
+                attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
+            x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
 
         # apply all to all to gather back attention heads and scatter sequence
         x = x.view(B, -1, self.num_heads // sp_size, self.head_dim)

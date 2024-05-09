@@ -192,6 +192,45 @@ Run the following command to start the docker container in interactive mode.
 docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 ```
 
+## Installation_NPU
+
+1. create a virtual env
+```bash
+# create a virtual env
+conda create -n opensora python=3.10
+# activate virtual environment
+conda activate opensora
+
+# install torch
+pip install torch==2.1.0 torchvision==0.16.0
+```
+2. create NPU env
+
+Please refer to 《[Pytorch框架训练环境准备](https://www.hiascend.com/document/detail/zh/ModelZoo/pytorchframework/ptes)》。
+```bash  
+# activate cann env
+source ${cann_install_path}/ascend-toolkit/set_env.sh
+
+# install this project
+git clone https://github.com/hpcaitech/Open-Sora
+cd Open-Sora
+pip install -v .
+```
+
+### Use Docker
+
+Run the following command to build a docker image from Dockerfile provided.
+
+```bash
+docker build -t opensora ./docker
+```
+
+Run the following command to start the docker container in interactive mode.
+
+```bash
+docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
+```
+
 ## Model Weights
 
 ### Open-Sora 1.1 Model Weights

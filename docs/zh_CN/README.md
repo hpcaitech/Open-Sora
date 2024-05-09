@@ -77,6 +77,7 @@
 ## 目录
 
 * [安装](#安装)
+* [安装昇腾NPU环境](#安装昇腾npu环境)
 * [模型权重](#模型权重)
 * [推理](#推理)
 * [数据处理](#数据处理)
@@ -129,6 +130,36 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 ```
 
 安装完成后，建议阅读[结构](structure.md)，了解项目结构以及如何使用配置文件。
+
+
+## 安装昇腾NPU环境
+
+1. 创建虚拟环境
+```bash
+# create a virtual env
+conda create -n opensora python=3.10
+# activate virtual environment
+conda activate opensora
+
+# install torch
+pip install torch==2.1.0 torchvision==0.16.0
+```
+
+2. 准备昇腾NPU环境
+
+
+请参考昇腾社区中《[Pytorch框架训练环境准备](https://www.hiascend.com/document/detail/zh/ModelZoo/pytorchframework/ptes)》文档搭建昇腾环境。
+
+```bash  
+# activate cann env
+source ${cann_install_path}/ascend-toolkit/set_env.sh
+
+# install this project
+git clone https://github.com/hpcaitech/Open-Sora
+cd Open-Sora
+pip install -v .
+```
+
 
 ## 模型权重
 

@@ -1,5 +1,21 @@
 import torch
 import torch.nn as nn
+from opensora.utils.device_utils import is_npu_available
+if is_npu_available():
+    import torch_npu
+
+
+class NpuRMSNorm(torch.nn.Module):
+    def __init__(self, hidden_size, eps=1e-6):
+        """
+        Initialize NPU RMSNorm normalization layer
+        """
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(hidden_size))
+        self.eps = eps
+
+    def forward(self, x):
+        return torch_npu.npu_rms_norm(x, self.weight, epsilon=self.eps)[0]
 
 
 class T5LayerNorm(nn.Module):
@@ -28,12 +44,16 @@ class T5LayerNorm(nn.Module):
 
     @staticmethod
     def from_native_module(module, *args, **kwargs):
-        assert module.__class__.__name__ == "FusedRMSNorm", (
-            "Recovering T5LayerNorm requires the original layer to be apex's Fused RMS Norm."
-            "Apex's fused norm is automatically used by Hugging Face Transformers https://github.com/huggingface/transformers/blob/main/src/transformers/models/t5/modeling_t5.py#L265C5-L265C48"
-        )
+        if is_npu_available():
+            normalized_shape = module.weight.shape[0]
+            layer_norm = NpuRMSNorm(normalized_shape, eps=module.variance_epsilon)
+        else:
+            assert module.__class__.__name__ == "FusedRMSNorm", (
+                "Recovering T5LayerNorm requires the original layer to be apex's Fused RMS Norm."
+                "Apex's fused norm is automatically used by Hugging Face Transformers https://github.com/huggingface/transformers/blob/main/src/transformers/models/t5/modeling_t5.py#L265C5-L265C48"
+            )
 
-        layer_norm = T5LayerNorm(module.normalized_shape, eps=module.eps)
+            layer_norm = T5LayerNorm(module.normalized_shape, eps=module.eps)
         layer_norm.weight.data.copy_(module.weight.data)
         layer_norm = layer_norm.to(module.weight.device)
         return layer_norm
