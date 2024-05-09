@@ -249,7 +249,7 @@ def load(
     load_dir: str,
     sampler=None,
 ) -> Tuple[int, int, int]:
-    booster.load_model(model, os.path.join(load_dir, model_name))
+    booster.load_model(model, os.path.join(load_dir, "model"))
     # ema is not boosted, so we don't use booster.load_model
     ema.load_state_dict(
         torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")),
