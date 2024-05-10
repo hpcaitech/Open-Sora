@@ -112,7 +112,7 @@ class RFlowScheduler:
         """
         compatible with diffusers add_noise()
         """
-        timepoints = timesteps.float() / self.num_timesteps  # [0, 999/1000]
+        timepoints = timesteps.float() / self.num_timesteps
         timepoints = 1 - timepoints  # [1,1/1000]
 
         # timepoint  (bsz) noise: (bsz, 4, frame, w ,h)

@@ -126,7 +126,8 @@ class VideoAutoencoderPipeline(nn.Module):
         freeze_vae_2d=False,
         cal_loss=False,
         micro_frame_size=None,
-        scale=2.5,
+        shift=0.0,
+        scale=1.0,
     ):
         super().__init__()
         self.spatial_vae = build_module(vae_2d, MODELS)
@@ -142,7 +143,12 @@ class VideoAutoencoderPipeline(nn.Module):
                 param.requires_grad = False
 
         self.out_channels = self.temporal_vae.out_channels
-        self.scale = scale  # make std = 1.0
+        self.scale = torch.tensor(scale).cuda()
+        self.shift = torch.tensor(shift).cuda()
+        if len(self.scale.shape) > 0:
+            self.scale = self.scale[None, :, None, None, None]
+        if len(self.shift.shape) > 0:
+            self.shift = self.shift[None, :, None, None, None]
 
     def encode(self, x):
         x_z = self.spatial_vae.encode(x)
@@ -161,11 +167,11 @@ class VideoAutoencoderPipeline(nn.Module):
         if self.cal_loss:
             return z, posterior, x_z
         else:
-            return z / self.scale
+            return (z - self.shift) / self.scale
 
     def decode(self, z, num_frames=None):
         if not self.cal_loss:
-            z = z * self.scale
+            z = z * self.scale + self.shift
 
         if self.micro_frame_size is None:
             x_z = self.temporal_vae.decode(z, num_frames=num_frames)
