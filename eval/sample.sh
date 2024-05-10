@@ -4,33 +4,39 @@
 set -e
 
 CKPT=$1
+NUM_FRAMES=$2
+MODEL_NAME=$3
+
+let DOUBLE_FRAMES=$2*2
+let QUAD_FRAMES=$2*4
+let OCT_FRAMES=$2*8
 
 CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
-CMD_REF="python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py"
+CMD_REF="python scripts/inference-long.py configs/opensora-v1-2/inference/sample.py"
 if [[ $CKPT == *"ema"* ]]; then
   parentdir=$(dirname $CKPT)
   CKPT_BASE=$(basename $parentdir)_ema
 else
   CKPT_BASE=$(basename $CKPT)
 fi
-OUTPUT="./samples/samples_${CKPT_BASE}"
+OUTPUT="./samples/samples_${MODEL_NAME}_${CKPT_BASE}"
 start=$(date +%s)
-DEFAULT_BS=8
+DEFAULT_BS=1
 
 ### Functions
 
 function run_image() { # 10min
-  # 1.1 1024x1024
+  # # 1.1 1024x1024
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 1024 1024 --sample-name 1024x1024 --batch-size $DEFAULT_BS
 
   # 1.2 240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 240 426 --sample-name 240x426 --end-index 3 --batch-size $DEFAULT_BS
 
   # 1.3 512x512
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name 512x512 --end-index 3 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name t2i_512x512 --end-index 3 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name t2v_512x512 --end-index 3 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name short_512x512 --end-index 3 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 1 --image-size 512 512 --sample-name sora_512x512 --end-index 3 --batch-size $DEFAULT_BS
 
   # 1.4 720p multi-resolution
   # 1:1
@@ -52,80 +58,80 @@ function run_image() { # 10min
 
 function run_video_a() { # 30min, sample & multi-resolution
   # sample
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 144 256 --sample-name sample_16x144x256 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sample_16x240x426 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 32 --image-size 240 426 --sample-name sample_32x240x426 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name sample_64x240x426 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 480 854 --sample-name sample_16x480x854 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 32 --image-size 480 854 --sample-name sample_32x480x854 --batch-size $DEFAULT_BS
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name sample_16x720x1280 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 144 256 --sample-name sample_${NUM_FRAMES}x144x256 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 240 426 --sample-name sample_${NUM_FRAMES}x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 240 426 --sample-name sample_${DOUBLE_FRAMES}x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 240 426 --sample-name sample_${QUAD_FRAMES}x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 480 854 --sample-name sample_${NUM_FRAMES}x480x854 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 480 854 --sample-name sample_${DOUBLE_FRAMES}x480x854 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 720 1280 --sample-name sample_${NUM_FRAMES}x720x1280 --batch-size $DEFAULT_BS
 }
 
 function run_video_b() { # 30min, short 16x240p & 64x240p
   # 32x240p, short
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 32 --image-size 240 426 --sample-name short_32x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 240 426 --sample-name short_${DOUBLE_FRAMES}x240x426 --batch-size $DEFAULT_BS
 
   # 64x240p, short
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 64 --image-size 240 426 --sample-name short_64x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 240 426 --sample-name short_${QUAD_FRAMES}x240x426 --batch-size $DEFAULT_BS
 }
 
 function run_video_c() { # 30min, sora 16x240p & short 128x240p
   # 16x240p, sora
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 426 240 --sample-name sora_16x426x240 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 426 240 --sample-name sora_${NUM_FRAMES}x426x240 --batch-size $DEFAULT_BS
 
   # 16x240p, sora
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 240 426 --sample-name sora_16x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 240 426 --sample-name sora_${NUM_FRAMES}x240x426 --batch-size $DEFAULT_BS
 
   # 128x240p, sora
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 128 --image-size 240 426 --sample-name sora_128x240x426 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $OCT_FRAMES  --image-size 240 426 --sample-name sora_${OCT_FRAMES}x240x426 --batch-size $DEFAULT_BS
 }
 
 function run_video_d() { # 30min, sora 32x480p
   # 32x480p, short
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 32 --image-size 480 854 --sample-name short_32x480x854 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 480 854 --sample-name short_${DOUBLE_FRAMES}x480x854 --batch-size $DEFAULT_BS
 }
 
 function run_video_e() { # 30min
   # 64x480p, sora
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 64 --image-size 480 854 --sample-name sora_64x480x854 --batch-size 4
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 480 854 --sample-name sora_${QUAD_FRAMES}x480x854 --batch-size $DEFAULT_BS
 }
 
 function run_video_f() { # 30min
   # 16x720p, sora
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name sora_16x720x1280 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 720 1280 --sample-name sora_${NUM_FRAMES}x720x1280 --batch-size $DEFAULT_BS
 }
 
 function run_video_g() {
   # 16x720p multi-resolution
   # 1:1
   PROMPT="A soaring drone footage captures the majestic beauty of a coastal cliff, its red and yellow stratified rock faces rich in color and against the vibrant turquoise of the sea. Seabirds can be seen taking flight around the cliff's precipices. As the drone slowly moves from different angles, the changing sunlight casts shifting shadows that highlight the rugged textures of the cliff and the surrounding calm sea. The water gently laps at the rock base and the greenery that clings to the top of the cliff, and the scene gives a sense of peaceful isolation at the fringes of the ocean. The video captures the essence of pristine natural beauty untouched by human structures."
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 960 960 --sample-name 720p_1_1
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 960 960 --sample-name 720p_1_1
   # 16:9
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 720 1280 --sample-name 720p_16_9
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 720 1280 --sample-name 720p_16_9
   # 9:16
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 1280 720 --sample-name 720p_9_16
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 1280 720 --sample-name 720p_9_16
   # 4:3
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 832 1108 --sample-name 720p_4_3
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 832 1108 --sample-name 720p_4_3
   # 3:4
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 1108 832 --sample-name 720p_3_4
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 1108 832 --sample-name 720p_3_4
   # 1:2
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 1358 600 --sample-name 720p_1_2
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 1358 600 --sample-name 720p_1_2
   # 2:1
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 16 --image-size 600 1358 --sample-name 720p_2_1
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 600 1358 --sample-name 720p_2_1
 }
 
 function run_video_h() { # 23min
   # 3.1 image-conditioned long video generation
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_16x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
-    --num-frames 16 --image-size 240 426 \
+    --num-frames $NUM_FRAMES --image-size 240 426 \
     --loop 5 --condition-frame-length 4 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
-    --num-frames 64 --image-size 240 426 \
+    --num-frames $NUM_FRAMES --image-size 240 426 \
     --loop 5 --condition-frame-length 16 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
@@ -133,7 +139,7 @@ function run_video_h() { # 23min
   # 3.2
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
-    --num-frames 128 --image-size 240 426 \
+    --num-frames $NUM_FRAMES  --image-size 240 426 \
     --loop 1 \
     --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
     --mask-strategy "0\;0,0,0,-1,1" "0\;0,1,0,-1,1" "0,0,0,0,64,0.5" --batch-size $DEFAULT_BS
