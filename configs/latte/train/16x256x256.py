@@ -17,7 +17,7 @@ sp_size = 1
 # Define model
 model = dict(
     type="Latte-XL/2",
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(

@@ -18,7 +18,7 @@ sp_size = 1
 model = dict(
     type="DiT-XL/2",
     from_pretrained="DiT-XL-2-256x256.pt",
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(

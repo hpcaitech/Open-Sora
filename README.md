@@ -161,7 +161,7 @@ conda activate opensora
 pip install torch torchvision
 
 # install flash attention (optional)
-# set enable_flashattn=False in config to avoid using flash attention
+# set enable_flash_attn=False in config to avoid using flash attention
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
 
