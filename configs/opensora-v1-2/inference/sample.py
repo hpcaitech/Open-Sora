@@ -1,5 +1,5 @@
 image_size = (240, 426)
-num_frames = 204
+num_frames = 51
 fps = 24
 frame_interval = 1
 
