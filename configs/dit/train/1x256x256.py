@@ -19,7 +19,7 @@ sp_size = 1
 model = dict(
     type="DiT-XL/2",
     no_temporal_pos_emb=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(

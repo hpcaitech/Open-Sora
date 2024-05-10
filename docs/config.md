@@ -26,8 +26,8 @@ model = dict(
     from_pretrained="PRETRAINED_MODEL",  # (Optional) Load from pretrained model
     input_sq_size=512,        # Base spatial position embedding size
     qk_norm=True,             # Normalize query and key in attention
-    enable_flashattn=True,    # (Optional) Speed up training and inference with flash attention
-    # Turn enable_flashattn to False if you skip flashattn installation
+    enable_flash_attn=True,    # (Optional) Speed up training and inference with flash attention
+    # Turn enable_flash_attn to False if you skip flashattn installation
     enable_layernorm_kernel=True, # (Optional) Speed up training and inference with fused kernel
     # Turn enable_layernorm_kernel to False if you skip apex installation
 )
@@ -177,7 +177,7 @@ model = dict(
     from_pretrained=None,              # Load from pretrained model
     input_sq_size=512,                 # Base spatial position embedding size
     qk_norm=True,                      # Normalize query and key in attention
-    enable_flashattn=True,             # (Optional) Speed up training and inference with flash attention
+    enable_flash_attn=True,             # (Optional) Speed up training and inference with flash attention
     enable_layernorm_kernel=True,      # (Optional) Speed up training and inference with fused kernel
 )
 vae = dict(
