@@ -8,7 +8,7 @@ from mmengine.runner import set_random_seed
 from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_dataloader, save_sample
+from opensora.datasets import prepare_dataloader
 from opensora.models.vae.losses import VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs
@@ -24,11 +24,10 @@ def main():
 
     # init distributed
     if os.environ.get("WORLD_SIZE", None):
-        use_dist = True
         colossalai.launch_from_torch({})
         coordinator = DistCoordinator()
     else:
-        use_dist = False
+        pass
 
     # ======================================================
     # 2. runtime variables
@@ -67,7 +66,7 @@ def main():
     # ======================================================
     # 5. inference
     # ======================================================
-    save_dir = cfg.save_dir
+    cfg.save_dir
 
     # define loss function
     vae_loss_fn = VAELoss(
@@ -90,8 +89,11 @@ def main():
 
     calc_std = cfg.get("calc_std", False)
     if calc_std:
-        running_std_sum = 0.0
-        num_samples = 0.0
+        running_sum = 0.0
+        running_sum_c = torch.zeros(model.out_channels, dtype=torch.float, device=device)
+        running_var = 0.0
+        running_var_c = torch.zeros(model.out_channels, dtype=torch.float, device=device)
+        num_samples = 0
 
     with tqdm(
         range(total_steps),
@@ -110,13 +112,31 @@ def main():
 
             # calc std
             if calc_std:
-                num_samples += z.size(0)
-                running_std_sum += z.std(dim=(1, 2, 3, 4)).sum().item()
-                pbar.set_postfix({"z std": running_std_sum / num_samples, "std sum": running_std_sum})
+                num_samples += 1
+                running_sum += z.mean().item()
+                running_var += (z - running_sum / num_samples).pow(2).mean().item()
+
+                running_sum_c += z.mean(dim=(0, 2, 3, 4)).float()
+                running_var_c += (
+                    (z - running_sum_c[None, :, None, None, None] / num_samples).pow(2).mean(dim=(0, 2, 3, 4)).float()
+                )
+                pbar.set_postfix(
+                    {
+                        "mean": running_sum / num_samples,
+                        "std": (running_var / num_samples) ** 0.5,
+                    }
+                )
+                if num_samples % 100 == 0:
+                    print(
+                        " mean_c ",
+                        (running_sum_c / num_samples).cpu().tolist(),
+                        "std_c ",
+                        (running_var_c / num_samples).sqrt().cpu().tolist(),
+                    )
 
             assert list(z.shape[2:]) == latent_size, f"z shape: {z.shape}, latent_size: {latent_size}"
             x_rec, x_z_rec = model.decode(z, num_frames=x.size(2))
-            x_ref = model.spatial_vae.decode(x_z)
+            model.spatial_vae.decode(x_z)
 
             # loss calculation
             nll_loss, weighted_nll_loss, weighted_kl_loss = vae_loss_fn(x, x_rec, posterior)
@@ -127,18 +147,18 @@ def main():
             running_nll = nll_loss.item() / loss_steps + running_nll * ((loss_steps - 1) / loss_steps)
             running_nll_z = nll_loss_z.item() / loss_steps + running_nll_z * ((loss_steps - 1) / loss_steps)
 
-            if not use_dist or coordinator.is_master():
-                ori_dir = f"{save_dir}_ori"
-                rec_dir = f"{save_dir}_rec"
-                ref_dir = f"{save_dir}_ref"
-                os.makedirs(ori_dir, exist_ok=True)
-                os.makedirs(rec_dir, exist_ok=True)
-                os.makedirs(ref_dir, exist_ok=True)
-                for idx, vid in enumerate(x):
-                    pos = step * cfg.batch_size + idx
-                    save_sample(vid, fps=cfg.fps, save_path=f"{ori_dir}/{pos:03d}")
-                    save_sample(x_rec[idx], fps=cfg.fps, save_path=f"{rec_dir}/{pos:03d}")
-                    save_sample(x_ref[idx], fps=cfg.fps, save_path=f"{ref_dir}/{pos:03d}")
+            # if not use_dist or coordinator.is_master():
+            #     ori_dir = f"{save_dir}_ori"
+            #     rec_dir = f"{save_dir}_rec"
+            #     ref_dir = f"{save_dir}_ref"
+            #     os.makedirs(ori_dir, exist_ok=True)
+            #     os.makedirs(rec_dir, exist_ok=True)
+            #     os.makedirs(ref_dir, exist_ok=True)
+            #     for idx, vid in enumerate(x):
+            #         pos = step * cfg.batch_size + idx
+            #         save_sample(vid, fps=cfg.fps, save_path=f"{ori_dir}/{pos:03d}")
+            #         save_sample(x_rec[idx], fps=cfg.fps, save_path=f"{rec_dir}/{pos:03d}")
+            #         save_sample(x_ref[idx], fps=cfg.fps, save_path=f"{ref_dir}/{pos:03d}")
 
     print("test vae loss:", running_loss)
     print("test nll loss:", running_nll)
