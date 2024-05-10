@@ -12,7 +12,7 @@ We assume that you have already installed `opensora` based on the instructions g
 pip install gradio spaces
 ```
 
-2. Afterwards, you can use the following command to launch different models. Remeber to launch the command in the project root directory instead of the `gradio` folder.
+2. Afterwards, you can use the following command to launch different models. Remember to launch the command in the project root directory instead of the `gradio` folder.
 
 ```bash
 # run the default model v1-HQ-16x256x256
