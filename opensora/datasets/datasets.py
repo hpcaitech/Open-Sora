@@ -134,7 +134,7 @@ class VariableVideoTextDataset(VideoTextDataset):
         sample = self.data.iloc[index]
         path = sample["path"]
         file_type = self.get_type(path)
-        ar = width / height
+        ar = height / width
 
         video_fps = 24  # default fps
         if file_type == "video":
