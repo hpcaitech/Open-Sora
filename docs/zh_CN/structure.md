@@ -89,7 +89,7 @@ model = dict(
     type="STDiT-XL/2",        # Select model type (STDiT-XL/2, DiT-XL/2, etc.)
     space_scale=1.0,          # (Optional) Space positional encoding scale (new height / old height)
     time_scale=2 / 3,         # (Optional) Time positional encoding scale (new frame_interval / old frame_interval)
-    enable_flashattn=True,    # (Optional) Speed up training and inference with flash attention
+    enable_flash_attn=True,    # (Optional) Speed up training and inference with flash attention
     enable_layernorm_kernel=True, # (Optional) Speed up training and inference with fused kernel
     from_pretrained="PRETRAINED_MODEL",  # (Optional) Load from pretrained model
     no_temporal_pos_emb=True,  # (Optional) Disable temporal positional encoding (for image)
@@ -144,7 +144,7 @@ model = dict(
     space_scale=1.0,
     time_scale=2 / 3,
     from_pretrained="YOUR_PRETRAINED_MODEL",
-    enable_flashattn=True,        # Enable flash attention
+    enable_flash_attn=True,        # Enable flash attention
     enable_layernorm_kernel=True, # Enable layernorm kernel
 )
 vae = dict(

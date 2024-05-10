@@ -18,14 +18,14 @@ def run_attention(rank, world_size):
     torch.manual_seed(1024)
     set_sequence_parallel_group(dist.group.WORLD)
 
-    seq_parallel_attention = SeqParallelAttention(dim=256, num_heads=4, qkv_bias=True, enable_flashattn=False).cuda()
+    seq_parallel_attention = SeqParallelAttention(dim=256, num_heads=4, qkv_bias=True, enable_flash_attn=False).cuda()
 
     torch.manual_seed(1024)
     attention = Attention(
         dim=256,
         num_heads=4,
         qkv_bias=True,
-        enable_flashattn=False,
+        enable_flash_attn=False,
     ).cuda()
 
     # create inputs

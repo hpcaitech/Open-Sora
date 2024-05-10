@@ -44,13 +44,13 @@ class DiTBlock(nn.Module):
         hidden_size,
         num_heads,
         mlp_ratio=4.0,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
     ):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_heads = num_heads
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
 
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -58,7 +58,7 @@ class DiTBlock(nn.Module):
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flash_attn,
         )
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.mlp = Mlp(in_features=hidden_size, hidden_features=mlp_hidden_dim, act_layer=approx_gelu, drop=0)
@@ -93,7 +93,7 @@ class DiT(nn.Module):
         caption_channels=512,
         model_max_length=77,
         dtype=torch.float32,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
     ):
@@ -111,7 +111,7 @@ class DiT(nn.Module):
         self.num_heads = num_heads
         self.dtype = dtype
         self.use_text_encoder = not condition.startswith("label")
-        if enable_flashattn:
+        if enable_flash_attn:
             assert dtype in [
                 torch.float16,
                 torch.bfloat16,
@@ -143,7 +143,7 @@ class DiT(nn.Module):
                     hidden_size,
                     num_heads,
                     mlp_ratio=mlp_ratio,
-                    enable_flashattn=enable_flashattn,
+                    enable_flash_attn=enable_flash_attn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
                 )
                 for _ in range(depth)
@@ -152,7 +152,7 @@ class DiT(nn.Module):
         self.final_layer = FinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
 
         self.initialize_weights()
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self.enable_layernorm_kernel = enable_layernorm_kernel
 
     def get_spatial_pos_embed(self):

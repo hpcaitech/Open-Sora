@@ -29,7 +29,7 @@ model = dict(
     from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
     qk_norm=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
