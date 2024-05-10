@@ -16,10 +16,21 @@ from opensora.utils.misc import to_torch_dtype
 
 
 def main():
+    torch.set_grad_enabled(False)
     # ======================================================
     # 1. configs & runtime variables
     # ======================================================
+    # == parse configs ==
     cfg = parse_configs(training=False)
+
+    # == device and dtype ==
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    cfg_dtype = cfg.get("dtype", "fp32")
+    assert cfg_dtype in ["fp16", "bf16", "fp32"], f"Unknown mixed precision {cfg_dtype}"
+    dtype = to_torch_dtype(cfg.dtype)
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
     verbose = cfg.get("verbose", 2)
     print(cfg)
 
@@ -41,11 +52,7 @@ def main():
     # ======================================================
     # 2. runtime variables
     # ======================================================
-    torch.set_grad_enabled(False)
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = to_torch_dtype(cfg.dtype)
+
     set_random_seed(seed=cfg.seed)
     prompts = cfg.prompt
 

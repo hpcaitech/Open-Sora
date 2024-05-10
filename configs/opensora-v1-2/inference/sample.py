@@ -1,5 +1,5 @@
 image_size = (240, 426)
-num_frames = 34
+num_frames = 204
 fps = 24
 frame_interval = 1
 
@@ -20,6 +20,7 @@ model = dict(
 vae = dict(
     type="VideoAutoencoderPipeline",
     from_pretrained="pretrained_models/vae-v3",
+    scale=2.5,
     micro_frame_size=17,
     vae_2d=dict(
         type="VideoAutoencoderKL",
@@ -44,5 +45,5 @@ scheduler = dict(
     use_discrete_timesteps=False,
     use_timestep_transform=True,
     num_sampling_steps=30,
-    cfg_scale=4.5,
+    cfg_scale=7.0,
 )

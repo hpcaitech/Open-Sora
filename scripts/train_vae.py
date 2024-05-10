@@ -38,6 +38,7 @@ def main():
     # == parse configs ==
     cfg = parse_configs(training=True)
 
+    # == device and dtype ==
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
     cfg_dtype = cfg.get("dtype", "bf16")
     assert cfg_dtype in ["fp16", "bf16"], f"Unknown mixed precision {cfg_dtype}"
