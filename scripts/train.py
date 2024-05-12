@@ -313,7 +313,8 @@ def main():
                         global_step=global_step + 1,
                         batch_size=cfg.get("batch_size", None),
                     )
-                    model_sharding(ema)
+                    if dist.get_rank() == 0:
+                        model_sharding(ema)
                     logger.info(
                         "Saved checkpoint at epoch %s step %s global_step %s to %s",
                         epoch,
