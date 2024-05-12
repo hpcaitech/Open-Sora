@@ -12,7 +12,7 @@ from opensora.datasets import IMG_FPS, save_sample
 from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
-from opensora.utils.misc import to_torch_dtype
+from opensora.utils.misc import create_logger, is_distributed, is_main_process, to_torch_dtype
 
 
 def main():
@@ -31,29 +31,28 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
-    verbose = cfg.get("verbose", 2)
-    print(cfg)
-
-    # init distributed
-    if os.environ.get("WORLD_SIZE", None):
-        use_dist = True
+    # == init distributed env ==
+    if is_distributed():
         colossalai.launch_from_torch({})
         coordinator = DistCoordinator()
-
-        if coordinator.world_size > 1:
+        enable_sequence_parallelism = coordinator.world_size > 1
+        if enable_sequence_parallelism:
             set_sequence_parallel_group(dist.group.WORLD)
-            enable_sequence_parallelism = True
-        else:
-            enable_sequence_parallelism = False
     else:
-        use_dist = False
         enable_sequence_parallelism = False
+    set_random_seed(seed=cfg.seed)
+
+    # == init logger ==
+    create_logger()
+    verbose = cfg.get("verbose", 1)
+    breakpoint()
+
+    print(cfg)
 
     # ======================================================
     # 2. runtime variables
     # ======================================================
 
-    set_random_seed(seed=cfg.seed)
     prompts = cfg.prompt
 
     # ======================================================
@@ -167,7 +166,7 @@ def main():
             samples = vae.decode(samples.to(dtype), num_frames=cfg.num_frames)
 
             # 4.4. save samples
-            if not use_dist or coordinator.is_master():
+            if is_main_process():
                 for idx, sample in enumerate(samples):
                     if verbose >= 2:
                         print(f"Prompt: {batch_prompts_raw[idx]}")
