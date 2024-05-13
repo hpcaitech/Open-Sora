@@ -17,15 +17,11 @@ from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
-from opensora.utils.config_utils import (
-    create_tensorboard_writer,
-    define_experiment_workspace,
-    parse_configs,
-    save_training_config,
-)
+from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
 from opensora.utils.misc import (
     all_reduce_mean,
     create_logger,
+    create_tensorboard_writer,
     format_numel_str,
     get_model_numel,
     requires_grad,

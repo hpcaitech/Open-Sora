@@ -164,7 +164,7 @@ class STDiT3Config(PretrainedConfig):
         drop_path=0.0,
         caption_channels=4096,
         model_max_length=300,
-        qk_norm=False,
+        qk_norm=True,
         enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,

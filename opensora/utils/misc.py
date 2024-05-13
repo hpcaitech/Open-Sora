@@ -11,6 +11,7 @@ from typing import Tuple
 import numpy as np
 import torch
 import torch.distributed as dist
+from torch.utils.tensorboard import SummaryWriter
 
 # ======================================================
 # Logging
@@ -61,6 +62,13 @@ def print_rank(var_name, var_value, rank=0):
 def print_0(*args, **kwargs):
     if dist.get_rank() == 0:
         print(*args, **kwargs)
+
+
+def create_tensorboard_writer(exp_dir):
+    tensorboard_dir = f"{exp_dir}/tensorboard"
+    os.makedirs(tensorboard_dir, exist_ok=True)
+    writer = SummaryWriter(tensorboard_dir)
+    return writer
 
 
 # ======================================================
