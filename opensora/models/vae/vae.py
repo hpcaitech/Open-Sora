@@ -171,7 +171,7 @@ class VideoAutoencoderPipeline(nn.Module):
 
     def decode(self, z, num_frames=None):
         if not self.cal_loss:
-            z = z * self.scale + self.shift
+            z = z * self.scale.to(z.dtype) + self.shift.to(z.dtype)
 
         if self.micro_frame_size is None:
             x_z = self.temporal_vae.decode(z, num_frames=num_frames)
