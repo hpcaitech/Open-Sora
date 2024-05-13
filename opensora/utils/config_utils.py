@@ -7,12 +7,6 @@ from mmengine.config import Config
 from torch.utils.tensorboard import SummaryWriter
 
 
-def load_prompts(prompt_path):
-    with open(prompt_path, "r") as f:
-        prompts = [line.strip() for line in f.readlines()]
-    return prompts
-
-
 def parse_args(training=False):
     parser = argparse.ArgumentParser()
 
@@ -86,11 +80,13 @@ def merge_args(cfg, args, training=False):
     if args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
-    if not training:
-        if args.image_size is not None and "dataset" in cfg:
+    # NOTE: for vae inference (reconstruction)
+    if not training and "dataset" in cfg:
+        if args.image_size is not None:
             cfg.dataset["image_size"] = args.image_size
-        if args.num_frames is not None and "dataset" in cfg:
+        if args.num_frames is not None:
             cfg.dataset["num_frames"] = args.num_frames
+    if not training:
         if args.cfg_scale is not None:
             cfg.scheduler["cfg_scale"] = args.cfg_scale
             args.cfg_scale = None
@@ -103,32 +99,10 @@ def merge_args(cfg, args, training=False):
             cfg[k] = v
 
     if not training:
-        # Inference only
-        # - Allow not set
         if "reference_path" not in cfg:
             cfg["reference_path"] = None
         if "loop" not in cfg:
             cfg["loop"] = 1
-        if "frame_interval" not in cfg:
-            cfg["frame_interval"] = 1
-        if "sample_name" not in cfg:
-            cfg["sample_name"] = None
-        if "num_sample" not in cfg:
-            cfg["num_sample"] = 1
-        if "prompt_as_path" not in cfg:
-            cfg["prompt_as_path"] = False
-        # - Prompt handling
-        if "prompt" not in cfg or cfg["prompt"] is None:
-            if ("prompt" not in cfg or cfg["prompt"] is None) and cfg.get("prompt_path", None) is not None:
-                cfg["prompt"] = load_prompts(cfg["prompt_path"])
-            if args.start_index is not None and args.end_index is not None:
-                cfg["prompt"] = cfg["prompt"][args.start_index : args.end_index]
-            elif args.start_index is not None:
-                cfg["prompt"] = cfg["prompt"][args.start_index :]
-            elif args.end_index is not None:
-                cfg["prompt"] = cfg["prompt"][: args.end_index]
-        if "multi_resolution" not in cfg:
-            cfg["multi_resolution"] = False
 
     return cfg
 

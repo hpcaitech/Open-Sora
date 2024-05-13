@@ -74,10 +74,13 @@ def get_info(path):
 
 def get_video_info(path):
     try:
-        vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+        vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
         num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
         aspect_ratio = height / width
-        fps = np.nan
+        if "video_fps" in infos:
+            fps = infos["video_fps"]
+        else:
+            fps = np.nan
         resolution = height * width
         return num_frames, height, width, aspect_ratio, fps, resolution
     except:
