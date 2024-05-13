@@ -424,6 +424,7 @@ class GaussianDiffusion:
             ) * _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x.shape)
 
             # active noise addition
+            # WARNING: this is a hacky implementation
             mask_t_equall = (mask_t == t.unsqueeze(1))[:, None, :, None, None]
             x = torch.where(mask_t_equall, x_noise, x0)
 

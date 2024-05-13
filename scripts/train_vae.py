@@ -19,13 +19,15 @@ from opensora.datasets import prepare_dataloader
 from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt_utils import load, save
-from opensora.utils.config_utils import (
+from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
+from opensora.utils.misc import (
+    all_reduce_mean,
+    create_logger,
     create_tensorboard_writer,
-    define_experiment_workspace,
-    parse_configs,
-    save_training_config,
+    format_numel_str,
+    get_model_numel,
+    to_torch_dtype,
 )
-from opensora.utils.misc import all_reduce_mean, create_logger, format_numel_str, get_model_numel, to_torch_dtype
 from opensora.utils.train_utils import create_colossalai_plugin
 
 DEFAULT_DATASET_NAME = "VideoTextDataset"

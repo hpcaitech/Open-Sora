@@ -4,7 +4,6 @@ import os
 from glob import glob
 
 from mmengine.config import Config
-from torch.utils.tensorboard import SummaryWriter
 
 
 def parse_args(training=False):
@@ -25,6 +24,10 @@ def parse_args(training=False):
     )
     parser.add_argument("--batch-size", default=None, type=int, help="batch size")
     parser.add_argument("--outputs", default=None, type=str, help="the dir to save model weights")
+    parser.add_argument("--flash-attn", default=None, action=argparse.BooleanOptionalAction, help="enable flash attn")
+    parser.add_argument(
+        "--layernorm-kernel", default=None, action=argparse.BooleanOptionalAction, help="enable layernorm kernel"
+    )
 
     # ======================================================
     # Inference
@@ -77,6 +80,12 @@ def merge_args(cfg, args, training=False):
         if cfg.get("discriminator") is not None:
             cfg.discriminator["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
+    if args.flash_attn is not None:
+        cfg.model["enable_flash_attn"] = args.flash_attn
+        args.enable_flash_attn = None
+    if args.layernorm_kernel is not None:
+        cfg.model["enable_layernorm_kernel"] = args.layernorm_kernel
+        args.enable_layernorm_kernel = None
     if args.data_path is not None:
         cfg.dataset["data_path"] = args.data_path
         args.data_path = None
@@ -97,12 +106,6 @@ def merge_args(cfg, args, training=False):
     for k, v in vars(args).items():
         if v is not None:
             cfg[k] = v
-
-    if not training:
-        if "reference_path" not in cfg:
-            cfg["reference_path"] = None
-        if "loop" not in cfg:
-            cfg["loop"] = 1
 
     return cfg
 
@@ -140,10 +143,3 @@ def define_experiment_workspace(cfg, get_last_workspace=False):
 def save_training_config(cfg, experiment_dir):
     with open(f"{experiment_dir}/config.txt", "w") as f:
         json.dump(cfg, f, indent=4)
-
-
-def create_tensorboard_writer(exp_dir):
-    tensorboard_dir = f"{exp_dir}/tensorboard"
-    os.makedirs(tensorboard_dir, exist_ok=True)
-    writer = SummaryWriter(tensorboard_dir)
-    return writer
