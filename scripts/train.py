@@ -67,10 +67,9 @@ def main():
 
     # == init logger, tensorboard & wandb ==
     logger = create_logger(exp_dir)
+    logger.info("Experiment directory created at %s", exp_dir)
+    logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
     if coordinator.is_master():
-        logger.info("Experiment directory created at %s", exp_dir)
-        logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
-
         tb_writer = create_tensorboard_writer(exp_dir)
         if cfg.get("wandb", False):
             wandb.init(project="minisora", name=exp_name, config=cfg.to_dict(), dir="./outputs/wandb")
@@ -124,21 +123,23 @@ def main():
     logger.info("Building models...")
     # == build text-encoder and vae ==
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
-    vae = build_module(cfg.vae, MODELS).to(device, dtype)
-    vae.eval()
+    vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
 
     # == build diffusion model ==
     input_size = (dataset.num_frames, *dataset.image_size)
     latent_size = vae.get_latent_size(input_size)
-    model = build_module(
-        cfg.model,
-        MODELS,
-        input_size=latent_size,
-        in_channels=vae.out_channels,
-        caption_channels=text_encoder.output_dim,
-        model_max_length=text_encoder.model_max_length,
-    ).to(device, dtype)
-    model.train()
+    model = (
+        build_module(
+            cfg.model,
+            MODELS,
+            input_size=latent_size,
+            in_channels=vae.out_channels,
+            caption_channels=text_encoder.output_dim,
+            model_max_length=text_encoder.model_max_length,
+        )
+        .to(device, dtype)
+        .train()
+    )
     model_numel, model_numel_trainable = get_model_numel(model)
     logger.info(
         "[Diffusion] Trainable model params: %s, Total model params: %s",

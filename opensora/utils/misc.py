@@ -318,3 +318,7 @@ def transpose(x):
     """
     ret = list(map(list, zip(*x)))
     return ret
+
+
+def all_exists(paths):
+    return all(os.path.exists(path) for path in paths)

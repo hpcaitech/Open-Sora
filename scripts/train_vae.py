@@ -62,10 +62,9 @@ def main():
 
     # == init logger, tensorboard & wandb ==
     logger = create_logger(exp_dir)
+    logger.info("Experiment directory created at %s", exp_dir)
+    logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
     if coordinator.is_master():
-        logger.info("Experiment directory created at %s", exp_dir)
-        logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
-
         tb_writer = create_tensorboard_writer(exp_dir)
         if cfg.get("wandb", False):
             wandb.init(project="minisora", name=exp_name, config=cfg.to_dict(), dir="./outputs/wandb")
@@ -109,8 +108,7 @@ def main():
     # ======================================================
     logger.info("Building models...")
     # == build vae model ==
-    model = build_module(cfg.model, MODELS).to(device, dtype)
-    model.train()
+    model = build_module(cfg.model, MODELS).to(device, dtype).train()
     model_numel, model_numel_trainable = get_model_numel(model)
     logger.info(
         "[VAE] Trainable model params: %s, Total model params: %s",
@@ -121,8 +119,7 @@ def main():
     # == build discriminator model ==
     use_discriminator = cfg.get("discriminator", None) is not None
     if use_discriminator:
-        discriminator = build_module(cfg.discriminator, MODELS).to(device, dtype)
-        discriminator.train()
+        discriminator = build_module(cfg.discriminator, MODELS).to(device, dtype).train()
         discriminator_numel, discriminator_numel_trainable = get_model_numel(discriminator)
         logger.info(
             "[Discriminator] Trainable model params: %s, Total model params: %s",
