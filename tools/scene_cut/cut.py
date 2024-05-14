@@ -50,10 +50,10 @@ def split_video(
     video_path,
     scene_list,
     save_dir,
-    min_seconds=2.0,
-    max_seconds=15.0,
+    min_seconds=2,
+    max_seconds=15,
     target_fps=30,
-    shorter_size=720,
+    shorter_size=None,
     verbose=False,
     logger=None,
 ):
@@ -134,8 +134,8 @@ def parse_args():
                         help='if not None, clip shorter than min_seconds is ignored')
     parser.add_argument("--max_seconds", type=float, default=None,
                         help='if not None, clip longer than max_seconds is truncated')
-    parser.add_argument("--target_fps", type=int, default=30, help='target fps of clips')
-    parser.add_argument("--shorter_size", type=int, default=720, help='resize the shorter size by keeping ratio')
+    parser.add_argument("--target_fps", type=int, default=None, help='target fps of clips')
+    parser.add_argument("--shorter_size", type=int, default=None, help='resize the shorter size by keeping ratio')
     parser.add_argument("--num_workers", type=int, default=None, help='#workers for pandarallel')
 
     args = parser.parse_args()
