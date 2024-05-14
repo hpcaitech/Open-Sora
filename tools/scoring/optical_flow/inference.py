@@ -1,7 +1,7 @@
 import argparse
 import os
+from datetime import timedelta
 
-import colossalai
 import numpy as np
 import pandas as pd
 import torch
@@ -13,25 +13,27 @@ from torchvision.transforms.functional import pil_to_tensor
 from tqdm import tqdm
 
 from tools.datasets.utils import extract_frames
-
 from .unimatch import UniMatch
 
 
-def merge_scores(gathered_list: list, meta: pd.DataFrame):
+def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
     # reorder
     indices_list = list(map(lambda x: x[0], gathered_list))
-    flow_scores_list = list(map(lambda x: x[1], gathered_list))
+    scores_list = list(map(lambda x: x[1], gathered_list))
+
     flat_indices = []
     for x in zip(*indices_list):
         flat_indices.extend(x)
-    flat_flow_scores = []
-    for x in zip(*flow_scores_list):
-        flat_flow_scores.extend(x)
+    flat_scores = []
+    for x in zip(*scores_list):
+        flat_scores.extend(x)
     flat_indices = np.array(flat_indices)
-    flat_flow_scores = np.array(flat_flow_scores)
+    flat_scores = np.array(flat_scores)
+
     # filter duplicates
     unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
-    meta.loc[unique_indices, "flow"] = flat_flow_scores[unique_indices_idx]
+    meta.loc[unique_indices, column] = flat_scores[unique_indices_idx]
+    return meta
 
 
 class VideoTextDataset(torch.utils.data.Dataset):
@@ -61,17 +63,19 @@ class VideoTextDataset(torch.utils.data.Dataset):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=4, help="Batch size")
+    parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     args = parser.parse_args()
     return args
 
 
 def main():
+    args = parse_args()
+
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    colossalai.launch_from_torch({})
-    args = parse_args()
+    dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
+    torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
 
     meta_path = args.meta_path
     wo_ext, ext = os.path.splitext(meta_path)
@@ -88,11 +92,10 @@ def main():
         num_transformer_layers=6,
         reg_refine=True,
         task="flow",
-    ).eval()
+    )
     ckpt = torch.load("./pretrained_models/unimatch/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth")
     model.load_state_dict(ckpt["model"])
     model = model.to(device)
-    # model = torch.nn.DataParallel(model)
 
     # build dataset
     dataset = VideoTextDataset(meta_path=meta_path, frame_inds=[0, 10, 20, 30])
@@ -110,9 +113,9 @@ def main():
     )
 
     # compute optical flow scores
-    dataset.meta["flow"] = np.nan
     indices_list = []
-    flow_scores_list = []
+    scores_list = []
+    model.eval()
     for images, indices in tqdm(dataloader, disable=dist.get_rank() != 0):
         images = images.to(device)
         B = images.shape[0]
@@ -138,13 +141,13 @@ def main():
             flow_scores = flow_scores.tolist()
 
         indices_list.extend(indices)
-        flow_scores_list.extend(flow_scores)
+        scores_list.extend(flow_scores)
 
     gathered_list = [None] * dist.get_world_size()
-    dist.all_gather_object(gathered_list, (indices_list, flow_scores_list))
+    dist.all_gather_object(gathered_list, (indices_list, scores_list))
     if dist.get_rank() == 0:
-        merge_scores(gathered_list, dataset.meta)
-        dataset.meta.to_csv(out_path, index=False)
+        meta_new = merge_scores(gathered_list, dataset.meta, column='flow')
+        meta_new.to_csv(out_path, index=False)
         print(f"New meta with optical flow scores saved to '{out_path}'.")
 
 

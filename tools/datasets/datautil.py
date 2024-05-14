@@ -54,7 +54,7 @@ def get_info(path):
         if ext in IMG_EXTENSIONS:
             im = cv2.imread(path)
             if im is None:
-                return 0, 0, 0, np.nan, np.nan
+                return 0, 0, 0, np.nan, np.nan, np.nan
             height, width = im.shape[:2]
             num_frames, fps = 1, np.nan
         else:
@@ -415,8 +415,12 @@ def main(args):
         data_new = pd.read_csv(args.intersection)
         print(f"Intersection csv contains {len(data_new)} samples.")
         cols_to_use = data_new.columns.difference(data.columns)
-        cols_to_use = cols_to_use.insert(0, "path")
-        data = pd.merge(data, data_new[cols_to_use], on="path", how="inner")
+
+        col_on = 'path'
+        # if 'id' in data.columns and 'id' in data_new.columns: 
+        #     col_on = 'id'
+        cols_to_use = cols_to_use.insert(0, col_on)
+        data = pd.merge(data, data_new[cols_to_use], on=col_on, how="inner")
         print(f"Intersection number of samples: {len(data)}.")
 
     # train columns
@@ -484,6 +488,8 @@ def main(args):
         data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
     if args.abspath is not None:
         data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
+    if args.path_to_id:
+        data["id"] = apply(data["path"], lambda x: os.path.splitext(os.path.basename(x))[0])
     if args.merge_cmotion:
         data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
     if args.refine_llm_caption:
@@ -581,6 +587,7 @@ def parse_args():
     # path processing
     parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
     parser.add_argument("--abspath", type=str, default=None, help="modify the path to absolute path by root given")
+    parser.add_argument("--path-to-id", action='store_true', help="add id based on path")
 
     # caption filtering
     parser.add_argument(
