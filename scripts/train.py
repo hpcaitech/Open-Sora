@@ -5,16 +5,17 @@ from pprint import pformat
 
 import torch
 import torch.distributed as dist
-import wandb
 from colossalai.booster import Booster
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
 from tqdm import tqdm
 
+import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
+from opensora.datasets.utils import collate_fn_ignore_none
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -97,6 +98,7 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
+        collate_fn=collate_fn_ignore_none,
     )
     if cfg.dataset.type == DEFAULT_DATASET_NAME:
         dataloader = prepare_dataloader(**dataloader_args)
