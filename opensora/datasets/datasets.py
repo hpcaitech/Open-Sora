@@ -176,12 +176,9 @@ class VariableVideoTextDataset(VideoTextDataset):
         return ret
 
     def __getitem__(self, index):
-        for _ in range(10):
-            try:
-                return self.getitem(index)
-            except Exception as e:
-                index, num_frames, height, width = [int(val) for val in index.split("-")]
-                path = self.data.iloc[index]["path"]
-                print(f"data {path}: {e}")
-                index = np.random.randint(len(self))
-        raise RuntimeError("Too many bad data.")
+        try:
+            return self.getitem(index)
+        except Exception:
+            # we return None here in case of errorneous data
+            # the collate function will handle it
+            return None
