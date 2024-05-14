@@ -27,6 +27,16 @@ regex = re.compile(
 )
 
 
+def is_img(path):
+    ext = os.path.splitext(path)[-1].lower()
+    return ext in IMG_EXTENSIONS
+
+
+def is_vid(path):
+    ext = os.path.splitext(path)[-1].lower()
+    return ext in VID_EXTENSIONS
+
+
 def is_url(url):
     return re.match(regex, url) is not None
 
