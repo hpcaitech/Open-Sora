@@ -468,3 +468,18 @@ def get_image_size(resolution, ar_ratio):
     rs_dict = ASPECT_RATIOS[resolution][1]
     assert ar_key in rs_dict, f"Aspect ratio {ar_ratio} not found for resolution {resolution}"
     return rs_dict[ar_key]
+
+
+NUM_FRAMES_MAP = {
+    "1x": 51,
+    "2x": 102,
+    "4x": 204,
+    "8x": 408,
+}
+
+
+def get_num_frames(num_frames):
+    if num_frames in NUM_FRAMES_MAP:
+        return NUM_FRAMES_MAP[num_frames]
+    else:
+        return int(num_frames)
