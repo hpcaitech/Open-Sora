@@ -220,3 +220,39 @@ class VideoAutoencoderPipeline(nn.Module):
     @property
     def dtype(self):
         return next(self.parameters()).dtype
+
+
+@MODELS.register_module()
+class OpenSoraVAE_V1_2(VideoAutoencoderPipeline):
+    def __init__(
+        self,
+        micro_batch_size=4,
+        micro_frame_size=17,
+        from_pretrained=None,
+        local_files_only=True,
+        freeze_vae_2d=False,
+        cal_loss=False,
+    ):
+        vae_2d = dict(
+            type="VideoAutoencoderKL",
+            from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
+            subfolder="vae",
+            micro_batch_size=micro_batch_size,
+            local_files_only=local_files_only,
+        )
+        vae_temporal = dict(
+            type="VAE_Temporal_SD",
+            from_pretrained=None,
+        )
+        shift = (-0.10, 0.34, 0.27, 0.98)
+        scale = (3.85, 2.32, 2.33, 3.06)
+        super().__init__(
+            vae_2d,
+            vae_temporal,
+            from_pretrained,
+            freeze_vae_2d=freeze_vae_2d,
+            cal_loss=cal_loss,
+            micro_frame_size=micro_frame_size,
+            shift=shift,
+            scale=scale,
+        )

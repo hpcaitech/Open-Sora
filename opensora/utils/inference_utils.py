@@ -132,7 +132,9 @@ def find_nearest_point(value, point, max_value):
 
 def apply_mask_strategy(z, refs_x, mask_strategys, loop_i, align=None):
     masks = []
+    no_mask = True
     for i, mask_strategy in enumerate(mask_strategys):
+        no_mask = False
         mask = torch.ones(z.shape[2], dtype=torch.float, device=z.device)
         mask_strategy = parse_mask_strategy(mask_strategy)
         for mst in mask_strategy:
@@ -154,6 +156,8 @@ def apply_mask_strategy(z, refs_x, mask_strategys, loop_i, align=None):
             z[i, :, m_target_start : m_target_start + m_length] = ref[:, m_ref_start : m_ref_start + m_length]
             mask[m_target_start : m_target_start + m_length] = edit_ratio
         masks.append(mask)
+    if no_mask:
+        return None
     masks = torch.stack(masks)
     return masks
 

@@ -19,6 +19,7 @@ def prepare_dataloader(
     pin_memory=False,
     num_workers=0,
     process_group: Optional[ProcessGroup] = None,
+    distributed=True,
     **kwargs,
 ):
     r"""
@@ -43,13 +44,16 @@ def prepare_dataloader(
         :class:`torch.utils.data.DataLoader`: A DataLoader used for training or testing.
     """
     _kwargs = kwargs.copy()
-    process_group = process_group or _get_default_group()
-    sampler = StatefulDistributedSampler(
-        dataset,
-        num_replicas=process_group.size(),
-        rank=process_group.rank(),
-        shuffle=shuffle,
-    )
+    if distributed:
+        process_group = process_group or _get_default_group()
+        sampler = StatefulDistributedSampler(
+            dataset,
+            num_replicas=process_group.size(),
+            rank=process_group.rank(),
+            shuffle=shuffle,
+        )
+    else:
+        sampler = None
 
     # Deterministic dataloader
     def seed_worker(worker_id):

@@ -230,12 +230,12 @@ def main():
     for epoch in range(start_epoch, cfg_epochs):
         # == set dataloader to new epoch ==
         dataloader.sampler.set_epoch(epoch)
-        dataloader_iter = iter(dataloader)
+        dataiter = iter(dataloader)
         logger.info("Beginning epoch %s...", epoch)
 
         # == training loop in an epoch ==
         with tqdm(
-            enumerate(dataloader_iter, start=start_step),
+            enumerate(dataiter, start=start_step),
             desc=f"Epoch {epoch}",
             disable=not coordinator.is_master(),
             total=num_steps_per_epoch,
@@ -253,7 +253,7 @@ def main():
                     length = random.randint(1, x.size(2))
                     x = x[:, :, :length, :, :]
 
-                # == vae encoding ===
+                # == vae encoding & decoding ===
                 x_rec, x_z_rec, z, posterior, x_z = model(x)
 
                 # == loss initialization ==

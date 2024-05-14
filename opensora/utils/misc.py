@@ -26,6 +26,13 @@ def is_main_process():
     return not is_distributed() or dist.get_rank() == 0
 
 
+def get_world_size():
+    if is_distributed():
+        return dist.get_world_size()
+    else:
+        return 1
+
+
 def create_logger(logging_dir=None):
     """
     Create a logger that writes to a log file and stdout.

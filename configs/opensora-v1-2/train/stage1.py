@@ -61,22 +61,10 @@ model = dict(
     enable_layernorm_kernel=True,
 )
 vae = dict(
-    type="VideoAutoencoderPipeline",
+    type="OpenSoraVAE_V1_2",
     from_pretrained="pretrained_models/vae-pipeline",
-    shift=(-0.10, 0.34, 0.27, 0.98),
-    scale=(3.85, 2.32, 2.33, 3.06),
     micro_frame_size=17,
-    vae_2d=dict(
-        type="VideoAutoencoderKL",
-        from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-        subfolder="vae",
-        micro_batch_size=4,
-        local_files_only=True,
-    ),
-    vae_temporal=dict(
-        type="VAE_Temporal_SD",
-        from_pretrained=None,
-    ),
+    micro_batch_size=4,
 )
 text_encoder = dict(
     type="t5",
