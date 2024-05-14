@@ -24,10 +24,8 @@ def parse_args(training=False):
     )
     parser.add_argument("--batch-size", default=None, type=int, help="batch size")
     parser.add_argument("--outputs", default=None, type=str, help="the dir to save model weights")
-    parser.add_argument("--flash-attn", default=None, action=argparse.BooleanOptionalAction, help="enable flash attn")
-    parser.add_argument(
-        "--layernorm-kernel", default=None, action=argparse.BooleanOptionalAction, help="enable layernorm kernel"
-    )
+    parser.add_argument("--flash-attn", default=None, type=str2bool, help="enable flash attention")
+    parser.add_argument("--layernorm-kernel", default=None, type=str2bool, help="enable layernorm kernel")
 
     # ======================================================
     # Inference
@@ -51,6 +49,9 @@ def parse_args(training=False):
         parser.add_argument("--num-frames", default=None, type=int, help="number of frames")
         parser.add_argument("--fps", default=None, type=int, help="fps")
         parser.add_argument("--image-size", default=None, type=int, nargs=2, help="image size")
+        parser.add_argument("--frame-interval", default=None, type=int, help="frame interval")
+        parser.add_argument("--resolution", default=None, type=str, help="multi resolution")
+        parser.add_argument("--aspect-ratio", default=None, type=float, help="aspect ratio")
 
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
@@ -143,3 +144,14 @@ def define_experiment_workspace(cfg, get_last_workspace=False):
 def save_training_config(cfg, experiment_dir):
     with open(f"{experiment_dir}/config.txt", "w") as f:
         json.dump(cfg, f, indent=4)
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")

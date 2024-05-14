@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets import save_sample
+from opensora.datasets.aspect import get_image_size
 from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
@@ -52,7 +53,7 @@ def main():
     else:
         coordinator = None
         enable_sequence_parallelism = False
-    set_random_seed(seed=cfg.seed)
+    set_random_seed(seed=cfg.get("seed", 1024))
 
     # == init logger ==
     logger = create_logger()
@@ -68,8 +69,19 @@ def main():
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
     vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
 
+    # == prepare video size ==
+    image_size = cfg.get("image_size", None)
+    if image_size is None:
+        resolution = cfg.get("resolution", None)
+        aspect_ratio = cfg.get("aspect_ratio", None)
+        assert (
+            resolution is not None and aspect_ratio is not None
+        ), "resolution and aspect_ratio must be provided if image_size is not provided"
+        image_size = get_image_size(resolution, aspect_ratio)
+    num_frames = cfg.num_frames
+
     # == build diffusion model ==
-    input_size = (cfg.get("num_frames", None), *cfg.get("image_size", (None, None)))
+    input_size = (num_frames, *image_size)
     latent_size = vae.get_latent_size(input_size)
     model = (
         build_module(
@@ -106,10 +118,8 @@ def main():
     assert len(mask_strategy) == len(prompts), "Length of mask_strategy must be the same as prompts"
 
     # == prepare arguments ==
-    image_size = cfg.image_size
-    num_frames = cfg.num_frames
     fps = cfg.fps
-    save_fps = cfg.fps // cfg.get("frame_interval", 1)
+    save_fps = fps // cfg.get("frame_interval", 1)
     multi_resolution = cfg.get("multi_resolution", None)
     batch_size = cfg.get("batch_size", 1)
     num_sample = cfg.get("num_sample", 1)
