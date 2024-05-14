@@ -525,6 +525,9 @@ def main(args):
     if args.fmax is not None:
         assert "num_frames" in data.columns
         data = data[data["num_frames"] <= args.fmax]
+    if args.fpsmax is not None:
+        assert "fps" in data.columns
+        data = data[data["fps"] <= args.fpsmax]
     if args.hwmax is not None:
         if "resolution" not in data.columns:
             height = data["height"]
@@ -618,6 +621,7 @@ def parse_args():
     parser.add_argument("--aesmin", type=float, default=None, help="filter the dataset by minimum aes score")
     parser.add_argument("--matchmin", type=float, default=None, help="filter the dataset by minimum match score")
     parser.add_argument("--flowmin", type=float, default=None, help="filter the dataset by minimum flow score")
+    parser.add_argument("--fpsmax", type=float, default=None, help="filter the dataset by maximum fps")
 
     return parser.parse_args()
 
@@ -682,6 +686,8 @@ def get_output_path(args, input_name):
         name += f"_fmin{args.fmin}"
     if args.fmax is not None:
         name += f"_fmax{args.fmax}"
+    if args.fpsmax is not None:
+        name += f"_fpsmax{args.fpsmax}"
     if args.hwmax is not None:
         name += f"_hwmax{args.hwmax}"
     if args.aesmin is not None:
