@@ -416,8 +416,8 @@ def main(args):
         print(f"Intersection csv contains {len(data_new)} samples.")
         cols_to_use = data_new.columns.difference(data.columns)
 
-        col_on = 'path'
-        # if 'id' in data.columns and 'id' in data_new.columns: 
+        col_on = "path"
+        # if 'id' in data.columns and 'id' in data_new.columns:
         #     col_on = 'id'
         cols_to_use = cols_to_use.insert(0, col_on)
         data = pd.merge(data, data_new[cols_to_use], on=col_on, how="inner")
@@ -527,7 +527,7 @@ def main(args):
         data = data[data["num_frames"] <= args.fmax]
     if args.fpsmax is not None:
         assert "fps" in data.columns
-        data = data[data["fps"] <= args.fpsmax]
+        data = data[(data["fps"] <= args.fpsmax) | np.isnan(data["fps"])]
     if args.hwmax is not None:
         if "resolution" not in data.columns:
             height = data["height"]
@@ -590,7 +590,7 @@ def parse_args():
     # path processing
     parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
     parser.add_argument("--abspath", type=str, default=None, help="modify the path to absolute path by root given")
-    parser.add_argument("--path-to-id", action='store_true', help="add id based on path")
+    parser.add_argument("--path-to-id", action="store_true", help="add id based on path")
 
     # caption filtering
     parser.add_argument(
