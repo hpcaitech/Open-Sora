@@ -282,10 +282,13 @@ def main():
         return target_batch_size, target_step_time
 
     # == build bucket ==
-    output_bucket_cfg = deepcopy(cfg.bucket_config)
+    bucket_config = cfg.bucket_config
+    output_bucket_cfg = deepcopy(bucket_config)
+    if cfg.get("resolution", None) is not None:
+        bucket_config = {cfg.resolution: bucket_config[cfg.resolution]}
     buckets = {
         (resolution, num_frames): (max(guess_bs - variance, 1), guess_bs + variance)
-        for resolution, t_bucket in cfg.bucket_config.items()
+        for resolution, t_bucket in bucket_config.items()
         for num_frames, (guess_bs, variance) in t_bucket.items()
     }
 

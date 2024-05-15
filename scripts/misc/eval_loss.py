@@ -84,7 +84,10 @@ def main():
     # ======================================================
     # start evaluation, prepare a dataset everytime in the loop
     bucket_config = cfg.bucket_config
+    if cfg.get("resolution", None) is not None:
+        bucket_config = {cfg.resolution: bucket_config[cfg.resolution]}
     assert bucket_config is not None, "bucket_config is required for evaluation"
+    logger.info("Evaluating bucket_config: %s", bucket_config)
 
     def build_dataset(resolution, num_frames, batch_size):
         bucket_config = {resolution: {num_frames: (1.0, batch_size)}}
@@ -118,7 +121,7 @@ def main():
                 continue
 
             evaluation_t_losses = []
-            for t in torch.linspace(0, scheduler.num_timesteps, cfg.get("num_eval_timesteps", 10)):
+            for t in torch.linspace(0, scheduler.num_timesteps, cfg.get("num_eval_timesteps", 10) + 2)[1:-1]:
                 loss_t = 0.0
                 num_samples = 0
                 dataloader_iter = iter(dataloader)

@@ -26,6 +26,7 @@ def parse_args(training=False):
     parser.add_argument("--outputs", default=None, type=str, help="the dir to save model weights")
     parser.add_argument("--flash-attn", default=None, type=str2bool, help="enable flash attention")
     parser.add_argument("--layernorm-kernel", default=None, type=str2bool, help="enable layernorm kernel")
+    parser.add_argument("--resolution", default=None, type=str, help="multi resolution")
 
     # ======================================================
     # Inference
@@ -50,7 +51,6 @@ def parse_args(training=False):
         parser.add_argument("--fps", default=None, type=int, help="fps")
         parser.add_argument("--image-size", default=None, type=int, nargs=2, help="image size")
         parser.add_argument("--frame-interval", default=None, type=int, help="frame interval")
-        parser.add_argument("--resolution", default=None, type=str, help="multi resolution")
         parser.add_argument("--aspect-ratio", default=None, type=float, help="aspect ratio")
 
         # hyperparameters
