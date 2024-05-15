@@ -15,12 +15,23 @@ bash eval/launch.sh /path/to/ckpt
 
 ## Rectified Flow Loss
 
+Evaluate the rectified flow loss with the following commands.
+
 ```bash
-CUDA_VISIBLE_DEVICES=2 torchrun --standalone --nproc_per_node 1 scripts/misc/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /mnt/nfs-207/sora_data/meta/img_1k.csv --ckpt-path /home/lishenggui/projects/sora/Open-Sora-dev/outputs/207-STDiT3-XL-2/epoch0-global_step9000/
+# image
+torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /path/to/img.csv --ckpt-path /path/to/ckpt
 
-CUDA_VISIBLE_DEVICES=3 torchrun --standalone --nproc_per_node 1 scripts/misc/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /mnt/nfs-207/sora_data/meta/vid_100.csv --ckpt-path /home/lishenggui/projects/sora/Open-Sora-dev/outputs/207-STDiT3-XL-2/epoch0-global_step9000/
+# video
+torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /path/to/vid.csv --ckpt-path /path/to/ckpt
 
-CUDA_VISIBLE_DEVICES=3 torchrun --standalone --nproc_per_node 1 scripts/misc/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /mnt/nfs-207/sora_data/meta/vid_100.csv --ckpt-path /home/lishenggui/projects/sora/Open-Sora-dev/outputs/207-STDiT3-XL-2/epoch0-global_step9000/ --resolution 720p
+# select resolution
+torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /path/to/vid.csv --ckpt-path /path/to/ckpt --resolution 720p
+```
+
+To launch multiple jobs at once, use the following script.
+
+```bash
+bash eval/loss/launch.sh /path/to/ckpt
 ```
 
 ## VBench
