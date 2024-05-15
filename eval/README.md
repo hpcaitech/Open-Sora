@@ -13,6 +13,16 @@ bash eval/sample.sh /path/to/ckpt -2a
 bash eval/launch.sh /path/to/ckpt
 ```
 
+## Rectified Flow Loss
+
+```bash
+CUDA_VISIBLE_DEVICES=2 torchrun --standalone --nproc_per_node 1 scripts/misc/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /mnt/nfs-207/sora_data/meta/img_1k.csv --ckpt-path /home/lishenggui/projects/sora/Open-Sora-dev/outputs/207-STDiT3-XL-2/epoch0-global_step9000/
+
+CUDA_VISIBLE_DEVICES=3 torchrun --standalone --nproc_per_node 1 scripts/misc/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /mnt/nfs-207/sora_data/meta/vid_100.csv --ckpt-path /home/lishenggui/projects/sora/Open-Sora-dev/outputs/207-STDiT3-XL-2/epoch0-global_step9000/
+
+CUDA_VISIBLE_DEVICES=3 torchrun --standalone --nproc_per_node 1 scripts/misc/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /mnt/nfs-207/sora_data/meta/vid_100.csv --ckpt-path /home/lishenggui/projects/sora/Open-Sora-dev/outputs/207-STDiT3-XL-2/epoch0-global_step9000/ --resolution 720p
+```
+
 ## VBench
 
 [VBench](https://github.com/Vchitect/VBench) is a benchmark for short text to video generation. We provide a script for easily generating samples required by VBench.
