@@ -66,8 +66,10 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
         if file_type == "video":
             # loading
-            vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
 
+            if "video_fps" in infos:
+                video_fps = infos["video_fps"]
             # Sampling video frames
             video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)
 
@@ -77,6 +79,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         else:
             # loading
             image = pil_loader(path)
+            video_fps = IMG_FPS
 
             # transform
             transform = self.transforms["image"]
@@ -88,7 +91,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
 
-        ret = {"video": video}
+        ret = {"video": video, "fps": video_fps}
         if self.get_text:
             ret["text"] = sample["text"]
         return ret
