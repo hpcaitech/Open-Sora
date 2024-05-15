@@ -229,7 +229,7 @@ class OpenSoraVAE_V1_2(VideoAutoencoderPipeline):
         micro_batch_size=4,
         micro_frame_size=17,
         from_pretrained=None,
-        local_files_only=True,
+        local_files_only=False,
         freeze_vae_2d=False,
         cal_loss=False,
     ):
