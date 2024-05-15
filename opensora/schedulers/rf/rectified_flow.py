@@ -63,21 +63,22 @@ class RFlowScheduler:
         self.use_timestep_transform = use_timestep_transform
         self.transform_scale = transform_scale
 
-    def training_losses(self, model, x_start, model_kwargs=None, noise=None, mask=None, weights=None):
+    def training_losses(self, model, x_start, model_kwargs=None, noise=None, mask=None, weights=None, t=None):
         """
         Compute training losses for a single timestep.
         Arguments format copied from opensora/schedulers/iddpm/gaussian_diffusion.py/training_losses
         Note: t is int tensor and should be rescaled from [0, num_timesteps-1] to [1,0]
         """
-        if self.use_discrete_timesteps:
-            t = torch.randint(0, self.num_timesteps, (x_start.shape[0],), device=x_start.device)
-        elif self.sample_method == "uniform":
-            t = torch.rand((x_start.shape[0],), device=x_start.device) * self.num_timesteps
-        elif self.sample_method == "logit-normal":
-            t = self.sample_t(x_start) * self.num_timesteps
+        if t is None:
+            if self.use_discrete_timesteps:
+                t = torch.randint(0, self.num_timesteps, (x_start.shape[0],), device=x_start.device)
+            elif self.sample_method == "uniform":
+                t = torch.rand((x_start.shape[0],), device=x_start.device) * self.num_timesteps
+            elif self.sample_method == "logit-normal":
+                t = self.sample_t(x_start) * self.num_timesteps
 
-        if self.use_timestep_transform:
-            t = timestep_transform(t, model_kwargs, scale=self.transform_scale, num_timesteps=self.num_timesteps)
+            if self.use_timestep_transform:
+                t = timestep_transform(t, model_kwargs, scale=self.transform_scale, num_timesteps=self.num_timesteps)
 
         if model_kwargs is None:
             model_kwargs = {}
