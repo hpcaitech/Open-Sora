@@ -80,6 +80,57 @@ python -m tools.datasets.datautil DATA.csv --difference DATA_caption.csv --outpu
 
 Then use the output csv file to resume the process.
 
+## PLLaVA Captioning
+
+### Download the PLLaVA repo
+
+First, make sure you are under the directory of tools/caption/pllava_dir. Then,
+
+```bash
+git clone https://github.com/magic-research/PLLaVA.git
+
+cd PLLaVA
+```
+
+### Environment
+
+```bash
+conda create -n pllava python=3.10
+
+conda activate pllava
+
+pip install -r requirements.txt # change to your own torch version if neccessary; torch==2.2.2, torchaudio==2.2.2, torchvision==0.17.2 worked for H100 for Tom.
+
+```
+
+
+### Download weights
+
+```bash
+python python_scripts/hf.py # download the weights 
+```
+### Usage
+
+Since PLLaVA is not fashioned as a package, we will use PYTHONPATH to use it as a package.
+
+
+```bash
+cd .. # step back to pllava_dir
+
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+PYTHONPATH='$PYTHONPATH:OPEN_SORA_HOME/tools/caption/pllava_dir/PLLaVA' \
+nohup /mnt/nfs-207/envs/pllava/bin/python caption_pllava.py \
+  --pretrained_model_name_or_path PLLaVA/MODELS/pllava-13b \
+  --use_lora \
+  --lora_alpha 4 \
+  --num_frames 4 \
+  --weight_dir PLLaVA/MODELS/pllava-13b \
+  --csv_path meta.csv \
+  --pooling_shape 4-12-12 \
+  > pllava_caption.out 2>&1 &
+
+```
+
 ## GPT-4V Captioning
 
 Run the following command to generate captions for videos with GPT-4V:
