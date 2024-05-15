@@ -150,8 +150,8 @@ def main():
             dataset=dataset,
             batch_size=None,
             num_workers=cfg.num_workers,
-            shuffle=True,
-            drop_last=True,
+            shuffle=False,
+            drop_last=False,
             pin_memory=True,
             process_group=get_data_parallel_group(),
         )
@@ -159,9 +159,11 @@ def main():
             bucket_config=bucket_config,
             **dataloader_args,
         )
-        dataloader_iter = iter(dataloader)
         num_batch = dataloader.batch_sampler.get_num_batch()
         num_steps_per_epoch = num_batch // dist.get_world_size()
+
+        dataloader_iter = iter(dataloader)
+
         return dataloader_iter, num_steps_per_epoch, num_batch
 
     def train(resolution, num_frames, batch_size, warmup_steps=5, active_steps=5):
@@ -256,17 +258,19 @@ def main():
             mid = (lower_bound + upper_bound) // 2
             try:
                 step_time = train(resolution, num_frames, mid)
-                target_batch_size, target_step_time = mid, step_time
                 if step_time < 0:  # no data
                     return 0, 0
                 if ref_step_time is not None:
-                    dis = abs(target_step_time - ref_step_time)
-                    if dis < min_dis:
-                        min_dis = dis
+                    if step_time < ref_step_time:
                         lower_bound = mid + 1
+                        dis = abs(step_time - ref_step_time)
+                        if dis < min_dis:
+                            target_batch_size, target_step_time = mid, step_time
+                            min_dis = dis
                     else:
                         upper_bound = mid - 1
                 else:
+                    target_batch_size, target_step_time = mid, step_time
                     lower_bound = mid + 1
             except Exception:
                 traceback.print_exc()
