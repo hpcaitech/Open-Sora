@@ -146,28 +146,15 @@ Other useful documents and links are listed below.
 
 ### Install from Source
 
+For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation](docs/installation.md) for more instructions.
+
 ```bash
-# create a virtual env
+# create a virtual env and activate (conda as an example)
 conda create -n opensora python=3.10
-# activate virtual environment
 conda activate opensora
 
-# install torch
-# the command below is for CUDA 12.1, choose install commands from
-# https://pytorch.org/get-started/locally/ based on your own CUDA version
-pip install torch torchvision
-
-# install flash attention (optional)
-# set enable_flash_attn=False in config to avoid using flash attention
-pip install packaging ninja
-pip install flash-attn --no-build-isolation
-
-# install apex (optional)
-# set enable_layernorm_kernel=False in config to avoid using apex
-pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
-
-# install xformers
-pip install -U xformers --index-url https://download.pytorch.org/whl/cu121
+# install torch, torchvision and xformers
+pip install -r requirements/requirements_cu121.txt
 
 # install this project
 git clone https://github.com/hpcaitech/Open-Sora
@@ -247,6 +234,12 @@ Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the
 ```bash
 # text to video
 python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
+```
+
+If your installation do not contain `apex` and `flash-attn`, you need to disable them in the config file, or via the folowing command.
+
+```bash
+python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854 --layernorm-kernel False --flash-attn False
 ```
 
 See [here](docs/commands.md#inference-with-open-sora-11) for more instructions including text-to-image, image-to-video, video-to-video, and infinite time generation.

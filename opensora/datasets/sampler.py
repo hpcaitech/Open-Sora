@@ -5,7 +5,6 @@ from typing import Iterator, List, Optional
 
 import torch
 import torch.distributed as dist
-from pandarallel import pandarallel
 from torch.utils.data import Dataset, DistributedSampler
 
 from opensora.utils.misc import format_numel_str, get_logger
@@ -80,6 +79,8 @@ class VariableVideoBatchSampler(DistributedSampler):
 
     def group_by_bucket(self) -> dict:
         bucket_sample_dict = OrderedDict()
+
+        from pandarallel import pandarallel
 
         pandarallel.initialize(nb_workers=self.num_bucket_build_workers, progress_bar=False)
         get_logger().info("Building buckets...")

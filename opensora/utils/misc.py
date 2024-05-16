@@ -11,7 +11,6 @@ from typing import Tuple
 import numpy as np
 import torch
 import torch.distributed as dist
-from torch.utils.tensorboard import SummaryWriter
 
 # ======================================================
 # Logging
@@ -72,6 +71,8 @@ def print_0(*args, **kwargs):
 
 
 def create_tensorboard_writer(exp_dir):
+    from torch.utils.tensorboard import SummaryWriter
+
     tensorboard_dir = f"{exp_dir}/tensorboard"
     os.makedirs(tensorboard_dir, exist_ok=True)
     writer = SummaryWriter(tensorboard_dir)
@@ -349,3 +350,31 @@ def transpose(x):
 
 def all_exists(paths):
     return all(os.path.exists(path) for path in paths)
+
+
+# ======================================================
+# Profile
+# ======================================================
+
+
+class Timer:
+    def __init__(self, name, log=True):
+        self.name = name
+        self.start_time = None
+        self.end_time = None
+        self.log = log
+
+    @property
+    def elapsed_time(self):
+        return self.end_time - self.start_time
+
+    def __enter__(self):
+        torch.cuda.synchronize()
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        torch.cuda.synchronize()
+        self.end_time = time.time()
+        if self.log:
+            print(f"Elapsed time for {self.name}: {self.elapsed_time:.2f} s")

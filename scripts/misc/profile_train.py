@@ -20,6 +20,7 @@ from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
 from opensora.utils.misc import (
+    Timer,
     all_reduce_mean,
     create_logger,
     create_tensorboard_writer,
@@ -120,7 +121,7 @@ def main():
     # ======================================================
     logger.info("Building models...")
     # == build text-encoder and vae ==
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device, dtype=dtype)
+    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
     vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
 
     # == build diffusion model ==
@@ -239,9 +240,11 @@ def main():
                 # == visual and text encoding ==
                 with torch.no_grad():
                     # Prepare visual inputs
-                    x = vae.encode(x)  # [B, C, T, H/P, W/P]
+                    with Timer("VAE"):
+                        x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
-                    model_args = text_encoder.encode(y)
+                    with Timer("Text Encoder"):
+                        model_args = text_encoder.encode(y)
 
                 # == mask ==
                 mask = None
@@ -254,13 +257,15 @@ def main():
                     model_args[k] = v.to(device, dtype)
 
                 # == diffusion loss computation ==
-                loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
+                with Timer("Forward"):
+                    loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
 
                 # == backward & update ==
-                loss = loss_dict["loss"].mean()
-                booster.backward(loss=loss, optimizer=optimizer)
-                optimizer.step()
-                optimizer.zero_grad()
+                with Timer("Backward"):
+                    loss = loss_dict["loss"].mean()
+                    booster.backward(loss=loss, optimizer=optimizer)
+                    optimizer.step()
+                    optimizer.zero_grad()
 
                 # == update EMA ==
                 update_ema(ema, model.module, optimizer=optimizer, decay=cfg.get("ema_decay", 0.9999))
