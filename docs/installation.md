@@ -18,23 +18,11 @@ pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorc
 pip install xformers --index-url https://download.pytorch.org/whl/cu121
 ```
 
+## Different Dependencies
+
+The default installation is for inference only. Other optional dependencies are listed below.
+
 ```bash
-# install flash attention (optional)
-# set enable_flash_attn=False in config to avoid using flash attention
-pip install packaging ninja
-pip install flash-attn --no-build-isolation
-
-# install apex (optional)
-# set enable_layernorm_kernel=False in config to avoid using apex
-pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
+pip install -v .[data]  # for data preprocessing
+pip install -v .[eval]  # for evaluation
 ```
-
-gdown
-pre-commit
-pyarrow
-tensorboard
-transformers
-wandb
-pandarallel
-gradio
-spaces

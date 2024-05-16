@@ -146,7 +146,7 @@ Other useful documents and links are listed below.
 
 ### Install from Source
 
-For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation](docs/installation.md) for more instructions.
+For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing.
 
 ```bash
 # create a virtual env and activate (conda as an example)
@@ -159,7 +159,22 @@ pip install -r requirements/requirements_cu121.txt
 # install this project
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
+
+# the default installation is for inference only
 pip install -v .
+```
+
+(Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
+
+```bash
+# install flash attention
+# set enable_flash_attn=False in config to disable flash attention
+pip install packaging ninja
+pip install flash-attn --no-build-isolation
+
+# install apex
+# set enable_layernorm_kernel=False in config to disable apex
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
 
 ### Use Docker
