@@ -77,6 +77,7 @@ setup(
         "Topic :: System :: Distributed Computing",
     ],
     extras_require={
-        "fast": ["flash-attn --no-build-isolation"],
+        "data": fetch_requirements("requirements/requirements-data.txt"),
+        "eval": fetch_requirements("requirements/requirements-eval.txt"),
     },
 )
