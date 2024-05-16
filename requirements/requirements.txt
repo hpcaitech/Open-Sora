@@ -1,0 +1,9 @@
+colossalai>=0.3.7
+mmengine>=0.10.3
+pandas>=2.2.2
+timm==0.9.16
+rotary_embedding_torch==0.5.3
+ftfy>=6.2.0 # for t5
+diffusers==0.27.2 # for vae
+accelerate==0.29.2 # for t5
+av>=12.0.0

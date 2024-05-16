@@ -27,6 +27,7 @@ def parse_args(training=False):
     parser.add_argument("--flash-attn", default=None, type=str2bool, help="enable flash attention")
     parser.add_argument("--layernorm-kernel", default=None, type=str2bool, help="enable layernorm kernel")
     parser.add_argument("--resolution", default=None, type=str, help="multi resolution")
+    parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
 
     # ======================================================
     # Inference
@@ -41,7 +42,6 @@ def parse_args(training=False):
         parser.add_argument("--prompt-as-path", action="store_true", help="use prompt as path to save samples")
         parser.add_argument("--verbose", default=None, type=int, help="verbose level")
 
-        parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
         parser.add_argument("--prompt", default=None, type=str, nargs="+", help="prompt list")
@@ -69,7 +69,6 @@ def parse_args(training=False):
         parser.add_argument("--lr", default=None, type=float, help="learning rate")
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
-        parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
         parser.add_argument("--start-from-scratch", action="store_true", help="start training from scratch")
 
     return parser.parse_args()

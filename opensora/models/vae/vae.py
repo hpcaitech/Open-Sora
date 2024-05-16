@@ -143,12 +143,16 @@ class VideoAutoencoderPipeline(nn.Module):
                 param.requires_grad = False
 
         self.out_channels = self.temporal_vae.out_channels
-        self.scale = torch.tensor(scale).cuda()
-        self.shift = torch.tensor(shift).cuda()
-        if len(self.scale.shape) > 0:
-            self.scale = self.scale[None, :, None, None, None]
-        if len(self.shift.shape) > 0:
-            self.shift = self.shift[None, :, None, None, None]
+
+        # normalization parameters
+        scale = torch.tensor(scale)
+        shift = torch.tensor(shift)
+        if len(scale.shape) > 0:
+            scale = scale[None, :, None, None, None]
+        if len(shift.shape) > 0:
+            shift = shift[None, :, None, None, None]
+        self.register_buffer("scale", scale)
+        self.register_buffer("shift", shift)
 
     def encode(self, x):
         x_z = self.spatial_vae.encode(x)
