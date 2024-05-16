@@ -310,6 +310,8 @@ def main():
 
     # == search for other buckets ==
     for (resolution, frames), bounds in buckets.items():
+        if bounds[0] == bounds[1]:
+            continue
         try:
             batch_size, step_time = benchmark(resolution, frames, *bounds, ref_step_time=base_step_time)
             output_bucket_cfg[resolution][frames] = batch_size
