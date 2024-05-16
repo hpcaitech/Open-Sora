@@ -1,3 +1,0 @@
-packaging
-ninja
-flash-attn --no-build-isolation
