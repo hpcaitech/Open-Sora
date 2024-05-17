@@ -378,3 +378,23 @@ class Timer:
         self.end_time = time.time()
         if self.log:
             print(f"Elapsed time for {self.name}: {self.elapsed_time:.2f} s")
+
+
+def get_tensor_memory(tensor, human_readable=True):
+    size = tensor.element_size() * tensor.nelement()
+    if human_readable:
+        size = format_numel_str(size)
+    return size
+
+
+class FeatureSaver:
+    def __init__(self, save_dir, bin_size=10):
+        self.save_dir = save_dir
+        self.bin_size = bin_size
+
+        self.data_list = []
+        self.cnt = 0
+
+    def update(self, data):
+        self.data_list.append(data)
+        self.cnt += 1

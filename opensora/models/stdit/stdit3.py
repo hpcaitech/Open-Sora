@@ -169,6 +169,8 @@ class STDiT3Config(PretrainedConfig):
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
         only_train_temporal=False,
+        freeze_y_embedder=False,
+        skip_y_embedder=False,
         **kwargs,
     ):
         self.input_size = input_size
@@ -189,6 +191,8 @@ class STDiT3Config(PretrainedConfig):
         self.enable_layernorm_kernel = enable_layernorm_kernel
         self.enable_sequence_parallelism = enable_sequence_parallelism
         self.only_train_temporal = only_train_temporal
+        self.freeze_y_embedder = freeze_y_embedder
+        self.skip_y_embedder = skip_y_embedder
         super().__init__(**kwargs)
 
 
@@ -284,6 +288,10 @@ class STDiT3(PreTrainedModel):
                 for param in block.parameters():
                     param.requires_grad = True
 
+        if config.freeze_y_embedder:
+            for param in self.y_embedder.parameters():
+                param.requires_grad = False
+
     def initialize_weights(self):
         # Initialize transformer layers:
         def _basic_init(module):
@@ -319,6 +327,19 @@ class STDiT3(PreTrainedModel):
         W = W // self.patch_size[2]
         return (T, H, W)
 
+    def encode_text(self, y, mask=None):
+        y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
+        if mask is not None:
+            if mask.shape[0] != y.shape[0]:
+                mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
+            mask = mask.squeeze(1).squeeze(1)
+            y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, self.hidden_size)
+            y_lens = mask.sum(dim=1).tolist()
+        else:
+            y_lens = [y.shape[2]] * y.shape[0]
+            y = y.squeeze(1).view(1, -1, self.hidden_size)
+        return y, y_lens
+
     def forward(self, x, timestep, y, mask=None, x_mask=None, fps=None, height=None, width=None, **kwargs):
         dtype = self.x_embedder.proj.weight.dtype
         B = x.size(0)
@@ -348,16 +369,10 @@ class STDiT3(PreTrainedModel):
             t0_mlp = self.t_block(t0)
 
         # === get y embed ===
-        y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
-        if mask is not None:
-            if mask.shape[0] != y.shape[0]:
-                mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
-            mask = mask.squeeze(1).squeeze(1)
-            y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, self.hidden_size)
-            y_lens = mask.sum(dim=1).tolist()
+        if self.config.skip_y_embedder:
+            y_lens = mask.tolist()
         else:
-            y_lens = [y.shape[2]] * y.shape[0]
-            y = y.squeeze(1).view(1, -1, self.hidden_size)
+            y, y_lens = self.encode_text(y, mask)
 
         # === get x embed ===
         x = self.x_embedder(x)  # [B, N, C]
