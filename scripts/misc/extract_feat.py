@@ -1,18 +1,16 @@
 import os
 from pprint import pformat
 
+import colossalai
 import torch
-import torch.distributed as dist
 from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
+from opensora.datasets import prepare_variable_dataloader
 from opensora.datasets.utils import collate_fn_ignore_none
 from opensora.registry import DATASETS, MODELS, build_module
-from opensora.utils.config_utils import parse_configs
-from opensora.utils.misc import FeatureSaver, create_logger, format_numel_str, get_model_numel, to_torch_dtype
-
-DEFAULT_DATASET_NAME = "VideoTextDataset"
+from opensora.utils.config_utils import parse_configs, save_training_config
+from opensora.utils.misc import FeatureSaver, Timer, create_logger, format_numel_str, get_model_numel, to_torch_dtype
 
 
 def main():
@@ -36,6 +34,8 @@ def main():
     dtype = to_torch_dtype(cfg.get("dtype", "bf16"))
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
+
+    colossalai.launch_from_torch({})
 
     # == init logger, tensorboard & wandb ==
     logger = create_logger()
@@ -61,18 +61,12 @@ def main():
         process_group=get_data_parallel_group(),
         collate_fn=collate_fn_ignore_none,
     )
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        dataloader = prepare_dataloader(**dataloader_args)
-        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
-        logger.info("Total batch size: %s", total_batch_size)
-        num_steps_per_epoch = len(dataloader)
-    else:
-        dataloader = prepare_variable_dataloader(
-            bucket_config=cfg.get("bucket_config", None),
-            num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
-            **dataloader_args,
-        )
-        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch()
+    dataloader = prepare_variable_dataloader(
+        bucket_config=cfg.get("bucket_config", None),
+        num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
+        **dataloader_args,
+    )
+    num_batch = dataloader.batch_sampler.get_num_batch()
 
     # ======================================================
     # 3. build model
@@ -105,62 +99,68 @@ def main():
     )
 
     # =======================================================
-    # 4. distributed training preparation with colossalai
-    # =======================================================
-    # == global variables ==
-    start_step = sampler_start_idx = 0
-    logger.info("Training for with %s steps per epoch", num_steps_per_epoch)
-
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        dataloader.sampler.set_start_index(sampler_start_idx)
-
-    # =======================================================
     # 5. training loop
     # =======================================================
-    dist.barrier()
-    for epoch in range(1):
-        # == set dataloader to new epoch ==
-        if cfg.dataset.type == DEFAULT_DATASET_NAME:
-            dataloader.sampler.set_epoch(epoch)
-        dataloader_iter = iter(dataloader)
-        logger.info("Beginning epoch %s...", epoch)
+    # == global variables ==
+    bin_size = cfg.bin_size
+    save_text_features = cfg.get("save_text_features", False)
+    save_compressed_text_features = cfg.get("save_compressed_text_features", False)
 
-        # == training loop in an epoch ==
-        assert cfg.get("save_dir", None) is not None, "Please specify the save_dir in the config file."
-        os.makedirs(cfg.save_dir, exist_ok=True)
-        saver = FeatureSaver(cfg.save_dir)
-        save_text_features = cfg.get("save_text_features", False)
-        save_compressed_text_features = cfg.get("save_compressed_text_features", False)
+    # == number of bins ==
+    num_bin = num_batch // bin_size
+    logger.info("Number of batches: %s", num_batch)
+    logger.info("Bin size: %s", bin_size)
+    logger.info("Number of bins: %s", num_bin)
 
-        with tqdm(
-            enumerate(dataloader_iter, start=start_step),
-            desc=f"Epoch {epoch}",
-            initial=start_step,
-            total=num_steps_per_epoch,
-        ) as pbar:
-            for step, batch in pbar:
+    # resume from a specific batch index
+    start_index = cfg.get("start_index", 0)
+    end_index = cfg.get("end_index", num_bin)
+    dataloader.batch_sampler.load_state_dict({"last_micro_batch_access_index": start_index})
+    num_bin_to_process = min(num_bin, end_index) - start_index
+    logger.info("Start index: %s", start_index)
+    logger.info("End index: %s", end_index)
+    logger.info("Number of batches to process: %s", num_bin_to_process)
+
+    # create save directory
+    assert cfg.get("save_dir", None) is not None, "Please specify the save_dir in the config file."
+    save_dir = os.path.join(cfg.save_dir, f"s{start_index}_e{end_index}")
+    os.makedirs(save_dir, exist_ok=True)
+    save_training_config(cfg.to_dict(), save_dir)
+    logger.info("Saving features to %s", save_dir)
+
+    saver = FeatureSaver(save_dir, bin_size, start_bin=start_index)
+
+    # == training loop in an epoch ==
+    dataloader_iter = iter(dataloader)
+    log_time = cfg.get("log_time", False)
+    for i in tqdm(range(0, num_bin_to_process)):
+        with Timer("step", log=log_time):
+            with Timer("data loading", log=log_time):
+                batch = next(dataloader_iter)
                 x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
                 y = batch.pop("text")
 
-                x = vae.encode(x).cpu()  # [B, C, T, H/P, W/P]
-                fps = batch["fps"].to(dtype)
-                batch_dict = {"x": x, "fps": fps}
+            with Timer("vae", log=log_time):
+                x = vae.encode(x)
+            with Timer("feature to cpu", log=log_time):
+                x = x.cpu()
+            fps = batch["fps"].to(dtype)
+            batch_dict = {"x": x, "fps": fps}
 
-                if save_text_features:
+            if save_text_features:
+                with Timer("text", log=log_time):
                     text_infos = text_encoder.encode(y)
                     y_feat = text_infos["y"]
                     y_mask = text_infos["mask"]
-                    if not save_compressed_text_features:
-                        y_feat = y_feat.cpu()
-                        y_mask = y_mask.cpu()
-                    else:
+                    if save_compressed_text_features:
                         y_feat, y_mask = model.encode_text(y_feat, y_mask)
-                        y_feat = y_feat.cpu()
                         y_mask = torch.tensor(y_mask)
-                        breakpoint()
-                    batch_dict.update({"y": y_feat, "mask": y_mask})
+                with Timer("feature to cpu", log=log_time):
+                    y_feat = y_feat.cpu()
+                    y_mask = y_mask.cpu()
+                batch_dict.update({"y": y_feat, "mask": y_mask})
 
-                saver.update(batch_dict)
+            saver.update(batch_dict)
 
 
 if __name__ == "__main__":

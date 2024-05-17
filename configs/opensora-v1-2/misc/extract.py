@@ -36,7 +36,7 @@ wandb = False
 # Model settings
 model = dict(
     type="STDiT3-XL/2",
-    from_pretrained=None,
+    from_pretrained="/mnt/nfs-206/zangwei/opensora/outputs/1091-STDiT3-XL-2/epoch0-global_step8500",
     qk_norm=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
@@ -45,7 +45,7 @@ vae = dict(
     type="OpenSoraVAE_V1_2",
     from_pretrained="pretrained_models/vae-pipeline",
     micro_frame_size=17,
-    micro_batch_size=4,
+    micro_batch_size=32,
 )
 text_encoder = dict(
     type="t5",
@@ -58,3 +58,6 @@ text_encoder = dict(
 # feature extraction settings
 save_text_features = True
 save_compressed_text_features = True
+bin_size = 10
+save_dir = f"/mnt/nfs-207/sora_data/feat/test_b{bin_size}"
+log_time = False
