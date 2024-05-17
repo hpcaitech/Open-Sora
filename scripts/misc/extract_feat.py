@@ -133,7 +133,7 @@ def main():
     # == training loop in an epoch ==
     dataloader_iter = iter(dataloader)
     log_time = cfg.get("log_time", False)
-    for i in tqdm(range(0, num_bin_to_process)):
+    for i in tqdm(range(0, num_bin_to_process * bin_size)):
         with Timer("step", log=log_time):
             with Timer("data loading", log=log_time):
                 batch = next(dataloader_iter)
