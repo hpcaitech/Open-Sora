@@ -18,9 +18,12 @@ LOG_BASE=logs/loss/${CKPT_BASE}
 mkdir -p logs/loss
 echo "Logging to $LOG_BASE"
 
+
+GPUS=(1 2 3 4 5)
+RESOLUTION=(144p 240p 360p 480p 720p)
+
 CUDA_VISIBLE_DEVICES=0 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH >${LOG_BASE}_img.log 2>&1 &
-CUDA_VISIBLE_DEVICES=2 $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution 144p >${LOG_BASE}_144p_vid.log 2>&1 &
-CUDA_VISIBLE_DEVICES=3 $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution 240p >${LOG_BASE}_240p_vid.log 2>&1 &
-CUDA_VISIBLE_DEVICES=4 $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution 360p >${LOG_BASE}_360p_vid.log 2>&1 &
-CUDA_VISIBLE_DEVICES=5 $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution 480p >${LOG_BASE}_480p_vid.log 2>&1 &
-CUDA_VISIBLE_DEVICES=6 $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution 720p >${LOG_BASE}_720p_vid.log 2>&1 &
+
+for i in "${!GPUS[@]}"; do
+    CUDA_VISIBLE_DEVICES=${GPUS[i]} $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution ${RESOLUTION[i]} >${LOG_BASE}_${RESOLUTION[i]}_vid.log 2>&1 &
+done
