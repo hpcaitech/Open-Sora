@@ -154,7 +154,7 @@ conda create -n opensora python=3.10
 conda activate opensora
 
 # install torch, torchvision and xformers
-pip install -r requirements/requirements_cu121.txt
+pip install -r requirements/requirements-cu121.txt
 
 # install this project
 git clone https://github.com/hpcaitech/Open-Sora
