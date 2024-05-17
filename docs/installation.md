@@ -4,7 +4,7 @@ Requirements are listed in `requirements` folder.
 
 ## Different CUDA versions
 
-You need to mannually install `torch`, `torchvision` and `xformers` for different CUDA versions.
+You need to manually install `torch`, `torchvision` and `xformers` for different CUDA versions.
 
 ```bash
 # install torch (>=2.1 is recommended)
@@ -24,5 +24,35 @@ The default installation is for inference only. Other optional dependencies are 
 
 ```bash
 pip install -v .[data]  # for data preprocessing
-pip install -v .[eval]  # for evaluation
+pip install -v .[eval]  # for evaluation, need to manually install some packages detailed below
+```
+
+
+## Evaluation Dependencies
+
+```bash
+pip install -v .[eval]
+```
+
+#### VBench
+You need to manually install [VBench](https://github.com/Vchitect/VBench):
+```bash
+pip install --no-deps vbench==0.1.1
+# If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
+export PATH="/path/to/vbench:$PATH"
+```
+
+
+#### VAE
+
+You need to mannually install [cupy](https://docs.cupy.dev/en/stable/install.html).
+* For CUDA v11.2~11.8 (x86_64 / aarch64), `pip install cupy-cuda11x`
+* For CUDA v12.x (x86_64 / aarch64), `pip install cupy-cuda12x`
+
+Note that for VAE evaluation, you may run into error with `ModuleNotFoundError: No module named 'torchvision.transforms.functional_tensor'`, in this case, you need to go to the corresponding file (`.../pytorchvideo/transforms/augmentations.py`) reporting this error, then change as following:
+```yaml
+# find the original line:
+import torchvision.transforms.functional_tensor as F_t
+# change to:
+import torchvision.transforms._functional_tensor as F_t
 ```
