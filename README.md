@@ -156,11 +156,11 @@ conda activate opensora
 # install torch, torchvision and xformers
 pip install -r requirements/requirements_cu121.txt
 
-# install this project
+# download the repo
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
 
-# the default installation is for inference only
+# install Open-Sora
 pip install -v .
 ```
 

@@ -59,6 +59,7 @@ model = dict(
     qk_norm=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
+    freeze_y_embedder=True,
 )
 vae = dict(
     type="OpenSoraVAE_V1_2",
