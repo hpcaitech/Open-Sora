@@ -192,7 +192,7 @@ class VariableVideoBatchSampler(DistributedSampler):
             bucket_access_list = bucket_id_access_order[i * self.num_replicas : (i + 1) * self.num_replicas]
             self.last_micro_batch_access_index += self.num_replicas
 
-            # comppute the data samples consumed by each access
+            # compute the data samples consumed by each access
             bucket_access_boundaries = []
             for bucket_id in bucket_access_list:
                 bucket_bs = self.bucket.get_batch_size(bucket_id)

@@ -388,9 +388,10 @@ def get_tensor_memory(tensor, human_readable=True):
 
 
 class FeatureSaver:
-    def __init__(self, save_dir, bin_size=10):
+    def __init__(self, save_dir, bin_size=10, start_bin=0):
         self.save_dir = save_dir
         self.bin_size = bin_size
+        self.bin_cnt = start_bin
 
         self.data_list = []
         self.cnt = 0
@@ -398,3 +399,13 @@ class FeatureSaver:
     def update(self, data):
         self.data_list.append(data)
         self.cnt += 1
+
+        if self.cnt % self.bin_size == 0:
+            self.save()
+
+    def save(self):
+        save_path = os.path.join(self.save_dir, f"{self.bin_cnt:08}.bin")
+        torch.save(self.data_list, save_path)
+        get_logger().info("Saved to %s", save_path)
+        self.data_list = []
+        self.bin_cnt += 1
