@@ -7,9 +7,11 @@ CKPT=$1
 NUM_FRAMES=$2
 MODEL_NAME=$3
 
-let DOUBLE_FRAMES=$2*2
-let QUAD_FRAMES=$2*4
-let OCT_FRAMES=$2*8
+if [ -z "${NUM_FRAMES}" ]; then
+  let DOUBLE_FRAMES=$2*2
+  let QUAD_FRAMES=$2*4
+  let OCT_FRAMES=$2*8
+fi
 
 CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
 CMD_REF="python scripts/inference-long.py configs/opensora-v1-2/inference/sample.py"
