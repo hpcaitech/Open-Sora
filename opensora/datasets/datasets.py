@@ -119,10 +119,12 @@ class VariableVideoTextDataset(VideoTextDataset):
         frame_interval=1,
         image_size=(None, None),
         transform_name=None,
+        dummy_text_feature=False,
     ):
         super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
         self.transform_name = transform_name
         self.data["id"] = np.arange(len(self.data))
+        self.dummy_text_feature = dummy_text_feature
 
     def get_data_info(self, index):
         T = self.data.iloc[index]["num_frames"]
@@ -176,6 +178,9 @@ class VariableVideoTextDataset(VideoTextDataset):
         }
         if self.get_text:
             ret["text"] = sample["text"]
+        if self.dummy_text_feature:
+            ret["text"] = "dummy text"
+            ret["mask"] = None
         return ret
 
     def __getitem__(self, index):
