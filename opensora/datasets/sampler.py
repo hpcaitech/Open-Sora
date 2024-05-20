@@ -1,7 +1,11 @@
+import math
+import warnings
+
 from collections import OrderedDict, defaultdict
 from pprint import pformat
 from typing import Iterator, List, Optional
 
+import numpy as np
 import torch
 import torch.distributed as dist
 from torch.utils.data import Dataset, DistributedSampler
@@ -283,3 +287,24 @@ class VariableVideoBatchSampler(DistributedSampler):
 
     def load_state_dict(self, state_dict: dict) -> None:
         self.__dict__.update(state_dict)
+
+
+class BatchDistributedSampler(DistributedSampler):
+    """
+    Used with BatchDataset;
+    Suppose len_buffer == 5, num_buffers == 6, #GPUs == 3, then
+           | buffer {i}          | buffer {i+1}
+    rank 0 |  0,  1,  2,  3,  4, |  5,  6,  7,  8,  9
+    rank 1 | 10, 11, 12, 13, 14, | 15, 16, 17, 18, 19
+    rank 2 | 20, 21, 22, 23, 24, | 25, 26, 27, 28, 29
+    """
+    def __iter__(self):
+        num_buffers = self.dataset.num_buffers
+        len_buffer = self.dataset.len_buffer
+        num_buffers_i = num_buffers // self.num_replicas
+        num_samples_i = len_buffer * num_buffers_i
+
+        indices_i = np.arange(num_samples_i) + self.rank * num_samples_i
+        indices_i = indices_i.tolist()
+
+        return iter(indices_i)

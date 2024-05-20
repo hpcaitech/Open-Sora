@@ -185,3 +185,50 @@ class VariableVideoTextDataset(VideoTextDataset):
             # we return None here in case of errorneous data
             # the collate function will handle it
             return None
+
+
+@DATASETS.register_module()
+class BatchDataset(torch.utils.data.Dataset):
+    """
+    The dataset is composed of multiple .bin files.
+    Each .bin file is a list of batch data (like a buffer). All .bin files have the same length.
+    In each training iteration, one batch is fetched from the current buffer.
+    Once a buffer is consumed, load another one.
+    Avoid loading the same .bin on two difference GPUs, i.e., one .bin is assigned to one GPU only.
+    """
+
+    def __init__(self):
+        # self.meta = read_file(data_path)
+        # self.path_list = self.meta['path'].tolist()
+        self.path_list = [f'/mnt/nfs-207/sora_data/webvid-10M/feat_text/data/{idx}.bin' for idx in range(5)]
+
+        self._len_buffer = len(torch.load(self.path_list[0]))
+        self._num_buffers = len(self.path_list)
+        self.num_samples = self.len_buffer * len(self.path_list)
+
+        self.cur_file_idx = -1
+    
+    @property
+    def num_buffers(self):
+        return self._num_buffers
+
+    @property
+    def len_buffer(self):
+        return self._len_buffer
+            
+    def _load_buffer(self, idx):
+        file_idx = idx // self.len_buffer
+        if file_idx == self.cur_file_idx:
+            return
+        self.cur_file_idx = file_idx
+        self.cur_buffer = torch.load(self.path_list[file_idx])
+
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        self._load_buffer(idx)
+
+        batch = self.cur_buffer[idx % self.len_buffer]  # dict; keys are {'x', 'fps'} and text related
+        return batch
+
