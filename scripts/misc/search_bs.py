@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_variable_dataloader
 from opensora.datasets.aspect import get_num_frames
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import model_sharding
 from opensora.utils.config_utils import parse_configs
@@ -155,11 +155,11 @@ def main():
             pin_memory=True,
             process_group=get_data_parallel_group(),
         )
-        dataloader = prepare_variable_dataloader(
+        dataloader, sampler = prepare_dataloader(
             bucket_config=bucket_config,
             **dataloader_args,
         )
-        num_batch = dataloader.batch_sampler.get_num_batch()
+        num_batch = sampler.get_num_batch()
         num_steps_per_epoch = num_batch // dist.get_world_size()
 
         dataloader_iter = iter(dataloader)

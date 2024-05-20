@@ -226,9 +226,15 @@ def main():
                 # == visual and text encoding ==
                 with torch.no_grad():
                     # Prepare visual inputs
-                    x = vae.encode(x)  # [B, C, T, H/P, W/P]
+                    if cfg.get("load_video_features", False):
+                        x = x.to(device, dtype)
+                    else:
+                        x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
-                    model_args = text_encoder.encode(y)
+                    if cfg.get("load_text_features", False):
+                        model_args = {"y": y.to(device, dtype), "mask": batch.pop("mask").to(device, dtype)}
+                    else:
+                        model_args = text_encoder.encode(y)
 
                 # == mask ==
                 mask = None

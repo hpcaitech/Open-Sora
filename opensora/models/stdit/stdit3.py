@@ -373,6 +373,7 @@ class STDiT3(PreTrainedModel):
             y_lens = mask.tolist()
         else:
             y, y_lens = self.encode_text(y, mask)
+        breakpoint()
 
         # === get x embed ===
         x = self.x_embedder(x)  # [B, N, C]
