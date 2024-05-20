@@ -170,7 +170,6 @@ You may additionally specify `threshold` to indicate how "sensitive" the detecti
 python -m tools.caption.camera_motion.detect tools/caption/camera_motion/meta.csv --threshold 0.2
 ```
 
-
 Each video is classified according to 8 categories:
             `pan_right,
             pan_left,

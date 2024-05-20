@@ -6,10 +6,12 @@ Interpolation can be useful for scenery videos, but it may not be suitable for v
 
 ## Requirement
 
-```bash
+Install the required dependancies by following our [installation instructions](../../docs/installation.md)'s "Data Dependencies" and "Frame Interpolation" sections.
+
+<!-- ```bash
 conda install -c conda-forge opencv
 pip install imageio
-```
+``` -->
 
 ## Model
 

@@ -1,8 +1,5 @@
 gdown==5.2.0
 
-# [aesthetic]
-clip @ git+https://github.com/openai/CLIP.git
-
 # [caption llava]
 ninja==1.11.1.1
 flash-attn==2.5.7
@@ -32,5 +29,21 @@ decord==0.6.0
 ptvsd==4.3.2
 imageio-ffmpeg==0.4.9
 
+# [datasets]
+pandarallel==1.6.5
+opencv-python==4.9.0.80
+ffmpeg-python==0.2.0
+lingua-language-detector==2.0.2
+imageio-ffmpeg==0.4.9
+
+# [frame interpolation]
+imageio==2.34.1
+
+# [scene detection]
+
 # [scene cut]
 imageio-ffmpeg==0.4.9
+
+# [aesthetic]
+clip @ git+https://github.com/openai/CLIP.git
+decord==0.6.0

@@ -7,3 +7,7 @@ decord==0.6.0
 pytorchvideo==0.1.5
 lpips==0.1.4
 scipy==1.13.0
+
+# [human eval]
+requests==2.31.0
+urllib3==2.2.1
