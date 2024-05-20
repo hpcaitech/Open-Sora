@@ -27,5 +27,10 @@ einops==0.8.0
 einops-exts==0.0.4
 timm==0.9.16
 
+# [camera_motion]
+decord==0.6.0
+ptvsd==4.3.2
+imageio-ffmpeg==0.4.9
+
 # [scene cut]
 imageio-ffmpeg==0.4.9

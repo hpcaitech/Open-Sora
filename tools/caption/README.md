@@ -155,8 +155,8 @@ The cost is approximately $0.01 per video (3 frames per video).
 
 ## Camera Motion Detection
 
-Install additional required packages: `tools/caption/camera_motion/requirements.txt`.
-
+<!-- Install additional required packages: `tools/caption/camera_motion/requirements.txt`. -->
+Install required packages with `pip install -v .[data]` (See [installation.md](../../docs/installation.md)).
 Run the following command to classify camera motion:
 
 ```bash
