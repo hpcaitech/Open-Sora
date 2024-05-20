@@ -46,7 +46,7 @@ def main():
     logger.info("Building reconstruction dataset...")
     dataset = build_module(cfg.dataset, DATASETS)
     batch_size = cfg.get("batch_size", 1)
-    dataloader = prepare_dataloader(
+    dataloader, _ = prepare_dataloader(
         dataset,
         batch_size=batch_size,
         num_workers=cfg.get("num_workers", 4),

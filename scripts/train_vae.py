@@ -30,8 +30,6 @@ from opensora.utils.misc import (
 )
 from opensora.utils.train_utils import create_colossalai_plugin
 
-DEFAULT_DATASET_NAME = "VideoTextDataset"
-
 
 def main():
     # ======================================================
@@ -85,7 +83,7 @@ def main():
     # ======================================================
     logger.info("Building dataset...")
     # == build dataset ==
-    assert cfg.dataset.type == DEFAULT_DATASET_NAME, "Only support VideoTextDataset for vae training"
+    assert cfg.dataset.type == "VideoTextDataset", "Only support VideoTextDataset for vae training"
     dataset = build_module(cfg.dataset, DATASETS)
     logger.info("Dataset contains %s samples.", len(dataset))
 
@@ -100,7 +98,7 @@ def main():
         pin_memory=True,
         process_group=get_data_parallel_group(),
     )
-    dataloader = prepare_dataloader(**dataloader_args)
+    dataloader, sampler = prepare_dataloader(**dataloader_args)
     total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
     logger.info("Total batch size: %s", total_batch_size)
     num_steps_per_epoch = len(dataloader)
@@ -208,12 +206,13 @@ def main():
     # == resume ==
     if cfg.get("load", None) is not None:
         logger.info("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(
+        start_epoch, start_step = load(
             booster,
             cfg.load,
             model=model,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
+            sampler=sampler,
         )
         if use_discriminator and os.path.exists(os.path.join(cfg.load, "discriminator")):
             booster.load_model(discriminator, os.path.join(cfg.load, "discriminator"))
@@ -221,15 +220,13 @@ def main():
         dist.barrier()
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
 
-    dataloader.sampler.set_start_index(sampler_start_idx)
-
     # =======================================================
     # 5. training loop
     # =======================================================
     dist.barrier()
     for epoch in range(start_epoch, cfg_epochs):
         # == set dataloader to new epoch ==
-        dataloader.sampler.set_epoch(epoch)
+        sampler.set_epoch(epoch)
         dataiter = iter(dataloader)
         logger.info("Beginning epoch %s...", epoch)
 
@@ -385,8 +382,7 @@ def main():
                         exp_dir,
                     )
 
-        # NOTE: the continue epochs are not resumed, so we need to reset the sampler start index and start step
-        dataloader.sampler.set_start_index(0)
+        sampler.reset()
         start_step = 0
 
 
