@@ -16,16 +16,12 @@ fi
 LOG_BASE=logs/sample/${MODEL_NAME}_${CKPT_BASE}
 echo "Logging to $LOG_BASE"
 
-# == sample & human evaluation ==
-CUDA_VISIBLE_DEVICES=0 bash eval/sample.sh $CKPT 1 $MODEL_NAME -1 >${LOG_BASE}_1.log 2>&1 &
-CUDA_VISIBLE_DEVICES=1 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2a >${LOG_BASE}_2a.log 2>&1 &
-CUDA_VISIBLE_DEVICES=2 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2b >${LOG_BASE}_2b.log 2>&1 &
-CUDA_VISIBLE_DEVICES=3 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2c >${LOG_BASE}_2c.log 2>&1 &
-CUDA_VISIBLE_DEVICES=4 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2d >${LOG_BASE}_2d.log 2>&1 &
-CUDA_VISIBLE_DEVICES=5 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2e >${LOG_BASE}_2e.log 2>&1 &
-CUDA_VISIBLE_DEVICES=6 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2f >${LOG_BASE}_2f.log 2>&1 &
-CUDA_VISIBLE_DEVICES=7 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2g >${LOG_BASE}_2g.log 2>&1 &
+GPUS=(0 1 2 3 4 5 6 7)
+TASK_ID_LIST=(1 2a 2b 2c 2d 2e 2f 2g) # 2h not supported yet
+FRAME_LIST=(1 $NUM_FRAMES $NUM_FRAMES $NUM_FRAMES $NUM_FRAMES $NUM_FRAMES $NUM_FRAMES $NUM_FRAMES)
 
-# CUDA_VISIBLE_DEVICES=7 bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -2h >${LOG_BASE}_2h.log 2>&1 &
+for i in "${!GPUS[@]}"; do
+    CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${FRAME_LIST[i]} $MODEL_NAME -${TASK_ID_LIST[i]} >${LOG_BASE}_${TASK_ID_LIST[i]}.log 2>&1 &
+done
 
 # kill all by: pkill -f "inference"

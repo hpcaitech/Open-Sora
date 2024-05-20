@@ -6,16 +6,27 @@ Requirements are listed in `requirements` folder.
 
 You need to manually install `torch`, `torchvision` and `xformers` for different CUDA versions.
 
+For CUDA 12.1,
 ```bash
-# install torch (>=2.1 is recommended)
-# the command below is for CUDA 12.1, choose install commands from
-# https://pytorch.org/get-started/locally/ based on your own CUDA version
-pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu121
+pip install -r requirements/requirements-cu121.txt
 
-# install xformers
-# the command below is for CUDA 12.1, choose install commands from
-# https://github.com/facebookresearch/xformers?tab=readme-ov-file#installing-xformers based on your own CUDA version
-pip install xformers==0.0.25.post1 --index-url https://download.pytorch.org/whl/cu121
+# install this project
+git clone https://github.com/hpcaitech/Open-Sora
+cd Open-Sora
+
+# the default installation is for inference only
+pip install -v . # NOTE: for development mode, run `pip install -v -e .`
+
+(Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
+
+# install flash attention
+# set enable_flash_attn=False in config to disable flash attention
+pip install packaging ninja
+pip install flash-attn --no-build-isolation
+
+# install apex
+# set enable_layernorm_kernel=False in config to disable apex
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
 
 ## Different Dependencies
@@ -40,6 +51,14 @@ pip install -v .[data]  # For development: `pip install -v -e .[eval]`
 ```
 Next, you need to manually install the packages listed in the following sections specific to your data processing needs.
 
+### Datasets
+To get image and video information, we use [opencv-python](https://github.com/opencv/opencv-python) in our [requirement script](../requirements/requirements-data.txt)
+
+However, if your videos are in av1 codec instead of h264, you need to install ffmpeg (already in our [requirement script](../requirements/requirements-data.txt)), then run the following to make conda support av1 codec:
+```bash
+conda install -c conda-forge opencv
+```
+
 ### LLaVA Captioning
 You need to manually install LLaVA with the following command:
 ```bash
@@ -56,6 +75,19 @@ git checkout fd9194a # since there is no version tag, we use this commit
 python python_scripts/hf.py # download the PLLaVA weights
 ```
 
+### Frame Interpolation
+```bash
+conda install -c conda-forge opencv
+```
+
+### Scene Detection
+We use [`PySceneDetect`](https://github.com/Breakthrough/PySceneDetect) for this job. You need to manually run the following:
+```bash
+pip install scenedetect[opencv] --upgrade
+```
+
+
+
 ## Evaluation Dependencies
 
 First, run the following command to install requirements:
@@ -63,6 +95,15 @@ First, run the following command to install requirements:
 pip install -v .[eval] # For development:`pip install -v -e .[eval]`
 ```
 Next, you need to manually install the packages listed in the following sections specific to different evaluation methods.
+
+### Human Eval
+
+You need to manually install apex from source by:
+```bash
+# set enable_layernorm_kernel=False in config to disable apex
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
+
+```
 
 ### VBench
 You need to manually install [VBench](https://github.com/Vchitect/VBench):
