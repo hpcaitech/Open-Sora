@@ -8,6 +8,12 @@ You need to manually install `torch`, `torchvision` and `xformers` for different
 
 For CUDA 12.1,
 ```bash
+# need to update first, else may run into weird issues with apex
+pip install -U pip
+pip install -U setuptools
+pip install -U wheel
+
+# install pytorch, torchvision, and xformers
 pip install -r requirements/requirements-cu121.txt
 
 # install this project
@@ -24,7 +30,7 @@ pip install -v . # NOTE: for development mode, run `pip install -v -e .`
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
 
-# install apex
+# install apex, the compilation will take a long time
 # set enable_layernorm_kernel=False in config to disable apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
