@@ -288,7 +288,7 @@ class VariableVideoBatchSampler(DistributedSampler):
 
 class BatchDistributedSampler(DistributedSampler):
     """
-    Used with BatchFeatureDataset;
+    Used with BatchDataset;
     Suppose len_buffer == 5, num_buffers == 6, #GPUs == 3, then
            | buffer {i}          | buffer {i+1}
     ------ | ------------------- | -------------------
@@ -297,13 +297,26 @@ class BatchDistributedSampler(DistributedSampler):
     rank 2 | 20, 21, 22, 23, 24, | 25, 26, 27, 28, 29
     """
 
+    def __init__(self, dataset: Dataset, **kwargs):
+        super().__init__(dataset, **kwargs)
+        self.start_index = 0
+
     def __iter__(self):
         num_buffers = self.dataset.num_buffers
         len_buffer = self.dataset.len_buffer
         num_buffers_i = num_buffers // self.num_replicas
         num_samples_i = len_buffer * num_buffers_i
 
-        indices_i = np.arange(num_samples_i) + self.rank * num_samples_i
+        indices_i = np.arange(self.start_index, num_samples_i) + self.rank * num_samples_i
         indices_i = indices_i.tolist()
 
         return iter(indices_i)
+
+    def reset(self):
+        self.start_index = 0
+
+    def state_dict(self, step) -> dict:
+        return {"start_index": step}
+
+    def load_state_dict(self, state_dict: dict):
+        self.start_index = state_dict["start_index"] + 1

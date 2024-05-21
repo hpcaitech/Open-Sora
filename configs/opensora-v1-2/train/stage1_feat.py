@@ -15,12 +15,19 @@ model = dict(
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
     freeze_y_embedder=True,
+    skip_y_embedder=True,
 )
 scheduler = dict(
     type="rflow",
     use_timestep_transform=True,
     sample_method="logit-normal",
 )
+
+vae_out_channels = 4
+model_max_length = 300
+text_encoder_output_dim = 1152
+load_video_features = True
+load_text_features = True
 
 # Mask settings
 mask_ratios = {
@@ -42,7 +49,7 @@ outputs = "outputs"
 wandb = False
 epochs = 1000
 log_every = 10
-ckpt_every = 1
+ckpt_every = 500
 
 # optimization settings
 load = None

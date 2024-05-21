@@ -144,8 +144,15 @@ def main():
                 x = vae.encode(x)
             with Timer("feature to cpu", log=log_time):
                 x = x.cpu()
-            fps = batch["fps"].to(dtype)
-            batch_dict = {"x": x, "fps": fps}
+
+            batch_dict = {
+                "x": x,
+                "text": y,
+                "fps": batch["fps"].to(dtype),
+                "height": batch["height"].to(dtype),
+                "width": batch["width"].to(dtype),
+                "num_frames": batch["num_frames"].to(dtype),
+            }
 
             if save_text_features:
                 with Timer("text", log=log_time):
