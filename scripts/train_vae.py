@@ -5,7 +5,6 @@ from pprint import pformat
 
 import torch
 import torch.distributed as dist
-import wandb
 from colossalai.booster import Booster
 from colossalai.cluster import DistCoordinator
 from colossalai.nn.optimizer import HybridAdam
@@ -13,9 +12,10 @@ from colossalai.utils import get_current_device, set_seed
 from einops import rearrange
 from tqdm import tqdm
 
+import wandb
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_dataloader
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.models.vae.losses import AdversarialLoss, DiscriminatorLoss, VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt_utils import load, save
@@ -364,6 +364,7 @@ def main():
                         step=step + 1,
                         global_step=global_step + 1,
                         batch_size=cfg.get("batch_size", None),
+                        sampler=sampler,
                     )
 
                     save_dir = os.path.join(exp_dir, f"epoch{epoch}-global_step{global_step+1}")
