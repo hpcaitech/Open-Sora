@@ -89,15 +89,18 @@ def prepare_dataloader(
             num_replicas=process_group.size(),
             rank=process_group.rank(),
         )
-        return DataLoader(
-            dataset,
-            batch_size=1,
-            sampler=sampler,
-            worker_init_fn=get_seed_worker(seed),
-            pin_memory=pin_memory,
-            num_workers=num_workers,
-            collate_fn=collate_fn_batch,
-            **_kwargs,
+        return (
+            DataLoader(
+                dataset,
+                batch_size=1,
+                sampler=sampler,
+                worker_init_fn=get_seed_worker(seed),
+                pin_memory=pin_memory,
+                num_workers=num_workers,
+                collate_fn=collate_fn_batch,
+                **_kwargs,
+            ),
+            sampler,
         )
     else:
         raise ValueError(f"Unsupported dataset type: {type(dataset)}")

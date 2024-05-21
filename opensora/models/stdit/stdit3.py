@@ -371,6 +371,8 @@ class STDiT3(PreTrainedModel):
         # === get y embed ===
         if self.config.skip_y_embedder:
             y_lens = mask
+            if isinstance(y_lens, torch.Tensor):
+                y_lens = y_lens.long().tolist()
         else:
             y, y_lens = self.encode_text(y, mask)
 

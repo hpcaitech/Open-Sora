@@ -230,4 +230,14 @@ class BatchFeatureDataset(torch.utils.data.Dataset):
         self._load_buffer(idx)
 
         batch = self.cur_buffer[idx % self.len_buffer]  # dict; keys are {'x', 'fps'} and text related
-        return batch
+
+        ret = {
+            "video": batch["x"],
+            "text": batch["y"],
+            "mask": batch["mask"],
+            "fps": batch["fps"],
+            "height": batch["height"],
+            "width": batch["width"],
+            "num_frames": batch["num_frames"],
+        }
+        return ret

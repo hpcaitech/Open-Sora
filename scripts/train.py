@@ -109,22 +109,34 @@ def main():
     logger.info("Building models...")
     # == build text-encoder and vae ==
     text_encoder = build_module(cfg.get("text_encoder", None), MODELS, device=device, dtype=dtype)
-    vae = build_module(cfg.get("vae", None), MODELS).to(device, dtype).eval()
+    if text_encoder is not None:
+        text_encoder_output_dim = text_encoder.output_dim
+        text_encoder_model_max_length = text_encoder.model_max_length
+    else:
+        text_encoder_output_dim = cfg.get("text_encoder_output_dim", 1152)
+        text_encoder_model_max_length = cfg.get("text_encoder_model_max_length", 300)
 
-    # == build diffusion model ==
-    input_size = (dataset.num_frames, *dataset.image_size)
+    # == build vae ==
+    vae = build_module(cfg.get("vae", None), MODELS)
     if vae is not None:
+        vae = vae.to(device, dtype).eval()
+    if vae is not None:
+        input_size = (dataset.num_frames, *dataset.image_size)
         latent_size = vae.get_latent_size(input_size)
+        vae_out_channels = vae.out_channels
     else:
         latent_size = (None, None, None)
+        vae_out_channels = cfg.get("vae_out_channels", 4)
+
+    # == build diffusion model ==
     model = (
         build_module(
             cfg.model,
             MODELS,
             input_size=latent_size,
-            in_channels=vae.out_channels,
-            caption_channels=text_encoder.output_dim,
-            model_max_length=text_encoder.model_max_length,
+            in_channels=vae_out_channels,
+            caption_channels=text_encoder_output_dim,
+            model_max_length=text_encoder_model_max_length,
         )
         .to(device, dtype)
         .train()
@@ -223,7 +235,6 @@ def main():
             for step, batch in pbar:
                 x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
                 y = batch.pop("text")
-                breakpoint()
 
                 # == visual and text encoding ==
                 with torch.no_grad():
