@@ -27,8 +27,10 @@ bucket_config = {  # 12s/it
 
 grad_checkpoint = True
 
+load_text_features = True
+
 # Acceleration settings
-num_workers = 8
+num_workers = 0
 num_bucket_build_workers = 16
 dtype = "bf16"
 plugin = "zero2"

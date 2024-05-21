@@ -8,10 +8,10 @@ from functools import partial
 from glob import glob
 
 import cv2
-from PIL import Image
 import numpy as np
 import pandas as pd
 import torchvision
+from PIL import Image
 from tqdm import tqdm
 
 from .utils import IMG_EXTENSIONS
@@ -84,8 +84,8 @@ def get_info(path):
         return 0, 0, 0, np.nan, np.nan, np.nan
 
 
-def get_image_info(path, backend='pillow'):
-    if backend == 'pillow':
+def get_image_info(path, backend="pillow"):
+    if backend == "pillow":
         try:
             with open(path, "rb") as f:
                 img = Image.open(f)
@@ -97,7 +97,7 @@ def get_image_info(path, backend='pillow'):
             return num_frames, height, width, aspect_ratio, fps, hw
         except:
             return 0, 0, 0, np.nan, np.nan, np.nan
-    elif backend == 'cv2':
+    elif backend == "cv2":
         try:
             im = cv2.imread(path)
             if im is None:
@@ -113,8 +113,8 @@ def get_image_info(path, backend='pillow'):
         raise ValueError
 
 
-def get_video_info(path, backend='torchvision'):
-    if backend == 'torchvision':
+def get_video_info(path, backend="torchvision"):
+    if backend == "torchvision":
         try:
             vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
             num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
@@ -127,7 +127,7 @@ def get_video_info(path, backend='torchvision'):
             return num_frames, height, width, aspect_ratio, fps, hw
         except:
             return 0, 0, 0, np.nan, np.nan, np.nan
-    elif backend == 'cv2':
+    elif backend == "cv2":
         try:
             cap = cv2.VideoCapture(path)
             num_frames, height, width, fps = (
@@ -603,13 +603,14 @@ def main(args):
         data = data[data["flow"] >= args.flowmin]
     if args.remove_text_duplication:
         data = data.drop_duplicates(subset=["text"], keep="first")
-    print(f"Filtered number of samples: {len(data)}.")
 
     # process data
     if args.shuffle:
         data = data.sample(frac=1).reset_index(drop=True)  # shuffle
-    if args.get_first_n_data is not None:
-        data = data.head(args.get_first_n_data)
+    if args.head is not None:
+        data = data.head(args.head)
+
+    print(f"Filtered number of samples: {len(data)}.")
 
     # shard data
     if args.shard is not None:
@@ -689,7 +690,7 @@ def parse_args():
 
     # data processing
     parser.add_argument("--shuffle", default=False, action="store_true", help="shuffle the dataset")
-    parser.add_argument("--get_first_n_data", type=int, default=None, help="return the first n rows of data")
+    parser.add_argument("--head", type=int, default=None, help="return the first n rows of data")
 
     return parser.parse_args()
 
@@ -768,8 +769,8 @@ def get_output_path(args, input_name):
     # processing
     if args.shuffle:
         name += f"_shuffled_seed{args.seed}"
-    if args.get_first_n_data is not None:
-        name += f"_first_{args.get_first_n_data}_data"
+    if args.head is not None:
+        name += f"_first_{args.head}_data"
 
     output_path = os.path.join(dir_path, f"{name}.{args.format}")
     return output_path

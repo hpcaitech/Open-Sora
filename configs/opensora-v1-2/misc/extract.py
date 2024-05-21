@@ -59,5 +59,4 @@ text_encoder = dict(
 save_text_features = True
 save_compressed_text_features = True
 bin_size = 10
-save_dir = f"/mnt/nfs-207/sora_data/feat/test_b{bin_size}"
 log_time = False

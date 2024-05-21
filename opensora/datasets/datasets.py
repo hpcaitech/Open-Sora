@@ -179,8 +179,9 @@ class VariableVideoTextDataset(VideoTextDataset):
         if self.get_text:
             ret["text"] = sample["text"]
         if self.dummy_text_feature:
-            ret["text"] = "dummy text"
-            ret["mask"] = None
+            text_len = 50
+            ret["text"] = torch.zeros((1, text_len, 1152))
+            ret["mask"] = text_len
         return ret
 
     def __getitem__(self, index):
@@ -205,14 +206,14 @@ class BatchDataset(torch.utils.data.Dataset):
     def __init__(self):
         # self.meta = read_file(data_path)
         # self.path_list = self.meta['path'].tolist()
-        self.path_list = [f'/mnt/nfs-207/sora_data/webvid-10M/feat_text/data/{idx}.bin' for idx in range(5)]
+        self.path_list = [f"/mnt/nfs-207/sora_data/webvid-10M/feat_text/data/{idx}.bin" for idx in range(5)]
 
         self._len_buffer = len(torch.load(self.path_list[0]))
         self._num_buffers = len(self.path_list)
         self.num_samples = self.len_buffer * len(self.path_list)
 
         self.cur_file_idx = -1
-    
+
     @property
     def num_buffers(self):
         return self._num_buffers
@@ -220,7 +221,7 @@ class BatchDataset(torch.utils.data.Dataset):
     @property
     def len_buffer(self):
         return self._len_buffer
-            
+
     def _load_buffer(self, idx):
         file_idx = idx // self.len_buffer
         if file_idx == self.cur_file_idx:
@@ -236,4 +237,3 @@ class BatchDataset(torch.utils.data.Dataset):
 
         batch = self.cur_buffer[idx % self.len_buffer]  # dict; keys are {'x', 'fps'} and text related
         return batch
-

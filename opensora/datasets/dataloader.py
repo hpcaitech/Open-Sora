@@ -1,3 +1,4 @@
+import collections
 import random
 from typing import Optional
 
@@ -8,7 +9,7 @@ from torch.distributed.distributed_c10d import _get_default_group
 from torch.utils.data import DataLoader
 
 from .datasets import VariableVideoTextDataset, VideoTextDataset
-from .sampler import StatefulDistributedSampler, VariableVideoBatchSampler, BatchDistributedSampler
+from .sampler import BatchDistributedSampler, StatefulDistributedSampler, VariableVideoBatchSampler
 
 
 # Deterministic dataloader
@@ -82,6 +83,7 @@ def prepare_dataloader(
         )
     else:
         raise ValueError(f"Unsupported dataset type: {type(dataset)}")
+
 
 def prepare_variable_dataloader(
     dataset,
@@ -174,3 +176,42 @@ def build_batch_dataloader(
         num_workers=num_workers,
         **_kwargs,
     )
+
+
+def collate_fn_default(batch):
+    # HACK: for loading text features
+    use_mask = False
+    if "mask" in batch[0] and isinstance(batch[0]["mask"], int):
+        masks = [x.pop("mask") for x in batch]
+
+        texts = [x.pop("text") for x in batch]
+        texts = torch.cat(texts, dim=1)
+        use_mask = True
+
+    ret = torch.utils.data.default_collate(batch)
+
+    if use_mask:
+        ret["mask"] = masks
+        ret["text"] = texts
+    return ret
+
+
+def collate_fn_batch(batch):
+    """
+    Used only with BatchDistributedSampler
+    """
+    res = torch.utils.data.default_collate(batch)
+
+    # squeeze the first dimension, which is due to torch.stack() in default_collate()
+    if isinstance(res, collections.abc.Mapping):
+        for k, v in res.items():
+            if isinstance(v, torch.Tensor):
+                res[k] = v.squeeze(0)
+    elif isinstance(res, collections.abc.Sequence):
+        res = [x.squeeze(0) if isinstance(x, torch.Tensor) else x for x in res]
+    elif isinstance(res, torch.Tensor):
+        res = res.squeeze(0)
+    else:
+        raise TypeError
+
+    return res

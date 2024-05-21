@@ -370,10 +370,9 @@ class STDiT3(PreTrainedModel):
 
         # === get y embed ===
         if self.config.skip_y_embedder:
-            y_lens = mask.tolist()
+            y_lens = mask
         else:
             y, y_lens = self.encode_text(y, mask)
-        breakpoint()
 
         # === get x embed ===
         x = self.x_embedder(x)  # [B, N, C]
