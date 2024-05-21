@@ -14,8 +14,7 @@ from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets.dataloader import prepare_dataloader
-from opensora.datasets.utils import collate_fn_ignore_none
+from opensora.datasets.dataloader import collate_fn_default, prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -96,7 +95,7 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        collate_fn=collate_fn_ignore_none,
+        collate_fn=collate_fn_default,
     )
     dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
@@ -232,7 +231,11 @@ def main():
                         x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
                     if cfg.get("load_text_features", False):
-                        model_args = {"y": y.to(device, dtype), "mask": batch.pop("mask").to(device, dtype)}
+                        model_args = {"y": y.to(device, dtype)}
+                        mask = batch.pop("mask")
+                        if isinstance(mask, torch.Tensor):
+                            mask = mask.to(device, dtype)
+                        model_args["mask"] = mask
                     else:
                         model_args = text_encoder.encode(y)
 
@@ -244,7 +247,8 @@ def main():
 
                 # == video meta info ==
                 for k, v in batch.items():
-                    model_args[k] = v.to(device, dtype)
+                    if isinstance(v, torch.Tensor):
+                        model_args[k] = v.to(device, dtype)
 
                 # == diffusion loss computation ==
                 loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)

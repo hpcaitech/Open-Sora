@@ -3,11 +3,11 @@ from pprint import pformat
 
 import colossalai
 import torch
+import torch.distributed as dist
 from tqdm import tqdm
 
-from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_variable_dataloader
-from opensora.datasets.utils import collate_fn_ignore_none
+from opensora.acceleration.parallel_states import get_data_parallel_group, set_data_parallel_group
+from opensora.datasets.dataloader import collate_fn_default, prepare_dataloader
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs, save_training_config
 from opensora.utils.misc import FeatureSaver, Timer, create_logger, format_numel_str, get_model_numel, to_torch_dtype
@@ -36,6 +36,7 @@ def main():
     torch.backends.cudnn.allow_tf32 = True
 
     colossalai.launch_from_torch({})
+    set_data_parallel_group(dist.group.WORLD)
 
     # == init logger, tensorboard & wandb ==
     logger = create_logger()
@@ -59,14 +60,14 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        collate_fn=collate_fn_ignore_none,
+        collate_fn=collate_fn_default,
     )
-    dataloader = prepare_variable_dataloader(
+    dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
         num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
         **dataloader_args,
     )
-    num_batch = dataloader.batch_sampler.get_num_batch()
+    num_steps_per_epoch = len(dataloader)
 
     # ======================================================
     # 3. build model
@@ -107,8 +108,8 @@ def main():
     save_compressed_text_features = cfg.get("save_compressed_text_features", False)
 
     # == number of bins ==
-    num_bin = num_batch // bin_size
-    logger.info("Number of batches: %s", num_batch)
+    num_bin = num_steps_per_epoch // bin_size
+    logger.info("Number of batches: %s", num_steps_per_epoch)
     logger.info("Bin size: %s", bin_size)
     logger.info("Number of bins: %s", num_bin)
 

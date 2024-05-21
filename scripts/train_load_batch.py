@@ -14,8 +14,7 @@ from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import build_batch_dataloader
-from opensora.datasets.utils import collate_fn_batch
+from opensora.datasets.dataloader import build_batch_dataloader, collate_fn_batch
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -105,15 +104,15 @@ def main():
     num_steps_per_epoch = len(dataset) // dist.get_world_size()
     sampler_to_io = None
 
-    '''
-    TODO: 
+    """
+    TODO:
         - prefetch
         - collate fn
         - resume
         - sampler_to_io ?
         - remove text_encoder & caption_embedder
         - currently only support 1 epoch; every epoch is the same
-    '''
+    """
 
     # if cfg.dataset.type == DEFAULT_DATASET_NAME:
     #     dataloader = prepare_dataloader(**dataloader_args)
@@ -253,8 +252,8 @@ def main():
         ) as pbar:
             for step, batch in pbar:
                 # modify here
-                x = batch['x'].to(device, dtype)  # feat of vae encoder
-                print(step, dist.get_rank(), batch['x'].shape)
+                x = batch["x"].to(device, dtype)  # feat of vae encoder
+                print(step, dist.get_rank(), batch["x"].shape)
                 continue
 
                 # x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
