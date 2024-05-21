@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets.dataloader import collate_fn_default, prepare_dataloader
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -95,7 +95,6 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        collate_fn=collate_fn_default,
     )
     dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
@@ -109,12 +108,15 @@ def main():
     # ======================================================
     logger.info("Building models...")
     # == build text-encoder and vae ==
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device, dtype=dtype)
-    vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
+    text_encoder = build_module(cfg.get("text_encoder", None), MODELS, device=device, dtype=dtype)
+    vae = build_module(cfg.get("vae", None), MODELS).to(device, dtype).eval()
 
     # == build diffusion model ==
     input_size = (dataset.num_frames, *dataset.image_size)
-    latent_size = vae.get_latent_size(input_size)
+    if vae is not None:
+        latent_size = vae.get_latent_size(input_size)
+    else:
+        latent_size = (None, None, None)
     model = (
         build_module(
             cfg.model,
@@ -221,6 +223,7 @@ def main():
             for step, batch in pbar:
                 x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
                 y = batch.pop("text")
+                breakpoint()
 
                 # == visual and text encoding ==
                 with torch.no_grad():
