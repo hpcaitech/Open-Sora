@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets.dataloader import build_batch_dataloader, collate_fn_batch
+from opensora.datasets.dataloader import build_batch_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -98,7 +98,6 @@ def main():
         # drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        collate_fn=collate_fn_batch,
     )
     dataloader = build_batch_dataloader(**dataloader_args)
     num_steps_per_epoch = len(dataset) // dist.get_world_size()

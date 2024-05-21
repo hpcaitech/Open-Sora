@@ -1,4 +1,5 @@
 import os
+from glob import glob
 
 import numpy as np
 import torch
@@ -185,16 +186,11 @@ class VariableVideoTextDataset(VideoTextDataset):
         return ret
 
     def __getitem__(self, index):
-        try:
-            return self.getitem(index)
-        except Exception:
-            # we return None here in case of errorneous data
-            # the collate function will handle it
-            return None
+        return self.getitem(index)
 
 
 @DATASETS.register_module()
-class BatchDataset(torch.utils.data.Dataset):
+class BatchFeatureDataset(torch.utils.data.Dataset):
     """
     The dataset is composed of multiple .bin files.
     Each .bin file is a list of batch data (like a buffer). All .bin files have the same length.
@@ -203,16 +199,15 @@ class BatchDataset(torch.utils.data.Dataset):
     Avoid loading the same .bin on two difference GPUs, i.e., one .bin is assigned to one GPU only.
     """
 
-    def __init__(self):
-        # self.meta = read_file(data_path)
-        # self.path_list = self.meta['path'].tolist()
-        self.path_list = [f"/mnt/nfs-207/sora_data/webvid-10M/feat_text/data/{idx}.bin" for idx in range(5)]
+    def __init__(self, data_path=None):
+        self.path_list = sorted(glob(data_path + "/**/*.bin"))
 
         self._len_buffer = len(torch.load(self.path_list[0]))
         self._num_buffers = len(self.path_list)
         self.num_samples = self.len_buffer * len(self.path_list)
 
         self.cur_file_idx = -1
+        self.cur_buffer = None
 
     @property
     def num_buffers(self):
@@ -224,10 +219,9 @@ class BatchDataset(torch.utils.data.Dataset):
 
     def _load_buffer(self, idx):
         file_idx = idx // self.len_buffer
-        if file_idx == self.cur_file_idx:
-            return
-        self.cur_file_idx = file_idx
-        self.cur_buffer = torch.load(self.path_list[file_idx])
+        if file_idx != self.cur_file_idx:
+            self.cur_file_idx = file_idx
+            self.cur_buffer = torch.load(self.path_list[file_idx])
 
     def __len__(self):
         return self.num_samples

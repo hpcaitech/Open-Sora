@@ -7,7 +7,7 @@ import torch.distributed as dist
 from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group, set_data_parallel_group
-from opensora.datasets.dataloader import collate_fn_default, prepare_dataloader
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs, save_training_config
 from opensora.utils.misc import FeatureSaver, Timer, create_logger, format_numel_str, get_model_numel, to_torch_dtype
@@ -60,7 +60,6 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        collate_fn=collate_fn_default,
     )
     dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),

@@ -1,12 +1,9 @@
 # Dataset settings
-dataset = dict(
-    type="BatchFeatureDataset",
-)
-
+dataset = dict(type="BatchFeatureDataset")
 grad_checkpoint = True
+num_workers = 4
 
 # Acceleration settings
-num_workers = 8
 dtype = "bf16"
 plugin = "zero2"
 
@@ -18,19 +15,6 @@ model = dict(
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
     freeze_y_embedder=True,
-)
-vae = dict(
-    type="OpenSoraVAE_V1_2",
-    from_pretrained="pretrained_models/vae-pipeline",
-    micro_frame_size=17,
-    micro_batch_size=4,
-)
-text_encoder = dict(
-    type="t5",
-    from_pretrained="DeepFloyd/t5-v1_1-xxl",
-    model_max_length=300,
-    shardformer=True,
-    local_files_only=True,
 )
 scheduler = dict(
     type="rflow",
@@ -56,9 +40,9 @@ mask_ratios = {
 seed = 42
 outputs = "outputs"
 wandb = False
-epochs = 1
+epochs = 1000
 log_every = 10
-ckpt_every = 500
+ckpt_every = 1
 
 # optimization settings
 load = None

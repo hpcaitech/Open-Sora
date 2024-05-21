@@ -1,6 +1,3 @@
-import math
-import warnings
-
 from collections import OrderedDict, defaultdict
 from pprint import pformat
 from typing import Iterator, List, Optional
@@ -291,13 +288,15 @@ class VariableVideoBatchSampler(DistributedSampler):
 
 class BatchDistributedSampler(DistributedSampler):
     """
-    Used with BatchDataset;
+    Used with BatchFeatureDataset;
     Suppose len_buffer == 5, num_buffers == 6, #GPUs == 3, then
            | buffer {i}          | buffer {i+1}
+    ------ | ------------------- | -------------------
     rank 0 |  0,  1,  2,  3,  4, |  5,  6,  7,  8,  9
     rank 1 | 10, 11, 12, 13, 14, | 15, 16, 17, 18, 19
     rank 2 | 20, 21, 22, 23, 24, | 25, 26, 27, 28, 29
     """
+
     def __iter__(self):
         num_buffers = self.dataset.num_buffers
         len_buffer = self.dataset.len_buffer
