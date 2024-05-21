@@ -79,6 +79,16 @@ git clone https://github.com/magic-research/PLLaVA.git
 cd PLLaVA
 git checkout fd9194a # since there is no version tag, we use this commit
 python python_scripts/hf.py # download the PLLaVA weights
+
+# create new environment because pllava only works well in its own environments:
+conda create -n pllava python=3.10
+# You need to manually install `torch`, `torchvision` and `xformers` for different CUDA versions, the following works for CUDA 12.1:
+conda activate pllava
+pip install -r ../../../requirements/requirements-cu121.txt
+pip install packaging ninja
+pip install flash-attn --no-build-isolation
+# then manually remove any lines in requirements.txt that contains `cu11`, before installing:
+pip install -r requirements.txt
 ```
 
 ### Frame Interpolation

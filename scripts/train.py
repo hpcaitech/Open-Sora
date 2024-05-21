@@ -14,8 +14,7 @@ from tqdm import tqdm
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_dataloader, prepare_variable_dataloader
-from opensora.datasets.utils import collate_fn_ignore_none
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -29,8 +28,6 @@ from opensora.utils.misc import (
     to_torch_dtype,
 )
 from opensora.utils.train_utils import MaskGenerator, create_colossalai_plugin, update_ema
-
-DEFAULT_DATASET_NAME = "VideoTextDataset"
 
 
 def main():
@@ -98,42 +95,48 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        collate_fn=collate_fn_ignore_none,
     )
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        dataloader = prepare_dataloader(**dataloader_args)
-        total_batch_size = cfg.batch_size * dist.get_world_size() // cfg.get("sp_size", 1)
-        logger.info("Total batch size: %s", total_batch_size)
-        num_steps_per_epoch = len(dataloader)
-        sampler_to_io = None
-    else:
-        dataloader = prepare_variable_dataloader(
-            bucket_config=cfg.get("bucket_config", None),
-            num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
-            **dataloader_args,
-        )
-        num_steps_per_epoch = dataloader.batch_sampler.get_num_batch() // dist.get_world_size()
-        sampler_to_io = None if cfg.get("start_from_scratch ", False) else dataloader.batch_sampler
+    dataloader, sampler = prepare_dataloader(
+        bucket_config=cfg.get("bucket_config", None),
+        num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
+        **dataloader_args,
+    )
+    num_steps_per_epoch = len(dataloader)
 
     # ======================================================
     # 3. build model
     # ======================================================
     logger.info("Building models...")
     # == build text-encoder and vae ==
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device, dtype=dtype)
-    vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
+    text_encoder = build_module(cfg.get("text_encoder", None), MODELS, device=device, dtype=dtype)
+    if text_encoder is not None:
+        text_encoder_output_dim = text_encoder.output_dim
+        text_encoder_model_max_length = text_encoder.model_max_length
+    else:
+        text_encoder_output_dim = cfg.get("text_encoder_output_dim", 1152)
+        text_encoder_model_max_length = cfg.get("text_encoder_model_max_length", 300)
+
+    # == build vae ==
+    vae = build_module(cfg.get("vae", None), MODELS)
+    if vae is not None:
+        vae = vae.to(device, dtype).eval()
+    if vae is not None:
+        input_size = (dataset.num_frames, *dataset.image_size)
+        latent_size = vae.get_latent_size(input_size)
+        vae_out_channels = vae.out_channels
+    else:
+        latent_size = (None, None, None)
+        vae_out_channels = cfg.get("vae_out_channels", 4)
 
     # == build diffusion model ==
-    input_size = (dataset.num_frames, *dataset.image_size)
-    latent_size = vae.get_latent_size(input_size)
     model = (
         build_module(
             cfg.model,
             MODELS,
             input_size=latent_size,
-            in_channels=vae.out_channels,
-            caption_channels=text_encoder.output_dim,
-            model_max_length=text_encoder.model_max_length,
+            in_channels=vae_out_channels,
+            caption_channels=text_encoder_output_dim,
+            model_max_length=text_encoder_model_max_length,
         )
         .to(device, dtype)
         .train()
@@ -189,7 +192,7 @@ def main():
 
     # == global variables ==
     cfg_epochs = cfg.get("epochs", 1000)
-    start_epoch = start_step = log_step = sampler_start_idx = acc_step = 0
+    start_epoch = start_step = log_step = acc_step = 0
     running_loss = 0.0
     logger.info("Training for %s epochs with %s steps per epoch", cfg_epochs, num_steps_per_epoch)
 
@@ -203,13 +206,11 @@ def main():
             ema=ema,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
-            sampler=sampler_to_io,
+            sampler=None if cfg.get("start_from_scratch ", False) else sampler,
         )
         if not cfg.get("start_from_scratch ", False):
-            start_epoch, start_step, sampler_start_idx = ret
+            start_epoch, start_step = ret
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
-    if cfg.dataset.type == DEFAULT_DATASET_NAME:
-        dataloader.sampler.set_start_index(sampler_start_idx)
 
     model_sharding(ema)
 
@@ -219,8 +220,7 @@ def main():
     dist.barrier()
     for epoch in range(start_epoch, cfg_epochs):
         # == set dataloader to new epoch ==
-        if cfg.dataset.type == DEFAULT_DATASET_NAME:
-            dataloader.sampler.set_epoch(epoch)
+        sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
         logger.info("Beginning epoch %s...", epoch)
 
@@ -239,9 +239,19 @@ def main():
                 # == visual and text encoding ==
                 with torch.no_grad():
                     # Prepare visual inputs
-                    x = vae.encode(x)  # [B, C, T, H/P, W/P]
+                    if cfg.get("load_video_features", False):
+                        x = x.to(device, dtype)
+                    else:
+                        x = vae.encode(x)  # [B, C, T, H/P, W/P]
                     # Prepare text inputs
-                    model_args = text_encoder.encode(y)
+                    if cfg.get("load_text_features", False):
+                        model_args = {"y": y.to(device, dtype)}
+                        mask = batch.pop("mask")
+                        if isinstance(mask, torch.Tensor):
+                            mask = mask.to(device, dtype)
+                        model_args["mask"] = mask
+                    else:
+                        model_args = text_encoder.encode(y)
 
                 # == mask ==
                 mask = None
@@ -251,7 +261,8 @@ def main():
 
                 # == video meta info ==
                 for k, v in batch.items():
-                    model_args[k] = v.to(device, dtype)
+                    if isinstance(v, torch.Tensor):
+                        model_args[k] = v.to(device, dtype)
 
                 # == diffusion loss computation ==
                 loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
@@ -299,14 +310,14 @@ def main():
                 ckpt_every = cfg.get("ckpt_every", 0)
                 if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0:
                     model_gathering(ema, ema_shape_dict)
-                    save(
+                    save_dir = save(
                         booster,
                         exp_dir,
                         model=model,
                         ema=ema,
                         optimizer=optimizer,
                         lr_scheduler=lr_scheduler,
-                        sampler=sampler_to_io,
+                        sampler=sampler,
                         epoch=epoch,
                         step=step + 1,
                         global_step=global_step + 1,
@@ -315,19 +326,13 @@ def main():
                     if dist.get_rank() == 0:
                         model_sharding(ema)
                     logger.info(
-                        "Saved checkpoint at epoch %s step %s global_step %s to %s",
+                        "Saved checkpoint at epoch %s, step %s, global_step %s to %s",
                         epoch,
                         step + 1,
                         global_step + 1,
-                        exp_dir,
+                        save_dir,
                     )
-
-        # NOTE: the continue epochs are not resumed, so we need to reset the sampler start index and start step
-        if cfg.dataset.type == DEFAULT_DATASET_NAME:
-            dataloader.sampler.set_start_index(0)
-        else:
-            dataloader.batch_sampler.set_epoch(epoch + 1)
-            logger.info("Epoch done, recomputing batch sampler")
+        sampler.reset()
         start_step = 0
 
 

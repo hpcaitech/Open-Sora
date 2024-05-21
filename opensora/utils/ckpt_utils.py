@@ -239,12 +239,11 @@ def save(
     if lr_scheduler is not None:
         booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
     if dist.get_rank() == 0:
-        sampler_start_idx = step * batch_size if batch_size is not None else None
         running_states = {
             "epoch": epoch,
             "step": step,
             "global_step": global_step,
-            "sample_start_index": sampler_start_idx,
+            "batch_size": batch_size,
         }
         save_json(running_states, os.path.join(save_dir, "running_states.json"))
 
@@ -255,6 +254,7 @@ def save(
             # only for VariableVideoBatchSampler
             torch.save(sampler.state_dict(step), os.path.join(save_dir, "sampler"))
     dist.barrier()
+    return save_dir
 
 
 def load(
@@ -288,5 +288,4 @@ def load(
     return (
         running_states["epoch"],
         running_states["step"],
-        running_states["sample_start_index"],
     )

@@ -39,8 +39,6 @@ imageio-ffmpeg==0.4.9
 # [frame interpolation]
 imageio==2.34.1
 
-# [scene detection]
-
 # [scene cut]
 imageio-ffmpeg==0.4.9
 

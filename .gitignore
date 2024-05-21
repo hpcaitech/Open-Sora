@@ -194,4 +194,4 @@ package-lock.json
 package.json
 
 # PLLaVA
-tools/caption/pllava_dir/PLLaVA
+tools/caption/pllava_dir/PLLaVA/

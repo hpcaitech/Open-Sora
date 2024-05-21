@@ -214,10 +214,3 @@ def resize_crop_to_fill(pil_image, image_size):
     arr = np.array(image)
     assert i + th <= arr.shape[0] and j + tw <= arr.shape[1]
     return Image.fromarray(arr[i : i + th, j : j + tw])
-
-
-def collate_fn_ignore_none(batch):
-    # we filter out the None values
-    # None value is returned when the get_item fails for an index
-    batch = [val for val in batch if val is not None]
-    return torch.utils.data.default_collate(batch)
