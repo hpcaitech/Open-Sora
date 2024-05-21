@@ -25,7 +25,7 @@ scheduler = dict(
 
 vae_out_channels = 4
 model_max_length = 300
-text_encoder_output_dim = 1152
+text_encoder_output_dim = 4096
 load_video_features = True
 load_text_features = True
 
