@@ -191,3 +191,6 @@ eval/vae/flolpips/weights/
 node_modules/
 package-lock.json
 package.json
+
+
+tools/caption/pllava_dir/PLLaVA/

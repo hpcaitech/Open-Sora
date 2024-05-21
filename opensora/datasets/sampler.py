@@ -54,8 +54,8 @@ class StatefulDistributedSampler(DistributedSampler):
     def reset(self) -> None:
         self.start_index = 0
 
-    def state_dict(self) -> dict:
-        return {"start_index": self.start_index}
+    def state_dict(self, step) -> dict:
+        return {"start_index": step}
 
     def load_state_dict(self, state_dict: dict) -> None:
         self.__dict__.update(state_dict)
