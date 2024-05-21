@@ -7,7 +7,8 @@ from mmengine.runner import set_random_seed
 from tqdm import tqdm
 
 from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_dataloader, save_sample
+from opensora.datasets import save_sample
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.models.vae.losses import VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.config_utils import parse_configs
@@ -54,7 +55,6 @@ def main():
         drop_last=False,
         pin_memory=True,
         process_group=get_data_parallel_group(),
-        distributed=is_distributed(),
     )
     logger.info("Dataset %s contains %s videos.", cfg.dataset.data_path, len(dataset))
     total_batch_size = batch_size * get_world_size()

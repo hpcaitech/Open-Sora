@@ -605,6 +605,12 @@ def main(args):
         data = data.drop_duplicates(subset=["text"], keep="first")
     print(f"Filtered number of samples: {len(data)}.")
 
+    # process data
+    if args.shuffle:
+        data = data.sample(frac=1).reset_index(drop=True)  # shuffle
+    if args.get_first_n_data is not None:
+        data = data.head(args.get_first_n_data)
+
     # shard data
     if args.shard is not None:
         sharded_data = np.array_split(data, args.shard)
@@ -625,7 +631,7 @@ def parse_args():
     parser.add_argument("--format", type=str, default="csv", help="output format", choices=["csv", "parquet"])
     parser.add_argument("--disable-parallel", action="store_true", help="disable parallel processing")
     parser.add_argument("--num-workers", type=int, default=None, help="number of workers")
-    parser.add_argument("--seed", type=int, default=None, help="random seed")
+    parser.add_argument("--seed", type=int, default=42, help="random seed")
 
     # special case
     parser.add_argument("--shard", type=int, default=None, help="shard the dataset")
@@ -680,6 +686,10 @@ def parse_args():
     parser.add_argument("--matchmin", type=float, default=None, help="filter the dataset by minimum match score")
     parser.add_argument("--flowmin", type=float, default=None, help="filter the dataset by minimum flow score")
     parser.add_argument("--fpsmax", type=float, default=None, help="filter the dataset by maximum fps")
+
+    # data processing
+    parser.add_argument("--shuffle", default=False, action="store_true", help="shuffle the dataset")
+    parser.add_argument("--get_first_n_data", type=int, default=None, help="return the first n rows of data")
 
     return parser.parse_args()
 
@@ -754,6 +764,12 @@ def get_output_path(args, input_name):
         name += f"_matchmin{args.matchmin}"
     if args.flowmin is not None:
         name += f"_flowmin{args.flowmin}"
+
+    # processing
+    if args.shuffle:
+        name += f"_shuffled_seed{args.seed}"
+    if args.get_first_n_data is not None:
+        name += f"_first_{args.get_first_n_data}_data"
 
     output_path = os.path.join(dir_path, f"{name}.{args.format}")
     return output_path
