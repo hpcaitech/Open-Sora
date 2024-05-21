@@ -7,8 +7,8 @@ from colossalai.cluster import DistCoordinator
 from mmengine.runner import set_random_seed
 from tqdm import tqdm
 
-from opensora.acceleration.parallel_states import get_data_parallel_group
-from opensora.datasets import prepare_variable_dataloader
+from opensora.acceleration.parallel_states import get_data_parallel_group, set_data_parallel_group
+from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.misc import create_logger, to_torch_dtype
@@ -43,6 +43,7 @@ def main():
     colossalai.launch_from_torch({})
     DistCoordinator()
     set_random_seed(seed=cfg.get("seed", 1024))
+    set_data_parallel_group(dist.group.WORLD)
 
     # == init logger ==
     logger = create_logger()
@@ -101,11 +102,8 @@ def main():
             pin_memory=True,
             process_group=get_data_parallel_group(),
         )
-        dataloader = prepare_variable_dataloader(
-            bucket_config=bucket_config,
-            **dataloader_args,
-        )
-        num_batch = dataloader.batch_sampler.get_num_batch()
+        dataloader, sampler = prepare_dataloader(bucket_config=bucket_config, **dataloader_args)
+        num_batch = sampler.get_num_batch()
         num_steps_per_epoch = num_batch // dist.get_world_size()
         return dataloader, num_steps_per_epoch, num_batch
 

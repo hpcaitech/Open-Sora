@@ -156,13 +156,13 @@ conda activate opensora
 # install torch, torchvision and xformers
 pip install -r requirements/requirements-cu121.txt
 
-# install this project
+# download the repo
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
 
 # the default installation is for inference only
 pip install -v . # for development mode, `pip install -v -e .`
-```
+
 
 (Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
 

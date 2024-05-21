@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import torchvision
+from PIL import Image
 from tqdm import tqdm
 
 from .utils import IMG_EXTENSIONS
@@ -48,7 +49,7 @@ def get_video_length(cap, method="header"):
     return length
 
 
-def get_info(path):
+def get_info_old(path):
     try:
         ext = os.path.splitext(path)[1].lower()
         if ext in IMG_EXTENSIONS:
@@ -72,19 +73,76 @@ def get_info(path):
         return 0, 0, 0, np.nan, np.nan, np.nan
 
 
-def get_video_info(path):
+def get_info(path):
     try:
-        vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-        num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
-        aspect_ratio = height / width
-        if "video_fps" in infos:
-            fps = infos["video_fps"]
+        ext = os.path.splitext(path)[1].lower()
+        if ext in IMG_EXTENSIONS:
+            return get_image_info(path)
         else:
-            fps = np.nan
-        resolution = height * width
-        return num_frames, height, width, aspect_ratio, fps, resolution
+            return get_video_info(path)
     except:
         return 0, 0, 0, np.nan, np.nan, np.nan
+
+
+def get_image_info(path, backend="pillow"):
+    if backend == "pillow":
+        try:
+            with open(path, "rb") as f:
+                img = Image.open(f)
+                img = img.convert("RGB")
+            width, height = img.size
+            num_frames, fps = 1, np.nan
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    elif backend == "cv2":
+        try:
+            im = cv2.imread(path)
+            if im is None:
+                return 0, 0, 0, np.nan, np.nan, np.nan
+            height, width = im.shape[:2]
+            num_frames, fps = 1, np.nan
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    else:
+        raise ValueError
+
+
+def get_video_info(path, backend="torchvision"):
+    if backend == "torchvision":
+        try:
+            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
+            if "video_fps" in infos:
+                fps = infos["video_fps"]
+            else:
+                fps = np.nan
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    elif backend == "cv2":
+        try:
+            cap = cv2.VideoCapture(path)
+            num_frames, height, width, fps = (
+                get_video_length(cap, method="header"),
+                int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                float(cap.get(cv2.CAP_PROP_FPS)),
+            )
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    else:
+        raise ValueError
 
 
 # ======================================================
@@ -545,6 +603,13 @@ def main(args):
         data = data[data["flow"] >= args.flowmin]
     if args.remove_text_duplication:
         data = data.drop_duplicates(subset=["text"], keep="first")
+
+    # process data
+    if args.shuffle:
+        data = data.sample(frac=1).reset_index(drop=True)  # shuffle
+    if args.head is not None:
+        data = data.head(args.head)
+
     print(f"Filtered number of samples: {len(data)}.")
 
     # shard data
@@ -567,7 +632,7 @@ def parse_args():
     parser.add_argument("--format", type=str, default="csv", help="output format", choices=["csv", "parquet"])
     parser.add_argument("--disable-parallel", action="store_true", help="disable parallel processing")
     parser.add_argument("--num-workers", type=int, default=None, help="number of workers")
-    parser.add_argument("--seed", type=int, default=None, help="random seed")
+    parser.add_argument("--seed", type=int, default=42, help="random seed")
 
     # special case
     parser.add_argument("--shard", type=int, default=None, help="shard the dataset")
@@ -622,6 +687,10 @@ def parse_args():
     parser.add_argument("--matchmin", type=float, default=None, help="filter the dataset by minimum match score")
     parser.add_argument("--flowmin", type=float, default=None, help="filter the dataset by minimum flow score")
     parser.add_argument("--fpsmax", type=float, default=None, help="filter the dataset by maximum fps")
+
+    # data processing
+    parser.add_argument("--shuffle", default=False, action="store_true", help="shuffle the dataset")
+    parser.add_argument("--head", type=int, default=None, help="return the first n rows of data")
 
     return parser.parse_args()
 
@@ -696,6 +765,12 @@ def get_output_path(args, input_name):
         name += f"_matchmin{args.matchmin}"
     if args.flowmin is not None:
         name += f"_flowmin{args.flowmin}"
+
+    # processing
+    if args.shuffle:
+        name += f"_shuffled_seed{args.seed}"
+    if args.head is not None:
+        name += f"_first_{args.head}_data"
 
     output_path = os.path.join(dir_path, f"{name}.{args.format}")
     return output_path

@@ -1,8 +1,8 @@
-import warnings
 from collections import OrderedDict, defaultdict
 from pprint import pformat
 from typing import Iterator, List, Optional
 
+import numpy as np
 import torch
 import torch.distributed as dist
 from torch.utils.data import Dataset, DistributedSampler
@@ -48,8 +48,14 @@ class StatefulDistributedSampler(DistributedSampler):
     def __len__(self) -> int:
         return self.num_samples - self.start_index
 
-    def set_start_index(self, start_index: int) -> None:
-        self.start_index = start_index
+    def reset(self) -> None:
+        self.start_index = 0
+
+    def state_dict(self, step) -> dict:
+        return {"start_index": step}
+
+    def load_state_dict(self, state_dict: dict) -> None:
+        self.__dict__.update(state_dict)
 
 
 class VariableVideoBatchSampler(DistributedSampler):
@@ -76,42 +82,6 @@ class VariableVideoBatchSampler(DistributedSampler):
 
         self._get_num_batch_cached_bucket_sample_dict = None
         self.num_bucket_build_workers = num_bucket_build_workers
-
-    def group_by_bucket(self) -> dict:
-        bucket_sample_dict = OrderedDict()
-
-        from pandarallel import pandarallel
-
-        pandarallel.initialize(nb_workers=self.num_bucket_build_workers, progress_bar=False)
-        get_logger().info("Building buckets...")
-        bucket_ids = self.dataset.data.parallel_apply(
-            apply,
-            axis=1,
-            method=self.bucket.get_bucket_id,
-            frame_interval=self.dataset.frame_interval,
-            seed=self.seed + self.epoch,
-            num_bucket=self.bucket.num_bucket,
-        )
-
-        # group by bucket
-        # each data sample is put into a bucket with a similar image/video size
-        for i in range(len(self.dataset)):
-            bucket_id = bucket_ids[i]
-            if bucket_id is None:
-                continue
-            if bucket_id not in bucket_sample_dict:
-                bucket_sample_dict[bucket_id] = []
-            bucket_sample_dict[bucket_id].append(i)
-        return bucket_sample_dict
-
-    def get_num_batch(self) -> int:
-        bucket_sample_dict = self.group_by_bucket()
-        self._get_num_batch_cached_bucket_sample_dict = bucket_sample_dict
-
-        # calculate the number of batches
-        if self.verbose:
-            self._print_bucket_info(bucket_sample_dict)
-        return self.approximate_num_batch
 
     def __iter__(self) -> Iterator[List[int]]:
         if self._get_num_batch_cached_bucket_sample_dict is not None:
@@ -192,7 +162,7 @@ class VariableVideoBatchSampler(DistributedSampler):
             bucket_access_list = bucket_id_access_order[i * self.num_replicas : (i + 1) * self.num_replicas]
             self.last_micro_batch_access_index += self.num_replicas
 
-            # comppute the data samples consumed by each access
+            # compute the data samples consumed by each access
             bucket_access_boundaries = []
             for bucket_id in bucket_access_list:
                 bucket_bs = self.bucket.get_batch_size(bucket_id)
@@ -215,20 +185,46 @@ class VariableVideoBatchSampler(DistributedSampler):
             cur_micro_batch = [f"{idx}-{real_t}-{real_h}-{real_w}" for idx in cur_micro_batch]
             yield cur_micro_batch
 
-        self._reset()
+        self.reset()
 
-    def _reset(self):
-        self.last_micro_batch_access_index = 0
+    def __len__(self) -> int:
+        return self.get_num_batch() // dist.get_world_size()
 
-    def state_dict(self, num_steps: int) -> dict:
-        # the last_micro_batch_access_index in the __iter__ is often
-        # not accurate during multi-workers and data prefetching
-        # thus, we need the user to pass the actual steps which have been executed
-        # to calculate the correct last_micro_batch_access_index
-        return {"seed": self.seed, "epoch": self.epoch, "last_micro_batch_access_index": num_steps * self.num_replicas}
+    def group_by_bucket(self) -> dict:
+        bucket_sample_dict = OrderedDict()
 
-    def load_state_dict(self, state_dict: dict) -> None:
-        self.__dict__.update(state_dict)
+        from pandarallel import pandarallel
+
+        pandarallel.initialize(nb_workers=self.num_bucket_build_workers, progress_bar=False)
+        get_logger().info("Building buckets...")
+        bucket_ids = self.dataset.data.parallel_apply(
+            apply,
+            axis=1,
+            method=self.bucket.get_bucket_id,
+            frame_interval=self.dataset.frame_interval,
+            seed=self.seed + self.epoch,
+            num_bucket=self.bucket.num_bucket,
+        )
+
+        # group by bucket
+        # each data sample is put into a bucket with a similar image/video size
+        for i in range(len(self.dataset)):
+            bucket_id = bucket_ids[i]
+            if bucket_id is None:
+                continue
+            if bucket_id not in bucket_sample_dict:
+                bucket_sample_dict[bucket_id] = []
+            bucket_sample_dict[bucket_id].append(i)
+        return bucket_sample_dict
+
+    def get_num_batch(self) -> int:
+        bucket_sample_dict = self.group_by_bucket()
+        self._get_num_batch_cached_bucket_sample_dict = bucket_sample_dict
+
+        # calculate the number of batches
+        if self.verbose:
+            self._print_bucket_info(bucket_sample_dict)
+        return self.approximate_num_batch
 
     def _print_bucket_info(self, bucket_sample_dict: dict) -> None:
         # collect statistics
@@ -276,19 +272,51 @@ class VariableVideoBatchSampler(DistributedSampler):
             )
         self.approximate_num_batch = total_batch
 
-    def set_epoch(self, epoch: int) -> None:
-        super().set_epoch(epoch)
+    def reset(self):
+        self.last_micro_batch_access_index = 0
 
-    def __len__(self) -> int:
-        warnings.warn(
-            "The length of VariableVideoBatchSampler is dynamic and may not be accurate. Return the max value."
-        )
-        min_batch_size = None
-        for v in self.bucket.bucket_bs.values():
-            for bs in v.values():
-                if bs is not None and (min_batch_size is None or bs < min_batch_size):
-                    min_batch_size = bs
-        if self.drop_last:
-            return len(self.dataset) // min_batch_size
-        else:
-            return (len(self.dataset) + min_batch_size - 1) // min_batch_size
+    def state_dict(self, num_steps: int) -> dict:
+        # the last_micro_batch_access_index in the __iter__ is often
+        # not accurate during multi-workers and data prefetching
+        # thus, we need the user to pass the actual steps which have been executed
+        # to calculate the correct last_micro_batch_access_index
+        return {"seed": self.seed, "epoch": self.epoch, "last_micro_batch_access_index": num_steps * self.num_replicas}
+
+    def load_state_dict(self, state_dict: dict) -> None:
+        self.__dict__.update(state_dict)
+
+
+class BatchDistributedSampler(DistributedSampler):
+    """
+    Used with BatchDataset;
+    Suppose len_buffer == 5, num_buffers == 6, #GPUs == 3, then
+           | buffer {i}          | buffer {i+1}
+    ------ | ------------------- | -------------------
+    rank 0 |  0,  1,  2,  3,  4, |  5,  6,  7,  8,  9
+    rank 1 | 10, 11, 12, 13, 14, | 15, 16, 17, 18, 19
+    rank 2 | 20, 21, 22, 23, 24, | 25, 26, 27, 28, 29
+    """
+
+    def __init__(self, dataset: Dataset, **kwargs):
+        super().__init__(dataset, **kwargs)
+        self.start_index = 0
+
+    def __iter__(self):
+        num_buffers = self.dataset.num_buffers
+        len_buffer = self.dataset.len_buffer
+        num_buffers_i = num_buffers // self.num_replicas
+        num_samples_i = len_buffer * num_buffers_i
+
+        indices_i = np.arange(self.start_index, num_samples_i) + self.rank * num_samples_i
+        indices_i = indices_i.tolist()
+
+        return iter(indices_i)
+
+    def reset(self):
+        self.start_index = 0
+
+    def state_dict(self, step) -> dict:
+        return {"start_index": step}
+
+    def load_state_dict(self, state_dict: dict):
+        self.start_index = state_dict["start_index"] + 1

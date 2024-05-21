@@ -15,6 +15,8 @@ def build_module(module, builder, **kwargs):
     Returns:
         Any: The built module.
     """
+    if module is None:
+        return None
     if isinstance(module, dict):
         cfg = deepcopy(module)
         for k, v in kwargs.items():
