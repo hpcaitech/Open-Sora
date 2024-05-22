@@ -13,7 +13,7 @@ from torchvision.transforms.functional import pil_to_tensor
 from tqdm import tqdm
 
 from tools.datasets.utils import extract_frames
-from .unimatch import UniMatch
+from tools.scoring.optical_flow.unimatch import UniMatch
 
 
 def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
@@ -146,7 +146,7 @@ def main():
     gathered_list = [None] * dist.get_world_size()
     dist.all_gather_object(gathered_list, (indices_list, scores_list))
     if dist.get_rank() == 0:
-        meta_new = merge_scores(gathered_list, dataset.meta, column='flow')
+        meta_new = merge_scores(gathered_list, dataset.meta, column="flow")
         meta_new.to_csv(out_path, index=False)
         print(f"New meta with optical flow scores saved to '{out_path}'.")
 
