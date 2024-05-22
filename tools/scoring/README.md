@@ -45,7 +45,9 @@ This will generate multiple part files, each corresponding to a node . Run `pyth
 Optical flow scores are used to assess the motion of a video. Higher optical flow scores indicate larger movement.
 We use the [UniMatch](https://github.com/autonomousvision/unimatch) model for this task.
 
-First, download the pretrained model to `./pretrained_model/unimatch/`
+First, install the required packages following our [installation instructions](../../docs/installation.md)'s "Data Dependencies".
+
+Next, download the pretrained model to `./pretrained_model/unimatch/`
 ```bash
 wget https://s3.eu-central-1.amazonaws.com/avg-projects/unimatch/pretrained/gmflow-scale2-regrefine6-mixdata-train320x576-4e7b215d.pth -P ./pretrained_models/unimatch/
 ```
@@ -62,14 +64,16 @@ Some videos are of dense text scenes like news broadcast and advertisement, whic
 We apply Optical Character Recognition (OCR) to detect texts and drop samples with dense texts. Here, we use
 the [DBNet++](https://arxiv.org/abs/2202.10304) model implemented by [MMOCR](https://github.com/open-mmlab/mmocr/).
 
-First, install [MMOCR](https://mmocr.readthedocs.io/en/dev-1.x/get_started/install.html).
+First, install the required packages following our [installation instructions](../../docs/installation.md)'s "OCR" section.
+
+<!-- First, install [MMOCR](https://mmocr.readthedocs.io/en/dev-1.x/get_started/install.html).
 For reference, we install packages of these versions.
 ```
 torch==2.0.1
 mmcv==2.0.1
 mmdet==3.1.0
 mmocr==1.0.1
-```
+``` -->
 
 Then, run the following command. **Make sure** the meta file has column `path` (path to the sample).
 ```bash

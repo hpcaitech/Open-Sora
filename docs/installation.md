@@ -80,15 +80,16 @@ cd PLLaVA
 git checkout fd9194a # since there is no version tag, we use this commit
 python python_scripts/hf.py # download the PLLaVA weights
 
-# create new environment because pllava only works well in its own environments:
+# IMPORTANT: create new environment for reliable pllava performances:
 conda create -n pllava python=3.10
 # You need to manually install `torch`, `torchvision` and `xformers` for different CUDA versions, the following works for CUDA 12.1:
 conda activate pllava
 pip install -r ../../../requirements/requirements-cu121.txt
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
-# then manually remove any lines in requirements.txt that contains `cu11`, before installing:
-pip install -r requirements.txt
+# You may manually remove any lines in requirements.txt that contains `cu11`, then run `pip install -r requirements.txt`
+# Alternatively, use our prepared pllava environment:
+pip install -r ../../../../requirements/requirements-pllava.txt
 ```
 
 ### Frame Interpolation
@@ -100,6 +101,16 @@ conda install -c conda-forge opencv
 We use [`PySceneDetect`](https://github.com/Breakthrough/PySceneDetect) for this job. You need to manually run the following:
 ```bash
 pip install scenedetect[opencv] --upgrade
+```
+
+### OCR
+We need to manualy create new environment for torch==2.0.1 in order to install [MMOCR](https://mmocr.readthedocs.io/en/dev-1.x/get_started/install.html).
+For reference, we install packages of these versions.
+```
+torch==2.0.1
+mmcv==2.0.1
+mmdet==3.1.0
+mmocr==1.0.1
 ```
 
 
@@ -116,6 +127,10 @@ Next, you need to manually install the packages listed in the following sections
 
 You need to manually install apex from source by:
 ```bash
+# use latest pip, setuptools, and wheel; else may run into weird issues with apex
+pip install -U pip
+pip install -U setuptools
+pip install -U wheel
 # set enable_layernorm_kernel=False in config to disable apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
