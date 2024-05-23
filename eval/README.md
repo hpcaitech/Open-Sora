@@ -10,7 +10,7 @@ bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -1
 # video (2a 2b 2c ...)
 bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -2a
 # launch 8 jobs at once (you must read the script to understand the details)
-bash eval/human_eval/launch.sh /path/to/ckpt /path/to/ckpt num_frames model_name_for_log
+bash eval/human_eval/launch.sh /path/to/ckpt num_frames model_name_for_log
 ```
 
 ## Rectified Flow Loss
