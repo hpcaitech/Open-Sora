@@ -5,6 +5,7 @@ set -e
 
 CMD="torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py"
 CKPT_PATH=$1
+MODEL_NAME=$2
 IMG_PATH="/mnt/nfs-207/sora_data/meta/img_1k.csv"
 VID_PATH="/mnt/nfs-207/sora_data/meta/vid_100.csv"
 
@@ -14,7 +15,7 @@ if [[ $CKPT_PATH == *"ema"* ]]; then
 else
     CKPT_BASE=$(basename $CKPT_PATH)
 fi
-LOG_BASE=logs/loss/${CKPT_BASE}
+LOG_BASE=logs/loss/${MODEL_NAME}_${CKPT_BASE}
 mkdir -p logs/loss
 echo "Logging to $LOG_BASE"
 
