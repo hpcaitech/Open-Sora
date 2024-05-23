@@ -7,11 +7,21 @@ CKPT=$1
 NUM_FRAMES=$2
 MODEL_NAME=$3
 
+echo "NUM_FRAMES=${NUM_FRAMES}"
+
 if [ -z "${NUM_FRAMES}" ]; then
+  echo "you need to pass NUM_FRAMES"
+else
   let DOUBLE_FRAMES=$2*2
   let QUAD_FRAMES=$2*4
   let OCT_FRAMES=$2*8
 fi
+
+echo "DOUBLE_FRAMES=${DOUBLE_FRAMES}"
+echo "QUAD_FRAMES=${QUAD_FRAMES}"
+echo "OCT_FRAMES=${OCT_FRAMES}"
+
+
 
 CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
 CMD_REF="python scripts/inference-long.py configs/opensora-v1-2/inference/sample.py"
