@@ -128,6 +128,7 @@ ENV/
 env.bak/
 venv.bak/
 
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -192,5 +193,5 @@ node_modules/
 package-lock.json
 package.json
 
-
+# PLLaVA
 tools/caption/pllava_dir/PLLaVA/

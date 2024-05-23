@@ -9,18 +9,18 @@ accelerate==0.29.2 # for t5
 av>=12.0.0
 
 # [gradio]
-gradio
-spaces
+gradio>=4.31.3
+spaces>=0.28.3
 
 # [notebook]
-ipykernel
-ipywidgets
+ipykernel>=6.29.4
+ipywidgets>=8.1.2
 
 # [training]
-wandb
-tensorboard
-pandarallel
-pyarrow # for parquet
+wandb>=0.17.0
+tensorboard>=2.16.2
+pandarallel>=1.6.5
+pyarrow>=16.1.0 # for parquet
 
 # [dev]
-pre-commit
+pre-commit>=3.7.1

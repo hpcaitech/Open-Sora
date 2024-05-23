@@ -8,7 +8,11 @@ Human labeling of videos is expensive and time-consuming. We adopt powerful imag
 
 We extract three frames from the video for captioning. With batch inference, we can achieve 10 times speedup. With approximately 720p resolution and 1 frames, the speed is 2~3 videos/s on 8 GPUs. If we resize the smaller side to 336, the speed can be 8 videos/s. In Open-Sora v1.1, to lower the cost, we use the 7B model.
 
-### Requirement
+### Installation
+
+Install the required dependancies by following our [installation instructions](../../docs/installation.md)'s "Data Dependencies" and "LLaVA Captioning" sections.
+
+<!-- ### Requirement
 
 ```bash
 # create conda env
@@ -34,7 +38,7 @@ pip install -e .
 pip install flash-attn --no-build-isolation
 # install colossalai and decord
 pip install colossalai decord
-```
+``` -->
 
 ### Usage
 
@@ -82,14 +86,21 @@ Then use the output csv file to resume the process.
 
 ## PLLaVA Captioning
 
-### Download the PLLaVA repo
+
+### Installation
+Install the required dependancies by following our [installation instructions](../../docs/installation.md)'s "Data Dependencies" and "PLLaVA Captioning" sections.
+
+
+<!-- ### Download the PLLaVA repo
 
 First, make sure you are under the directory of tools/caption/pllava_dir. Then,
 
 ```bash
 git clone https://github.com/magic-research/PLLaVA.git
-
 cd PLLaVA
+git checkout fd9194a
+
+
 ```
 
 ### Environment
@@ -107,8 +118,8 @@ pip install -r requirements.txt # change to your own torch version if neccessary
 ### Download weights
 
 ```bash
-python python_scripts/hf.py # download the weights 
-```
+python python_scripts/hf.py # download the weights
+``` -->
 ### Usage
 
 Since PLLaVA is not fashioned as a package, we will use PYTHONPATH to use it as a package.
@@ -144,8 +155,8 @@ The cost is approximately $0.01 per video (3 frames per video).
 
 ## Camera Motion Detection
 
-Install additional required packages: `tools/caption/camera_motion/requirements.txt`.
-
+<!-- Install additional required packages: `tools/caption/camera_motion/requirements.txt`. -->
+Install required packages with `pip install -v .[data]` (See [installation.md](../../docs/installation.md)).
 Run the following command to classify camera motion:
 
 ```bash
@@ -159,7 +170,6 @@ You may additionally specify `threshold` to indicate how "sensitive" the detecti
 python -m tools.caption.camera_motion.detect tools/caption/camera_motion/meta.csv --threshold 0.2
 ```
 
-
 Each video is classified according to 8 categories:
             `pan_right,
             pan_left,
@@ -168,8 +178,5 @@ Each video is classified according to 8 categories:
             zoom_in,
             zoom_out,
             static,
-            unclassified`. 
+            unclassified`.
 Categories of `tilt`, `pan` and `zoom` can overlap with each other.
-
-
-

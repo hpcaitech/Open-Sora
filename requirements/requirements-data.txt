@@ -1,4 +1,53 @@
-gdown
+gdown==5.2.0
+
+# [caption llava]
+ninja==1.11.1.1
+flash-attn==2.5.7
+transformers==4.36.2
+tokenizers==0.15.2
+sentencepiece==0.2.0
+shortuuid==1.0.13
+accelerate==0.29.2
+peft==0.4.0
+bitsandbytes==0.41.0
+pydantic==2.7.1
+markdown2[all]
+numpy==1.26.3
+scikit-learn==1.4.2
+gradio==4.31.3
+gradio_client==0.16.3
+requests==2.31.0
+httpx==0.27.0
+uvicorn==0.29.0
+fastapi==0.110.0
+einops==0.8.0
+einops-exts==0.0.4
+timm==0.9.16
+
+# [camera_motion]
+decord==0.6.0
+ptvsd==4.3.2
+imageio-ffmpeg==0.4.9
+
+# [datasets]
+pandarallel==1.6.5
+opencv-python==4.9.0.80
+ffmpeg-python==0.2.0
+lingua-language-detector==2.0.2
+imageio-ffmpeg==0.4.9
+
+# [frame interpolation]
+imageio==2.34.1
+
+# [scene cut]
+imageio-ffmpeg==0.4.9
 
 # [aesthetic]
 clip @ git+https://github.com/openai/CLIP.git
+decord==0.6.0
+
+# [ocr]
+mmcv==2.1.0
+mmdet==3.1.0
+mmocr==1.0.1
+detectron2 @ git+https://github.com/facebookresearch/detectron2.git@ff53992

@@ -147,7 +147,7 @@ def write(outputs, input_path, output_path, fps=30):
     file_name, _ = os.path.splitext(file_name_with_extension)
 
     save_video_path = f"{output_path}/fps{fps}_{file_name}.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*"avc1")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(save_video_path, fourcc, fps, size)
 
     for i, imgt_pred in enumerate(outputs):
