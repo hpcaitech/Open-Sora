@@ -24,7 +24,7 @@ cd Open-Sora
 # the default installation is for inference only
 pip install -v . # NOTE: for development mode, run `pip install -v -e .`
 
-(Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
+# (Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
 
 # install flash attention
 # set enable_flash_attn=False in config to disable flash attention
