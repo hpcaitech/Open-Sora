@@ -61,7 +61,7 @@ def main():
         pin_memory=True,
         process_group=get_data_parallel_group(),
     )
-    dataloader, sampler = prepare_dataloader(
+    dataloader, _ = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
         num_bucket_build_workers=cfg.get("num_bucket_build_workers", 1),
         **dataloader_args,

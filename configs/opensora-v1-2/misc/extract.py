@@ -58,5 +58,5 @@ text_encoder = dict(
 # feature extraction settings
 save_text_features = True
 save_compressed_text_features = True
-bin_size = 10
+bin_size = 250  # 1GB, 4195 bins
 log_time = False

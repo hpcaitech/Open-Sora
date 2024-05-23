@@ -113,7 +113,7 @@ def main():
         text_encoder_output_dim = text_encoder.output_dim
         text_encoder_model_max_length = text_encoder.model_max_length
     else:
-        text_encoder_output_dim = cfg.get("text_encoder_output_dim", 1152)
+        text_encoder_output_dim = cfg.get("text_encoder_output_dim", 4096)
         text_encoder_model_max_length = cfg.get("text_encoder_model_max_length", 300)
 
     # == build vae ==
