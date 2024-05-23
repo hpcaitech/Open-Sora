@@ -31,7 +31,7 @@ torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora
 To launch multiple jobs at once, use the following script.
 
 ```bash
-bash eval/loss/launch.sh /path/to/ckpt
+bash eval/loss/launch.sh /path/to/ckpt model_name
 ```
 
 ## VBench
