@@ -37,16 +37,16 @@ pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation -
 
 ## Different Dependencies
 
-The default installation is for inference only. Other optional dependencies are listed below.
+The default installation is for inference only. Other optional dependencies are detailed in sections below, namel "Data Dependencies" and "Evaluation Dependencies".
 
-```bash
-pip install -v .[data]  # for data preprocessing
-pip install -v .[eval]  # for evaluation, need to manually install some packages detailed below
+<!-- ```bash
+pip install -v .[data]  # for data preprocessing, still need to manually install some packages detailed in sections below
+pip install -v .[eval]  # for evaluation, still need to manually install some packages detailed in sections below
 
 # Note: if in development mode, use the following commands instead:
 pip install -v -e .[data]
 pip install -v -e .[eval]
-```
+``` -->
 
 
 ## Data Dependencies
