@@ -100,7 +100,7 @@ outputs = "outputs"
 wandb = False
 epochs = 1000
 log_every = 10
-ckpt_every = 1
+ckpt_every = 200
 
 # optimization settings
 load = None
