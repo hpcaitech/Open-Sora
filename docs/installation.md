@@ -1,8 +1,9 @@
 # Installation
 
 Requirements are listed in `requirements` folder.
+Note that besides these packages, some packages needs to be mannually installed, and are detailed in the following sections.
 
-## Different CUDA versions
+# Different CUDA versions
 
 You need to manually install `torch`, `torchvision` and `xformers` for different CUDA versions.
 
@@ -35,7 +36,7 @@ pip install flash-attn --no-build-isolation
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
 
-## Different Dependencies
+# Optional Dependencies
 
 The default installation is for inference only. Other optional dependencies are detailed in sections below, namel "Data Dependencies" and "Evaluation Dependencies".
 
