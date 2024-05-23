@@ -64,7 +64,7 @@ Some videos are of dense text scenes like news broadcast and advertisement, whic
 We apply Optical Character Recognition (OCR) to detect texts and drop samples with dense texts. Here, we use
 the [DBNet++](https://arxiv.org/abs/2202.10304) model implemented by [MMOCR](https://github.com/open-mmlab/mmocr/).
 
-First, install the required packages following our [installation instructions](../../docs/installation.md)'s "OCR" section.
+First, install the required packages following our [installation instructions](../../docs/installation.md)'s "Data Dependencies" and "OCR" section.
 
 <!-- First, install [MMOCR](https://mmocr.readthedocs.io/en/dev-1.x/get_started/install.html).
 For reference, we install packages of these versions.
@@ -76,8 +76,11 @@ mmocr==1.0.1
 ``` -->
 
 Then, run the following command. **Make sure** the meta file has column `path` (path to the sample).
-```bash
+<!-- ```bash
 torchrun --standalone --nproc_per_node 8 tools/scoring/ocr/inference.py /path/to/meta.csv
+``` -->
+```bash
+torchrun --standalone --nproc_per_node 8 -m tools.scoring.ocr.inference /path/to/meta.csv
 ```
 This should output `/path/to/meta_ocr.csv` with column `ocr`, indicating the number of text regions with detection confidence > 0.3.
 

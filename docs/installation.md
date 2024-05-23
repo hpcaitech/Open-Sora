@@ -70,6 +70,7 @@ You need to manually install LLaVA with the following command:
 ```bash
 pip install --no-deps llava@git+https://github.com/haotian-liu/LLaVA.git@v1.2.2.post1
 ```
+
 ### PLLaVA Captioning
 
 You need to manually install PLLaVa with the following commands:
@@ -92,6 +93,7 @@ pip install flash-attn --no-build-isolation
 pip install -r ../../../../requirements/requirements-pllava.txt
 ```
 
+
 ### Frame Interpolation
 ```bash
 conda install -c conda-forge opencv
@@ -104,14 +106,36 @@ pip install scenedetect[opencv] --upgrade
 ```
 
 ### OCR
-We need to manualy create new environment for torch==2.0.1 in order to install [MMOCR](https://mmocr.readthedocs.io/en/dev-1.x/get_started/install.html).
-For reference, we install packages of these versions.
-```
-torch==2.0.1
-mmcv==2.0.1
-mmdet==3.1.0
-mmocr==1.0.1
-```
+
+You need to go into `path_to_your_env/lib/python3.10/site-packages/mmdet/__init__.py`
+and change the assert of `mmcv_version < digit_version(mmcv_maximum_version)` to `mmcv_version <= digit_version(mmcv_maximum_version)`.
+
+If you are unsure of your path to the mmdet init file, simply run our [OCR command](../tools/scoring/README.md), wait for the mmdeet assertion error on mmcv versions.
+The error will contain the exact path to the mmdet init file.
+
+
+<!-- We need to manualy create new environment for torch==2.0.1 in order to install [MMOCR](https://mmocr.readthedocs.io/en/dev-1.x/get_started/install.html).
+This is because the current latest MMOCR version (1.0.1) is not compatible with higher versions of mmcv that work with higher torch versions.
+
+```bash
+conda create -n ocr python=3.8
+conda activate ocr
+nvcc --version # Check that you have CUDA 11.8 or 11.7, if not install CUDA first
+pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
+pip install packaging==24.0
+pip install openmim==0.3.9
+mim install mmengine==0.10.4
+mim install mmcv==2.0.1
+mim install mmdet==3.1.0
+mim install mmocr==1.0.1
+pip install colossalai==0.3.6
+
+# install apex
+pip install -U pip
+pip install -U wheel
+pip install setuptools==60.2.0
+pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
+``` -->
 
 
 

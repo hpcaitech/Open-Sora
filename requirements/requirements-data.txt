@@ -45,3 +45,9 @@ imageio-ffmpeg==0.4.9
 # [aesthetic]
 clip @ git+https://github.com/openai/CLIP.git
 decord==0.6.0
+
+# [ocr]
+mmcv==2.1.0
+mmdet==3.1.0
+mmocr==1.0.1
+detectron2 @ git+https://github.com/facebookresearch/detectron2.git@ff53992
