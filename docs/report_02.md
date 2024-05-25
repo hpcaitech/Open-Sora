@@ -21,7 +21,7 @@ We made the following modifications to the original ST-DiT for better training s
 
 - **[Rope embedding](https://arxiv.org/abs/2104.09864) for temporal attention**: Following LLM's best practice, we change the sinusoidal positional encoding to rope embedding for temporal attention since it is also a sequence prediction task.
 - **AdaIN and Layernorm for temporal attention**: we wrap the temporal attention with AdaIN and layernorm as the spatial attention to stabilize the training.
-- **[QK-normalization](https://arxiv.org/abs/2302.05442) with [RMSNorm](https://arxiv.org/abs/1910.07467)**: Following [SD3](https://arxiv.org/pdf/2403.03206.pdf), we appy QK-normalization to the all attention for better training stability in half-precision.
+- **[QK-normalization](https://arxiv.org/abs/2302.05442) with [RMSNorm](https://arxiv.org/abs/1910.07467)**: Following [SD3](https://arxiv.org/pdf/2403.03206.pdf), we apply QK-normalization to the all attention for better training stability in half-precision.
 - **Dynamic input size support and video infomation condition**: To support multi-resolution, aspect ratio, and fps training, we make ST-DiT-2 to accept any input size, and automatically scale positional embeddings. Extending [PixArt-alpha](https://github.com/PixArt-alpha/PixArt-alpha)'s idea, we conditioned on video's height, width, aspect ratio, frame length, and fps.
 - **Extending T5 tokens from 120 to 200**: our caption is usually less than 200 tokens, and we find the model can handle longer text well.
 
