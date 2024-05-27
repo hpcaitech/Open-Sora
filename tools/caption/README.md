@@ -122,7 +122,7 @@ python python_scripts/hf.py # download the weights
 ``` -->
 ### Usage
 
-Since PLLaVA is not fashioned as a package, we will use PYTHONPATH to use it as a package.
+Since PLLaVA is not fashioned as a package, we will use PYTHONPATH to use it.
 
 
 ```bash
@@ -130,7 +130,7 @@ cd .. # step back to pllava_dir
 
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 PYTHONPATH='$PYTHONPATH:OPEN_SORA_HOME/tools/caption/pllava_dir/PLLaVA' \
-nohup /mnt/nfs-207/envs/pllava/bin/python caption_pllava.py \
+nohup python caption_pllava.py \
   --pretrained_model_name_or_path PLLaVA/MODELS/pllava-13b \
   --use_lora \
   --lora_alpha 4 \
