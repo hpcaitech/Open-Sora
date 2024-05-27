@@ -23,14 +23,14 @@ if __name__ == "__main__":
     for res_file in res_files:
         # first check if results is normal
         info_file = res_file.split(res_postfix)[0] + info_postfix
-        with open(info_file, "r", encoding="utf-8") as f:
+        with open(os.path.join(args.score_dir, info_file), "r", encoding="utf-8") as f:
             info = json.load(f)
             assert len(info[0]["video_list"]) > 0, f"Error: {info_file} has 0 video list"
         # read results
-        with open(res_file, "r", encoding="utf-8") as f:
+        with open(os.path.join(args.score_dir, res_file), "r", encoding="utf-8") as f:
             data = json.load(f)
             for key, val in data.items():
-                full_results[key] = val[0]
+                full_results[key] = format(val[0]*100, ".2f")
     
 
     output_file_path = os.path.join(args.score_dir, "all_results.json")
