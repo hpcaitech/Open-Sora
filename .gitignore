@@ -170,6 +170,7 @@ dataset/
 runs/
 checkpoints/
 outputs/
+outputs
 samples/
 samples
 logs/
