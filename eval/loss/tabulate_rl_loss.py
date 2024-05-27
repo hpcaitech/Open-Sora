@@ -14,8 +14,8 @@ from ast import literal_eval
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--log_dir", type=str, default="/home/zhengzangwei/projs/Open-Sora-dev/logs/loss")
-    parser.add_argument("--ckpt_name", type=str, default="epoch0-global_step9000")
+    parser.add_argument("--log_dir", type=str, default="logs/loss")
+    parser.add_argument("--ckpt_name", type=str)
     args = parser.parse_args()
     return args
 
@@ -47,5 +47,7 @@ if __name__ == "__main__":
             loss_info[resolution][frame] = format(loss, ".4f")
 
     # Convert and write JSON object to file
-    with open(os.path.join(output_dir, args.ckpt_name + "_loss.json"), "w") as outfile:
+    output_file_path = os.path.join(output_dir, args.ckpt_name + "_loss.json")
+    with open(output_file_path, "w") as outfile:
         json.dump(loss_info, outfile, indent=4, sort_keys=True)
+    print(f"results saved to: {output_file_path}")
