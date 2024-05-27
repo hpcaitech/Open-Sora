@@ -160,55 +160,54 @@ function run_video_h() { # 23min
 # vbench has 950 samples
 
 VBENCH_BS=1 # 80GB
-VBENCH_FRAMES=51
 VBENCH_H=240
 VBENCH_W=426
 
 function run_vbenck_a() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 0 --end-index 120
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 0 --end-index 120
 }
 
 function run_vbenck_b() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-    --prompt-path assets/texts/VBench/all_dimension.txt --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 120 --end-index 240
+    --prompt-path assets/texts/VBench/all_dimension.txt --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 120 --end-index 240
 }
 
 function run_vbenck_c() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 240 --end-index 360
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 240 --end-index 360
 }
 
 function run_vbenck_d() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 360 --end-index 480
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 360 --end-index 480
 }
 
 function run_vbenck_e() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 480 --end-index 600
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 480 --end-index 600
 }
 
 function run_vbenck_f() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 600 --end-index 720
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 600 --end-index 720
 }
 
 function run_vbenck_g() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 720 --end-index 840
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 720 --end-index 840
 }
 
 function run_vbenck_h() { # 2h
   eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_dimension.txt \
-    --batch-size $VBENCH_BS --num-frames $VBENCH_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 840
+    --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index 840
 }
 
 # vbench-i2v has 1120 samples
