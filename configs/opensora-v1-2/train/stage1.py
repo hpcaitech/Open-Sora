@@ -63,7 +63,7 @@ model = dict(
 )
 vae = dict(
     type="OpenSoraVAE_V1_2",
-    from_pretrained="pretrained_models/vae-pipeline",
+    from_pretrained="/mnt/jfs/sora_checkpoints/vae-pipeline",
     micro_frame_size=17,
     micro_batch_size=4,
 )
