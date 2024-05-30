@@ -517,7 +517,10 @@ def STDiT2_XL_2(from_pretrained=None, **kwargs):
             return model
         else:
             # otherwise, we load the model from hugging face hub
-            return STDiT2.from_pretrained(from_pretrained)
+            config = STDiT2Config.from_pretrained(from_pretrained)
+            config.enable_flash_attn = True
+            config.enable_layernorm_kernel = True
+            return STDiT2.from_pretrained(from_pretrained, config=config)
     else:
         # create a new model
         config = STDiT2Config(
