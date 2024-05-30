@@ -1,3 +1,4 @@
+import gc
 import math
 import os
 from fractions import Fraction
@@ -70,38 +71,42 @@ def read_video(
         audio_frames = []
         audio_timebase = _video_opt.default_timebase
 
+        container = av.open(filename, metadata_errors="ignore")
         try:
-            with av.open(filename, metadata_errors="ignore") as container:
-                if container.streams.audio:
-                    audio_timebase = container.streams.audio[0].time_base
-                if container.streams.video:
-                    video_frames = _read_from_stream(
-                        container,
-                        start_pts,
-                        end_pts,
-                        pts_unit,
-                        container.streams.video[0],
-                        {"video": 0},
-                    )
-                    video_fps = container.streams.video[0].average_rate
-                    # guard against potentially corrupted files
-                    if video_fps is not None:
-                        info["video_fps"] = float(video_fps)
+            if container.streams.audio:
+                audio_timebase = container.streams.audio[0].time_base
+            if container.streams.video:
+                video_frames = _read_from_stream(
+                    container,
+                    start_pts,
+                    end_pts,
+                    pts_unit,
+                    container.streams.video[0],
+                    {"video": 0},
+                )
+                video_fps = container.streams.video[0].average_rate
+                # guard against potentially corrupted files
+                if video_fps is not None:
+                    info["video_fps"] = float(video_fps)
 
-                if container.streams.audio:
-                    audio_frames = _read_from_stream(
-                        container,
-                        start_pts,
-                        end_pts,
-                        pts_unit,
-                        container.streams.audio[0],
-                        {"audio": 0},
-                    )
-                    info["audio_fps"] = container.streams.audio[0].rate
-
+            if container.streams.audio:
+                audio_frames = _read_from_stream(
+                    container,
+                    start_pts,
+                    end_pts,
+                    pts_unit,
+                    container.streams.audio[0],
+                    {"audio": 0},
+                )
+                info["audio_fps"] = container.streams.audio[0].rate
         except av.AVError:
             # TODO raise a warning?
             pass
+        finally:
+            container.close()
+            del container
+            # NOTE: manually garbage collect to close pyav threads
+            gc.collect()
 
         vframes_list = [frame.to_rgb().to_ndarray() for frame in video_frames]
         aframes_list = [frame.to_ndarray() for frame in audio_frames]

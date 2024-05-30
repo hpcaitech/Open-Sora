@@ -1,3 +1,4 @@
+import gc
 import os
 from copy import deepcopy
 from datetime import timedelta
@@ -19,6 +20,7 @@ from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
 from opensora.utils.misc import (
+    Timer,
     all_reduce_mean,
     create_logger,
     create_tensorboard_writer,
@@ -26,7 +28,6 @@ from opensora.utils.misc import (
     get_model_numel,
     requires_grad,
     to_torch_dtype,
-    Timer
 )
 from opensora.utils.train_utils import MaskGenerator, create_colossalai_plugin, update_ema
 
@@ -104,8 +105,6 @@ def main():
         **dataloader_args,
     )
     num_steps_per_epoch = len(dataloader)
-    dataiter = iter(dataloader)
-    next(dataiter)
 
     # ======================================================
     # 3. build model
@@ -365,7 +364,6 @@ def main():
                         save_dir,
                     )
 
-                
                 log_str = f"Rank {dist.get_rank()} | Epoch {epoch} | Step {step} | "
                 for timer in timer_list:
                     log_str += f"{timer.name}: {timer.elapsed_time:.3f}s | "
