@@ -77,6 +77,7 @@ def main():
         sp_size=cfg.get("sp_size", 1),
     )
     booster = Booster(plugin=plugin)
+    torch.set_num_threads(1)
 
     # ======================================================
     # 2. build dataset and dataloader
@@ -103,6 +104,8 @@ def main():
         **dataloader_args,
     )
     num_steps_per_epoch = len(dataloader)
+    dataiter = iter(dataloader)
+    next(dataiter)
 
     # ======================================================
     # 3. build model
