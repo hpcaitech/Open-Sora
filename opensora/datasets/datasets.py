@@ -68,10 +68,9 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
         if file_type == "video":
             # loading
-            vframes, _, infos = read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            vframes, vinfo = read_video(path, backend='cv2')
+            video_fps = vinfo["video_fps"] if 'video_fps' in vinfo else 24
 
-            if "video_fps" in infos:
-                video_fps = infos["video_fps"]
             # Sampling video frames
             video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)
 
@@ -146,9 +145,8 @@ class VariableVideoTextDataset(VideoTextDataset):
         video_fps = 24  # default fps
         if file_type == "video":
             # loading
-            vframes, _, infos = read_video(filename=path, pts_unit="sec", output_format="TCHW")
-            if "video_fps" in infos:
-                video_fps = infos["video_fps"]
+            vframes, vinfo = read_video(path, backend='cv2')
+            video_fps = vinfo["video_fps"] if 'video_fps' in vinfo else 24
 
             # Sampling video frames
             video = temporal_random_crop(vframes, num_frames, self.frame_interval)
