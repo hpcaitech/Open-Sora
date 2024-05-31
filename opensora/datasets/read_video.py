@@ -172,7 +172,7 @@ def read_video_cv2(video_path):
         return frames, vinfo
 
 
-def read_video(video_path, backend='cv2'):
+def read_video(video_path, backend='av'):
     if backend == 'cv2':
         vframes, vinfo = read_video_cv2(video_path)
     elif backend == 'av':
