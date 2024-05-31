@@ -209,9 +209,9 @@ def main():
             ema=ema,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
-            sampler=None if cfg.get("start_from_scratch ", False) else sampler,
+            sampler=None if cfg.get("start_from_scratch", False) else sampler,
         )
-        if not cfg.get("start_from_scratch ", False):
+        if not cfg.get("start_from_scratch", False):
             start_epoch, start_step = ret
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
 

@@ -82,16 +82,16 @@ scheduler = dict(
 
 # Mask settings
 mask_ratios = {
-    "random": 0.2,
-    "intepolate": 0.01,
-    "quarter_random": 0.01,
-    "quarter_head": 0.01,
-    "quarter_tail": 0.01,
-    "quarter_head_tail": 0.01,
-    "image_random": 0.05,
-    "image_head": 0.1,
-    "image_tail": 0.05,
-    "image_head_tail": 0.05,
+    "random": 0.05,
+    "intepolate": 0.005,
+    "quarter_random": 0.005,
+    "quarter_head": 0.005,
+    "quarter_tail": 0.005,
+    "quarter_head_tail": 0.005,
+    "image_random": 0.025,
+    "image_head": 0.05,
+    "image_tail": 0.025,
+    "image_head_tail": 0.025,
 }
 
 # Log settings
@@ -105,6 +105,6 @@ ckpt_every = 200
 # optimization settings
 load = None
 grad_clip = 1.0
-lr = 2e-4
+lr = 1e-4
 ema_decay = 0.99
 adam_eps = 1e-15
