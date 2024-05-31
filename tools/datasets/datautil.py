@@ -542,6 +542,8 @@ def main(args):
     if args.remove_path_duplication:
         assert "path" in data.columns
         data = data.drop_duplicates(subset=["path"])
+    if args.path_subset:
+        data = data[data['path'].str.contains(args.path_subset)]
 
     # processing
     if args.relpath is not None:
@@ -658,6 +660,7 @@ def parse_args():
     parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
     parser.add_argument("--abspath", type=str, default=None, help="modify the path to absolute path by root given")
     parser.add_argument("--path-to-id", action="store_true", help="add id based on path")
+    parser.add_argument("--path-subset", type=str, default=None, help="extract a subset data containing the given `path-subset` value")
 
     # caption filtering
     parser.add_argument(
@@ -739,6 +742,8 @@ def get_output_path(args, input_name):
         name += "_noduppath"
     if args.remove_text_duplication:
         name += "_noduptext"
+    if args.path_subset:
+        name += "_subset"
 
     # caption processing
     if args.refine_llm_caption:
