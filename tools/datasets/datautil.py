@@ -117,8 +117,7 @@ def get_image_info(path, backend="pillow"):
 def get_video_info(path, backend="torchvision"):
     if backend == "torchvision":
         try:
-            # vframes, infos = read_video(path)
-            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="THWC")
+            vframes, infos = read_video(path)
             num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
             if "video_fps" in infos:
                 fps = infos["video_fps"]

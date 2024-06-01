@@ -4,13 +4,15 @@ from glob import glob
 import numpy as np
 import torch
 import torchvision
+from PIL import ImageFile
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
 from opensora.registry import DATASETS
 
-from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, read_file, temporal_random_crop
 from .read_video import read_video
+from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, read_file, temporal_random_crop
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 IMG_FPS = 120
 
 
@@ -68,8 +70,8 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
         if file_type == "video":
             # loading
-            vframes, vinfo = read_video(path, backend='av')
-            video_fps = vinfo["video_fps"] if 'video_fps' in vinfo else 24
+            vframes, vinfo = read_video(path, backend="av")
+            video_fps = vinfo["video_fps"] if "video_fps" in vinfo else 24
 
             # Sampling video frames
             video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)
@@ -145,8 +147,8 @@ class VariableVideoTextDataset(VideoTextDataset):
         video_fps = 24  # default fps
         if file_type == "video":
             # loading
-            vframes, vinfo = read_video(path, backend='av')
-            video_fps = vinfo["video_fps"] if 'video_fps' in vinfo else 24
+            vframes, vinfo = read_video(path, backend="av")
+            video_fps = vinfo["video_fps"] if "video_fps" in vinfo else 24
 
             # Sampling video frames
             video = temporal_random_crop(vframes, num_frames, self.frame_interval)
