@@ -33,9 +33,11 @@ cd Open-Sora
 
 # the default installation is for inference only
 pip install -v . # NOTE: for development mode, run `pip install -v -e .`
+```
 
-# (Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
+(Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
 
+```bash
 # install flash attention
 # set enable_flash_attn=False in config to disable flash attention
 pip install packaging ninja
@@ -73,6 +75,7 @@ pip install opencv-python
 However, if your videos are in av1 codec instead of h264, you need to install ffmpeg (already in our [requirement script](../requirements/requirements-data.txt)), then run the following to make conda support av1 codec:
 
 ```bash
+pip uninstall opencv-python
 conda install -c conda-forge opencv
 ```
 
