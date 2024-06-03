@@ -150,7 +150,7 @@ For CUDA 12.1, you can install the dependencies with the following commands. Oth
 
 ```bash
 # create a virtual env and activate (conda as an example)
-conda create -n opensora python=3.10
+conda create -n opensora python=3.9
 conda activate opensora
 
 # install torch, torchvision and xformers
