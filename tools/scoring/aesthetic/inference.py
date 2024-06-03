@@ -41,6 +41,10 @@ def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
     # filter duplicates
     unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
     meta.loc[unique_indices, column] = flat_scores[unique_indices_idx]
+    
+    # jun 3 quickfix
+    # lose indices in meta not in unique_indices
+    meta = meta.loc[unique_indices]
     return meta
 
 
@@ -134,7 +138,7 @@ def main():
             drop_last=False,
         ),
     )
-
+    
     # compute aesthetic scores
     indices_list = []
     scores_list = []
@@ -155,9 +159,14 @@ def main():
 
         indices_list.extend(indices)
         scores_list.extend(scores_np)
+    
+    # jun 3 quickfix
+    meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column='aes')
+    out_path_local = out_path.replace('.csv', f'_part_{dist.get_rank()}.csv')
+    meta_local.to_csv(out_path_local, index=False)
 
     # wait for all ranks to finish data processing
-    dist.barrier()
+    dist.barrier()  
 
     gathered_list = [None] * dist.get_world_size()
     dist.all_gather_object(gathered_list, (indices_list, scores_list))
