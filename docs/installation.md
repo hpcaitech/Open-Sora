@@ -26,6 +26,7 @@ pip install -r requirements/requirements-cu121.txt
 ```
 
 If you are using different CUDA versions, you need to manually install `torch`, `torchvision` and `xformers`. You can find the compatible distributions according to the links below.
+
 - PyTorch: choose install commands from [PyTorch installation page](https://pytorch.org/get-started/locally/) based on your own CUDA version.
 - xformers: choose install commands from [xformers repo](https://github.com/facebookresearch/xformers?tab=readme-ov-file#installing-xformers) based on your own CUDA version.
 
@@ -57,12 +58,10 @@ pip install flash-attn --no-build-isolation
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
 
-
-
 ## Evaluation
 
+### Step 1: Install Requirements
 
-## Step 1: Install Requirements
 To conduct evaluation, run the following command to install requirements:
 
 ```bash
@@ -70,7 +69,8 @@ pip install -v .[eval]
 # For development:`pip install -v -e .[eval]`
 ```
 
-## Step 2: Install VBench
+### Step 2: Install VBench
+
 You need to manually install [VBench](https://github.com/Vchitect/VBench):
 
 ```bash
@@ -79,7 +79,7 @@ pip install --no-deps vbench==0.1.1
 export PATH="/path/to/vbench:$PATH"
 ```
 
-#### Step 3: Install `cupy` for Potential VAE Errors
+### Step 3: Install `cupy` for Potential VAE Errors
 
 You need to mannually install [cupy](https://docs.cupy.dev/en/stable/install.html).
 
@@ -95,9 +95,7 @@ import torchvision.transforms.functional_tensor as F_t
 import torchvision.transforms._functional_tensor as F_t
 ```
 
-
 ## Data Processing
-
 
 ### Step 1: Install Requirements
 
