@@ -1,4 +1,4 @@
-import cv2
+import cv2  # isort:skip
 
 import argparse
 import os
@@ -16,6 +16,8 @@ from tqdm import tqdm
 
 from tools.datasets.utils import extract_frames
 from tools.scoring.optical_flow.unimatch import UniMatch
+
+# torch.backends.cudnn.enabled = False # This line enables large batch, but the speed is similar
 
 
 def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
@@ -150,8 +152,8 @@ def main():
         scores_list.extend(flow_scores)
 
     # jun 3 quickfix
-    meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column='flow')
-    out_path_local = out_path.replace('.csv', f'_part_{dist.get_rank()}.csv')
+    meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column="flow")
+    out_path_local = out_path.replace(".csv", f"_part_{dist.get_rank()}.csv")
     meta_local.to_csv(out_path_local, index=False)
 
     # wait for all ranks to finish data processing

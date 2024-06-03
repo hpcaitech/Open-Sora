@@ -1,6 +1,6 @@
 # adapted from https://github.com/christophschuhmann/improved-aesthetic-predictor/blob/main/simple_inference.py
-import os
 import argparse
+import os
 from datetime import timedelta
 
 import clip
@@ -10,9 +10,9 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, DistributedSampler
 from einops import rearrange
 from PIL import Image
+from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.datasets.folder import pil_loader
 from tqdm import tqdm
 
@@ -169,6 +169,7 @@ def main():
     dist.barrier()  
 
     gathered_list = [None] * dist.get_world_size()
+    breakpoint()
     dist.all_gather_object(gathered_list, (indices_list, scores_list))
     if dist.get_rank() == 0:
         meta_new = merge_scores(gathered_list, dataset.meta, column='aes')
