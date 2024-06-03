@@ -3,26 +3,33 @@
 Requirements are listed in `requirements` folder.
 Note that besides these packages, some packages needs to be mannually installed, and are detailed in the following sections.
 
-## Different CUDA versions
+## Training & Inference
 
-You need to manually install `torch`, `torchvision` and `xformers` for different CUDA versions.
+You need to install `opensora` for training and inference. You can follow the steps below for installation. We also provide guideline for different CUDA versions for compatiblity.
 
-For CUDA 12.1,
+Please note that the default installation is for training and inference only. Other optional dependencies are detailed in the sections [Data Proessing](#data-processing) and [Evaluation](#evaluation) respectively.
+
+### Step 1: Install PyTorch and xformers
+
+First of all, make sure you have the latest build toolkit for Python.
 
 ```bash
-pip install -U pip
-# update, otherwise may run into weird issues with apex
-pip install -U setuptools
-pip install -U wheel
+# update build libs
+pip install -U pip setuptools wheel
+```
 
+If you are using **CUDA 12.1**,  you can execute the command below to directly install PyTorch, torchvision and xformers.
+
+```bash
 # install pytorch, torchvision, and xformers
 pip install -r requirements/requirements-cu121.txt
 ```
 
-For other CUDA versions, you need to manually install the corresponding packages.
-
+If you are using different CUDA versions, you need to manually install `torch`, `torchvision` and `xformers`. You can find the compatible distributions according to the links below.
 - PyTorch: choose install commands from [PyTorch installation page](https://pytorch.org/get-started/locally/) based on your own CUDA version.
 - xformers: choose install commands from [xformers repo](https://github.com/facebookresearch/xformers?tab=readme-ov-file#installing-xformers) based on your own CUDA version.
+
+### Step 2: Install Open-Sora
 
 Then, you can install the project for training and inference with the following commands:
 
@@ -35,7 +42,9 @@ cd Open-Sora
 pip install -v . # NOTE: for development mode, run `pip install -v -e .`
 ```
 
-(Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
+### Step 3: Install Acceleration Tools (Optional)
+
+This is optional but recommended for faster speed, especially for training. To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
 
 ```bash
 # install flash attention
@@ -43,17 +52,54 @@ pip install -v . # NOTE: for development mode, run `pip install -v -e .`
 pip install packaging ninja
 pip install flash-attn --no-build-isolation
 
-
 # install apex, the compilation will take a long time
 # set enable_layernorm_kernel=False in config to disable apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
 
-## Optional Dependencies
 
-The default installation is for inference only. Other optional dependencies are detailed in sections below, namel "Data Dependencies" and "Evaluation Dependencies".
 
-### Data Dependencies
+## Evaluation
+
+
+## Step 1: Install Requirements
+To conduct evaluation, run the following command to install requirements:
+
+```bash
+pip install -v .[eval]
+# For development:`pip install -v -e .[eval]`
+```
+
+## Step 2: Install VBench
+You need to manually install [VBench](https://github.com/Vchitect/VBench):
+
+```bash
+pip install --no-deps vbench==0.1.1
+# If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
+export PATH="/path/to/vbench:$PATH"
+```
+
+#### Step 3: Install `cupy` for Potential VAE Errors
+
+You need to mannually install [cupy](https://docs.cupy.dev/en/stable/install.html).
+
+- For CUDA v11.2~11.8 (x86_64 / aarch64), `pip install cupy-cuda11x`
+- For CUDA v12.x (x86_64 / aarch64), `pip install cupy-cuda12x`
+
+Note that for VAE evaluation, you may run into error with `ModuleNotFoundError: No module named 'torchvision.transforms.functional_tensor'`, in this case, you need to go to the corresponding file (`.../pytorchvideo/transforms/augmentations.py`) reporting this error, then change as following:
+
+```python
+# find the original line:
+import torchvision.transforms.functional_tensor as F_t
+# change to:
+import torchvision.transforms._functional_tensor as F_t
+```
+
+
+## Data Processing
+
+
+### Step 1: Install Requirements
 
 First, run the following command to install requirements:
 
@@ -64,7 +110,7 @@ pip install -v .[data]
 
 Next, you need to manually install the packages listed in the following sections specific to your data processing needs.
 
-#### OpenCV
+### Step 2: Install OpenCV
 
 To get image and video information, we use [opencv-python](https://github.com/opencv/opencv-python). You can install it with pip:
 
@@ -78,6 +124,10 @@ However, if your videos are in av1 codec instead of h264, you need to install ff
 pip uninstall opencv-python
 conda install -c conda-forge opencv
 ```
+
+### Step 3: Install Task-specific Dependencies
+
+We have a variety of data processing pipelines, each requires its own dependencies. You can refer to the sections below to install dependencies according to your own needs.
 
 #### LLaVA Captioning
 
@@ -125,40 +175,3 @@ and change the assert of `mmcv_version < digit_version(mmcv_maximum_version)` to
 
 If you are unsure of your path to the mmdet init file, simply run our [OCR command](../tools/scoring/README.md), wait for the mmdeet assertion error on mmcv versions.
 The error will contain the exact path to the mmdet init file.
-
-### Evaluation Dependencies
-
-First, run the following command to install requirements:
-
-```bash
-pip install -v .[eval]
-# For development:`pip install -v -e .[eval]`
-```
-
-Next, you need to manually install the packages listed in the following sections specific to different evaluation methods.
-
-#### VBench
-
-You need to manually install [VBench](https://github.com/Vchitect/VBench):
-
-```bash
-pip install --no-deps vbench==0.1.1
-# If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
-export PATH="/path/to/vbench:$PATH"
-```
-
-#### VAE
-
-You need to mannually install [cupy](https://docs.cupy.dev/en/stable/install.html).
-
-- For CUDA v11.2~11.8 (x86_64 / aarch64), `pip install cupy-cuda11x`
-- For CUDA v12.x (x86_64 / aarch64), `pip install cupy-cuda12x`
-
-Note that for VAE evaluation, you may run into error with `ModuleNotFoundError: No module named 'torchvision.transforms.functional_tensor'`, in this case, you need to go to the corresponding file (`.../pytorchvideo/transforms/augmentations.py`) reporting this error, then change as following:
-
-```python
-# find the original line:
-import torchvision.transforms.functional_tensor as F_t
-# change to:
-import torchvision.transforms._functional_tensor as F_t
-```
