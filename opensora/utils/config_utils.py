@@ -70,6 +70,7 @@ def parse_args(training=False):
         parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
         parser.add_argument("--start-from-scratch", action="store_true", help="start training from scratch")
+        parser.add_argument("--warmup-steps", default=None, type=int, help="warmup steps")
 
     return parser.parse_args()
 
