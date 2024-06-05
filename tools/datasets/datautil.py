@@ -10,11 +10,12 @@ from glob import glob
 import cv2
 import numpy as np
 import pandas as pd
-import torchvision
 from PIL import Image
 from tqdm import tqdm
+import torchvision
 
 from .utils import IMG_EXTENSIONS
+from opensora.datasets.read_video import read_video
 
 tqdm.pandas()
 
@@ -116,7 +117,7 @@ def get_image_info(path, backend="pillow"):
 def get_video_info(path, backend="torchvision"):
     if backend == "torchvision":
         try:
-            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            vframes, infos = read_video(path)
             num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
             if "video_fps" in infos:
                 fps = infos["video_fps"]
@@ -406,6 +407,32 @@ def load_caption(path, ext):
 
 
 # ======================================================
+# --clean-caption
+# ======================================================
+
+DROP_SCORE_PROB = 0.2
+
+
+def score_to_text(data):
+    text = data["text"]
+    scores = []
+    # aesthetic
+    if "aes" in data:
+        aes = data["aes"]
+        if random.random() > DROP_SCORE_PROB:
+            score_text = f"aesthetic score: {aes:.1f}"
+            scores.append(score_text)
+    if "flow" in data:
+        flow = data["flow"]
+        if random.random() > DROP_SCORE_PROB:
+            score_text = f"motion score: {flow:.1f}"
+            scores.append(score_text)
+    if len(scores) > 0:
+        text = f"{text} [{', '.join(scores)}]"
+    return text
+
+
+# ======================================================
 # read & write
 # ======================================================
 
@@ -540,6 +567,8 @@ def main(args):
     if args.remove_path_duplication:
         assert "path" in data.columns
         data = data.drop_duplicates(subset=["path"])
+    if args.path_subset:
+        data = data[data["path"].str.contains(args.path_subset)]
 
     # processing
     if args.relpath is not None:
@@ -565,6 +594,8 @@ def main(args):
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
+    if args.score_to_text:
+        data["text"] = apply(data, score_to_text, axis=1)
 
     # sort
     if args.sort is not None:
@@ -656,6 +687,9 @@ def parse_args():
     parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
     parser.add_argument("--abspath", type=str, default=None, help="modify the path to absolute path by root given")
     parser.add_argument("--path-to-id", action="store_true", help="add id based on path")
+    parser.add_argument(
+        "--path-subset", type=str, default=None, help="extract a subset data containing the given `path-subset` value"
+    )
 
     # caption filtering
     parser.add_argument(
@@ -678,6 +712,7 @@ def parse_args():
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
     )
     parser.add_argument("--append-text", type=str, default=None, help="append text to the caption")
+    parser.add_argument("--score-to-text", action="store_true", help="convert score to text")
 
     # score filtering
     parser.add_argument("--fmin", type=int, default=None, help="filter the dataset by minimum number of frames")
@@ -737,6 +772,8 @@ def get_output_path(args, input_name):
         name += "_noduppath"
     if args.remove_text_duplication:
         name += "_noduptext"
+    if args.path_subset:
+        name += "_subset"
 
     # caption processing
     if args.refine_llm_caption:
@@ -749,6 +786,8 @@ def get_output_path(args, input_name):
         name += "_ntoken"
     if args.append_text is not None:
         name += "_appendtext"
+    if args.score_to_text:
+        name += "_score2text"
 
     # score filtering
     if args.fmin is not None:
