@@ -23,7 +23,6 @@ echo "OCT_FRAMES=${OCT_FRAMES}"
 
 
 CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
-CMD_REF="python scripts/inference-long.py configs/opensora-v1-2/inference/sample.py"
 if [[ $CKPT == *"ema"* ]]; then
   parentdir=$(dirname $CKPT)
   CKPT_BASE=$(basename $parentdir)_ema
@@ -133,14 +132,14 @@ function run_video_g() {
 
 function run_video_h() { # 23min
   # 3.1 image-conditioned long video generation
-  eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_16x240x426 \
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_16x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames $NUM_FRAMES --image-size 240 426 \
     --loop 5 --condition-frame-length 4 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
-  eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames $NUM_FRAMES --image-size 240 426 \
     --loop 5 --condition-frame-length 16 \
@@ -148,7 +147,7 @@ function run_video_h() { # 23min
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   # 3.2
-  eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_128x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
     --num-frames $NUM_FRAMES  --image-size 240 426 \
     --loop 1 \
@@ -215,56 +214,56 @@ VBENCH_I2V_H=256
 VBENCH_I2V_W=256
 
 function run_vbenck_i2v_a() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 0 --end-index 140 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_b() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 140 --end-index 280 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_c() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 280 --end-index 420 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_d() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 420 --end-index 560 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_e() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 560 --end-index 700 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_f() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 700 --end-index 840 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_g() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 840 --end-index 980 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_h() {
-  eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 980 \
     --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
