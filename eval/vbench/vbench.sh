@@ -4,9 +4,12 @@ set -e
 
 # Base path for videos
 videos_path=$1
-videos_base=$(basename $videos_path)
+model_path=$2
+output_path=${model_path}/eval/vbench
+mkdir -p ${output_path}
+# videos_base=$(basename $videos_path)
 json_path=./eval/vbench/VBench_full_info.json
-output_path=./evaluation_results/$videos_base
+# output_path=./evaluation_results/$videos_base
 
 # Define the dimension list
 dimensions=(

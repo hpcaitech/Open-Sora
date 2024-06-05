@@ -14,7 +14,7 @@ from ast import literal_eval
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--log_dir", type=str, default="logs/loss")
+    parser.add_argument("--log_dir", type=str)
     parser.add_argument("--ckpt_name", type=str)
     args = parser.parse_args()
     return args
@@ -30,7 +30,7 @@ if __name__ == "__main__":
         os.makedirs(output_dir)
 
     files = os.listdir(args.log_dir)
-    files = [x for x in files if args.ckpt_name in x]
+    files = ["img.log", "video_144p.log", "video_240p.log", "video_360p.log", "video_480p.log", "video_720p.log"]
 
     loss_info = {}
 
