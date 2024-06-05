@@ -13,7 +13,8 @@ if [[ $CKPT == *"ema"* ]]; then
 else
     CKPT_BASE=$(basename $CKPT)
 fi
-LOG_BASE=logs/sample/${MODEL_NAME}_${CKPT_BASE}
+LOG_BASE=logs/samples/${MODEL_NAME}_${CKPT_BASE}
+mkdir -p logs/samples
 echo "Logging to $LOG_BASE"
 
 GPUS=(0 1 2 3 4 5 6 7)
