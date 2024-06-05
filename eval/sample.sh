@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# set -x
+set -x
 set -e
 
 CKPT=$1
@@ -22,7 +22,6 @@ echo "QUAD_FRAMES=${QUAD_FRAMES}"
 echo "OCT_FRAMES=${OCT_FRAMES}"
 
 
-
 CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
 CMD_REF="python scripts/inference-long.py configs/opensora-v1-2/inference/sample.py"
 if [[ $CKPT == *"ema"* ]]; then
@@ -31,7 +30,7 @@ if [[ $CKPT == *"ema"* ]]; then
 else
   CKPT_BASE=$(basename $CKPT)
 fi
-OUTPUT="./samples/samples_${MODEL_NAME}_${CKPT_BASE}"
+OUTPUT="/mnt/jfs-hdd/sora/samples/samples_${MODEL_NAME}_${CKPT_BASE}"
 start=$(date +%s)
 DEFAULT_BS=1
 
