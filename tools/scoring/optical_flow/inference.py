@@ -1,6 +1,7 @@
 import cv2  # isort:skip
 
 import argparse
+import gc
 import os
 from datetime import timedelta
 
@@ -38,8 +39,7 @@ def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
     unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
     meta.loc[unique_indices, column] = flat_scores[unique_indices_idx]
 
-    # jun 3 quickfix
-    # lose indices in meta not in unique_indices
+    # drop indices in meta not in unique_indices
     meta = meta.loc[unique_indices]
     return meta
 
@@ -51,30 +51,28 @@ class VideoTextDataset(torch.utils.data.Dataset):
         self.frame_inds = frame_inds
 
     def __getitem__(self, index):
-        row = self.meta.iloc[index]
-        images = extract_frames(row["path"], frame_inds=self.frame_inds, backend="opencv")
+        sample = self.meta.iloc[index]
+        path = sample["path"]
+
+        # extract frames
+        images = extract_frames(path, frame_inds=self.frame_inds, backend="opencv")
 
         # transform
-        images = torch.stack([pil_to_tensor(x) for x in images])  # shape: [N, C, H, W]; dtype: torch.uint8
+        images = torch.stack([pil_to_tensor(x) for x in images])
+
+        # stack
+        # shape: [N, C, H, W]; dtype: torch.uint8
         images = images.float()
         H, W = images.shape[-2:]
         if H > W:
             images = rearrange(images, "N C H W -> N C W H")
         images = F.interpolate(images, size=(320, 576), mode="bilinear", align_corners=True)
 
-        return images, index
+        ret = dict(index=index, images=images)
+        return ret
 
     def __len__(self):
         return len(self.meta)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
-    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
-    args = parser.parse_args()
-    return args
 
 
 def main():
@@ -124,10 +122,11 @@ def main():
     indices_list = []
     scores_list = []
     model.eval()
-    for images, indices in tqdm(dataloader, disable=dist.get_rank() != 0):
-        images = images.to(device)
-        B = images.shape[0]
+    for batch in tqdm(dataloader, disable=dist.get_rank() != 0):
+        indices = batch["index"]
+        images = batch["images"].to(device, non_blocking=True)
 
+        B = images.shape[0]
         batch_0 = rearrange(images[:, :-1], "B N C H W -> (B N) C H W").contiguous()
         batch_1 = rearrange(images[:, 1:], "B N C H W -> (B N) C H W").contiguous()
 
@@ -148,10 +147,10 @@ def main():
             flow_scores = flow_maps.abs().mean(dim=[1, 2, 3, 4])
             flow_scores = flow_scores.tolist()
 
-        indices_list.extend(indices)
+        indices_list.extend(indices.tolist())
         scores_list.extend(flow_scores)
 
-    # jun 3 quickfix
+    # save local results
     meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column="flow")
     out_path_local = out_path.replace(".csv", f"_part_{dist.get_rank()}.csv")
     meta_local.to_csv(out_path_local, index=False)
@@ -159,12 +158,23 @@ def main():
     # wait for all ranks to finish data processing
     dist.barrier()
 
+    torch.cuda.empty_cache()
+    gc.collect()
     gathered_list = [None] * dist.get_world_size()
     dist.all_gather_object(gathered_list, (indices_list, scores_list))
     if dist.get_rank() == 0:
         meta_new = merge_scores(gathered_list, dataset.meta, column="flow")
         meta_new.to_csv(out_path, index=False)
         print(f"New meta with optical flow scores saved to '{out_path}'.")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
+    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    args = parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
