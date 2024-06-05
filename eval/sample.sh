@@ -212,7 +212,6 @@ function run_vbenck_h() { # 2h
 
 # vbench-i2v has 1120 samples
 
-VBENCH_I2V_FRAMES=16
 VBENCH_I2V_H=256
 VBENCH_I2V_W=256
 
@@ -220,56 +219,56 @@ function run_vbenck_i2v_a() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 0 --end-index 140 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_b() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 140 --end-index 280 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_c() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 280 --end-index 420 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_d() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 420 --end-index 560 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_e() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 560 --end-index 700 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_f() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 700 --end-index 840 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_g() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 840 --end-index 980 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 function run_vbenck_i2v_h() {
   eval $CMD_REF --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
     --prompt-path assets/texts/VBench/all_i2v.txt \
     --start-index 980 \
-    --num-frames $VBENCH_I2V_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
 }
 
 ### Main
