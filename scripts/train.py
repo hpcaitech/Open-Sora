@@ -17,6 +17,7 @@ from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
+from opensora.utils.lr_scheduler import LinearWarmupLR
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
 from opensora.utils.misc import (
@@ -169,7 +170,13 @@ def main():
         weight_decay=cfg.get("weight_decay", 0),
         eps=cfg.get("adam_eps", 1e-8),
     )
-    lr_scheduler = None
+
+    warmup_steps = cfg.get("warmup_steps", None)
+
+    if warmup_steps is None:
+        lr_scheduler = None
+    else:
+        lr_scheduler = LinearWarmupLR(optimizer, warmup_steps=cfg.get("warmup_steps"))
 
     # == additional preparation ==
     if cfg.get("grad_checkpoint", False):
@@ -288,6 +295,10 @@ def main():
                     booster.backward(loss=loss, optimizer=optimizer)
                     optimizer.step()
                     optimizer.zero_grad()
+
+                    # update learning rate
+                    if lr_scheduler is not None:
+                        lr_scheduler.step()           
                     coordinator.block_all()
                 timer_list.append(backward_t)
 
@@ -323,6 +334,7 @@ def main():
                                 "loss": loss.item(),
                                 "avg_loss": avg_loss,
                                 "acc_step": acc_step,
+                                "lr": optimizer.param_groups[0]["lr"],
                                 "move_data_time": move_data_t.elapsed_time,
                                 "encode_time": encode_t.elapsed_time,
                                 "mask_time": mask_t.elapsed_time,
