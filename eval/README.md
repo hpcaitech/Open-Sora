@@ -34,6 +34,11 @@ To launch multiple jobs at once, use the following script.
 bash eval/loss/launch.sh /path/to/ckpt model_name
 ```
 
+To obtain an organized list of scores:
+```bash
+python eval/loss/tabulate_rl_loss.py --log_dir path/to/log/dir
+```
+
 ## VBench
 
 [VBench](https://github.com/Vchitect/VBench) is a benchmark for short text to video generation. We provide a script for easily generating samples required by VBench.
@@ -50,12 +55,12 @@ bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name
 After generation, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies". Then, run the following commands to evaluate the generated samples.
 
 ```bash
-bash eval/vbench/vbench.sh /path/to/video_folder
+bash eval/vbench/vbench.sh /path/to/video_folder /path/to/model/ckpt
 ```
 
 Finally, we obtain the scaled scores for the model by:
 ```bash
-python eval/vbench/tabulate_vbench_scores.py --score_dir path/to/evaluation_results/dir
+python eval/vbench/tabulate_vbench_scores.py --score_dir path/to/score/dir
 ```
 
 ## VBench-i2v
@@ -70,9 +75,8 @@ bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -5a
 # launch 8 jobs at once
 bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name
 
-# Step 2: run vbench to evaluate the generated samples 
+# Step 2: run vbench to evaluate the generated samples
 python eval/vbench_i2v/vbench_i2v.py
-python eval/vbench_i2v/vbench_video_quality.py 
 
 # Step 3: obtain the scaled scores
 python eval/vbench_i2v/tabulate_vbench_i2v_scores.py --score_dir path/to/evaluation_results/dir
