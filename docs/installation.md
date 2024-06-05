@@ -74,7 +74,7 @@ pip install -v .[eval]
 You need to manually install [VBench](https://github.com/Vchitect/VBench):
 
 ```bash
-pip install --no-deps vbench==0.1.1
+pip install --no-deps vbench==0.1.2
 # If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
 export PATH="/path/to/vbench:$PATH"
 ```

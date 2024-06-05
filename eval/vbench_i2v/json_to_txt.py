@@ -10,7 +10,7 @@ save_path = "all_i2v.txt"
 
 data = json.load(open(json_file))
 txt = [
-    f'{x["prompt_en"]}{{"reference_path": "{os.path.join(cache_root, resolution, x["image_name"])}", "mask_strategy": "0,0,0,1,0"}}'
+    f'{x["prompt_en"]}{{"reference_path": "{os.path.join(cache_root, resolution, x["image_name"])}", "mask_strategy": "0"}}'
     for x in data
 ]
 with open(save_path, "w") as f:
