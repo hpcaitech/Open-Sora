@@ -29,7 +29,7 @@ if __name__ == "__main__":
     args = parse_args()
     output_dir = os.path.join(args.model_ckpt, "eval", "vbench_i2v")
     os.makedirs(output_dir, exist_ok=True)
-    video_path = args.video_path
+    video_path = args.video_folder
 
     my_VBench_I2V = VBenchI2V("cuda", FULL_INFO_PATH, "evaluation_results")
     my_VBench_I2V.evaluate(videos_path=video_path, name="vbench_i2v", dimension_list=I2V_DIMENSIONS, resolution="1-1")
