@@ -20,6 +20,7 @@ lingua-language-detector==2.0.2
 imageio>=2.34.1
 
 # [aesthetic]
+setuptools==68.2.2
 clip @ git+https://github.com/openai/CLIP.git
 
 # [ocr]
