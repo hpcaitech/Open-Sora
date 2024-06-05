@@ -42,9 +42,9 @@ First, generate the relevant videos with the following commands:
 
 ```bash
 # vbench tasks (4a 4b 4c ...)
-bash eval/sample.sh /path/to/ckpt  -4a
+bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log  -4a
 # launch 8 jobs at once (you must read the script to understand the details)
-bash eval/vbench/launch.sh /path/to/ckpt
+bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name
 ```
 
 After generation, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies". Then, run the following commands to evaluate the generated samples.
@@ -53,11 +53,31 @@ After generation, install the VBench package following our [installation](../doc
 bash eval/vbench/vbench.sh /path/to/video_folder
 ```
 
+Finally, we obtain the scaled scores for the model by:
+```bash
+python eval/vbench/tabulate_vbench_scores.py --score_dir path/to/evaluation_results/dir
+```
+
 ## VBench-i2v
 
 [VBench-i2v](https://github.com/Vchitect/VBench/tree/master/vbench2_beta_i2v) is a benchmark for short image to video generation (beta version).
+Similarly, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies". Then, run the following commands to evaluate the generated samples.
 
-TBD
+```bash
+# Step 1: generate the relevant videos
+# vbench i2v tasks (5a 5b 5c ...)
+bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -5a
+# launch 8 jobs at once
+bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name
+
+# Step 2: run vbench to evaluate the generated samples 
+python eval/vbench_i2v/vbench_i2v.py
+python eval/vbench_i2v/vbench_video_quality.py 
+
+# Step 3: obtain the scaled scores
+python eval/vbench_i2v/tabulate_vbench_i2v_scores.py --score_dir path/to/evaluation_results/dir
+
+```
 
 ## VAE
 

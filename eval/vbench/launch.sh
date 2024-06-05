@@ -5,7 +5,7 @@ set -e
 
 CKPT=$1
 MODEL_NAME=$2
-NUM_FRAMES=51
+NUM_FRAMES=$3
 
 if [[ $CKPT == *"ema"* ]]; then
     parentdir=$(dirname $CKPT)
