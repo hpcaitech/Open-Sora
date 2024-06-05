@@ -1,6 +1,7 @@
 import os
 
 import cv2
+import numpy as np
 from PIL import Image
 
 IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
