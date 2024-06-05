@@ -4,8 +4,8 @@ set -x
 set -e
 
 CKPT=$1
-NUM_FRAMES=51
-MODEL_NAME=$2
+NUM_FRAMES=$2
+MODEL_NAME=$3
 
 if [[ $CKPT == *"ema"* ]]; then
     parentdir=$(dirname $CKPT)
@@ -13,7 +13,6 @@ if [[ $CKPT == *"ema"* ]]; then
 else
     CKPT_BASE=$(basename $CKPT)
 fi
-# LOG_BASE=logs/sample/${MODEL_NAME}_${CKPT_BASE}
 LOG_BASE=$(dirname $CKPT)/eval
 echo "Logging to $LOG_BASE"
 
