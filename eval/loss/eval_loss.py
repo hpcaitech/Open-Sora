@@ -31,14 +31,6 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
-    # == device and dtype ==
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    cfg_dtype = cfg.get("dtype", "fp32")
-    assert cfg_dtype in ["fp16", "bf16", "fp32"], f"Unknown mixed precision {cfg_dtype}"
-    dtype = to_torch_dtype(cfg.get("dtype", "bf16"))
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-
     # == init distributed env ==
     colossalai.launch_from_torch({})
     DistCoordinator()
@@ -47,7 +39,7 @@ def main():
 
     # == init logger ==
     logger = create_logger()
-    logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
+    logger.info("Eval loss configuration:\n %s", pformat(cfg.to_dict()))
 
     # ======================================================
     # build model & load weights
