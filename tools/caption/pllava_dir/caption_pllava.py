@@ -18,7 +18,6 @@ import transformers
 import pandas as pd
 import itertools
 from transformers.feature_extraction_utils import BatchFeature
-from tofiletimer import ToFileTimer
 from tasks.eval.model_utils import load_pllava
 from tasks.eval.eval_utils import Conversation
 
@@ -39,18 +38,16 @@ RESOLUTION = 672 #
 def pllava_answer(conv: Conversation, model, processor, video_list, do_sample=True, max_new_tokens=200, num_beams=1, min_length=1, top_p=0.9, repetition_penalty=1.0, length_penalty=1, temperature=1.0, stop_criteria_keywords=None, print_res=False):
     # torch.cuda.empty_cache()
     prompt = conv.get_prompt()
-    with ToFileTimer('processing inputs', os.getenv('TIME_LOG')):
-        inputs_list = [processor(text=prompt, images=video, return_tensors="pt") for video in video_list]
-        inputs_batched = dict() # add batch dimension by cat
-        for input_type in list(inputs_list[0].keys()):
-            inputs_batched[input_type] = torch.cat([inputs[input_type] for inputs in inputs_list])
-        inputs_batched = BatchFeature(inputs_batched, tensor_type="pt").to(model.device)
-    
+    inputs_list = [processor(text=prompt, images=video, return_tensors="pt") for video in video_list]
+    inputs_batched = dict() # add batch dimension by cat
+    for input_type in list(inputs_list[0].keys()):
+        inputs_batched[input_type] = torch.cat([inputs[input_type] for inputs in inputs_list])
+    inputs_batched = BatchFeature(inputs_batched, tensor_type="pt").to(model.device)
+
     with torch.no_grad():
-        with ToFileTimer('generate', os.getenv('TIME_LOG')):
-            output_texts = model.generate(**inputs_batched, media_type='video',
-                                        do_sample=do_sample, max_new_tokens=max_new_tokens, num_beams=num_beams, min_length=min_length, 
-                                        top_p=top_p, repetition_penalty=repetition_penalty, length_penalty=length_penalty, temperature=temperature)
+        output_texts = model.generate(**inputs_batched, media_type='video',
+                                    do_sample=do_sample, max_new_tokens=max_new_tokens, num_beams=num_beams, min_length=min_length, 
+                                    top_p=top_p, repetition_penalty=repetition_penalty, length_penalty=length_penalty, temperature=temperature)
         output_texts = processor.batch_decode(output_texts, skip_special_tokens=True, clean_up_tokenization_spaces=False)
     for i in range(len(output_texts)):
         if print_res: # debug usage
