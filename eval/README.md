@@ -79,6 +79,8 @@ bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name
 python eval/vbench_i2v/vbench_i2v.py
 
 # Step 3: obtain the scaled scores
+def load_i2v_dimension_info(json_dir, dimension, lang, resolution):
+# Note that if you need to go to `your_conda_env_path/lib/python3.x/site-packages/vbench2_beta_i2v/utils.py` and change the harded-coded var `image_root` in the `load_i2v_dimension_info` function to your appropriate image folder.
 python eval/vbench_i2v/tabulate_vbench_i2v_scores.py --score_dir path/to/evaluation_results/dir
 
 ```

@@ -1,10 +1,9 @@
 import argparse
 import os
 
-from vbench import VBench
 from vbench2_beta_i2v import VBenchI2V
 
-FULL_INFO_PATH = "vbench2_beta_i2v/vbench2_i2v_full_info.json"
+FULL_INFO_PATH = "eval/vbench_i2v/vbench2_i2v_full_info.json"
 VIDEO_QUALITY_DIMENSIONS = [
     "subject_consistency",
     "background_consistency",
@@ -31,12 +30,12 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     video_path = args.video_folder
 
-    my_VBench_I2V = VBenchI2V("cuda", FULL_INFO_PATH, "evaluation_results")
+    my_VBench_I2V = VBenchI2V("cuda", FULL_INFO_PATH, output_dir)
     my_VBench_I2V.evaluate(videos_path=video_path, name="vbench_i2v", dimension_list=I2V_DIMENSIONS, resolution="1-1")
 
-    my_VBench = VBench("cuda", FULL_INFO_PATH, output_dir)
-    my_VBench.evaluate(
-        videos_path=video_path,
-        name="vbench_video_quality",
-        dimension_list=VIDEO_QUALITY_DIMENSIONS,
-    )
+    # my_VBench = VBench("cuda", FULL_INFO_PATH, output_dir)
+    # my_VBench.evaluate(
+    #     videos_path=video_path,
+    #     name="vbench_video_quality",
+    #     dimension_list=VIDEO_QUALITY_DIMENSIONS,
+    # )

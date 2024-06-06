@@ -17,7 +17,7 @@ else
 fi
 # LOG_BASE=logs/loss/${MODEL_NAME}_${CKPT_BASE}
 # mkdir -p logs/loss
-LOG_BASE=$(dirname $CKPT)/eval
+LOG_BASE=$(dirname $CKPT_PATH)/eval
 echo "Logging to $LOG_BASE"
 
 
