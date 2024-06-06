@@ -15,7 +15,6 @@ from ast import literal_eval
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log_dir", type=str)
-    parser.add_argument("--ckpt_name", type=str)
     args = parser.parse_args()
     return args
 
@@ -30,7 +29,8 @@ if __name__ == "__main__":
         os.makedirs(output_dir)
 
     files = os.listdir(args.log_dir)
-    files = ["img.log", "video_144p.log", "video_240p.log", "video_360p.log", "video_480p.log", "video_720p.log"]
+    # files = ["img.log", "video_144p.log", "video_240p.log", "video_360p.log", "video_480p.log", "video_720p.log"]
+    files = ["img.log", "144p_vid.log", "240p_vid.log", "360p_vid.log", "480p_vid.log", "720p_vid.log"]
 
     loss_info = {}
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
             loss_info[resolution][frame] = format(loss, ".4f")
 
     # Convert and write JSON object to file
-    output_file_path = os.path.join(output_dir, args.ckpt_name + "_loss.json")
+    output_file_path = os.path.join(output_dir, "loss.json")
     with open(output_file_path, "w") as outfile:
         json.dump(loss_info, outfile, indent=4, sort_keys=True)
     print(f"results saved to: {output_file_path}")

@@ -71,13 +71,33 @@ pip install -v .[eval]
 
 ### Step 2: Install VBench
 
-You need to manually install [VBench](https://github.com/Vchitect/VBench):
+<!-- You need to manually install [VBench](https://github.com/Vchitect/VBench):
 
 ```bash
-pip install --no-deps vbench==0.1.2
+pip install --no-deps vbench==0.1.1
 # If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
 export PATH="/path/to/vbench:$PATH"
+``` -->
+
+You need to install VBench mannually by:
+```bash
+# first clone their repo
+cd ..
+git clone https://github.com/Vchitect/VBench.git
+cd VBench
+git checkout v0.1.2
+
+# next, fix their hard-coded path isse
+vim vbench2_beta_i2v/utils.py
+# find `image_root` in the `load_i2v_dimension_info` function, change it to point to your appropriate image folder
+
+# last, create softlinks
+cd Open-Sora # or `cd Open-Sora-dev` for development
+ln -s ../VBench/vbench vbench
+ln -s ../VBench/vbench2_beta_i2v vbench2_beta_i2v
+# later you need to make sure to call evaluatio from your Open-Sora folder, else vbench, vbench2_beta_i2v cannot be found
 ```
+
 
 ### Step 3: Install `cupy` for Potential VAE Errors
 

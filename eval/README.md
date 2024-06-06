@@ -54,8 +54,12 @@ bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name
 
 After generation, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies". Then, run the following commands to evaluate the generated samples.
 
-```bash
+<!-- ```bash
 bash eval/vbench/vbench.sh /path/to/video_folder /path/to/model/ckpt
+``` -->
+
+```bash
+python eval/vbench/calc_vbench.py /path/to/video_folder /path/to/model/ckpt
 ```
 
 Finally, we obtain the scaled scores for the model by:
@@ -66,7 +70,7 @@ python eval/vbench/tabulate_vbench_scores.py --score_dir path/to/score/dir
 ## VBench-i2v
 
 [VBench-i2v](https://github.com/Vchitect/VBench/tree/master/vbench2_beta_i2v) is a benchmark for short image to video generation (beta version).
-Similarly, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies". Then, run the following commands to evaluate the generated samples.
+
 
 ```bash
 # Step 1: generate the relevant videos
@@ -76,12 +80,12 @@ bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -5a
 bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name
 
 # Step 2: run vbench to evaluate the generated samples
-python eval/vbench_i2v/vbench_i2v.py
+python eval/vbench_i2v/vbench_i2v.py /path/to/video_folder /path/to/model/ckpt
+# Note that if you need to go to `VBench/vbench2_beta_i2v/utils.py` and change the harded-coded var `image_root` in the `load_i2v_dimension_info` function to your corresponding image folder.
 
 # Step 3: obtain the scaled scores
-def load_i2v_dimension_info(json_dir, dimension, lang, resolution):
-# Note that if you need to go to `your_conda_env_path/lib/python3.x/site-packages/vbench2_beta_i2v/utils.py` and change the harded-coded var `image_root` in the `load_i2v_dimension_info` function to your appropriate image folder.
-python eval/vbench_i2v/tabulate_vbench_i2v_scores.py --score_dir path/to/evaluation_results/dir
+python eval/vbench_i2v/tabulate_vbench_i2v_scores.py path/to/videos/folder path/to/your/model/ckpt
+# this will store the results under `eval/vbench_i2v` in the path/to/your/model/ckpt
 
 ```
 
