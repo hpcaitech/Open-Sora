@@ -23,7 +23,7 @@ I2V_QUALITY_LIST = [
 DIM_WEIGHT_I2V = {
     "camera_motion": 0.1,
     "i2v_subject": 1,
-    "i2v_background_consistency": 1,
+    "i2v_background": 1,
     "subject_consistency": 1,
     "background_consistency": 1,
     "motion_smoothness": 1,
