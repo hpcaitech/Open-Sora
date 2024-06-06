@@ -16,6 +16,7 @@ fi
 # LOG_BASE=logs/samples/${MODEL_NAME}_${CKPT_BASE}
 # mkdir -p logs/samples
 LOG_BASE=$(dirname $CKPT)/eval
+mkdir -p ${LOG_BASE}
 echo "Logging to $LOG_BASE"
 
 GPUS=(0 1 2 3 4 5 6 7)
