@@ -5,7 +5,7 @@ set -e
 # Base path for videos
 videos_path=$1
 model_path=$2
-output_path=${model_path}/eval/vbench
+output_path=$(dirname $model_path)/eval/vbench
 mkdir -p ${output_path}
 # videos_base=$(basename $videos_path)
 json_path=./eval/vbench/VBench_full_info.json
