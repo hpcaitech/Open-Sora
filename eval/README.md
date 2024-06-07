@@ -46,9 +46,9 @@ python eval/loss/tabulate_rl_loss.py --log_dir path/to/log/dir
 First, generate the relevant videos with the following commands:
 
 ```bash
-# vbench tasks (4a 4b 4c ...)
-bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log  -4a
-# launch 8 jobs at once (you must read the script to understand the details)
+# vbench task, if evaluation all set start_index to 0, end_index to 2000
+bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log  -4 start_index end_index
+# Alternatively, launch 8 jobs at once (you must read the script to understand the details)
 bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name
 ```
 
@@ -70,13 +70,13 @@ python eval/vbench/tabulate_vbench_scores.py --score_dir path/to/score/dir
 ## VBench-i2v
 
 [VBench-i2v](https://github.com/Vchitect/VBench/tree/master/vbench2_beta_i2v) is a benchmark for short image to video generation (beta version).
-
+Similarly, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies".
 
 ```bash
 # Step 1: generate the relevant videos
-# vbench i2v tasks (5a 5b 5c ...)
-bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -5a
-# launch 8 jobs at once
+# vbench i2v tasks, if evaluation all set start_index to 0, end_index to 2000
+bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -5 start_index end_index
+# Alternatively, launch 8 jobs at once
 bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name
 
 # Step 2: run vbench to evaluate the generated samples
