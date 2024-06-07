@@ -15,9 +15,8 @@ if [[ $CKPT_PATH == *"ema"* ]]; then
 else
     CKPT_BASE=$(basename $CKPT_PATH)
 fi
-# LOG_BASE=logs/loss/${MODEL_NAME}_${CKPT_BASE}
-# mkdir -p logs/loss
 LOG_BASE=$(dirname $CKPT_PATH)/eval
+mkdir -p $LOG_BASE
 echo "Logging to $LOG_BASE"
 
 
