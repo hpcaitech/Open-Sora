@@ -13,6 +13,7 @@ fi
 VBENCH_SAMPLE_DIR=samples/samples_${MODEL_NAME}_${CKPT_BASE}_vbench
 
 sleep_time=10m
+# sleep_time=5s
 
 human_eval_ready=0
 human_ready_count=8
@@ -30,135 +31,130 @@ vbench_i2v_calc_ready_count=8
 # check if human eval ready
 function check_human_eval(){
     term='Runtime:'
-    finished_list=()
+    human_eval_finished_list=()
     TASK_ID_LIST=(2a 2b 2c 2d 2e 2f 2g 2h)
 
     for i in "${!TASK_ID_LIST[@]}"; do
         last_line=$(tail -n 1 ${LOG_BASE}/${TASK_ID_LIST[i]}.log)
         if [[ $last_line == *${term}* ]];
             then
-                finished_list+=(${TASK_ID_LIST[i]})
-
+                human_eval_finished_list+=(${TASK_ID_LIST[i]})
         fi
     done
 
-    echo "completed tasks: ${finished_list[@]}"
-
-    if [ ${#finished_list[@]}=$human_ready_count ];
+    if [ ${#human_eval_finished_list[@]} -eq $human_ready_count ];
         then
             human_eval_ready=1
+            echo "finished human eval"
         else
-            echo ${#finished_list[@]}
+            echo human eval tasks:${human_eval_finished_list[@]}
     fi
 }
 
 function check_loss_eval(){
     term='Evaluation losses: {('
-    finished_list=()
+    loss_eval_finished_list=()
     TASK_ID_LIST=(img 144p_vid 240p_vid 360p_vid 480p_vid 720p_vid)
     for i in "${!TASK_ID_LIST[@]}"; do
         last_line=$(tail -n 1 ${LOG_BASE}/${TASK_ID_LIST[i]}.log)
         if [[ $last_line == *${term}* ]];
             then
-                finished_list+=(${TASK_ID_LIST[i]})
+                loss_eval_finished_list+=(${TASK_ID_LIST[i]})
         fi
     done
 
-    echo "completed tasks: ${finished_list[@]}"
-
-    if [ ${#finished_list[@]}=$loss_ready_count ];
+    if [ ${#loss_eval_finished_list[@]} -eq $loss_ready_count ];
         then
             loss_eval_ready=1
+            echo "finished loss eval"
         else
-            echo ${#finished_list[@]}
+            echo loss eval tasks: ${loss_eval_finished_list[@]}
+            echo ${#loss_eval_finished_list[@]}
+            echo $loss_ready_count
     fi
 }
 
 function check_vbench_gen(){
     term='Runtime:'
-    finished_list=()
+    vbench_gen_finished_list=()
     TASK_ID_LIST=(4a 4b 4c 4d 4e 4f 4g 4h)
     for i in "${!TASK_ID_LIST[@]}"; do
         last_line=$(tail -n 1 ${LOG_BASE}/${TASK_ID_LIST[i]}.log)
         if [[ $last_line == *${term}* ]];
             then
-                finished_list+=(${TASK_ID_LIST[i]})
+                vbench_gen_finished_list+=(${TASK_ID_LIST[i]})
         fi
     done
 
-    echo "completed tasks: ${finished_list[@]}"
-
-    if [ ${#finished_list[@]}=$vbench_gen_ready_count ];
+    if [ ${#vbench_gen_finished_list[@]} -eq $vbench_gen_ready_count ];
         then
             vbench_gen_ready=1
+            echo "finished vbench gen"
         else
-            echo ${#finished_list[@]}
+            echo vbench gen tasks:${vbench_gen_finished_list[@]}
     fi
 }
 
 function check_vbench_calc(){
     term='Runtime:'
-    finished_list=()
+    vbench_calc_finished_list=()
     TASK_ID_LIST=(calc_vbench_a calc_vbench_b calc_vbench_c calc_vbench_d calc_vbench_e calc_vbench_f calc_vbench_g calc_vbench_h)
     for i in "${!TASK_ID_LIST[@]}"; do
         last_line=$(tail -n 1 ${LOG_BASE}/${TASK_ID_LIST[i]}.log)
         if [[ $last_line == *${term}* ]];
             then
-                finished_list+=(${TASK_ID_LIST[i]})
+                vbench_calc_finished_list+=(${TASK_ID_LIST[i]})
         fi
     done
 
-    echo "completed tasks: ${finished_list[@]}"
-
-    if [ ${#finished_list[@]}=$vbench_calc_ready_count ];
+    if [ ${#vbench_calc_finished_list[@]} -eq $vbench_calc_ready_count ];
         then
             vbench_calc_ready=1
+            echo "finished vbench calc"
         else
-            echo ${#finished_list[@]}
+            echo vbench calc tasks: ${vbench_calc_finished_list[@]}
     fi
 }
 
 function check_vbench_i2v_gen(){
     term='Runtime:'
-    finished_list=()
+    vbench_i2v_gen_finished_list=()
     TASK_ID_LIST=(5a 5b 5c 5d 5e 5f 5g 5h)
     for i in "${!TASK_ID_LIST[@]}"; do
         last_line=$(tail -n 1 ${LOG_BASE}/${TASK_ID_LIST[i]}.log)
         if [[ $last_line == *${term}* ]];
             then
-                finished_list+=(${TASK_ID_LIST[i]})
+                vbench_i2v_gen_finished_list+=(${TASK_ID_LIST[i]})
         fi
     done
 
-    echo "completed tasks: ${finished_list[@]}"
-
-    if [ ${#finished_list[@]}=$vbench_i2v_gen_ready_count ];
+    if [ ${#vbench_i2v_gen_finished_list[@]} -eq $vbench_i2v_gen_ready_count ];
         then
             vbench_i2v_gen_ready=1
+            echo "finished vbench i2v gen"
         else
-            echo ${#finished_list[@]}
+            echo vbench i2v gen tasks: ${vbench_i2v_gen_finished_list[@]}
     fi
 }
 
 function check_vbench_i2v_calc(){
     term='Runtime:'
-    finished_list=()
+    vbench_i2v_calc_finished_list=()
     TASK_ID_LIST=(calc_vbench_i2v_a calc_vbench_i2v_b calc_vbench_i2v_c calc_vbench_i2v_d calc_vbench_i2v_e calc_vbench_i2v_f calc_vbench_i2v_g calc_vbench_i2v_h)
     for i in "${!TASK_ID_LIST[@]}"; do
         last_line=$(tail -n 1 ${LOG_BASE}/${TASK_ID_LIST[i]}.log)
         if [[ $last_line == *${term}* ]];
             then
-                finished_list+=(${TASK_ID_LIST[i]})
+                vbench_i2v_calc_finished_list+=(${TASK_ID_LIST[i]})
         fi
     done
 
-    echo "completed tasks: ${finished_list[@]}"
-
-    if [ ${#finished_list[@]}=$vbench_i2v_calc_ready_count ];
+    if [ ${#vbench_i2v_calc_finished_list[@]} -eq $vbench_i2v_calc_ready_count ];
         then
             vbench_i2v_calc_ready=1
+            echo "finished vbench i2v calc"
         else
-            echo ${#finished_list[@]}
+            echo vbench i2v calc tasks: ${vbench_i2v_calc_finished_list[@]}
     fi
 }
 
@@ -178,7 +174,7 @@ done
 
 ### eval loss, ~160min
 echo "$(date): running eval loss"
-bash eval/eval_loss/launch.sh $CKPT $MODEL_NAME
+bash eval/loss/launch.sh $CKPT $MODEL_NAME
 while [ $loss_eval_ready -eq 0 ]
 do
     sleep ${sleep_time}
