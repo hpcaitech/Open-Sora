@@ -196,3 +196,7 @@ package.json
 
 # PLLaVA
 tools/caption/pllava_dir/PLLaVA/
+
+# vbench
+vbench
+vbench2_beta_i2v
