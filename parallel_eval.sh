@@ -69,8 +69,6 @@ function check_loss_eval(){
             echo "finished loss eval"
         else
             echo loss eval tasks: ${loss_eval_finished_list[@]}
-            echo ${#loss_eval_finished_list[@]}
-            echo $loss_ready_count
     fi
 }
 
