@@ -47,7 +47,7 @@ function check_human_eval(){
             human_eval_ready=1
             echo "finished human eval"
         else
-            echo human eval tasks:${human_eval_finished_list[@]}
+            echo finished human eval tasks:${human_eval_finished_list[@]}
     fi
 }
 
@@ -68,7 +68,7 @@ function check_loss_eval(){
             loss_eval_ready=1
             echo "finished loss eval"
         else
-            echo loss eval tasks: ${loss_eval_finished_list[@]}
+            echo finished loss eval tasks: ${loss_eval_finished_list[@]}
     fi
 }
 
@@ -89,7 +89,7 @@ function check_vbench_gen(){
             vbench_gen_ready=1
             echo "finished vbench gen"
         else
-            echo vbench gen tasks:${vbench_gen_finished_list[@]}
+            echo finished vbench gen tasks:${vbench_gen_finished_list[@]}
     fi
 }
 
@@ -110,7 +110,7 @@ function check_vbench_calc(){
             vbench_calc_ready=1
             echo "finished vbench calc"
         else
-            echo vbench calc tasks: ${vbench_calc_finished_list[@]}
+            echo finished vbench calc tasks: ${vbench_calc_finished_list[@]}
     fi
 }
 
@@ -131,7 +131,7 @@ function check_vbench_i2v_gen(){
             vbench_i2v_gen_ready=1
             echo "finished vbench i2v gen"
         else
-            echo vbench i2v gen tasks: ${vbench_i2v_gen_finished_list[@]}
+            echo finished vbench i2v gen tasks: ${vbench_i2v_gen_finished_list[@]}
     fi
 }
 
@@ -152,7 +152,7 @@ function check_vbench_i2v_calc(){
             vbench_i2v_calc_ready=1
             echo "finished vbench i2v calc"
         else
-            echo vbench i2v calc tasks: ${vbench_i2v_calc_finished_list[@]}
+            echo finished vbench i2v calc tasks: ${vbench_i2v_calc_finished_list[@]}
     fi
 }
 
