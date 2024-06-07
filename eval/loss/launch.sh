@@ -15,16 +15,16 @@ if [[ $CKPT_PATH == *"ema"* ]]; then
 else
     CKPT_BASE=$(basename $CKPT_PATH)
 fi
-LOG_BASE=logs/loss/${MODEL_NAME}_${CKPT_BASE}
-mkdir -p logs/loss
+LOG_BASE=$(dirname $CKPT_PATH)/eval
+mkdir -p $LOG_BASE
 echo "Logging to $LOG_BASE"
 
 
 GPUS=(1 2 3 4 5)
 RESOLUTION=(144p 240p 360p 480p 720p)
 
-CUDA_VISIBLE_DEVICES=0 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH >${LOG_BASE}_img.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH >${LOG_BASE}/img.log 2>&1 &
 
 for i in "${!GPUS[@]}"; do
-    CUDA_VISIBLE_DEVICES=${GPUS[i]} $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution ${RESOLUTION[i]} >${LOG_BASE}_${RESOLUTION[i]}_vid.log 2>&1 &
+    CUDA_VISIBLE_DEVICES=${GPUS[i]} $CMD --data-path $VID_PATH --ckpt-path $CKPT_PATH --resolution ${RESOLUTION[i]} >${LOG_BASE}/${RESOLUTION[i]}_vid.log 2>&1 &
 done
