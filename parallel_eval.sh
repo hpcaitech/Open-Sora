@@ -15,7 +15,7 @@ VBENCH_SAMPLE_DIR=samples/samples_${MODEL_NAME}_${CKPT_BASE}_vbench
 sleep_time=10m
 
 human_eval_ready=0
-human_ready_count=7
+human_ready_count=8
 loss_eval_ready=0
 loss_ready_count=6
 vbench_gen_ready=0
@@ -154,9 +154,9 @@ function check_vbench_i2v_calc(){
 
     echo "completed tasks: ${finished_list[@]}"
 
-    if [ ${#finished_list[@]}=$vbench_calc_ready_count ];
+    if [ ${#finished_list[@]}=$vbench_i2v_calc_ready_count ];
         then
-            vbench_calc_ready=1
+            vbench_i2v_calc_ready=1
         else
             echo ${#finished_list[@]}
     fi
@@ -167,43 +167,43 @@ function check_vbench_i2v_calc(){
 
 start=$(date +%s)
 
-# ### human eval, ~60min
-# echo "$(date): running human eval"
-# bash eval/human_eval/launch.sh $CKPT $NUM_FRAMES $MODEL_NAME
-# while [ $human_eval_ready -eq 0 ]
-# do
-#     sleep ${sleep_time}
-#     check_human_eval
-# done
+### human eval, ~60min
+echo "$(date): running human eval"
+bash eval/human_eval/launch.sh $CKPT $NUM_FRAMES $MODEL_NAME
+while [ $human_eval_ready -eq 0 ]
+do
+    sleep ${sleep_time}
+    check_human_eval
+done
 
-# ### eval loss, ~160min
-# echo "$(date): running eval loss"
-# bash eval/eval_loss/launch.sh $CKPT $MODEL_NAME
-# while [ $loss_eval_ready -eq 0 ]
-# do
-#     sleep ${sleep_time}
-#     check_loss_eval
-# done
-# python eval/loss/tabulate_rl_loss.py --log_dir $LOG_BASE
+### eval loss, ~160min
+echo "$(date): running eval loss"
+bash eval/eval_loss/launch.sh $CKPT $MODEL_NAME
+while [ $loss_eval_ready -eq 0 ]
+do
+    sleep ${sleep_time}
+    check_loss_eval
+done
+python eval/loss/tabulate_rl_loss.py --log_dir $LOG_BASE
 
-# ### vbench gen, ~80min
-# echo "$(date): running vbench gen"
-# bash eval/vbench/launch.sh $CKPT $NUM_FRAMES $MODEL_NAME
-# while [ $vbench_gen_ready -eq 0 ]
-# do
-#     sleep ${sleep_time}
-#     check_vbench_gen
-# done
+### vbench gen, ~80min
+echo "$(date): running vbench gen"
+bash eval/vbench/launch.sh $CKPT $NUM_FRAMES $MODEL_NAME
+while [ $vbench_gen_ready -eq 0 ]
+do
+    sleep ${sleep_time}
+    check_vbench_gen
+done
 
-# ### vbench calc, ~30min
-# echo "$(date): running vbench calc"
-# bash eval/vbench/launch_calc.sh $VBENCH_SAMPLE_DIR $LOG_BASE
-# while [ $vbench_calc_ready -eq 0 ]
-# do
-#     sleep ${sleep_time}
-#     check_vbench_calc
-# done
-# python eval/vbench/tabulate_vbench_scores.py --score_dir ${LOG_BASE}/vbench
+### vbench calc, ~30min
+echo "$(date): running vbench calc"
+bash eval/vbench/launch_calc.sh $VBENCH_SAMPLE_DIR $LOG_BASE
+while [ $vbench_calc_ready -eq 0 ]
+do
+    sleep ${sleep_time}
+    check_vbench_calc
+done
+python eval/vbench/tabulate_vbench_scores.py --score_dir ${LOG_BASE}/vbench
 
 ### vbench_i2v gen, ~65min
 echo "$(date): running vbench_i2v gen"
