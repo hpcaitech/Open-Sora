@@ -34,14 +34,25 @@ def process_single_row(row, args):
         return False
     scene_list = eval(timestamp)
     scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
+
+    if 'relpath' in row:
+        save_dir = os.path.dirname(os.path.join(args.save_dir, row['relpath']))
+        os.makedirs(save_dir, exist_ok=True)
+
+    shorter_size = args.shorter_size
+    if (shorter_size is not None) and ('height' in row) and ('width' in row):
+        min_size = min(row['height'], row['width'])
+        if min_size <= shorter_size:
+            shorter_size = None
+
     split_video(
         video_path,
         scene_list,
-        save_dir=args.save_dir,
+        save_dir=save_dir,
         min_seconds=args.min_seconds,
         max_seconds=args.max_seconds,
         target_fps=args.target_fps,
-        shorter_size=args.shorter_size,
+        shorter_size=shorter_size,
         logger=logger,
     )
 
@@ -135,7 +146,7 @@ def parse_args():
     parser.add_argument("--max_seconds", type=float, default=None,
                         help='if not None, clip longer than max_seconds is truncated')
     parser.add_argument("--target_fps", type=int, default=None, help='target fps of clips')
-    parser.add_argument("--shorter_size", type=int, default=None, help='resize the shorter size by keeping ratio')
+    parser.add_argument("--shorter_size", type=int, default=None, help='resize the shorter size by keeping ratio; will not do upscale')
     parser.add_argument("--num_workers", type=int, default=None, help='#workers for pandarallel')
 
     args = parser.parse_args()
@@ -144,9 +155,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    save_dir = args.save_dir
-    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(args.save_dir, exist_ok=True)
 
     # create logger
     logger = None
