@@ -82,7 +82,7 @@ export PATH="/path/to/vbench:$PATH"
 You need to install VBench mannually by:
 ```bash
 # first clone their repo
-cd ..
+cd .. # assume you are in the Open-Sora root folder, you may install at other location but make sure the soft link paths later are correct
 git clone https://github.com/Vchitect/VBench.git
 cd VBench
 git checkout v0.1.2
@@ -92,10 +92,10 @@ vim vbench2_beta_i2v/utils.py
 # find `image_root` in the `load_i2v_dimension_info` function, change it to point to your appropriate image folder
 
 # last, create softlinks
-cd Open-Sora # or `cd Open-Sora-dev` for development
-ln -s ../VBench/vbench vbench
-ln -s ../VBench/vbench2_beta_i2v vbench2_beta_i2v
-# later you need to make sure to call evaluatio from your Open-Sora folder, else vbench, vbench2_beta_i2v cannot be found
+cd ../Open-Sora # or `cd ../Open-Sora-dev` for development
+ln -s ../VBench/vbench vbench # you may need to change ../VBench/vbench to your corresponding path
+ln -s ../VBench/vbench2_beta_i2v vbench2_beta_i2v # you may need to change ../VBench/vbench_beta_i2v to your corresponding path
+# later you need to make sure to run evaluation from your Open-Sora folder, else vbench, vbench2_beta_i2v cannot be found
 ```
 
 
