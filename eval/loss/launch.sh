@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -x
-set -e
-
 CMD="torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py"
 CKPT_PATH=$1
 MODEL_NAME=$2
