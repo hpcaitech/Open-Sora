@@ -1,8 +1,5 @@
 # !/bin/bash
 
-set -x
-set -e
-
 VIDEO_DIR=$1
 CKPT_DIR=$2
 LOG_BASE=$CKPT_DIR
