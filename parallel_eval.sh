@@ -14,7 +14,6 @@ VBENCH_SAMPLE_DIR=samples/samples_${MODEL_NAME}_${CKPT_BASE}_vbench
 VBENCH_I2V_SAMPLE_DIR=samples/samples_${MODEL_NAME}_${CKPT_BASE}_vbench_i2v
 
 sleep_time=10m
-# sleep_time=5s
 
 human_eval_ready=0
 human_ready_count=8
