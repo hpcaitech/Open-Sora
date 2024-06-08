@@ -34,7 +34,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    output_dir = os.path.join(args.model_ckpt, "eval", "vbench_i2v")
+    output_dir = os.path.join(args.model_ckpt, "vbench_i2v")
     os.makedirs(output_dir, exist_ok=True)
     video_path = args.video_folder
 
