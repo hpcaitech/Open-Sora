@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -x
-set -e
-
 CKPT=$1
 NUM_FRAMES=$2
 MODEL_NAME=$3
