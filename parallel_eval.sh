@@ -11,6 +11,7 @@ else
   CKPT_BASE=$(basename $CKPT)
 fi
 VBENCH_SAMPLE_DIR=samples/samples_${MODEL_NAME}_${CKPT_BASE}_vbench
+VBENCH_I2V_SAMPLE_DIR=samples/samples_${MODEL_NAME}_${CKPT_BASE}_vbench_i2v
 
 sleep_time=10m
 # sleep_time=5s
@@ -210,7 +211,7 @@ done
 
 ### vbench_i2v calc, ~48min
 echo "$(date): running vbench_i2v calc"
-bash eval/vbench_i2v/launch_calc.sh $VBENCH_SAMPLE_DIR $LOG_BASE
+bash eval/vbench_i2v/launch_calc.sh $VBENCH_I2V_SAMPLE_DIR $LOG_BASE
 while [ $vbench_i2v_calc_ready -eq 0 ]
 do
     sleep ${sleep_time}

@@ -18,5 +18,5 @@ TASK_ID_LIST=(calc_vbench_i2v_a calc_vbench_i2v_b calc_vbench_i2v_c calc_vbench_
 
 
 for i in "${!GPUS[@]}"; do
-    CUDA_VISIBLE_DEVICES=${GPUS[i]} python eval/vbench/calc_vbench_i2v.py $VIDEO_DIR $CKPT_DIR --calc_i2v ${CALC_I2V_LIST[i]} --calc_quality ${CALC_QUALITY_LIST[i]} --start ${START_INDEX_LIST[i]} --end ${END_INDEX_LIST[i]} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+    CUDA_VISIBLE_DEVICES=${GPUS[i]} python eval/vbench_i2v/calc_vbench_i2v.py $VIDEO_DIR $CKPT_DIR --calc_i2v ${CALC_I2V_LIST[i]} --calc_quality ${CALC_QUALITY_LIST[i]} --start ${START_INDEX_LIST[i]} --end ${END_INDEX_LIST[i]} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
 done
