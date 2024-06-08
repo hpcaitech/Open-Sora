@@ -1,4 +1,3 @@
-import gc
 import os
 from copy import deepcopy
 from datetime import timedelta
@@ -69,7 +68,7 @@ def main():
     if coordinator.is_master():
         tb_writer = create_tensorboard_writer(exp_dir)
         if cfg.get("wandb", False):
-            wandb.init(project="minisora", name=exp_name, config=cfg.to_dict(), dir="./outputs/wandb")
+            wandb.init(project="Open-Sora", name=exp_name, config=cfg.to_dict(), dir="./outputs/wandb")
 
     # == init ColossalAI booster ==
     plugin = create_colossalai_plugin(
