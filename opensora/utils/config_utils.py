@@ -62,6 +62,8 @@ def parse_args(training=False):
         parser.add_argument("--condition-frame-length", default=None, type=int, help="condition frame length")
         parser.add_argument("--reference-path", default=None, type=str, nargs="+", help="reference path")
         parser.add_argument("--mask-strategy", default=None, type=str, nargs="+", help="mask strategy")
+        parser.add_argument("--aes", default=None, type=float, help="aesthetic score")
+        parser.add_argument("--flow", default=None, type=float, help="flow score")
     # ======================================================
     # Training
     # ======================================================
