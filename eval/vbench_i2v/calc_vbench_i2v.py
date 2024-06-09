@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    if args.calc_i2v == 1:
+    if args.calc_i2v:
         my_VBench_I2V = VBenchI2V(torch.device("cuda"), full_info_path, output_dir)
         if args.end == -1:  # adjust end accordingly
             args.end = len(i2v_dimensions)
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     kwargs = {}
     kwargs["imaging_quality_preprocessing_mode"] = "longer"  # use VBench/evaluate.py default
 
-    if args.calc_quality == 1:
+    if args.calc_quality:
         if args.end == -1:  # adjust end accordingly
             args.end = len(video_quality_dimensions)
         my_VBench = VBench(torch.device("cuda"), full_info_path, output_dir)
