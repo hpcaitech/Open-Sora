@@ -48,3 +48,6 @@ scheduler = dict(
     num_sampling_steps=30,
     cfg_scale=7.0,
 )
+
+aes = None
+flow = None

@@ -110,6 +110,14 @@ def main():
     if prompts is None:
         assert cfg.get("prompt_path", None) is not None, "Prompt or prompt_path must be provided"
         prompts = load_prompts(cfg.prompt_path, start_idx, cfg.get("end_index", None))
+    score_prompts = []
+    if cfg.get("aes", None) is not None:
+        score_prompts.append(f"{prompt} aesthetic score: {cfg.aes:.1f}" for prompt in prompts)
+    if cfg.get("flow", None) is not None:
+        score_prompts.append(f"{prompt} motion score: {cfg.flow:.1f}" for prompt in prompts)
+    if len(score_prompts) > 0:
+        score_text = ", ".join(score_prompts)
+        prompts = [f"{prompt} [{score_text}]" for prompt in prompts]
 
     # == prepare reference ==
     reference_path = cfg.get("reference_path", [""] * len(prompts))

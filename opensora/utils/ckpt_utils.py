@@ -41,9 +41,10 @@ pretrained_models = {
 
 
 def reparameter(ckpt, name=None, model=None):
+    model_name = name
     name = os.path.basename(name)
     if not dist.is_initialized() or dist.get_rank() == 0:
-        get_logger().info("loading pretrained model: %s", name)
+        get_logger().info("loading pretrained model: %s", model_name)
     if name in ["DiT-XL-2-512x512.pt", "DiT-XL-2-256x256.pt"]:
         ckpt["x_embedder.proj.weight"] = ckpt["x_embedder.proj.weight"].unsqueeze(2)
         del ckpt["pos_embed"]
