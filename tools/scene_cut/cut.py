@@ -1,3 +1,5 @@
+import cv2  # isort:skip
+
 import argparse
 import os
 import subprocess
@@ -29,19 +31,22 @@ def process_single_row(row, args):
     # if not is_intact_video(video_path, logger=logger):
     #     return False
 
-    timestamp = row["timestamp"]
-    if not (timestamp.startswith("[") and timestamp.endswith("]")):
-        return False
-    scene_list = eval(timestamp)
-    scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
+    if "timestamp" in row:
+        timestamp = row["timestamp"]
+        if not (timestamp.startswith("[") and timestamp.endswith("]")):
+            return False
+        scene_list = eval(timestamp)
+        scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
+    else:
+        scene_list = [None]
 
-    if 'relpath' in row:
-        save_dir = os.path.dirname(os.path.join(args.save_dir, row['relpath']))
+    if "relpath" in row:
+        save_dir = os.path.dirname(os.path.join(args.save_dir, row["relpath"]))
         os.makedirs(save_dir, exist_ok=True)
 
     shorter_size = args.shorter_size
-    if (shorter_size is not None) and ('height' in row) and ('width' in row):
-        min_size = min(row['height'], row['width'])
+    if (shorter_size is not None) and ("height" in row) and ("width" in row):
+        min_size = min(row["height"], row["width"])
         if min_size <= shorter_size:
             shorter_size = None
 
@@ -84,17 +89,18 @@ def split_video(
 
     save_path_list = []
     for idx, scene in enumerate(scene_list):
-        s, t = scene  # FrameTimecode
-        if min_seconds is not None:
-            if (t - s).get_seconds() < min_seconds:
-                continue
+        if scene is not None:
+            s, t = scene  # FrameTimecode
+            if min_seconds is not None:
+                if (t - s).get_seconds() < min_seconds:
+                    continue
 
-        duration = t - s
-        if max_seconds is not None:
-            fps = s.framerate
-            max_duration = FrameTimecode(timecode="00:00:00", fps=fps)
-            max_duration.frame_num = round(fps * max_seconds)
-            duration = min(max_duration, duration)
+            duration = t - s
+            if max_seconds is not None:
+                fps = s.framerate
+                max_duration = FrameTimecode(timecode="00:00:00", fps=fps)
+                max_duration.frame_num = round(fps * max_seconds)
+                duration = min(max_duration, duration)
 
         # save path
         fname = os.path.basename(video_path)
@@ -112,7 +118,9 @@ def split_video(
 
         # clip to cut
         # -ss after -i is very slow; put -ss before -i
-        cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-i", video_path, "-t", str(duration.get_seconds())]
+        cmd += ["-nostdin", "-y", "-i", video_path]
+        if scene is not None:
+            cmd += ["-ss", str(s.get_seconds()), "-t", str(duration.get_seconds())]
 
         # target fps
         if target_fps is not None:
@@ -123,7 +131,7 @@ def split_video(
             cmd += ["-vf", f"scale='if(gt(iw,ih),-2,{shorter_size})':'if(gt(iw,ih),{shorter_size},-2)'"]
             # cmd += ['-vf', f"scale='if(gt(iw,ih),{shorter_size},trunc(ow/a/2)*2)':-2"]
 
-        cmd += ["-map", "0", save_path]
+        cmd += ["-map", "0:v", save_path]
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = proc.communicate()
@@ -141,13 +149,18 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("meta_path", type=str)
     parser.add_argument("--save_dir", type=str)
-    parser.add_argument("--min_seconds", type=float, default=None,
-                        help='if not None, clip shorter than min_seconds is ignored')
-    parser.add_argument("--max_seconds", type=float, default=None,
-                        help='if not None, clip longer than max_seconds is truncated')
-    parser.add_argument("--target_fps", type=int, default=None, help='target fps of clips')
-    parser.add_argument("--shorter_size", type=int, default=1080, help='resize the shorter size by keeping ratio; will not do upscale')
-    parser.add_argument("--num_workers", type=int, default=None, help='#workers for pandarallel')
+    parser.add_argument(
+        "--min_seconds", type=float, default=None, help="if not None, clip shorter than min_seconds is ignored"
+    )
+    parser.add_argument(
+        "--max_seconds", type=float, default=None, help="if not None, clip longer than max_seconds is truncated"
+    )
+    parser.add_argument("--target_fps", type=int, default=None, help="target fps of clips")
+    parser.add_argument(
+        "--shorter_size", type=int, default=1080, help="resize the shorter size by keeping ratio; will not do upscale"
+    )
+    parser.add_argument("--num_workers", type=int, default=None, help="#workers for pandarallel")
+    parser.add_argument("--disable_parallel", action="store_true", help="disable parallel processing")
 
     args = parser.parse_args()
     return args
@@ -161,15 +174,19 @@ def main():
     logger = None
 
     # initialize pandarallel
-    if args.num_workers is not None:
-        pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)
-    else:
-        pandarallel.initialize(progress_bar=True)
+    if not args.disable_parallel:
+        if args.num_workers is not None:
+            pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)
+        else:
+            pandarallel.initialize(progress_bar=True)
     process_single_row_partial = partial(process_single_row, args=args)
 
     # process
     meta = pd.read_csv(args.meta_path)
-    meta.parallel_apply(process_single_row_partial, axis=1)
+    if not args.disable_parallel:
+        meta.parallel_apply(process_single_row_partial, axis=1)
+    else:
+        meta.apply(process_single_row_partial, axis=1)
 
 
 if __name__ == "__main__":
