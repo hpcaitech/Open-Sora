@@ -12,10 +12,10 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from tqdm import tqdm
-import torchvision
+
+from opensora.datasets.read_video import read_video
 
 from .utils import IMG_EXTENSIONS
-from opensora.datasets.read_video import read_video
 
 tqdm.pandas()
 
@@ -472,7 +472,7 @@ def read_data(input_paths):
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(input_list) - 1:
             input_name += "+"
-        print(f"Loaded {len(data[-1])} samples from \'{input_path}\'.")
+        print(f"Loaded {len(data[-1])} samples from '{input_path}'.")
     if len(data) == 0:
         print(f"No samples to process. Exit.")
         exit()
@@ -564,6 +564,10 @@ def main(args):
     if args.lang is not None:
         assert "text" in data.columns
         data = data[data["text"].progress_apply(detect_lang)]  # cannot parallelize
+    if args.remove_empty_path:
+        assert "path" in data.columns
+        data = data[data["path"].str.len() > 0]
+        data = data[~data["path"].isna()]
     if args.remove_empty_caption:
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
@@ -704,6 +708,11 @@ def parse_args():
     parser.add_argument(
         "--path-subset", type=str, default=None, help="extract a subset data containing the given `path-subset` value"
     )
+    parser.add_argument(
+        "--remove-empty-path",
+        action="store_true",
+        help="remove rows with empty path",  # caused by transform, cannot read path
+    )
 
     # caption filtering
     parser.add_argument(
@@ -778,6 +787,8 @@ def get_output_path(args, input_name):
         name += "_relpath"
     if args.abspath is not None:
         name += "_abspath"
+    if args.remove_empty_path:
+        name += "_noemptypath"
 
     # caption filtering
     if args.remove_empty_caption:
