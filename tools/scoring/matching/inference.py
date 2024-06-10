@@ -66,17 +66,27 @@ def parse_args():
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=16, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--skip_if_existing", action='store_true')
     args = parser.parse_args()
     return args
 
 
 def main():
-    colossalai.launch_from_torch({})
     args = parse_args()
 
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        exit()
+
     wo_ext, ext = os.path.splitext(meta_path)
     out_path = f"{wo_ext}_match{ext}"
+    if args.skip_if_existing and os.path.exists(out_path):
+        print(f"Output meta file \'{out_path}\' already exists. Exit.")
+        exit()
+
+
+    colossalai.launch_from_torch({})
 
     # build model
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
