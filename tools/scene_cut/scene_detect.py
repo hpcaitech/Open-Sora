@@ -43,6 +43,9 @@ def parse_args():
 def main():
     args = parse_args()
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        exit()
 
     if args.num_workers is not None:
         pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)

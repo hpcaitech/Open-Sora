@@ -155,10 +155,14 @@ def parse_args():
 
 def main():
     args = parse_args()
-    os.makedirs(args.save_dir, exist_ok=True)
+    meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        exit()
 
     # create logger
     logger = None
+    os.makedirs(args.save_dir, exist_ok=True)
 
     # initialize pandarallel
     if args.num_workers is not None:
@@ -168,7 +172,7 @@ def main():
     process_single_row_partial = partial(process_single_row, args=args)
 
     # process
-    meta = pd.read_csv(args.meta_path)
+    meta = pd.read_csv(meta_path)
     meta.parallel_apply(process_single_row_partial, axis=1)
 
 

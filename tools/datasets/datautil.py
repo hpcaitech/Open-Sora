@@ -473,6 +473,9 @@ def read_data(input_paths):
         if i != len(input_list) - 1:
             input_name += "+"
         print(f"Loaded {len(data[-1])} samples from \'{input_path}\'.")
+    if len(data) == 0:
+        print(f"No samples to process. Exit.")
+        exit()
     data = pd.concat(data, ignore_index=True, sort=False)
     print(f"Total number of samples: {len(data)}")
     return data, input_name
@@ -487,9 +490,6 @@ def read_data(input_paths):
 def main(args):
     # reading data
     data, input_name = read_data(args.input)
-    if len(data) == 0:
-        print(f"No samples to process. Exit.")
-        exit()
 
     # make difference
     if args.difference is not None:
