@@ -65,6 +65,28 @@ DIM_WEIGHT = {
     "overall consistency": 1,
 }
 
+ordered_scaled_res = [
+    "total score",
+    "quality score",
+    "semantic score",
+    "subject consistency",
+    "background consistency",
+    "temporal flickering",
+    "motion smoothness",
+    "dynamic degree",
+    "aesthetic quality",
+    "imaging quality",
+    "object class",
+    "multiple objects",
+    "human action",
+    "color",
+    "spatial relationship",
+    "scene",
+    "appearance style",
+    "temporal style",
+    "overall consistency",
+]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -116,9 +138,11 @@ if __name__ == "__main__":
         QUALITY_WEIGHT + SEMANTIC_WEIGHT
     )
 
-    formated_scaled_results = {}
-    for key, val in scaled_results.items():
-        formated_scaled_results[key] = format(val * 100, ".2f") + "%"
+    formated_scaled_results = {"items": []}
+    for key in ordered_scaled_res:
+        # formated_scaled_results[key] = format(val * 100, ".2f") + "%"
+        formated_score = format(scaled_results[key] * 100, ".2f") + "%"
+        formated_scaled_results["items"].append({key: formated_score})
 
     output_file_path = os.path.join(args.score_dir, "all_results.json")
     with open(output_file_path, "w") as outfile:
