@@ -23,8 +23,16 @@ if __name__ == "__main__":
     args = parse_args()
 
     files = os.listdir(args.log_dir)
-    # files = ["img.log", "video_144p.log", "video_240p.log", "video_360p.log", "video_480p.log", "video_720p.log"]
-    files = ["img.log", "144p_vid.log", "240p_vid.log", "360p_vid.log", "480p_vid.log", "720p_vid.log"]
+    files = [
+        "img_0.log",
+        "img_1.log",
+        "img_2.log",
+        "144p_vid.log",
+        "240p_vid.log",
+        "360p_vid.log",
+        "480p_vid.log",
+        "720p_vid.log",
+    ]
 
     loss_info = {}
 
