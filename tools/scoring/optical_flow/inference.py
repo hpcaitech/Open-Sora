@@ -75,12 +75,29 @@ class VideoTextDataset(torch.utils.data.Dataset):
         return len(self.meta)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
+    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--skip_if_existing", action='store_true')
+    args = parser.parse_args()
+    return args
+
+
 def main():
     args = parse_args()
 
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        exit()
+
     wo_ext, ext = os.path.splitext(meta_path)
     out_path = f"{wo_ext}_flow{ext}"
+    if args.skip_if_existing and os.path.exists(out_path):
+        print(f"Output meta file \'{out_path}\' already exists. Exit.")
+        exit()
 
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
@@ -168,15 +185,6 @@ def main():
         meta_new = merge_scores(gathered_list, dataset.meta, column="flow")
         meta_new.to_csv(out_path, index=False)
         print(f"New meta with optical flow scores saved to '{out_path}'.")
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
-    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
-    args = parser.parse_args()
-    return args
 
 
 if __name__ == "__main__":
