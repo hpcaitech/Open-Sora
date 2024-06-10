@@ -46,6 +46,22 @@ NORMALIZE_DIC_I2V = {
     "temporal_flickering": {"Min": 0.6293, "Max": 1.0},
 }
 
+ordered_scaled_res = [
+    "total score",
+    "i2v score",
+    "quality score",
+    "camera_motion",
+    "i2v_subject",
+    "i2v_background",
+    "subject_consistency",
+    "background_consistency",
+    "motion_smoothness",
+    "dynamic_degree",
+    "aesthetic_quality",
+    "imaging_quality",
+    "temporal_flickering",
+]
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -100,9 +116,10 @@ if __name__ == "__main__":
         I2V_QUALITY_WEIGHT + I2V_WEIGHT
     )
 
-    formated_scaled_results = {}
-    for key, val in scaled_results.items():
-        formated_scaled_results[key] = format(val * 100, ".2f") + "%"
+    formated_scaled_results = {"item": []}
+    for key in ordered_scaled_res:
+        formated_res = format(scaled_results[key] * 100, ".2f") + "%"
+        formated_scaled_results["item"].append({key: formated_res})
 
     output_file_path = os.path.join(args.score_dir, "all_results.json")
     with open(output_file_path, "w") as outfile:
