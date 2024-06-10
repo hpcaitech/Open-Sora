@@ -466,14 +466,15 @@ def read_data(input_paths):
         input_list.extend(glob(input_path))
     print("Input files:", input_list)
     for i, input_path in enumerate(input_list):
-        assert os.path.exists(input_path)
+        if not os.path.exists(input_path):
+            continue
         data.append(read_file(input_path))
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(input_list) - 1:
             input_name += "+"
-        print(f"Loaded {len(data[-1])} samples from {input_path}.")
+        print(f"Loaded {len(data[-1])} samples from \'{input_path}\'.")
     data = pd.concat(data, ignore_index=True, sort=False)
-    print(f"Total number of samples: {len(data)}.")
+    print(f"Total number of samples: {len(data)}")
     return data, input_name
 
 
@@ -486,6 +487,9 @@ def read_data(input_paths):
 def main(args):
     # reading data
     data, input_name = read_data(args.input)
+    if len(data) == 0:
+        print(f"No samples to process. Exit.")
+        exit()
 
     # make difference
     if args.difference is not None:
