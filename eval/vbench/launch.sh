@@ -3,7 +3,8 @@
 CKPT=$1
 NUM_FRAMES=$2
 MODEL_NAME=$3
-
+RES=$4
+ASP_RATIO=$5
 
 if [[ $CKPT == *"ema"* ]]; then
     parentdir=$(dirname $CKPT)
@@ -20,5 +21,10 @@ START_INDEX_LIST=(0 120 240 360 480 600 720 840)
 END_INDEX_LIST=(120 240 360 480 600 720 840 2000)
 
 for i in "${!GPUS[@]}"; do
-    CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -4 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+    if [ -z ${RES} ] || [ -z ${ASP_RATIO} ]  ;
+        then
+            CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -4 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+        else
+            CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -4 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+    fi
 done

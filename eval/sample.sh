@@ -6,6 +6,8 @@ MODEL_NAME=$3
 
 VBENCH_START_INDEX=$5
 VBENCH_END_INDEX=$6
+VBENCH_RES=$7
+VBENCH_ASP_RATIO=$8
 
 echo "NUM_FRAMES=${NUM_FRAMES}"
 
@@ -137,6 +139,29 @@ function run_video_g() { # 15min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 1358 600 --sample-name 720p_1_2
   # 2:1
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 600 1358 --sample-name 720p_2_1
+
+  # add motion score
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --num-frames $NUM_FRAMES --resolution 720p --sample-name motion --prompt \
+    \"A stylish woman walking in the street of Tokyo.\"\
+    \"A stylish woman walking in the street of Tokyo. motion score: 0.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 2.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 4.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 6.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 10.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 20.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 30.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 40.0\"
+
+  # add aes score
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --num-frames $NUM_FRAMES --resolution 720p --sample-name aes --prompt \
+    \"A stylish woman walking in the street of Tokyo.\"\
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 4.0\" \
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 4.5\" \
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 5.0\" \
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 5.5\" \
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 6.0\" \
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 6.5\" \
+    \"A stylish woman walking in the street of Tokyo. aesthetic score: 7.0\"
 }
 
 function run_video_h() { # 61min
@@ -171,9 +196,18 @@ VBENCH_H=240
 VBENCH_W=426
 
 function run_vbench() {
-  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-  --prompt-path assets/texts/VBench/all_dimension.txt \
-  --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --image-size $VBENCH_H $VBENCH_W --start-index $1 --end-index $2
+  if [ -z ${VBENCH_RES} ] || [ -z ${VBENCH_ASP_RATIO} ]  ;
+      then
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_dimension.txt \
+        --image-size $VBENCH_H $VBENCH_W \
+        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+      else
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_dimension.txt \
+        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
+        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+  fi
 }
 
 # vbench-i2v has 1120 samples
@@ -181,11 +215,22 @@ function run_vbench() {
 VBENCH_I2V_H=256
 VBENCH_I2V_W=256
 
-function run_vbenck_i2v() {
-  eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
-    --prompt-path assets/texts/VBench/all_i2v.txt \
-    --start-index $1 --end-index $2 \
-    --num-frames $NUM_FRAMES --image-size $VBENCH_I2V_H $VBENCH_I2V_W --batch-size $VBENCH_BS
+function run_vbench_i2v() {
+    if [ -z ${VBENCH_RES} ] || [ -z ${VBENCH_ASP_RATIO} ]  ;
+      then
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_i2v.txt \
+        --image-size $VBENCH_I2V_H $VBENCH_I2V_W \
+        --start-index $1 --end-index $2 \
+        --num-frames $NUM_FRAMES  --batch-size $VBENCH_BS
+      else
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_i2v.txt \
+        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
+        --start-index $1 --end-index $2 \
+        --num-frames $NUM_FRAMES --batch-size $VBENCH_BS
+  fi
+
 }
 
 ### Main
@@ -245,7 +290,7 @@ for arg in "$@"; do
       then
         echo "need to set start_index and end_index"
       else
-          run_vbenck_i2v $VBENCH_START_INDEX $VBENCH_END_INDEX
+          run_vbench_i2v $VBENCH_START_INDEX $VBENCH_END_INDEX
     fi
   fi
 done
