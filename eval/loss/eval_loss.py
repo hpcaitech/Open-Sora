@@ -100,7 +100,13 @@ def main():
         return dataloader, num_steps_per_epoch, num_batch
 
     evaluation_losses = {}
-    for res, t_bucket in bucket_config.items():
+    start = cfg.start_index if "start_index" in cfg else 0
+    end = cfg.end_index if "end_index" in cfg else len(bucket_config)
+    for i, res in enumerate(bucket_config):
+        if i < start or i >= end:  # skip task
+            continue
+
+        t_bucket = bucket_config[res]
         for num_frames, (_, batch_size) in t_bucket.items():
             if batch_size is None:
                 continue

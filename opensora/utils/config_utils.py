@@ -51,7 +51,7 @@ def parse_args(training=False):
         parser.add_argument("--fps", default=None, type=int, help="fps")
         parser.add_argument("--image-size", default=None, type=int, nargs=2, help="image size")
         parser.add_argument("--frame-interval", default=None, type=int, help="frame interval")
-        parser.add_argument("--aspect-ratio", default=None, type=float, help="aspect ratio")
+        parser.add_argument("--aspect-ratio", default=None, type=str, help="aspect ratio")
 
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
