@@ -117,10 +117,11 @@ def split_video(
         # cmd += ['-v', 'error']
 
         # clip to cut
-        # -ss after -i is very slow; put -ss before -i
-        cmd += ["-nostdin", "-y", "-i", video_path]
-        if scene is not None:
-            cmd += ["-ss", str(s.get_seconds()), "-t", str(duration.get_seconds())]
+        # Note: -ss after -i is very slow; put -ss before -i !!!
+        if scene is None:
+            cmd += ["-nostdin", "-y", "-i", video_path]
+        else:
+            cmd += ["-nostdin", "-y", "-ss", str(s.get_seconds()), "-i", video_path, "-t", str(duration.get_seconds())]
 
         # target fps
         if target_fps is not None:
