@@ -118,12 +118,12 @@ class AestheticScorer(nn.Module):
 def main():
     args = parse_args()
 
-    dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
-    torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
-
     meta_path = args.meta_path
     wo_ext, ext = os.path.splitext(meta_path)
     out_path = f"{wo_ext}_aes{ext}"
+
+    dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
+    torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
 
     # build model
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -170,7 +170,9 @@ def main():
 
     # save local results
     meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column="aes")
-    out_path_local = out_path.replace(".csv", f"_part_{dist.get_rank()}.csv")
+    save_dir_local = os.path.join(os.path.dirname(out_path), 'parts')
+    os.makedirs(save_dir_local, exist_ok=True)
+    out_path_local = os.path.join(save_dir_local, os.path.basename(out_path).replace(".csv", f"_part_{dist.get_rank()}.csv"))
     meta_local.to_csv(out_path_local, index=False)
 
     # wait for all ranks to finish data processing
