@@ -608,6 +608,12 @@ def main(args):
         data = data.sort_values(by=args.sort_ascending, ascending=True)
 
     # filtering
+    if args.filesize:
+        assert "path" in data.columns
+        data["filesize"] = apply(data["path"], lambda x: os.stat(x).st_size / 1024 / 1024)
+    if args.fsmax is not None:
+        assert "filesize" in data.columns
+        data = data[data["filesize"] <= args.fsmax]
     if args.remove_empty_caption:
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
@@ -719,6 +725,8 @@ def parse_args():
     parser.add_argument("--score-to-text", action="store_true", help="convert score to text")
 
     # score filtering
+    parser.add_argument("--filesize", action="store_true", help="get the filesize of each video and image in MB")
+    parser.add_argument("--fsmax", type=int, default=None, help="filter the dataset by maximum filesize")
     parser.add_argument("--fmin", type=int, default=None, help="filter the dataset by minimum number of frames")
     parser.add_argument("--fmax", type=int, default=None, help="filter the dataset by maximum number of frames")
     parser.add_argument("--hwmax", type=int, default=None, help="filter the dataset by maximum resolution")
@@ -794,6 +802,10 @@ def get_output_path(args, input_name):
         name += "_score2text"
 
     # score filtering
+    if args.filesize:
+        name += "_filesize"
+    if args.fsmax is not None:
+        name += f"_fsmax{args.fsmax}"
     if args.fmin is not None:
         name += f"_fmin{args.fmin}"
     if args.fmax is not None:
