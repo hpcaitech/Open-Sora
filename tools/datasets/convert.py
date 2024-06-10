@@ -94,6 +94,8 @@ def process_vidprom(root, info):
 
 def process_general_images(root, output):
     root = os.path.expanduser(root)
+    if not os.path.exists(root):
+        return
     path_list = get_filelist(root, IMG_EXTENSIONS)
     fname_list = [os.path.splitext(os.path.basename(x))[0] for x in path_list]
     df = pd.DataFrame(dict(id=fname_list, path=path_list))
@@ -105,6 +107,8 @@ def process_general_images(root, output):
 
 def process_general_videos(root, output):
     root = os.path.expanduser(root)
+    if not os.path.exists(root):
+        return
     path_list = get_filelist(root, VID_EXTENSIONS)
     path_list = list(set(path_list)) # remove duplicates
     fname_list = [os.path.splitext(os.path.basename(x))[0] for x in path_list]
