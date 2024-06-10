@@ -121,13 +121,13 @@ pip install -v .
 运行如下指令使用提供的Dockerfile构建镜像：
 
 ```bash
-docker build -t opensora ./docker
+docker build -t opensora .
 ```
 
 运行以下命令以启动交互模式下的 Docker 容器：
 
 ```bash
-docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
+docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 ```
 
 安装完成后，建议阅读[结构](structure.md)，了解项目结构以及如何使用配置文件。
