@@ -169,14 +169,14 @@ function run_video_h() { # 61min
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_${NUM_FRAMES}x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames $NUM_FRAMES --image-size 240 426 \
-    --loop 5 --condition-frame-length 15 \
+    --loop 5 --condition-frame-length 5 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_${QUAD_FRAMES}x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames $QUAD_FRAMES --image-size 240 426 \
-    --loop 5 --condition-frame-length 60 \
+    --loop 5 --condition-frame-length 10 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 

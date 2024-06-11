@@ -23,6 +23,7 @@ from opensora.utils.inference_utils import (
     get_save_path_name,
     load_prompts,
     prepare_multi_resolution_info,
+    dframe_to_frame,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -210,7 +211,7 @@ def main():
                     save_path = save_paths[idx]
                     video = [video_clips[i][idx] for i in range(loop)]
                     for i in range(1, loop):
-                        video[i] = video[i][:, condition_frame_length:]
+                        video[i] = video[i][:, dframe_to_frame(condition_frame_length) :]
                     video = torch.cat(video, dim=1)
                     save_sample(
                         video,
