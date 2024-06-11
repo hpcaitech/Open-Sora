@@ -115,15 +115,35 @@ class AestheticScorer(nn.Module):
         return self.mlp(image_features)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
+    parser.add_argument("--bs", type=int, default=1024, help="Batch size")
+    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--prefetch_factor", type=int, default=3, help="Prefetch factor")
+    parser.add_argument("--num_frames", type=int, default=3, help="Number of frames to extract")
+    parser.add_argument("--skip_if_existing", action='store_true')
+    args = parser.parse_args()
+
+    return args
+
+
 def main():
     args = parse_args()
 
-    dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
-    torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
-
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        exit()
+
     wo_ext, ext = os.path.splitext(meta_path)
     out_path = f"{wo_ext}_aes{ext}"
+    if args.skip_if_existing and os.path.exists(out_path):
+        print(f"Output meta file \'{out_path}\' already exists. Exit.")
+        exit()
+
+    dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
+    torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
 
     # build model
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -170,7 +190,9 @@ def main():
 
     # save local results
     meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column="aes")
-    out_path_local = out_path.replace(".csv", f"_part_{dist.get_rank()}.csv")
+    save_dir_local = os.path.join(os.path.dirname(out_path), 'parts')
+    os.makedirs(save_dir_local, exist_ok=True)
+    out_path_local = os.path.join(save_dir_local, os.path.basename(out_path).replace(".csv", f"_part_{dist.get_rank()}.csv"))
     meta_local.to_csv(out_path_local, index=False)
 
     # wait for all ranks to finish data processing
@@ -184,18 +206,6 @@ def main():
         meta_new = merge_scores(gathered_list, dataset.meta, column="aes")
         meta_new.to_csv(out_path, index=False)
         print(f"New meta with aesthetic scores saved to '{out_path}'.")
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=1024, help="Batch size")
-    parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
-    parser.add_argument("--prefetch_factor", type=int, default=3, help="Prefetch factor")
-    parser.add_argument("--num_frames", type=int, default=3, help="Number of frames to extract")
-    args = parser.parse_args()
-
-    return args
 
 
 if __name__ == "__main__":

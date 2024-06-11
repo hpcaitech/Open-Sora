@@ -80,6 +80,7 @@ def parse_args():
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=16, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--skip_if_existing", action='store_true')
     args = parser.parse_args()
 
     return args
@@ -87,11 +88,21 @@ def parse_args():
 
 def main():
     args = parse_args()
-    cfg = Config.fromfile('./tools/scoring/ocr/dbnetpp.py')
 
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        exit()
 
+    wo_ext, ext = os.path.splitext(meta_path)
+    out_path = f"{wo_ext}_ocr{ext}"
+    if args.skip_if_existing and os.path.exists(out_path):
+        print(f"Output meta file \'{out_path}\' already exists. Exit.")
+        exit()
+
+    cfg = Config.fromfile('./tools/scoring/ocr/dbnetpp.py')
     colossalai.launch_from_torch({})
+
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     DefaultScope.get_instance('ocr', scope_name='mmocr')  # use mmocr Registry as default
 
@@ -139,9 +150,6 @@ def main():
 
     if dist.get_rank() == 0:
         merge_scores(gathered_list, dataset.meta)
-
-        wo_ext, ext = os.path.splitext(meta_path)
-        out_path = f"{wo_ext}_ocr{ext}"
         dataset.meta.to_csv(out_path, index=False)
         print(f"New meta (shape={dataset.meta.shape}) with ocr results saved to '{out_path}'.")
 
