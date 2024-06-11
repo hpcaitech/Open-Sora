@@ -20,9 +20,9 @@ echo "Logging to $LOG_BASE"
 GPUS=(3 4 5 6 7)
 RESOLUTION=(144p 240p 360p 480p 720p)
 
-CUDA_VISIBLE_DEVICES=0 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH --start-index 0 --end-index 3 >${LOG_BASE}/img_0.log 2>&1 &
-CUDA_VISIBLE_DEVICES=1 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH --start-index 3 --end-index 5 >${LOG_BASE}/img_1.log 2>&1 &
-CUDA_VISIBLE_DEVICES=2 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH --start-index 5 >${LOG_BASE}/img_2.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH --start-index 0 --end-index 5 >${LOG_BASE}/img_0.log 2>&1 &
+CUDA_VISIBLE_DEVICES=1 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH --start-index 5 --end-index 6 >${LOG_BASE}/img_1.log 2>&1 &
+CUDA_VISIBLE_DEVICES=2 $CMD --data-path $IMG_PATH --ckpt-path $CKPT_PATH --start-index 6 >${LOG_BASE}/img_2.log 2>&1 &
 
 
 for i in "${!GPUS[@]}"; do
