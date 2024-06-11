@@ -512,12 +512,6 @@ def main(args):
         data = pd.merge(data, data_new[cols_to_use], on=col_on, how="inner")
         print(f"Intersection number of samples: {len(data)}.")
 
-    # train columns
-    if args.train_column:
-        all_columns = data.columns
-        columns_to_drop = all_columns.difference(TRAIN_COLUMNS)
-        data = data.drop(columns=columns_to_drop)
-
     # get output path
     output_path = get_output_path(args, input_name)
 
@@ -593,6 +587,8 @@ def main(args):
     if args.append_text is not None:
         assert "text" in data.columns
         data["text"] = data["text"] + args.append_text
+    if args.score_to_text:
+        data["text"] = apply(data, score_to_text, axis=1)
     if args.clean_caption:
         assert "text" in data.columns
         data["text"] = apply(
@@ -602,8 +598,6 @@ def main(args):
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
-    if args.score_to_text:
-        data["text"] = apply(data, score_to_text, axis=1)
     if args.update_text is not None:
         data_new = pd.read_csv(args.update_text)
         num_updated = data.path.isin(data_new.path).sum()
@@ -666,6 +660,12 @@ def main(args):
         data = data.sample(frac=1).reset_index(drop=True)  # shuffle
     if args.head is not None:
         data = data.head(args.head)
+
+    # train columns
+    if args.train_column:
+        all_columns = data.columns
+        columns_to_drop = all_columns.difference(TRAIN_COLUMNS)
+        data = data.drop(columns=columns_to_drop)
 
     print(f"Filtered number of samples: {len(data)}.")
 
