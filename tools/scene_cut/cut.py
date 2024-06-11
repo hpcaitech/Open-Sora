@@ -3,7 +3,6 @@ import cv2  # isort:skip
 import argparse
 import os
 import subprocess
-import time
 from functools import partial
 
 import pandas as pd
@@ -43,6 +42,8 @@ def process_single_row(row, args):
     if "relpath" in row:
         save_dir = os.path.dirname(os.path.join(args.save_dir, row["relpath"]))
         os.makedirs(save_dir, exist_ok=True)
+    else:
+        save_dir = args.save_dir
 
     shorter_size = args.shorter_size
     if (shorter_size is not None) and ("height" in row) and ("width" in row):
@@ -171,11 +172,10 @@ def main():
     args = parse_args()
     meta_path = args.meta_path
     if not os.path.exists(meta_path):
-        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        print(f"Meta file '{meta_path}' not found. Exit.")
         exit()
 
     # create logger
-    logger = None
     os.makedirs(args.save_dir, exist_ok=True)
 
     # initialize pandarallel
