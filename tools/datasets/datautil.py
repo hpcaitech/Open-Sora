@@ -564,6 +564,10 @@ def main(args):
     if args.lang is not None:
         assert "text" in data.columns
         data = data[data["text"].progress_apply(detect_lang)]  # cannot parallelize
+    if args.remove_empty_path:
+        assert "path" in data.columns
+        data = data[data["path"].str.len() > 0]
+        data = data[~data["path"].isna()]
     if args.remove_empty_caption:
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
@@ -712,6 +716,11 @@ def parse_args():
     parser.add_argument(
         "--path-subset", type=str, default=None, help="extract a subset data containing the given `path-subset` value"
     )
+    parser.add_argument(
+        "--remove-empty-path",
+        action="store_true",
+        help="remove rows with empty path",  # caused by transform, cannot read path
+    )
 
     # caption filtering
     parser.add_argument(
@@ -787,6 +796,8 @@ def get_output_path(args, input_name):
         name += "_relpath"
     if args.abspath is not None:
         name += "_abspath"
+    if args.remove_empty_path:
+        name += "_noemptypath"
 
     # caption filtering
     if args.remove_empty_caption:
