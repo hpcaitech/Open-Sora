@@ -12,10 +12,10 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from tqdm import tqdm
-import torchvision
+
+from opensora.datasets.read_video import read_video
 
 from .utils import IMG_EXTENSIONS
-from opensora.datasets.read_video import read_video
 
 tqdm.pandas()
 
@@ -186,29 +186,29 @@ def remove_caption_prefix(caption):
 # ======================================================
 
 CMOTION_TEXT = {
-    "static": "The camera is static.",
-    "dynamic": "The camera is moving.",
-    "unknown": None,
-    "zoom in": "The camera is zooming in.",
-    "zoom out": "The camera is zooming out.",
-    "pan left": "The camera is panning left.",
-    "pan right": "The camera is panning right.",
-    "tilt up": "The camera is tilting up.",
-    "tilt down": "The camera is tilting down.",
-    "pan/tilt": "The camera is panning.",
+    "static": "static",
+    "pan_right": "pan right",
+    "pan_left": "pan left",
+    "zoom_in": "zoom in",
+    "zoom_out": "zoom out",
+    "tilt_up": "tilt up",
+    "tilt_down": "tilt down",
+    # "pan/tilt": "The camera is panning.",
+    # "dynamic": "The camera is moving.",
+    # "unknown": None,
 }
 CMOTION_PROBS = {
     # hard-coded probabilities
     "static": 1.0,
-    "dynamic": 1.0,
-    "unknown": 0.0,
-    "zoom in": 1.0,
-    "zoom out": 1.0,
-    "pan left": 1.0,
-    "pan right": 1.0,
-    "tilt up": 1.0,
-    "tilt down": 1.0,
-    "pan/tilt": 1.0,
+    "zoom_in": 1.0,
+    "zoom_out": 1.0,
+    "pan_left": 1.0,
+    "pan_right": 1.0,
+    "tilt_up": 1.0,
+    "tilt_down": 1.0,
+    # "dynamic": 1.0,
+    # "unknown": 0.0,
+    # "pan/tilt": 1.0,
 }
 
 
@@ -216,7 +216,7 @@ def merge_cmotion(caption, cmotion):
     text = CMOTION_TEXT[cmotion]
     prob = CMOTION_PROBS[cmotion]
     if text is not None and random.random() < prob:
-        caption = f"{caption} {text}"
+        caption = f"{caption} Camera motion: {text}."
     return caption
 
 
@@ -472,7 +472,7 @@ def read_data(input_paths):
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(input_list) - 1:
             input_name += "+"
-        print(f"Loaded {len(data[-1])} samples from \'{input_path}\'.")
+        print(f"Loaded {len(data[-1])} samples from '{input_path}'.")
     if len(data) == 0:
         print(f"No samples to process. Exit.")
         exit()
@@ -600,6 +600,14 @@ def main(args):
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
     if args.score_to_text:
         data["text"] = apply(data, score_to_text, axis=1)
+    if args.update_text is not None:
+        data_new = pd.read_csv(args.update_text)
+        num_updated = data.path.isin(data_new.path).sum()
+        print(f"Number of updated samples: {num_updated}.")
+        data = data.set_index("path")
+        data_new = data_new[["path", "text"]].set_index("path")
+        data.update(data_new)
+        data = data.reset_index()
 
     # sort
     if args.sort is not None:
@@ -727,6 +735,7 @@ def parse_args():
     )
     parser.add_argument("--append-text", type=str, default=None, help="append text to the caption")
     parser.add_argument("--score-to-text", action="store_true", help="convert score to text")
+    parser.add_argument("--update-text", type=str, default=None, help="update the text with the given text")
 
     # score filtering
     parser.add_argument("--filesize", action="store_true", help="get the filesize of each video and image in MB")
@@ -806,6 +815,8 @@ def get_output_path(args, input_name):
         name += "_appendtext"
     if args.score_to_text:
         name += "_score2text"
+    if args.update_text is not None:
+        name += "_update"
 
     # score filtering
     if args.filesize:
