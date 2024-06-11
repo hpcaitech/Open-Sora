@@ -42,8 +42,7 @@ def read_file(input_path):
 
 def download_url(input_path):
     output_dir = "cache"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
     base_name = os.path.basename(input_path)
     output_path = os.path.join(output_dir, base_name)
     img_data = requests.get(input_path).content
