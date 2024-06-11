@@ -108,3 +108,4 @@ grad_clip = 1.0
 lr = 1e-4
 ema_decay = 0.99
 adam_eps = 1e-15
+warmup_steps = 1000
