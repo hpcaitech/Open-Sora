@@ -54,31 +54,41 @@ function run_image() { # 14min
   # 1.4 720p multi-resolution
   # 1:1
   PROMPT="Bright scene, aerial view,ancient city, fantasy, gorgeous light, mirror reflection, high detail, wide angle lens."
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 960 960 --sample-name 720p_1_1
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 960 960 --sample-name image_720p_1_1
   # 16:9
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 720 1280 --sample-name 720p_16_9
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 720 1280 --sample-name image_720p_16_9
   # 9:16
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 1280 720 --sample-name 720p_9_16
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 1280 720 --sample-name image_720p_9_16
   # 4:3
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 832 1108 --sample-name 720p_4_3
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 832 1108 --sample-name image_720p_4_3
   # 3:4
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 1108 832 --sample-name 720p_3_4
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 1108 832 --sample-name image_720p_3_4
   # 1:2
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 1358 600 --sample-name 720p_1_2
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 1358 600 --sample-name image_720p_1_2
   # 2:1
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 600 1358 --sample-name 720p_2_1
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --image-size 600 1358 --sample-name image_720p_2_1
 }
 
 function run_video_a() { # 42min, sample & multi-resolution
   # sample
+  # drop
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 144 256 --sample-name sample_${NUM_FRAMES}x144x256 --batch-size $DEFAULT_BS
+  # keep
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 240 426 --sample-name sample_${NUM_FRAMES}x240x426 --batch-size $DEFAULT_BS
+  # drop
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 240 426 --sample-name sample_${DOUBLE_FRAMES}x240x426 --batch-size $DEFAULT_BS
+  # 8x
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 240 426 --sample-name sample_${QUAD_FRAMES}x240x426 --batch-size $DEFAULT_BS
+  # keep
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 480 854 --sample-name sample_${NUM_FRAMES}x480x854 --batch-size $DEFAULT_BS
+  # 4x
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 480 854 --sample-name sample_${DOUBLE_FRAMES}x480x854 --batch-size $DEFAULT_BS
+  # 2x
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 720 1280 --sample-name sample_${NUM_FRAMES}x720x1280 --batch-size $DEFAULT_BS
 }
+
+# for (short, sora, sample)
+#   for ( (2s, 720p), (8s, 480p), (16s, 240p) )
 
 function run_video_b() { # 18min + 14min = 32min, short 16x240p & 64x240p
   # run image
@@ -87,17 +97,21 @@ function run_video_b() { # 18min + 14min = 32min, short 16x240p & 64x240p
 
   echo "Inside run_video_b, running video samples..."
   # 32x240p, short
+  # drop
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 240 426 --sample-name short_${DOUBLE_FRAMES}x240x426 --batch-size $DEFAULT_BS
 
   # 64x240p, short
+  # 8x
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 240 426 --sample-name short_${QUAD_FRAMES}x240x426 --batch-size $DEFAULT_BS
 }
 
 function run_video_c() { # 60min, sora 16x240p & short 128x240p
   # 16x240p, sora
+  # drop
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 426 240 --sample-name sora_${NUM_FRAMES}x426x240 --batch-size $DEFAULT_BS
 
   # 16x240p, sora
+  # drop
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 240 426 --sample-name sora_${NUM_FRAMES}x240x426 --batch-size $DEFAULT_BS
 
   # 128x240p, sora
@@ -106,21 +120,26 @@ function run_video_c() { # 60min, sora 16x240p & short 128x240p
 
 function run_video_d() { # 21min + 30min = 51min, sora 32x480p
   # 32x480p, short
+  # -> 8s, 480p
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames $DOUBLE_FRAMES --image-size 480 854 --sample-name short_${DOUBLE_FRAMES}x480x854 --batch-size $DEFAULT_BS
 
-  # 64x480p, sora, moved from run_video_e
+  # + 2s, 720p, short
+
+  # 8s, 480p, sora, moved from run_video_e
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 480 854 --sample-name sora_${QUAD_FRAMES}x480x854 --batch-size $DEFAULT_BS --start-index 0 --end-index 16
 }
 
 function run_video_e() { # 90min * 2/3 = 60min
-  # 64x480p, sora
+  # 8s, 480p, sora
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $QUAD_FRAMES --image-size 480 854 --sample-name sora_${QUAD_FRAMES}x480x854 --batch-size $DEFAULT_BS --start-index 16 --end-index 100
 }
 
 function run_video_f() { # 60min
-  # 16x720p, sora
+  # 2s, 720p, sora
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames $NUM_FRAMES --image-size 720 1280 --sample-name sora_${NUM_FRAMES}x720x1280 --batch-size $DEFAULT_BS
 }
+
+# --resolution 720p --aspect-ratio [16:9, 9:16, ...]
 
 function run_video_g() { # 15min
   # 16x720p multi-resolution
@@ -163,6 +182,8 @@ function run_video_g() { # 15min
     \"A stylish woman walking in the street of Tokyo. aesthetic score: 6.5\" \
     \"A stylish woman walking in the street of Tokyo. aesthetic score: 7.0\"
 }
+
+# resolution -> 480p
 
 function run_video_h() { # 61min
   # 3.1 image-conditioned long video generation

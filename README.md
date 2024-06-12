@@ -24,8 +24,9 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
+* **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE** and **rectified flow**. The video quality is greatly improved.
 * **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
-* **[2024.04.25]** 🔥 We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
+* **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
 * **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
   <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
@@ -39,6 +40,9 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 🔥 You can experience Open-Sora on our [🤗 Gradio application on Hugging Face](https://huggingface.co/spaces/hpcai-tech/open-sora). More samples are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
+<details>
+<summary>OpenSora 1.1 Demo</summary>
+
 | **2s 240×426**                                                                                                                                              | **2s 240×426**                                                                                                                                             |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) | [<img src="assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) |
@@ -51,6 +55,8 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 | **16s 320×320**                                                                                                                                        | **16s 224×448**                                                                                                                                        | **2s 426×240**                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
+
+</details>
 
 <details>
 <summary>OpenSora 1.0 Demo</summary>
@@ -69,7 +75,10 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 ## 🔆 New Features/Updates
 
-* 📍 **Open-Sora 1.1** released. Model weights are available [here](). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
+* 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights).
+* ✅ Support rectified flow scheduling.
+* ✅ Trained our 3D-VAE for temporal dimension compression.
+* 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
 * 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
 * ✅ Improved ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
 * ✅ Support training with any resolution, aspect ratio, and duration (including images).
@@ -193,7 +202,18 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 
 ## Model Weights
 
+### Open-Sora 1.2 Model Weights
+
+| Resolution | Model Size | Data | #iterations | Batch Size | URL |
+| ---------- | ---------- | ---- | ----------- | ---------- | --- |
+| TBD        |
+
+See our **[report 1.2](docs/report_03.md)** for more infomation.
+
 ### Open-Sora 1.1 Model Weights
+
+<details>
+<summary>View more</summary>
 
 | Resolution         | Model Size | Data                       | #iterations | Batch Size                                        | URL                                                                  |
 | ------------------ | ---------- | -------------------------- | ----------- | ------------------------------------------------- | -------------------------------------------------------------------- |
@@ -203,6 +223,8 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 See our **[report 1.1](docs/report_02.md)** for more infomation.
 
 :warning: **LIMITATION**: This version contains known issues which we are going to fix in the next version (as we save computation resource for the next release). In addition, the video generation may fail for long duration, and high resolution will have noisy results due to this problem.
+
+</details>
 
 ### Open-Sora 1.0 Model Weights
 
@@ -352,6 +374,8 @@ If you wish to contribute to this project, please refer to the [Contribution Gui
 
 ## Acknowledgement
 
+Here we only list a few of the projects. For other works and datasets, please refer to our report.
+
 * [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
   system.
 * [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
@@ -363,8 +387,22 @@ If you wish to contribute to this project, please refer to the [Contribution Gui
 * [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
 * [T5](https://github.com/google-research/text-to-text-transfer-transformer): A powerful text encoder.
 * [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
+* [PLLaVA](https://github.com/magic-research/PLLaVA): A powerful video captioning model.
+* [MiraData](https://github.com/mira-space/MiraData): A large-scale video dataset with long durations and structured caption.
 
 We are grateful for their exceptional work and generous contribution to open source.
+
+## Citation
+
+```bibtex
+@software{opensora,
+  author = {Zangwei Zheng and Xiangyu Peng and Tianji Yang and Chenhui Shen and Shenggui Li and Hongxin Liu and Yukun Zhou and Tianyi Li and Yang You},
+  title = {Open-Sora: Democratizing Efficient Video Production for All},
+  month = {March},
+  year = {2024},
+  url = {https://github.com/hpcaitech/Open-Sora}
+}
+```
 
 ## Star History
 
