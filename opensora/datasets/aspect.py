@@ -22,6 +22,7 @@ def get_ar(ratio):
     return int(h) / int(w)
 
 
+# H:W
 ASPECT_RATIO_MAP = {
     "3:8": "0.38",
     "9:21": "0.43",
