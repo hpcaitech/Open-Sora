@@ -264,7 +264,12 @@ python gradio/app.py
 
 This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [README file](./gradio/README.md).
 
+### Open-Sora 1.2 Command Line Inference
+
 ### Open-Sora 1.1 Command Line Inference
+
+<details>
+<summary>View more</summary>
 
 Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
 
@@ -280,6 +285,8 @@ python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "
 ```
 
 See [here](docs/commands.md#inference-with-open-sora-11) for more instructions including text-to-image, image-to-video, video-to-video, and infinite time generation.
+
+</details>
 
 ### Open-Sora 1.0 Command Line Inference
 
@@ -319,7 +326,12 @@ Also check out the [datasets](docs/datasets.md) we use.
 
 ## Training
 
+### Open-Sora 1.2 Training
+
 ### Open-Sora 1.1 Training
+
+<details>
+<summary>View more</summary>
 
 Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
 
@@ -331,6 +343,8 @@ torchrun --standalone --nproc_per_node 8 scripts/train.py \
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
     configs/opensora-v1-1/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
+
+</details>
 
 ### Open-Sora 1.0 Training
 
@@ -359,6 +373,10 @@ For training other models and advanced usage, see [here](docs/commands.md) for m
 </details>
 
 ## Evaluation
+
+### VBench
+
+### VBench-i2v
 
 See [here](eval/README.md) for more instructions.
 
