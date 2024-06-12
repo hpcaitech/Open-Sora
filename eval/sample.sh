@@ -23,7 +23,6 @@ echo "DOUBLE_FRAMES=${DOUBLE_FRAMES}"
 echo "QUAD_FRAMES=${QUAD_FRAMES}"
 echo "OCT_FRAMES=${OCT_FRAMES}"
 
-
 CMD="python scripts/inference.py configs/opensora-v1-2/inference/sample.py"
 if [[ $CKPT == *"ema"* ]]; then
   parentdir=$(dirname $CKPT)
@@ -69,7 +68,7 @@ function run_image() { # 14min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --resolution 720p --aspect-ratio 2:1 --sample-name image_720p_2_1
 }
 
-function run_video_a() {  # ~ 30min ?
+function run_video_a() { # ~ 30min ?
   ### previous cmds  # 42min, sample & multi-resolution
   # # sample, 144p, 9:16, 2s
   # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resolution 144p --aspect-ratio 9:16 --sample-name sample_2s_144p_9_16 --batch-size $DEFAULT_BS
@@ -151,7 +150,7 @@ function run_video_e() { # 90min * 2/3 = 60min
 
 function run_video_f() { # 60min
   # sora, 720p, 9:16, 2s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16  --sample-name sora_2s_720p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name sora_2s_720p_9_16 --batch-size $DEFAULT_BS
 }
 
 # --resolution 720p --aspect-ratio [16:9, 9:16, ...]
@@ -160,7 +159,7 @@ function run_video_g() { # 15min
   # 720p, 2s multi-resolution
   # 1:1
   PROMPT="A soaring drone footage captures the majestic beauty of a coastal cliff, its red and yellow stratified rock faces rich in color and against the vibrant turquoise of the sea. Seabirds can be seen taking flight around the cliff's precipices. As the drone slowly moves from different angles, the changing sunlight casts shifting shadows that highlight the rugged textures of the cliff and the surrounding calm sea. The water gently laps at the rock base and the greenery that clings to the top of the cliff, and the scene gives a sense of peaceful isolation at the fringes of the ocean. The video captures the essence of pristine natural beauty untouched by human structures."
-  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 2s  --resolution 720p --aspect-ratio 1:1 --sample-name drone_cliff_prompt_720p_2s_1_1
+  eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 1:1 --sample-name drone_cliff_prompt_720p_2s_1_1
   # 16:9
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 16:9 --sample-name drone_cliff_prompt_720p_2s_16_9
   # 9:16
@@ -176,8 +175,7 @@ function run_video_g() { # 15min
 
   # add motion score
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --num-frames 2s --resolution 720p --sample-name motion_2s_720p --prompt \
-    \"A stylish woman walking in the street of Tokyo.\"\
-    \"A stylish woman walking in the street of Tokyo. motion score: 0.0\" \
+    \"A stylish woman walking in the street of Tokyo.\" \"A stylish woman walking in the street of Tokyo. motion score: 0.0\" \
     \"A stylish woman walking in the street of Tokyo. motion score: 2.0\" \
     \"A stylish woman walking in the street of Tokyo. motion score: 4.0\" \
     \"A stylish woman walking in the street of Tokyo. motion score: 6.0\" \
@@ -188,8 +186,7 @@ function run_video_g() { # 15min
 
   # add aes score
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --num-frames 2s --resolution 720p --sample-name aes_2s_720p --prompt \
-    \"A stylish woman walking in the street of Tokyo.\"\
-    \"A stylish woman walking in the street of Tokyo. aesthetic score: 4.0\" \
+    \"A stylish woman walking in the street of Tokyo.\" \"A stylish woman walking in the street of Tokyo. aesthetic score: 4.0\" \
     \"A stylish woman walking in the street of Tokyo. aesthetic score: 4.5\" \
     \"A stylish woman walking in the street of Tokyo. aesthetic score: 5.0\" \
     \"A stylish woman walking in the street of Tokyo. aesthetic score: 5.5\" \
@@ -219,7 +216,7 @@ function run_video_h() { # 61min
   # 3.2
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_16s_240p_9_16 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
-    --num-frames 16s  --resolution 240p --aspect-ratio 9:16 \
+    --num-frames 16s --resolution 240p --aspect-ratio 9:16 \
     --loop 1 \
     --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
     --mask-strategy "0\;0,0,0,-1,1" "0\;0,1,0,-1,1" "0,0,0,0,${QUAD_FRAMES},0.5" --batch-size $DEFAULT_BS
@@ -232,17 +229,16 @@ VBENCH_H=240
 VBENCH_W=426
 
 function run_vbench() {
-  if [ -z ${VBENCH_RES} ] || [ -z ${VBENCH_ASP_RATIO} ]  ;
-      then
-        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-        --prompt-path assets/texts/VBench/all_dimension.txt \
-        --image-size $VBENCH_H $VBENCH_W \
-        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
-      else
-        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-        --prompt-path assets/texts/VBench/all_dimension.txt \
-        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
-        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+  if [ -z ${VBENCH_RES} ] || [ -z ${VBENCH_ASP_RATIO} ]; then
+    eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+      --prompt-path assets/texts/VBench/all_dimension.txt \
+      --image-size $VBENCH_H $VBENCH_W \
+      --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+  else
+    eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+      --prompt-path assets/texts/VBench/all_dimension.txt \
+      --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
+      --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
   fi
 }
 
@@ -252,19 +248,18 @@ VBENCH_I2V_H=256
 VBENCH_I2V_W=256
 
 function run_vbench_i2v() {
-    if [ -z ${VBENCH_RES} ] || [ -z ${VBENCH_ASP_RATIO} ]  ;
-      then
-        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
-        --prompt-path assets/texts/VBench/all_i2v.txt \
-        --image-size $VBENCH_I2V_H $VBENCH_I2V_W \
-        --start-index $1 --end-index $2 \
-        --num-frames $NUM_FRAMES  --batch-size $VBENCH_BS
-      else
-        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
-        --prompt-path assets/texts/VBench/all_i2v.txt \
-        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
-        --start-index $1 --end-index $2 \
-        --num-frames $NUM_FRAMES --batch-size $VBENCH_BS
+  if [ -z ${VBENCH_RES} ] || [ -z ${VBENCH_ASP_RATIO} ]; then
+    eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+      --prompt-path assets/texts/VBench/all_i2v.txt \
+      --image-size $VBENCH_I2V_H $VBENCH_I2V_W \
+      --start-index $1 --end-index $2 \
+      --num-frames $NUM_FRAMES --batch-size $VBENCH_BS
+  else
+    eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+      --prompt-path assets/texts/VBench/all_i2v.txt \
+      --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
+      --start-index $1 --end-index $2 \
+      --num-frames $NUM_FRAMES --batch-size $VBENCH_BS
   fi
 
 }
@@ -312,21 +307,19 @@ for arg in "$@"; do
   # vbench
   if [[ "$arg" = -4 ]] || [[ "$arg" = --vbench ]]; then
     echo "Running vbench samples ..."
-    if [ -z ${VBENCH_START_INDEX} ] || [ -z ${VBENCH_END_INDEX} ]  ;
-      then
-        echo "need to set start_index and end_index"
-      else
-          run_vbench $VBENCH_START_INDEX $VBENCH_END_INDEX
+    if [ -z ${VBENCH_START_INDEX} ] || [ -z ${VBENCH_END_INDEX} ]; then
+      echo "need to set start_index and end_index"
+    else
+      run_vbench $VBENCH_START_INDEX $VBENCH_END_INDEX
     fi
   fi
   # vbench-i2v
   if [[ "$arg" = -5 ]] || [[ "$arg" = --vbench-i2v ]]; then
     echo "Running vbench-i2v samples ..."
-    if [ -z ${VBENCH_START_INDEX} ] || [ -z ${VBENCH_END_INDEX} ]  ;
-      then
-        echo "need to set start_index and end_index"
-      else
-          run_vbench_i2v $VBENCH_START_INDEX $VBENCH_END_INDEX
+    if [ -z ${VBENCH_START_INDEX} ] || [ -z ${VBENCH_END_INDEX} ]; then
+      echo "need to set start_index and end_index"
+    else
+      run_vbench_i2v $VBENCH_START_INDEX $VBENCH_END_INDEX
     fi
   fi
 done
