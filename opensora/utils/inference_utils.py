@@ -73,7 +73,7 @@ def append_score_to_prompts(prompts, aes=None, flow=None):
 def extract_json_from_prompts(prompts, reference, mask_strategy):
     ret_prompts = []
     for i, prompt in enumerate(prompts):
-        parts = re.split(r"(?=[{\[])", prompt)
+        parts = re.split(r"(?=[{])", prompt)
         assert len(parts) <= 2, f"Invalid prompt: {prompt}"
         ret_prompts.append(parts[0])
         if len(parts) > 1:
