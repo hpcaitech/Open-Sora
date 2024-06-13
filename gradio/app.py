@@ -493,10 +493,10 @@ def main():
                         
                     with gr.Column():
                         aesthetic_score = gr.Slider(
-                            value=6,
+                            value=6.5,
                             minimum=4,
                             maximum=7,
-                            step=1,
+                            step=0.1,
                             label="Aesthetic",
                             info="effective for text & video generation"
                         )
