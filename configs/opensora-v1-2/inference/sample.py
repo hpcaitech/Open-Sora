@@ -49,5 +49,5 @@ scheduler = dict(
     cfg_scale=7.0,
 )
 
-aes = None
+aes = 6.5
 flow = None

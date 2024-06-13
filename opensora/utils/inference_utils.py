@@ -52,6 +52,24 @@ def get_save_path_name(
     return save_path
 
 
+def append_score_to_prompts(prompts, aes=None, flow=None):
+    score_prompts = []
+    if aes is not None:
+        score_prompts.append(f"aesthetic score: {aes:.1f}")
+    if flow is not None:
+        score_prompts.append(f"motion score: {flow:.1f}")
+    if len(score_prompts) > 0:
+        score_text = ", ".join(score_prompts)
+        new_prompts = []
+        for prompt in prompts:
+            if "score:" in prompt:
+                new_prompts.append(prompt)
+            else:
+                new_prompts.append(f"{prompt} {score_text}")
+        return new_prompts
+    return prompts
+
+
 def extract_json_from_prompts(prompts, reference, mask_strategy):
     ret_prompts = []
     for i, prompt in enumerate(prompts):
