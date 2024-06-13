@@ -38,7 +38,7 @@ DEFAULT_BS=1
 
 # called inside run_video_b
 function run_image() { # 14min
-  # # 1.1 1024x1024
+  # 1.1 1024x1024
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 1024 --aspect_ratio 1:1 --sample-name image_1024_1_1 --batch-size $DEFAULT_BS
 
   # 1.2 240x426
@@ -68,6 +68,9 @@ function run_image() { # 14min
   eval $CMD --ckpt-path $CKPT --prompt \"$PROMPT\" --save-dir $OUTPUT --num-frames 1 --resolution 720p --aspect-ratio 2:1 --sample-name image_720p_2_1
 }
 
+# for (sample, short, sora)
+#   for ( (4s, 720p), (8s, 480p), (16s, 360p) )
+
 function run_video_a() { # ~ 30min ?
   ### previous cmds  # 42min, sample & multi-resolution
   # # sample, 144p, 9:16, 2s
@@ -86,17 +89,14 @@ function run_video_a() { # ~ 30min ?
   # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name sample_2s_720p_9_16 --batch-size $DEFAULT_BS
 
   # sample, 720p, 9:16, 2s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name sample_2s_720p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 4s --resolution 720p --aspect-ratio 9:16 --sample-name sample_4s_720p --batch-size $DEFAULT_BS
 
   # sample, 480p, 9:16, 8s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sample_8s_480p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sample_8s_480p --batch-size $DEFAULT_BS
 
   # sample, 240p, 9:16, 16s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16s --resolution 240p --aspect-ratio 9:16 --sample-name sample_16s_240p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16s --resolution 360p --aspect-ratio 9:16 --sample-name sample_16s_360p --batch-size $DEFAULT_BS
 }
-
-# for (short, sora, sample)
-#   for ( (2s, 720p), (8s, 480p), (16s, 240p) )
 
 function run_video_b() { # 18min + 14min = 32min, short 16x240p & 64x240p
   # run image, 14min
@@ -111,10 +111,12 @@ function run_video_b() { # 18min + 14min = 32min, short 16x240p & 64x240p
   # # short, 240p, 9:16, 8s
   # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 8s --resolution 240p --aspect-ratio 9:16 --sample-name short_8s_240p_9_16 --batch-size $DEFAULT_BS
 
-  # short, 240p, 9:16, 16s: ~24min
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16s --resolution 240p --aspect-ratio 9:16 --sample-name short_16s_240p_9_16 --batch-size $DEFAULT_BS
   # short, 480p, 9:16, 8s: ~24min
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name short_8s_480p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name short_8s_480p --batch-size $DEFAULT_BS
+
+  # short, 240p, 9:16, 16s: ~24min
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16s --resolution 360p --aspect-ratio 9:16 --sample-name short_16s_360p --batch-size $DEFAULT_BS
+
 }
 
 function run_video_c() {
@@ -127,9 +129,10 @@ function run_video_c() {
   # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16s --resolution 240p --aspect-ratio 9:16 --sample-name sora_16s_240p_9_16 --batch-size $DEFAULT_BS
 
   # short, 720p, 9:16, 2s: ~9min
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name short_2s_720p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 4s --resolution 720p --aspect-ratio 9:16 --sample-name short_4s_720p --batch-size $DEFAULT_BS
+
   # sora, 240p, 9:16, 16s: ~40min
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16s --resolution 240p --aspect-ratio 9:16 --sample-name sora_16s_240p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 16s --resolution 360p --aspect-ratio 9:16 --sample-name sora_16s_360p --batch-size $DEFAULT_BS
 }
 
 function run_video_d() {
@@ -140,17 +143,17 @@ function run_video_d() {
   # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sora_8s_480p_9_16 --batch-size $DEFAULT_BS --start-index 0 --end-index 16
 
   # sora, 480p, 9:16, 8s, 1/3 # moved from run_video_e, 30min
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sora_8s_480p_9_16 --batch-size $DEFAULT_BS --start-index 0 --end-index 16
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sora_8s_480p --batch-size $DEFAULT_BS --start-index 0 --end-index 16
 }
 
 function run_video_e() { # 90min * 2/3 = 60min
   # sora, 480p, 9:16, 8s, 2/3
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sora_8s_480p_9_16 --batch-size $DEFAULT_BS --start-index 16 --end-index 100
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sora_8s_480p --batch-size $DEFAULT_BS --start-index 16 --end-index 100
 }
 
 function run_video_f() { # 60min
   # sora, 720p, 9:16, 2s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name sora_2s_720p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_sora.txt --save-dir $OUTPUT --num-frames 4s --resolution 720p --aspect-ratio 9:16 --sample-name sora_4s_720p --batch-size $DEFAULT_BS
 }
 
 # --resolution 720p --aspect-ratio [16:9, 9:16, ...]
@@ -180,9 +183,9 @@ function run_video_g() { # 15min
     \"A stylish woman walking in the street of Tokyo. motion score: 4.0\" \
     \"A stylish woman walking in the street of Tokyo. motion score: 6.0\" \
     \"A stylish woman walking in the street of Tokyo. motion score: 10.0\" \
-    \"A stylish woman walking in the street of Tokyo. motion score: 20.0\" \
-    \"A stylish woman walking in the street of Tokyo. motion score: 30.0\" \
-    \"A stylish woman walking in the street of Tokyo. motion score: 40.0\"
+    \"A stylish woman walking in the street of Tokyo. motion score: 25.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 50.0\" \
+    \"A stylish woman walking in the street of Tokyo. motion score: 100.0\"
 
   # add aes score
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --num-frames 2s --resolution 720p --sample-name aes_2s_720p --prompt \
@@ -199,16 +202,16 @@ function run_video_g() { # 15min
 
 function run_video_h() { # 61min
   # 3.1 image-conditioned long video generation
-  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_2s_240p_9_16 \
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L5C5_2s_360p_9_16 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
-    --num-frames 2s --resolution 240p --aspect-ratio 9:16 \
+    --num-frames 2s --resolution 360p --aspect-ratio 9:16 \
     --loop 5 --condition-frame-length 5 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
-  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_8s_240p_9_16 \
+  eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L5C10_16s_360p_9_16 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
-    --num-frames 8s --resolution 240p --aspect-ratio 9:16 \
+    --num-frames 16s --resolution 360p --aspect-ratio 9:16 \
     --loop 5 --condition-frame-length 10 \
     --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
@@ -216,10 +219,10 @@ function run_video_h() { # 61min
   # 3.2
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L1_16s_240p_9_16 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
-    --num-frames 16s --resolution 240p --aspect-ratio 9:16 \
+    --num-frames 16s --resolution 360p --aspect-ratio 9:16 \
     --loop 1 \
     --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
-    --mask-strategy "0\;0,0,0,-1,1" "0\;0,1,0,-1,1" "0,0,0,0,${QUAD_FRAMES},0.5" --batch-size $DEFAULT_BS
+    --mask-strategy "0" "0\;0,1,0,-1,1" "0,0,0,0,${QUAD_FRAMES},0.5" --batch-size $DEFAULT_BS
 }
 
 # vbench has 950 samples
