@@ -24,7 +24,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-* **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE** and **rectified flow**. The video quality is greatly improved.
+* **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved.
 * **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
 * **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
 * **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
@@ -75,7 +75,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 ## 🔆 New Features/Updates
 
-* 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights).
+* 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](docs/report_03.md)** for more details.
 * ✅ Support rectified flow scheduling.
 * ✅ Trained our 3D-VAE for temporal dimension compression.
 * 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
@@ -142,7 +142,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 Other useful documents and links are listed below.
 
-* Report: [report 1.1](docs/report_02.md), [report 1.0](docs/report_01.md), [acceleration.md](docs/acceleration.md)
+* Report: [report 1.2](docs/report_03.md), [report 1.1](docs/report_02.md), [report 1.0](docs/report_01.md), [acceleration.md](docs/acceleration.md)
 * Repo structure: [structure.md](docs/structure.md)
 * Config file explanation: [config.md](docs/config.md)
 * Useful commands: [commands.md](docs/commands.md)
