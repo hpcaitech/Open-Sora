@@ -1,11 +1,12 @@
 # Open-Sora 1.2 Report
 
-- [3D VAE](#3d-vae)
+- [Video compression network](#video-compression-network)
 - [Rectified flow and model adaptation](#rectified-flow-and-model-adaptation)
-- [Training data and stages](#training-data-and-stages)
+- [More data and better multi-stage training](#more-data-and-better-multi-stage-training)
+- [Easy and effective model conditioning](#easy-and-effective-model-conditioning)
 - [Evaluation](#evaluation)
 
-In Open-Sora 1.2 release, we train a 1.1B models on >20M data, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below, where ✅ means that the data is seen during training, while 🆗 means although not trained, the model can inference at that config (inference requires more than one 80G memory GPU). Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
+In Open-Sora 1.2 release, we train a 1.1B models on >20M data, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
 
 |      | image | 2s  | 4s  | 8s  | 16s |
 | ---- | ----- | --- | --- | --- | --- |
@@ -13,6 +14,8 @@ In Open-Sora 1.2 release, we train a 1.1B models on >20M data, supporting 0s~15s
 | 360p | ✅     | ✅   | ✅   | ✅   | ✅   |
 | 480p | ✅     | ✅   | ✅   | ✅   | 🆗   |
 | 720p | ✅     | ✅   | ✅   | 🆗   | 🆗   |
+
+Here ✅ means that the data is seen during training, and 🆗 means although not trained, the model can inference at that config. Inference for 🆗 requires more than one 80G memory GPU and sequence parallelism.
 
 Besides features introduced in Open-Sora 1.1, Open-Sora 1.2 highlights:
 
