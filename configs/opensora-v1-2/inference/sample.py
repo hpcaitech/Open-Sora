@@ -25,14 +25,14 @@ align = 5
 
 model = dict(
     type="STDiT3-XL/2",
-    from_pretrained=None,
+    from_pretrained="/mnt/jfs/sora_checkpoints/042-STDiT3-XL-2/epoch0-global_step7200/ema.pt",
     qk_norm=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
     type="OpenSoraVAE_V1_2",
-    from_pretrained="pretrained_models/vae-pipeline",
+    from_pretrained="/mnt/jfs/sora_checkpoints/vae-pipeline",
     micro_frame_size=17,
     micro_batch_size=4,
 )
