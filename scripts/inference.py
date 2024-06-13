@@ -141,8 +141,11 @@ def main():
         ms = mask_strategy[i : i + batch_size]
         refs = reference_path[i : i + batch_size]
 
+        # == get json from prompts ==
         batch_prompts, refs, ms = extract_json_from_prompts(batch_prompts, refs, ms)
         original_prompts = batch_prompts
+
+        # == get reference for condition ==
         refs = collect_references_batch(refs, vae, image_size)
 
         # == score ==
