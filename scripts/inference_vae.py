@@ -38,7 +38,7 @@ def main():
 
     # == init logger ==
     logger = create_logger()
-    logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
+    logger.info("Inference configuration:\n %s", pformat(cfg.to_dict()))
     verbose = cfg.get("verbose", 1)
 
     # ======================================================

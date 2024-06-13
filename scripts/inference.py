@@ -16,14 +16,15 @@ from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.inference_utils import (
     append_generated,
+    append_score_to_prompts,
     apply_mask_strategy,
     collect_references_batch,
+    dframe_to_frame,
     extract_json_from_prompts,
     extract_prompts_loop,
     get_save_path_name,
     load_prompts,
     prepare_multi_resolution_info,
-    dframe_to_frame,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -58,7 +59,7 @@ def main():
 
     # == init logger ==
     logger = create_logger()
-    logger.info("Training configuration:\n %s", pformat(cfg.to_dict()))
+    logger.info("Inference configuration:\n %s", pformat(cfg.to_dict()))
     verbose = cfg.get("verbose", 1)
     progress_wrap = tqdm if verbose == 1 else (lambda x: x)
 
@@ -111,14 +112,6 @@ def main():
     if prompts is None:
         assert cfg.get("prompt_path", None) is not None, "Prompt or prompt_path must be provided"
         prompts = load_prompts(cfg.prompt_path, start_idx, cfg.get("end_index", None))
-    score_prompts = []
-    if cfg.get("aes", None) is not None:
-        score_prompts.append(f"{prompt} aesthetic score: {cfg.aes:.1f}" for prompt in prompts)
-    if cfg.get("flow", None) is not None:
-        score_prompts.append(f"{prompt} motion score: {cfg.flow:.1f}" for prompt in prompts)
-    if len(score_prompts) > 0:
-        score_text = ", ".join(score_prompts)
-        prompts = [f"{prompt} [{score_text}]" for prompt in prompts]
 
     # == prepare reference ==
     reference_path = cfg.get("reference_path", [""] * len(prompts))
@@ -149,7 +142,11 @@ def main():
         refs = reference_path[i : i + batch_size]
 
         batch_prompts, refs, ms = extract_json_from_prompts(batch_prompts, refs, ms)
+        original_prompts = batch_prompts
         refs = collect_references_batch(refs, vae, image_size)
+
+        # == score ==
+        batch_prompts = append_score_to_prompts(batch_prompts, aes=cfg.get("aes", None), flow=cfg.get("flow", None))
 
         # == multi-resolution info ==
         model_args = prepare_multi_resolution_info(
@@ -164,7 +161,7 @@ def main():
                     save_dir,
                     sample_name=sample_name,
                     sample_idx=start_idx + idx,
-                    prompt=batch_prompts[idx],
+                    prompt=original_prompts[idx],
                     prompt_as_path=prompt_as_path,
                     num_sample=num_sample,
                     k=k,

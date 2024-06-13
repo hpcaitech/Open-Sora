@@ -79,20 +79,20 @@ function run_video_a() { # ~ 30min ?
   # # sample, 240p, 9:16, 8s
   # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 8s --resolution 240p --aspect-ratio 9:16 --sample-name sample_8s_240p_9_16 --batch-size $DEFAULT_BS
   # # sample, 480p, 9:16, 2s
-  # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resoluton 480p --aspect-ratio 9:16 --sample-name sample_2s_480p_9_16 --batch-size $DEFAULT_BS
+  # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resolution 480p --aspect-ratio 9:16 --sample-name sample_2s_480p_9_16 --batch-size $DEFAULT_BS
   # # sample, 480p, 9:16, 4s
-  # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 4s --resoluton 480p --aspect-ratio 9:16 --sample-name sample_4s_480p_9_16 --batch-size $DEFAULT_BS
+  # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 4s --resolution 480p --aspect-ratio 9:16 --sample-name sample_4s_480p_9_16 --batch-size $DEFAULT_BS
   # # sample, 720p, 9:16, 2s
-  # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resoluton 720p --aspect-ratio 9:16 --sample-name sample_2s_720p_9_16 --batch-size $DEFAULT_BS
+  # eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name sample_2s_720p_9_16 --batch-size $DEFAULT_BS
 
   # sample, 720p, 9:16, 2s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resoluton 720p --aspect-ratio 9:16 --sample-name sample_2s_720p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 2s --resolution 720p --aspect-ratio 9:16 --sample-name sample_2s_720p_9_16 --batch-size $DEFAULT_BS
 
   # sample, 480p, 9:16, 8s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 8s --resoluton 480p --aspect-ratio 9:16 --sample-name sample_8s_480p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 8s --resolution 480p --aspect-ratio 9:16 --sample-name sample_8s_480p_9_16 --batch-size $DEFAULT_BS
 
   # sample, 240p, 9:16, 16s
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16s --resoluton 240p --aspect-ratio 9:16 --sample-name sample_16s_240p_9_16 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_samples.txt --save-dir $OUTPUT --num-frames 16s --resolution 240p --aspect-ratio 9:16 --sample-name sample_16s_240p_9_16 --batch-size $DEFAULT_BS
 }
 
 # for (short, sora, sample)
