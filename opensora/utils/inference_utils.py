@@ -198,3 +198,61 @@ def append_generated(vae, generated_video, refs_x, mask_strategy, loop_i, condit
 def dframe_to_frame(num):
     assert num % 5 == 0, f"Invalid num: {num}"
     return num // 5 * 17
+
+
+OPENAI_CLIENT = None
+SYS_PROMPTS = None
+SYS_PROMPTS_PATH = "assets/texts/t2v_pllava.txt"
+SYS_RPOMPTS_TEMPLATE = """
+You need to refine user's input prompt. The user's input prompt is used for video generation task. You need to refine the user's prompt to make it more suitable for the task. Here are some examples of refined prompts:
+{}
+
+The refined prompt should pay attention to all objects in the video. The description should be useful for AI to re-generate the video. The description should be no more than six sentences. The refined prompt should be in English.
+"""
+
+
+def get_openai_response(sys_prompt, usr_prompt, model="gpt-4o"):
+    global OPENAI_CLIENT
+    if OPENAI_CLIENT is None:
+        from openai import OpenAI
+
+        OPENAI_CLIENT = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+    completion = OPENAI_CLIENT.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": sys_prompt,
+            },  # <-- This is the system message that provides context to the model
+            {
+                "role": "user",
+                "content": usr_prompt,
+            },  # <-- This is the user message for which the model will generate a response
+        ],
+    )
+
+    return completion.choices[0].message.content
+
+
+def refine_prompt_by_openai(prompt):
+    global SYS_PROMPTS
+    if SYS_PROMPTS is None:
+        examples = load_prompts(SYS_PROMPTS_PATH)
+        SYS_PROMPTS = SYS_RPOMPTS_TEMPLATE.format("\n".join(examples))
+
+    response = get_openai_response(SYS_PROMPTS, prompt)
+    return response
+
+
+def refine_prompts_by_openai(prompts):
+    new_prompts = []
+    for prompt in prompts:
+        try:
+            new_prompt = refine_prompt_by_openai(prompt)
+            print(f"[Info] Refine prompt: {prompt} -> {new_prompt}")
+            new_prompts.append(new_prompt)
+        except Exception as e:
+            print(f"[Warning] Failed to refine prompt: {prompt} due to {e}")
+            new_prompts.append(prompt)
+    return new_prompts

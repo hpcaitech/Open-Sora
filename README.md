@@ -266,6 +266,16 @@ This will launch a Gradio application on your localhost. If you want to know mor
 
 ### Open-Sora 1.2 Command Line Inference
 
+### GPT-4o Prompt Refinement
+
+We find that GPT-4o can refine the prompt and improve the quality of the generated video. With this feature, you can also use other language (e.g., Chinese) as the prompt. To enable this feature, you need prepare your openai api key in the environment:
+
+```bash
+export OPENAI_API_KEY=YOUR_API_KEY
+```
+
+Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refinement.
+
 ### Open-Sora 1.1 Command Line Inference
 
 <details>

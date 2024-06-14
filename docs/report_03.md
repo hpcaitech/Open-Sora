@@ -25,7 +25,7 @@ Besides features introduced in Open-Sora 1.1, Open-Sora 1.2 highlights:
 - Easy and effective model conditioning
 - Better evaluation metrics
 
-All implementations (both training and inference) of the above improvements are available in the Open-Sora 1.2 release. The following sections will introduce the details of the improvements. We also refine our codebase and documentation to make it easier to use.
+All implementations (both training and inference) of the above improvements are available in the Open-Sora 1.2 release. The following sections will introduce the details of the improvements. We also refine our codebase and documentation to make it easier to use and develop, and add a LLM to [refine input prompts](/README.md#gpt-4o-prompt-refinement) and support more languages.
 
 ## Video compression network
 
