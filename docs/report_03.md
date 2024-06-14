@@ -75,6 +75,8 @@ Open-Sora 1.2 starts from the [PixArt-Σ 2K](https://github.com/PixArt-alpha/Pix
 
 After the above adaptation, we are ready to train the model on videos. The adaptation above maintains the original model's ability to generate high-quality images.
 
+With rectified flow, we can reduce the number of sampling steps for video from 100 to 30, which greatly reduces the waiting time for inference.
+
 ## More data and better multi-stage training
 
 Due to a limited computational budget, we carefully arrange the training data from low to high quality and split our training into three stages. Our training involves 12x8 GPUs, and the total training time is about 2 weeks.
@@ -130,3 +132,5 @@ We sampled 1k videos from pixabay as validation dataset. We calculate the evalua
 In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-project/) scores during training. VBench is an automatic video evaluation benchmark for short video generation. We calcuate the vbench score with 240p 2s videos. The two metrics verify that our model continues to improve during training.
 
 ![VBench](/assets/readme/report_vbench_score.png)
+
+All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
