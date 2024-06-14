@@ -52,22 +52,18 @@ def get_save_path_name(
     return save_path
 
 
-def append_score_to_prompts(prompts, aes=None, flow=None):
-    score_prompts = []
-    if aes is not None:
-        score_prompts.append(f"aesthetic score: {aes:.1f}")
-    if flow is not None:
-        score_prompts.append(f"motion score: {flow:.1f}")
-    if len(score_prompts) > 0:
-        score_text = ", ".join(score_prompts)
-        new_prompts = []
-        for prompt in prompts:
-            if "score:" in prompt:
-                new_prompts.append(prompt)
-            else:
-                new_prompts.append(f"{prompt} {score_text}")
-        return new_prompts
-    return prompts
+def append_score_to_prompts(prompts, aes=None, flow=None, camera_motion=None):
+    new_prompts = []
+    for prompt in prompts:
+        new_prompt = prompt
+        if aes is not None and "aesthetic score:" not in prompt:
+            new_prompt = f"{new_prompt} aesthetic score: {aes:.1f}."
+        if flow is not None and "motion score:" not in prompt:
+            new_prompt = f"{new_prompt} motion score: {flow:.1f}."
+        if camera_motion is not None and "camera motion:" not in prompt:
+            new_prompt = f"{new_prompt} camera motion: {camera_motion}."
+        new_prompts.append(new_prompt)
+    return new_prompts
 
 
 def extract_json_from_prompts(prompts, reference, mask_strategy):
@@ -113,7 +109,7 @@ def extract_prompts_loop(prompts, num_loop):
             for i in range(0, len(prompt_list), 2):
                 start_loop = int(prompt_list[i])
                 text = prompt_list[i + 1]
-                end_loop = int(prompt_list[i + 2]) if i + 2 < len(prompt_list) else num_loop
+                end_loop = int(prompt_list[i + 2]) if i + 2 < len(prompt_list) else num_loop + 1
                 text_list.extend([text] * (end_loop - start_loop))
             prompt = text_list[num_loop]
         ret_prompts.append(prompt)
@@ -180,18 +176,20 @@ def apply_mask_strategy(z, refs_x, mask_strategys, loop_i, align=None):
     return masks
 
 
-def append_generated(vae, generated_video, refs_x, mask_strategy, loop_i, condition_frame_length):
+def append_generated(vae, generated_video, refs_x, mask_strategy, loop_i, condition_frame_length, condition_frame_edit):
     ref_x = vae.encode(generated_video)
     for j, refs in enumerate(refs_x):
         if refs is None:
             refs_x[j] = [ref_x[j]]
         else:
             refs.append(ref_x[j])
-        if mask_strategy[j] is None:
+        if mask_strategy[j] is None or mask_strategy[j] == "":
             mask_strategy[j] = ""
         else:
             mask_strategy[j] += ";"
-        mask_strategy[j] += f"{loop_i},{len(refs)-1},-{condition_frame_length},0,{condition_frame_length}"
+        mask_strategy[
+            j
+        ] += f"{loop_i},{len(refs)-1},-{condition_frame_length},0,{condition_frame_length},{condition_frame_edit}"
     return refs_x, mask_strategy
 
 
@@ -279,9 +277,13 @@ def refine_prompts_by_openai(prompts):
     return new_prompts
 
 
-def add_watermark(input_video_path, watermark_image_path, output_video_path):
+def add_watermark(
+    input_video_path, watermark_image_path="./assets/images/watermark/watermark.png", output_video_path=None
+):
     # execute this command in terminal with subprocess
     # return if the process is successful
-    cmd = f"ffmpeg -y -i {input_video_path} -i {watermark_image_path} -filter_complex \"[1][0]scale2ref=oh*mdar:ih*0.1[logo][video];[video][logo]overlay\" {output_video_path}"
+    if output_video_path is None:
+        output_video_path = input_video_path.replace(".mp4", "_watermark.mp4")
+    cmd = f'ffmpeg -y -i {input_video_path} -i {watermark_image_path} -filter_complex "[1][0]scale2ref=oh*mdar:ih*0.1[logo][video];[video][logo]overlay" {output_video_path}'
     exit_code = os.system(cmd)
     return exit_code == 0

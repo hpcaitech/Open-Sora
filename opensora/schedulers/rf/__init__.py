@@ -65,9 +65,11 @@ class RFLOW:
 
         if mask is not None:
             noise_added = torch.zeros_like(mask, dtype=torch.bool)
+            noise_added = noise_added | (mask == 1)
 
         progress_wrap = tqdm if progress else (lambda x: x)
         for i, t in progress_wrap(enumerate(timesteps)):
+            # mask for adding noise
             if mask is not None:
                 mask_t = mask * self.num_timesteps
                 x0 = z.clone()
@@ -75,10 +77,10 @@ class RFLOW:
 
                 mask_t_upper = mask_t >= t.unsqueeze(1)
                 model_args["x_mask"] = mask_t_upper.repeat(2, 1)
+                mask_add_noise = mask_t_upper & ~noise_added
 
-                mask_add_noise = mask_t_upper & ~noise_added & (mask != 1)
-                noise_added = noise_added | mask_add_noise
                 z = torch.where(mask_add_noise[:, None, :, None, None], x_noise, x0)
+                noise_added = mask_t_upper
 
             # classifier-free guidance
             z_in = torch.cat([z, z], 0)

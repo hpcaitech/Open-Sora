@@ -1,4 +1,5 @@
 import os
+import time
 from pprint import pformat
 
 import colossalai
@@ -15,6 +16,7 @@ from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.registry import MODELS, SCHEDULERS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.inference_utils import (
+    add_watermark,
     append_generated,
     append_score_to_prompts,
     apply_mask_strategy,
@@ -128,6 +130,7 @@ def main():
     num_sample = cfg.get("num_sample", 1)
     loop = cfg.get("loop", 1)
     condition_frame_length = cfg.get("condition_frame_length", 5)
+    condition_frame_edit = cfg.get("condition_frame_edit", 0.0)
     align = cfg.get("align", None)
 
     save_dir = cfg.save_dir
@@ -148,13 +151,6 @@ def main():
 
         # == get reference for condition ==
         refs = collect_references_batch(refs, vae, image_size)
-
-        # == refine prompt by openai ==
-        if cfg.get("llm_refine", False):
-            batch_prompts = refine_prompts_by_openai(batch_prompts)
-
-        # == score ==
-        batch_prompts = append_score_to_prompts(batch_prompts, aes=cfg.get("aes", None), flow=cfg.get("flow", None))
 
         # == multi-resolution info ==
         model_args = prepare_multi_resolution_info(
@@ -185,12 +181,29 @@ def main():
             # == Iter over loop generation ==
             video_clips = []
             for loop_i in range(loop):
+                # == get prompt for loop i ==
                 batch_prompts_loop = extract_prompts_loop(batch_prompts, loop_i)
+
+                # == refine prompt by openai ==
+                if cfg.get("llm_refine", False):
+                    batch_prompts_loop = refine_prompts_by_openai(batch_prompts_loop)
+
+                # == add score to prompt ==
+                batch_prompts_loop = append_score_to_prompts(
+                    batch_prompts_loop,
+                    aes=cfg.get("aes", None),
+                    flow=cfg.get("flow", None),
+                    camera_motion=cfg.get("camera_motion", None),
+                )
+
+                # == clean prompt for t5 ==
                 batch_prompts_cleaned = [text_preprocessing(prompt) for prompt in batch_prompts_loop]
 
-                # == loop ==
+                # == add condition frames for loop ==
                 if loop_i > 0:
-                    refs, ms = append_generated(vae, video_clips[-1], refs, ms, loop_i, condition_frame_length)
+                    refs, ms = append_generated(
+                        vae, video_clips[-1], refs, ms, loop_i, condition_frame_length, condition_frame_edit
+                    )
 
                 # == sampling ==
                 z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
@@ -218,12 +231,15 @@ def main():
                     for i in range(1, loop):
                         video[i] = video[i][:, dframe_to_frame(condition_frame_length) :]
                     video = torch.cat(video, dim=1)
-                    save_sample(
+                    save_path = save_sample(
                         video,
                         fps=save_fps,
                         save_path=save_path,
                         verbose=verbose >= 2,
                     )
+                    if save_path.endswith(".mp4") and cfg.get("watermark", False):
+                        time.sleep(1)  # prevent loading previous generated video
+                        add_watermark(save_path)
         start_idx += len(batch_prompts)
     logger.info("Inference finished.")
     logger.info("Saved %s samples to %s", start_idx, save_dir)
