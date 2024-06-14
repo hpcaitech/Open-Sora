@@ -122,7 +122,7 @@ def main():
 
     # == prepare arguments ==
     fps = cfg.fps
-    save_fps = fps // cfg.get("frame_interval", 1)
+    save_fps = cfg.get("save_fps", fps // cfg.get("frame_interval", 1))
     multi_resolution = cfg.get("multi_resolution", None)
     batch_size = cfg.get("batch_size", 1)
     num_sample = cfg.get("num_sample", 1)
