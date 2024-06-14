@@ -7,7 +7,7 @@
 - [Evaluation](#evaluation)
 - [Sequence parallelism](#sequence-parallelism)
 
-In Open-Sora 1.2 release, we train a 1.1B models on >20M data, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
+In Open-Sora 1.2 release, we train a 1.1B models on >20M data, with training cost 35k H100 GPU hours, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
 
 |      | image | 2s  | 4s  | 8s  | 16s |
 | ---- | ----- | --- | --- | --- | --- |
@@ -83,7 +83,7 @@ After the above adaptation, we are ready to train the model on videos. The adapt
 
 ## More data and better multi-stage training
 
-Due to a limited computational budget, we carefully arrange the training data from low to high quality and split our training into three stages. Our training involves 12x8 GPUs, and the total training time is about 2 weeks.
+Due to a limited computational budget, we carefully arrange the training data from low to high quality and split our training into three stages. Our training involves 12x8 GPUs, and the total training time is about 2 weeks for about 70k steps.
 
 ### First stage
 
