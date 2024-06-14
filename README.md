@@ -133,11 +133,13 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 * [Installation](#installation)
 * [Model Weights](#model-weights)
+* [Gradio Demo](#gradio-demo)
 * [Inference](#inference)
 * [Data Processing](#data-processing)
 * [Training](#training)
 * [Evaluation](#evaluation)
 * [Contribution](#contribution)
+* [Citation](#citation)
 * [Acknowledgement](#acknowledgement)
 
 Other useful documents and links are listed below.
@@ -249,11 +251,11 @@ on improving the quality and text alignment.
 
 </details>
 
-## Inference
-
-### Gradio Demo
+## Gradio Demo
 
 🔥 You can experience Open-Sora on our [🤗 Gradio application](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face online.
+
+### Local Deployment
 
 If you want to deploy gradio locally, we have also provided a [Gradio application](./gradio) in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
 
@@ -262,7 +264,41 @@ pip install gradio spaces
 python gradio/app.py
 ```
 
-This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [README file](./gradio/README.md).
+This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [Gradio README](./gradio/README.md).
+
+To enable prompt enhancement and other language input (e.g., 中文输入), you need to set the `OPENAI_API_KEY` in the environment. Check [OpenAI's documentation](https://platform.openai.com/docs/quickstart) to get your API key.
+
+```bash
+export OPENAI_API_KEY=YOUR_API_KEY
+```
+
+### Getting Started
+
+In the Gradio application, the basic options are as follows:
+
+![Gradio Demo](assets/readme/gradio_basic.png)
+
+The easiest way to generate a video is to input a text prompt and click the "Generate video" button. The generated video will be displayed in the right panel. Click "Enhance prompt with GPT4o" will refine the prompt with GPT-4o, while "Random Prompt" will generate a random prompt by GPT-4o for you. Due to the OpenAI's API limit, the prompt refinement result has some randomness.
+
+Then, you can choose the resolution, duration, and aspect ratio of the generated video. Different resolution and video length will affect the video generation speed. On a 80G H100 GPU, the generation speed and peak memory usage is:
+
+|      | Image   | 2s       | 4s        | 8s        | 16s       |
+| ---- | ------- | -------- | --------- | --------- | --------- |
+| 360p | 3s, 24G | 18s, 27G | 31s, 27G  | 62s, 28G  | 121s, 33G |
+| 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
+| 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
+
+Note that besides text to video, you can also use image to video generation. You can upload an image and then click the "Generate video" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "Generate image" button to generate an image with the text prompt, and then click the "Generate video" button to generate a video with the image generated with the same model.
+
+![Gradio Demo](assets/readme/gradio_option.png)
+
+Then you can specify more options, including "Motion Strength", "Aesthetic" and "Camera Motion". If not "Enable" or the choice is "none", the information is not passed to the model. Otherwise, the model will generate videos with the specified motion strength, aesthetic score, and camera motion.
+
+For the aesthetic score, we recommend using values higher than 6. For motion strength, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the camera motion, sometimes the model cannot follow the instruction well, and we are working on improving it.
+
+For more advanced usage, you can refer to [Gradio README](./gradio/README.md).
+
+## Inference
 
 ### Open-Sora 1.2 Command Line Inference
 
