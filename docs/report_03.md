@@ -29,7 +29,7 @@ All implementations (both training and inference) of the above improvements are 
 
 ## Video compression network
 
-For Open-Sora 1.0 & 1.1, we used stability-ai's 83M 2D VAE, which compress the video only in the spatial dimension by 8x8 times. To reduce the temporal dimension, we extracted one frame in every three frames. However, this method led to the low fluency of generated video as the generated fps is sacrificed. Thus, in this release, we introduce the video compression network as OpenAI's Sora does.
+For Open-Sora 1.0 & 1.1, we used stability-ai's 83M 2D VAE, which compress the video only in the spatial dimension by 8x8 times. To reduce the temporal dimension, we extracted one frame in every three frames. However, this method led to the low fluency of generated video as the generated fps is sacrificed. Thus, in this release, we introduce the video compression network as OpenAI's Sora does. With a 4 times compression in the temporal dimension, we do not need to extract frames and can generate videos with the original fps.
 
 Considering the high computational cost of training a 3D VAE, we hope to re-use the knowledge learnt in the 2D VAE. We notice that after 2D VAE's compression, the features adjacent in the temporal dimension are still highly correlated. Thus, we propose a simple video compression network, which first compress the video in the spatial dimension by 8x8 times, then compress the video in the temporal dimension by 4x times. The network is shown below:
 
@@ -73,9 +73,12 @@ Open-Sora 1.2 starts from the [PixArt-Σ 2K](https://github.com/PixArt-alpha/Pix
 7. Temporal attention blocks: we add temporal attention blocks with zero initialized projection layers. We train on images for 3k steps.
 8. Temporal blocks only for video with mask strategy: we train the temporal attention blocks only on videos for 38k steps.
 
-After the above adaptation, we are ready to train the model on videos. The adaptation above maintains the original model's ability to generate high-quality images.
+After the above adaptation, we are ready to train the model on videos. The adaptation above maintains the original model's ability to generate high-quality images, and brings multiple benefits for video generation:
 
-With rectified flow, we can reduce the number of sampling steps for video from 100 to 30, which greatly reduces the waiting time for inference.
+- With rectified flow, we can accelerate the training and reduce the number of sampling steps for video from 100 to 30, which greatly reduces the waiting time for inference.
+- With qk-norm, the training is more stablized and an aggressive optimizer can be used.
+- With new VAE, the temporal dimension is compressed by 4 times, which makes the training more efficient.
+- With multi-resolution image generation ability, the model can generate videos with different resolutions.
 
 ## More data and better multi-stage training
 
