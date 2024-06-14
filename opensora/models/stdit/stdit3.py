@@ -1,14 +1,18 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 from einops import rearrange
 from rotary_embedding_torch import RotaryEmbedding
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
 from transformers import PretrainedConfig, PreTrainedModel
-
+from opensora.acceleration.communications import gather_forward_split_backward, split_forward_gather_backward
+from opensora.acceleration.parallel_states import get_sequence_parallel_group
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
 from opensora.models.layers.blocks import (
+    SeqParallelMultiHeadCrossAttention,
+    SeqParallelAttention,
     Attention,
     CaptionEmbedder,
     MultiHeadCrossAttention,
@@ -43,12 +47,15 @@ class STDiT3Block(nn.Module):
         self.temporal = temporal
         self.hidden_size = hidden_size
         self.enable_flash_attn = enable_flash_attn
-        self._enable_sequence_parallelism = enable_sequence_parallelism
-        assert not enable_sequence_parallelism, "Sequence parallelism is not supported in STDiT3Block"
-
-        attn_cls = Attention
-        mha_cls = MultiHeadCrossAttention
-
+        self.enable_sequence_parallelism = enable_sequence_parallelism
+        
+        if self.enable_sequence_parallelism and not temporal:
+            attn_cls = SeqParallelAttention
+            mha_cls = SeqParallelMultiHeadCrossAttention
+        else:
+            attn_cls = Attention
+            mha_cls = MultiHeadCrossAttention
+            
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = attn_cls(
             hidden_size,
@@ -215,6 +222,7 @@ class STDiT3(PreTrainedModel):
         self.drop_path = config.drop_path
         self.enable_flash_attn = config.enable_flash_attn
         self.enable_layernorm_kernel = config.enable_layernorm_kernel
+        self.enable_sequence_parallelism = config.enable_sequence_parallelism
 
         # input size related
         self.patch_size = config.patch_size
@@ -380,17 +388,29 @@ class STDiT3(PreTrainedModel):
         x = self.x_embedder(x)  # [B, N, C]
         x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
         x = x + pos_emb
+        
+        # shard over the sequence dim if sp is enabled
+        if self.enable_sequence_parallelism:
+            x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=2, grad_scale="down")
+            S = S // dist.get_world_size(get_sequence_parallel_group())
+            
         x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
-
+        
         # === blocks ===
         for spatial_block, temporal_block in zip(self.spatial_blocks, self.temporal_blocks):
             x = auto_grad_checkpoint(spatial_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
             x = auto_grad_checkpoint(temporal_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
+        
+        if self.enable_sequence_parallelism:
+            x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
+            x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=2, grad_scale="up")
+            S = S * dist.get_world_size(get_sequence_parallel_group())
+            x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
         # === final layer ===
         x = self.final_layer(x, t, x_mask, t0, T, S)
         x = self.unpatchify(x, T, H, W, Tx, Hx, Wx)
-
+        
         # cast to float32 for better accuracy
         x = x.to(torch.float32)
         return x

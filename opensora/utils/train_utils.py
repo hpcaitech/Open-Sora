@@ -14,6 +14,7 @@ from .misc import get_logger
 
 def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
     if plugin == "zero2":
+        assert sp_size == 1, "Zero2 plugin does not support sequence parallelism"
         plugin = LowLevelZeroPlugin(
             stage=2,
             precision=dtype,
@@ -22,6 +23,7 @@ def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
         )
         set_data_parallel_group(dist.group.WORLD)
     elif plugin == "zero2-seq":
+        assert sp_size > 1, "Zero2-seq plugin requires sequence parallelism"
         plugin = ZeroSeqParallelPlugin(
             sp_size=sp_size,
             stage=2,
