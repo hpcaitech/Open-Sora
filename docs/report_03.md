@@ -100,6 +100,8 @@ In this stage, we collect 2M video clips with 5k hours from all kinds of sources
 - [Vript](https://github.com/mutonix/Vript/tree/main): a densely annotated dataset.
 - And some other datasets.
 
+While MiraData and Vript have captions from GPT, we use [PLLaVA](https://github.com/magic-research/PLLaVA) to caption the rest ones. We use 4 frames for each video captioning, and choose the 13B version. PLLaVA is more efficient and better finetuned for video than LLaVA. The accelerated PLLaVA is released in our tools.
+
 We mainly train on 480p and 720p in this stage. The training config locates in [stage3.py](/configs/opensora-v1-2/train/stage3.py). We train the model for 15k steps, which is approximately 2 epochs.
 
 ## Easy and effective model conditioning
