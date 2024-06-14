@@ -5,6 +5,7 @@
 - [More data and better multi-stage training](#more-data-and-better-multi-stage-training)
 - [Easy and effective model conditioning](#easy-and-effective-model-conditioning)
 - [Evaluation](#evaluation)
+- [Sequence parallelism](#sequence-parallelism)
 
 In Open-Sora 1.2 release, we train a 1.1B models on >20M data, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
 
@@ -139,3 +140,9 @@ In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-pr
 ![VBench](/assets/readme/report_vbench_score.png)
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
+
+[Final performance TBD]
+
+## Sequence parallelism
+
+[TBD by Shenggui]
