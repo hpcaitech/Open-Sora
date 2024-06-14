@@ -2,7 +2,7 @@
 
 We have provided a Gradio demo app for you to generate videos via a web interface. You can choose to run it locally or deploy it to Hugging Face by following the instructions given below.
 
-## 🚀 Run Gradio Locally
+## 🚀 Run Gradio Locally (Outdated)
 
 We assume that you have already installed `opensora` based on the instructions given in the [main README](../README.md). Follow the steps below to run this app on your local machine.
 
@@ -33,7 +33,7 @@ python gradio/app.py --share
 
 3. You should then be able to access this demo via the link which appears in your terminal.
 
-## 📦 Deploy Gradio to Hugging Face Space
+## 📦 Deploy Gradio to Hugging Face Space (Outdated)
 
 We have also tested this Gradio app on Hugging Face Spaces. You can follow the steps below.
 
@@ -68,3 +68,5 @@ We have also tested this Gradio app on Hugging Face Spaces. You can follow the s
 For the "**FPS**" option, as now we fix the output video's FPS to 24, this option will not affect the output video's length. Thus, for a smaller FPS, the video is supposed to be longer but accelerated due to 24 FPS. Thus, the video will be less smooth but faster. For a larger FPS, the video will be smoother but slower.
 
 For the "**Number of Loops**", it will affect the output video's length and generation speed. For example, if you set the number of loops to 2, the output video will be twice as long as the original video. This is achieved by conditioning the next generation on 1/4 of the previous generated frames and then concatenating all the frames together.
+
+A trick to give different text prompts for different parts of the video is to use the `|x|` symbol to separate the text prompts, where x is the start frame of the next text prompt. This format requires a `|0|` at the start of the prompt. For example, if you want to generate a video with the text prompt "A cat" for the first 2 generations and "A dog" for the rest generations, you can use the text prompt "|0|A cat|2|A dog". You can still check the "**Enhance prompt with GPT4o**" to refine your prompts in each part separately.

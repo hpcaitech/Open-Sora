@@ -54,6 +54,7 @@ def parse_args(training=False):
         parser.add_argument("--image-size", default=None, type=int, nargs=2, help="image size")
         parser.add_argument("--frame-interval", default=None, type=int, help="frame interval")
         parser.add_argument("--aspect-ratio", default=None, type=str, help="aspect ratio (h:w)")
+        parser.add_argument("--watermark", default=None, type=str2bool, help="watermark video")
 
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
@@ -66,6 +67,7 @@ def parse_args(training=False):
         parser.add_argument("--mask-strategy", default=None, type=str, nargs="+", help="mask strategy")
         parser.add_argument("--aes", default=None, type=float, help="aesthetic score")
         parser.add_argument("--flow", default=None, type=float, help="flow score")
+        parser.add_argument("--camera-motion", default=None, type=str, help="camera motion")
     # ======================================================
     # Training
     # ======================================================
