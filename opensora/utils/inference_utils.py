@@ -201,13 +201,20 @@ def dframe_to_frame(num):
 
 
 OPENAI_CLIENT = None
-SYS_PROMPTS = None
-SYS_PROMPTS_PATH = "assets/texts/t2v_pllava.txt"
-SYS_RPOMPTS_TEMPLATE = """
+REFINE_PROMPTS = None
+REFINE_PROMPTS_PATH = "assets/texts/t2v_pllava.txt"
+REFINE_PROMPTS_TEMPLATE = """
 You need to refine user's input prompt. The user's input prompt is used for video generation task. You need to refine the user's prompt to make it more suitable for the task. Here are some examples of refined prompts:
 {}
 
 The refined prompt should pay attention to all objects in the video. The description should be useful for AI to re-generate the video. The description should be no more than six sentences. The refined prompt should be in English.
+"""
+RANDOM_PROMPTS = None
+RANDOM_PROMPTS_TEMPLATE = """
+You need to generate one input prompt for video generation task. The prompt should be suitable for the task. Here are some examples of refined prompts:
+{}
+
+The prompt should pay attention to all objects in the video. The description should be useful for AI to re-generate the video. The description should be no more than six sentences. The prompt should be in English.
 """
 
 
@@ -235,13 +242,23 @@ def get_openai_response(sys_prompt, usr_prompt, model="gpt-4o"):
     return completion.choices[0].message.content
 
 
-def refine_prompt_by_openai(prompt):
-    global SYS_PROMPTS
-    if SYS_PROMPTS is None:
-        examples = load_prompts(SYS_PROMPTS_PATH)
-        SYS_PROMPTS = SYS_RPOMPTS_TEMPLATE.format("\n".join(examples))
+def get_random_prompt_by_openai():
+    global RANDOM_PROMPTS
+    if RANDOM_PROMPTS is None:
+        examples = load_prompts(REFINE_PROMPTS_PATH)
+        RANDOM_PROMPTS = RANDOM_PROMPTS_TEMPLATE.format("\n".join(examples))
 
-    response = get_openai_response(SYS_PROMPTS, prompt)
+    response = get_openai_response(RANDOM_PROMPTS, "Generate one example.")
+    return response
+
+
+def refine_prompt_by_openai(prompt):
+    global REFINE_PROMPTS
+    if REFINE_PROMPTS is None:
+        examples = load_prompts(REFINE_PROMPTS_PATH)
+        REFINE_PROMPTS = REFINE_PROMPTS_TEMPLATE.format("\n".join(examples))
+
+    response = get_openai_response(REFINE_PROMPTS, prompt)
     return response
 
 
@@ -249,8 +266,12 @@ def refine_prompts_by_openai(prompts):
     new_prompts = []
     for prompt in prompts:
         try:
-            new_prompt = refine_prompt_by_openai(prompt)
-            print(f"[Info] Refine prompt: {prompt} -> {new_prompt}")
+            if prompt.strip() == "":
+                new_prompt = get_random_prompt_by_openai()
+                print(f"[Info] Empty prompt detected, generate random prompt: {new_prompt}")
+            else:
+                new_prompt = refine_prompt_by_openai(prompt)
+                print(f"[Info] Refine prompt: {prompt} -> {new_prompt}")
             new_prompts.append(new_prompt)
         except Exception as e:
             print(f"[Warning] Failed to refine prompt: {prompt} due to {e}")
