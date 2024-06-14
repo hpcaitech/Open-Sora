@@ -33,7 +33,6 @@ python gradio/app.py --share
 
 3. You should then be able to access this demo via the link which appears in your terminal.
 
-
 ## 📦 Deploy Gradio to Hugging Face Space
 
 We have also tested this Gradio app on Hugging Face Spaces. You can follow the steps below.
@@ -66,6 +65,6 @@ We have also tested this Gradio app on Hugging Face Spaces. You can follow the s
 
 ![Gradio Demo](/assets/readme/gradio_advanced.png)
 
-For the FPS option, as now we fix the output video's FPS to 24, this option will not affect the output video's length. Thus, for a smaller FPS, the video is supposed to be longer but accelerated due to 24 FPS. Thus, the video will be less smooth but faster. For a larger FPS, the video will be smoother but slower.
+For the "**FPS**" option, as now we fix the output video's FPS to 24, this option will not affect the output video's length. Thus, for a smaller FPS, the video is supposed to be longer but accelerated due to 24 FPS. Thus, the video will be less smooth but faster. For a larger FPS, the video will be smoother but slower.
 
-For the number of loops, it will affect the output video's length and generation speed. For example, if you set the number of loops to 2, the output video will be twice as long as the original video. This is achieved by conditioning the next generation on 1/4 of the previous generated frames and then concatenating all the frames together.
+For the "**Number of Loops**", it will affect the output video's length and generation speed. For example, if you set the number of loops to 2, the output video will be twice as long as the original video. This is achieved by conditioning the next generation on 1/4 of the previous generated frames and then concatenating all the frames together.

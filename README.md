@@ -298,7 +298,7 @@ For the **aesthetic score**, we recommend using values higher than 6. For **moti
 
 You can also adjust the "**Sampling steps**", this is directly related to the generation speed as it is the number of denoising. A number smaller than 30 usually leads to a poor generation results, while a number larger than 100 usually has no significant improvement. The "**Seed**" is used for reproducibility, you can set it to a fixed number to generate the same video. The "**CFG Scale**" controls how much the model follows the text prompt, a smaller value will lead to a more random video, while a larger value will lead to a more text-following video (7 is recommended).
 
-For more advanced usage, you can refer to [Gradio README](./gradio/README.md).
+For more advanced usage, you can refer to [Gradio README](./gradio/README.md#advanced-usage).
 
 ## Inference
 
