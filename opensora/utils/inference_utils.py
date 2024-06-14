@@ -277,3 +277,11 @@ def refine_prompts_by_openai(prompts):
             print(f"[Warning] Failed to refine prompt: {prompt} due to {e}")
             new_prompts.append(prompt)
     return new_prompts
+
+
+def add_watermark(input_video_path, watermark_image_path, output_video_path):
+    # execute this command in terminal with subprocess
+    # return if the process is successful
+    cmd = f"ffmpeg -y -i {input_video_path} -i {watermark_image_path} -filter_complex \"[1][0]scale2ref=oh*mdar:ih*0.1[logo][video];[video][logo]overlay\" {output_video_path}"
+    exit_code = os.system(cmd)
+    return exit_code == 0
