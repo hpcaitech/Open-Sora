@@ -24,3 +24,4 @@ pyarrow>=16.1.0 # for parquet
 
 # [dev]
 pre-commit>=3.5.0
+openai

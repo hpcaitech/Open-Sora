@@ -11,7 +11,6 @@ import importlib
 import os
 import subprocess
 import sys
-import math
 import spaces
 import torch
 
@@ -27,8 +26,8 @@ CONFIG_MAP = {
 }
 HF_STDIT_MAP = {
     "v1.2-stage3": {
-        "ema": "/mnt/jfs/sora_checkpoints/042-STDiT3-XL-2/epoch0-global_step7200/ema.pt",
-        "model": "/mnt/jfs/sora_checkpoints/042-STDiT3-XL-2/epoch0-global_step7200/model"
+        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step11000/ema.pt",
+        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step11000/model"
         }
 }
 
@@ -184,7 +183,10 @@ from opensora.utils.inference_utils import (
     extract_prompts_loop,
     prepare_multi_resolution_info,
     dframe_to_frame,
-    append_score_to_prompts
+    append_score_to_prompts,
+    refine_prompts_by_openai,
+    add_watermark,
+    get_random_prompt_by_openai
 )
 from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.datasets.aspect import get_image_size, get_num_frames
@@ -197,7 +199,7 @@ device = torch.device("cuda")
 vae, text_encoder, stdit, scheduler = build_models(args.model_type, config, enable_optimization=args.enable_optimization)
 
 
-def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, seed, sampling_steps, cfg_scale):
+def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, enhance_prompt, fps, num_loop, seed, sampling_steps, cfg_scale):
     torch.manual_seed(seed)
     with torch.inference_mode():
         # ======================
@@ -206,26 +208,16 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         # parse the inputs
         # frame_interval must be 1 so  we ignore it here
         image_size = get_image_size(resolution, aspect_ratio)
-        condition_frame_length = config.condition_frame_length
         
         # compute generation parameters
         if mode == "Text2Image":
             num_frames = 1
-            num_loop = 1
             fps = IMG_FPS
         else:
-            fps = config.fps
             num_frames = config.num_frames
-            seconds = int(length.rstrip('s'))
+            num_frames = get_num_frames(length)
             
-            if seconds <= 16:
-                num_frames = get_num_frames(length)
-                num_loop = 1
-            else:
-                total_num_frames = fps * seconds
-                condition_real_frame_length = dframe_to_frame(condition_frame_length)
-                num_subsequence_loop = int((total_num_frames - num_frames) / (num_frames - condition_real_frame_length))
-                num_loop = num_subsequence_loop + 1
+        condition_frame_length = int(num_frames / 17 * 5 / 3)
         
         input_size = (num_frames, *image_size)
         latent_size = vae.get_latent_size(input_size)
@@ -259,8 +251,15 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         else:
             raise ValueError(f"Invalid mode: {mode}")
         
-        # process prompt
+        # refine the user prompt with gpt4o
         batch_prompts = [prompt_text]
+        if enhance_prompt:
+            # check if openai key is provided
+            if "OPENAI_API_KEY" not in os.environ:
+                gr.Warning("OpenAI API key is not provided, the prompt will not be enhanced.")
+            else:
+                batch_prompts = refine_prompts_by_openai(batch_prompts)
+                
         batch_prompts, refs, mask_strategy = extract_json_from_prompts(batch_prompts, refs, mask_strategy)
         
         refs = collect_references_batch(refs, vae, image_size)
@@ -336,8 +335,20 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         save_path = os.path.join(args.output, f"output_{timestamp}")
         saved_path = save_sample(video, save_path=save_path, fps=fps)
         torch.cuda.empty_cache()
-        return saved_path
-
+        
+        # add watermark
+        # all watermarked videos should have a _watermarked suffix
+        if mode != "Text2Image":
+            watermarked_path = saved_path.replace(".mp4", "_watermarked.mp4")
+            success = add_watermark(saved_path, "./assets/images/watermark/watermark.png", watermarked_path)
+            if success:
+                return watermarked_path
+            else:
+                return saved_path
+        else:
+            return saved_path
+        
+        
 @spaces.GPU(duration=200)
 def run_image_inference(
     prompt_text, 
@@ -350,6 +361,9 @@ def run_image_inference(
     use_aesthetic_score,
     camera_motion,
     reference_image,
+    enhance_prompt,
+    fps,
+    num_loop, 
     seed,
     sampling_steps,
     cfg_scale):
@@ -365,6 +379,9 @@ def run_image_inference(
         use_aesthetic_score,
         camera_motion,
         reference_image,
+        enhance_prompt,
+        fps,
+        num_loop, 
         seed,
         sampling_steps,
         cfg_scale)
@@ -381,6 +398,9 @@ def run_video_inference(
     use_aesthetic_score, 
     camera_motion,
     reference_image, 
+    enhance_prompt,
+    fps,
+    num_loop, 
     seed,
     sampling_steps,
     cfg_scale):
@@ -400,10 +420,22 @@ def run_video_inference(
             use_aesthetic_score, 
             camera_motion,
             reference_image, 
+            enhance_prompt,
+            fps,
+            num_loop, 
             seed,
             sampling_steps, 
             cfg_scale
             )
+
+
+def generate_random_prompt():
+    if "OPENAI_API_KEY" not in os.environ:
+        gr.Warning("Your prompt is empty and the OpenAI API key is not provided, please enter a valid prompt")
+        return None
+    else:
+        prompt_text = get_random_prompt_by_openai()
+        return prompt_text
 
 
 def main():
@@ -436,8 +468,13 @@ def main():
                 prompt_text = gr.Textbox(
                     label="Prompt",
                     placeholder="Describe your video here",
+                    info="Empty prompt will mean random prompt from OpenAI.",
                     lines=4,
                 )
+                enhance_prompt = gr.Checkbox(value=True, label="Enhance prompt with GPT4o")
+                random_prompt_btn = gr.Button("Random Prompt")
+                
+                gr.Markdown("## Basic Settings")
                 resolution = gr.Radio(
                      choices=["144p", "240p", "360p", "480p", "720p"],
                      value="480p",
@@ -478,7 +515,7 @@ def main():
                         step=0.1,
                         label="CFG Scale"
                     )
-                    
+                
                 with gr.Row():
                     with gr.Column():
                         motion_strength = gr.Slider(
@@ -517,10 +554,30 @@ def main():
                         ],
                     interactive=True
                 )
-                        
                 
+                gr.Markdown("## Advanced Settings")
+                with gr.Row():
+                    fps = gr.Slider(
+                        value=24,
+                        minimum=1,
+                        maximum=60,
+                        step=1,
+                        label="FPS",
+                        info="This is the frames per seconds for video generation, keep it to 24 if you are not sure"
+                    )
+                    num_loop = gr.Slider(
+                        value=1,
+                        minimum=1,
+                        maximum=10,
+                        step=1,
+                        label="Number of Loops",
+                        info="This will change the length of the generated video, keep it to 1 if you are not sure"
+                    )
+                    
+                
+                gr.Markdown("## Reference Image")
                 reference_image = gr.Image(
-                    label="Reference Image (Optional)",
+                    label="Image (optional)",
                     show_download_button=True
                 )
             
@@ -537,14 +594,18 @@ def main():
 
         image_gen_button.click(
              fn=run_image_inference, 
-             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, seed, sampling_steps, cfg_scale], 
+             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, enhance_prompt, fps, num_loop, seed, sampling_steps, cfg_scale], 
              outputs=reference_image
              )
         video_gen_button.click(
              fn=run_video_inference, 
-             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, seed, sampling_steps, cfg_scale], 
+             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, enhance_prompt, fps, num_loop, seed, sampling_steps, cfg_scale], 
              outputs=output_video
              )
+        random_prompt_btn.click(
+            fn=generate_random_prompt,
+            outputs=prompt_text
+        )
 
     # launch
     demo.launch(server_port=args.port, server_name=args.host, share=args.share)
