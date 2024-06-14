@@ -278,9 +278,9 @@ In the Gradio application, the basic options are as follows:
 
 ![Gradio Demo](assets/readme/gradio_basic.png)
 
-The easiest way to generate a video is to input a text prompt and click the "Generate video" button. The generated video will be displayed in the right panel. Click "Enhance prompt with GPT4o" will refine the prompt with GPT-4o, while "Random Prompt" will generate a random prompt by GPT-4o for you. Due to the OpenAI's API limit, the prompt refinement result has some randomness.
+The easiest way to generate a video is to input a text prompt and click the "**Generate video**" button. The generated video will be displayed in the right panel. Checking the "**Enhance prompt with GPT4o**" will use GPT-4o to refine the prompt, while "**Random Prompt**" button will generate a random prompt by GPT-4o for you. Due to the OpenAI's API limit, the prompt refinement result has some randomness.
 
-Then, you can choose the resolution, duration, and aspect ratio of the generated video. Different resolution and video length will affect the video generation speed. On a 80G H100 GPU, the generation speed and peak memory usage is:
+Then, you can choose the **resolution**, **duration**, and **aspect ratio** of the generated video. Different resolution and video length will affect the video generation speed. On a 80G H100 GPU, the generation speed and peak memory usage is:
 
 |      | Image   | 2s       | 4s        | 8s        | 16s       |
 | ---- | ------- | -------- | --------- | --------- | --------- |
@@ -288,13 +288,15 @@ Then, you can choose the resolution, duration, and aspect ratio of the generated
 | 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
 | 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
 
-Note that besides text to video, you can also use image to video generation. You can upload an image and then click the "Generate video" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "Generate image" button to generate an image with the text prompt, and then click the "Generate video" button to generate a video with the image generated with the same model.
+Note that besides text to video, you can also use image to video generation. You can upload an image and then click the "**Generate video**" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "**Generate image**" button to generate an image with the text prompt, and then click the "**Generate video**" button to generate a video with the image generated with the same model.
 
 ![Gradio Demo](assets/readme/gradio_option.png)
 
-Then you can specify more options, including "Motion Strength", "Aesthetic" and "Camera Motion". If not "Enable" or the choice is "none", the information is not passed to the model. Otherwise, the model will generate videos with the specified motion strength, aesthetic score, and camera motion.
+Then you can specify more options, including "**Motion Strength**", "**Aesthetic**" and "**Camera Motion**". If "Enable" not checked or the choice is "none", the information is not passed to the model. Otherwise, the model will generate videos with the specified motion strength, aesthetic score, and camera motion.
 
-For the aesthetic score, we recommend using values higher than 6. For motion strength, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the camera motion, sometimes the model cannot follow the instruction well, and we are working on improving it.
+For the **aesthetic score**, we recommend using values higher than 6. For **motion strength**, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the **camera motion**, sometimes the model cannot follow the instruction well, and we are working on improving it.
+
+You can also adjust the "**Sampling steps**", this is directly related to the generation speed as it is the number of denoising. A number smaller than 30 usually leads to a poor generation results, while a number larger than 100 usually has no significant improvement. The "**Seed**" is used for reproducibility, you can set it to a fixed number to generate the same video. The "**CFG Scale**" controls how much the model follows the text prompt, a smaller value will lead to a more random video, while a larger value will lead to a more text-following video (7 is recommended).
 
 For more advanced usage, you can refer to [Gradio README](./gradio/README.md).
 
