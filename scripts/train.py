@@ -140,6 +140,7 @@ def main():
             in_channels=vae_out_channels,
             caption_channels=text_encoder_output_dim,
             model_max_length=text_encoder_model_max_length,
+            enable_sequence_parallelism=cfg.get("sp_size", 1) > 1
         )
         .to(device, dtype)
         .train()

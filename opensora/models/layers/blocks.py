@@ -360,7 +360,6 @@ class SeqParallelAttention(Attention):
         norm_layer: nn.Module = LlamaRMSNorm,
         enable_flash_attn: bool = False,
         rope=None,
-        qk_norm_legacy: bool = False,
     ) -> None:
         assert rope is None, "Rope is not supported in SeqParallelAttention"
         super().__init__(
@@ -378,7 +377,6 @@ class SeqParallelAttention(Attention):
         B, N, C = x.shape  # for sequence parallel here, the N is a local sequence length
         qkv = self.qkv(x)
         qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
-
         qkv = qkv.view(qkv_shape)
 
         sp_group = get_sequence_parallel_group()
@@ -496,20 +494,18 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         # query/value: img tokens; key: condition; mask: if padding tokens
         sp_group = get_sequence_parallel_group()
         sp_size = dist.get_world_size(sp_group)
-        B, SUB_N, C = x.shape
+        B, SUB_N, C = x.shape # [B, TS/p, C]
         N = SUB_N * sp_size
 
         # shape:
         # q, k, v: [B, SUB_N, NUM_HEADS, HEAD_DIM]
-        q = self.q_linear(x).view(B, -1, self.num_heads, self.head_dim)
-        kv = self.kv_linear(cond).view(B, -1, 2, self.num_heads, self.head_dim)
+        q = self.q_linear(x).view(1, -1, self.num_heads, self.head_dim)
+        kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
+        kv = split_forward_gather_backward(kv, get_sequence_parallel_group(), dim=3, grad_scale="down")
         k, v = kv.unbind(2)
 
         # apply all_to_all to gather sequence and split attention heads
         q = all_to_all(q, sp_group, scatter_dim=2, gather_dim=1)
-
-        k = split_forward_gather_backward(k, get_sequence_parallel_group(), dim=2, grad_scale="down")
-        v = split_forward_gather_backward(v, get_sequence_parallel_group(), dim=2, grad_scale="down")
 
         q = q.view(1, -1, self.num_heads // sp_size, self.head_dim)
         k = k.view(1, -1, self.num_heads // sp_size, self.head_dim)

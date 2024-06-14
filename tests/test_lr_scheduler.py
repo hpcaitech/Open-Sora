@@ -1,25 +1,25 @@
 import torch
 from torch.optim import Adam
 from torchvision.models import resnet50
-
+from tqdm import tqdm
 from opensora.utils.lr_scheduler import LinearWarmupLR
 
 
 def test_lr_scheduler():
+    warmup_steps = 200
     model = resnet50().cuda()
     optimizer = Adam(model.parameters(), lr=0.01)
-    scheduler = LinearWarmupLR(optimizer, warmup_steps=10)
+    scheduler = LinearWarmupLR(optimizer, warmup_steps=warmup_steps)
     current_lr = scheduler.get_lr()[0]
-    data = torch.rand(128, 3, 224, 224).cuda()
-
-    for i in range(100):
+    data = torch.rand(1, 3, 224, 224).cuda()
+    
+    for i in tqdm(range(warmup_steps*2)):
         out = model(data)
         out.mean().backward()
-
         optimizer.step()
         scheduler.step()
-
-        if i >= 10:
+        
+        if i >= warmup_steps:
             assert scheduler.get_lr()[0] == 0.01
         else:
             assert scheduler.get_lr()[0] > current_lr, f"{scheduler.get_lr()[0]} <= {current_lr}"
