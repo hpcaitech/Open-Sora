@@ -25,6 +25,7 @@ from opensora.utils.inference_utils import (
     get_save_path_name,
     load_prompts,
     prepare_multi_resolution_info,
+    refine_prompts_by_openai,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -147,6 +148,10 @@ def main():
 
         # == get reference for condition ==
         refs = collect_references_batch(refs, vae, image_size)
+
+        # == refine prompt by openai ==
+        if cfg.get("llm_refine", False):
+            batch_prompts = refine_prompts_by_openai(batch_prompts)
 
         # == score ==
         batch_prompts = append_score_to_prompts(batch_prompts, aes=cfg.get("aes", None), flow=cfg.get("flow", None))
