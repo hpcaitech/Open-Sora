@@ -602,7 +602,7 @@ def main():
                     num_loop = gr.Slider(
                         value=1,
                         minimum=1,
-                        maximum=10,
+                        maximum=20,
                         step=1,
                         label="Number of Loops",
                         info="This will change the length of the generated video, keep it to 1 if you are not sure"
