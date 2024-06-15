@@ -60,6 +60,7 @@ def pllava_answer(conv: Conversation, model, processor, video_list, do_sample=Tr
         output_texts[i] = output_texts[i].split(split_tag)[-1]
         ending = conv.sep if isinstance(conv.sep, str) else conv.sep[1]
         output_texts[i] = output_texts[i].removesuffix(ending).strip()
+        output_texts[i] = output_texts[i].replace('\n', ' ')
         conv.messages[-1][1] = output_texts[i]
     return output_texts, conv
 
