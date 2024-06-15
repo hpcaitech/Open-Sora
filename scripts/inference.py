@@ -28,6 +28,8 @@ from opensora.utils.inference_utils import (
     load_prompts,
     prepare_multi_resolution_info,
     refine_prompts_by_openai,
+    split_prompt,
+    merge_prompt
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -177,31 +179,79 @@ def main():
             if prompt_as_path and all_exists(save_paths):
                 continue
 
+            # == process prompts step by step == 
+            # 0. split prompt
+            # each element in the list is [prompt_segment_list, loop_idx_list]
+            batched_prompt_segment_list = []
+            batched_loop_idx_list = []
+            for prompt in batch_prompts:
+                prompt_segment_list, loop_idx_list = split_prompt(prompt) 
+                batched_prompt_segment_list.append(prompt_segment_list)
+                batched_loop_idx_list.append(loop_idx_list)
+            
+            # 1. refine prompt by openai
+            if cfg.get("llm_refine", False):
+                # only call openai API when 
+                # 1. seq parallel is not enabled
+                # 2. seq parallel is enabled and the process is rank 0
+                if not enable_sequence_parallelism or (enable_sequence_parallelism and is_main_process()):
+                    for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+                        batched_prompt_segment_list[idx] = refine_prompts_by_openai(prompt_segment_list)
+
+                # sync the prompt if using seq parallel
+                if enable_sequence_parallelism:
+                    coordinator.block_all()
+                    prompt_segment_length = [len(prompt_segment_list) for prompt_segment_list in batched_prompt_segment_list]
+
+                    # flatten the prompt segment list
+                    batched_prompt_segment_list = [prompt_segment for prompt_segment_list in batched_prompt_segment_list for prompt_segment in prompt_segment_list]
+
+                    # create a list of size equal to world size
+                    broadcast_obj_list = [batched_prompt_segment_list] * coordinator.world_size
+                    dist.broadcast_object_list(broadcast_obj_list, 0)
+
+                    # recover the prompt list
+                    batched_prompt_segment_list = []
+                    start_idx = 0
+                    all_prompts = broadcast_obj_list[0]
+                    for num_segment in prompt_segment_length:
+                        batched_prompt_segment_list.append(all_prompts[start_idx:start_idx+num_segment])
+                        start_idx += num_segment
+            
+            # 2. append score
+            for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+                batched_prompt_segment_list[idx] = append_score_to_prompts(
+                    prompt_segment_list,
+                    aes=cfg.get("aes", None),
+                    flow=cfg.get("flow", None),
+                    camera_motion=cfg.get("camera_motion", None),
+                )
+
+            # 3. clean prompt with T5
+            for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+                batched_prompt_segment_list[idx] = [text_preprocessing(prompt) for prompt in prompt_segment_list]
+
+            # 4. merge to obtain the final prompt
+            batch_prompts = []
+            for prompt_segment_list, loop_idx_list in zip(batched_prompt_segment_list, batched_loop_idx_list):
+                batch_prompts.append(merge_prompt(prompt_segment_list, loop_idx_list))
+
             # == Iter over loop generation ==
             video_clips = []
             for loop_i in range(loop):
                 # == get prompt for loop i ==
                 batch_prompts_loop = extract_prompts_loop(batch_prompts, loop_i)
 
-                # == refine prompt by openai ==
-                if cfg.get("llm_refine", False):
-                    batch_prompts_loop = refine_prompts_by_openai(batch_prompts_loop)
-
-                # == add score to prompt ==
-                batch_prompts_loop = append_score_to_prompts(
-                    batch_prompts_loop,
-                    aes=cfg.get("aes", None),
-                    flow=cfg.get("flow", None),
-                    camera_motion=cfg.get("camera_motion", None),
-                )
-
-                # == clean prompt for t5 ==
-                batch_prompts_cleaned = [text_preprocessing(prompt) for prompt in batch_prompts_loop]
-
                 # == add condition frames for loop ==
                 if loop_i > 0:
                     refs, ms = append_generated(
-                        vae, video_clips[-1], refs, ms, loop_i, condition_frame_length, condition_frame_edit
+                        vae,
+                        video_clips[-1],
+                        refs,
+                        ms,
+                        loop_i,
+                        condition_frame_length,
+                        condition_frame_edit
                     )
 
                 # == sampling ==
@@ -211,7 +261,7 @@ def main():
                     model,
                     text_encoder,
                     z=z,
-                    prompts=batch_prompts_cleaned,
+                    prompts=batch_prompts_loop,
                     device=device,
                     additional_args=model_args,
                     progress=verbose >= 2,

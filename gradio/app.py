@@ -26,8 +26,8 @@ CONFIG_MAP = {
 }
 HF_STDIT_MAP = {
     "v1.2-stage3": {
-        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step11000/ema.pt",
-        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step11000/model"
+        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step18800/ema.pt",
+        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step18800/model"
         }
 }
 
@@ -184,9 +184,12 @@ from opensora.utils.inference_utils import (
     prepare_multi_resolution_info,
     dframe_to_frame,
     append_score_to_prompts,
+    has_openai_key,
     refine_prompts_by_openai,
     add_watermark,
-    get_random_prompt_by_openai
+    get_random_prompt_by_openai,
+    split_prompt,
+    merge_prompt
 )
 from opensora.models.text_encoder.t5 import text_preprocessing
 from opensora.datasets.aspect import get_image_size, get_num_frames
@@ -199,7 +202,7 @@ device = torch.device("cuda")
 vae, text_encoder, stdit, scheduler = build_models(args.model_type, config, enable_optimization=args.enable_optimization)
 
 
-def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, enhance_prompt, fps, num_loop, seed, sampling_steps, cfg_scale):
+def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, refine_prompt, fps, num_loop, seed, sampling_steps, cfg_scale):
     torch.manual_seed(seed)
     with torch.inference_mode():
         # ======================
@@ -218,13 +221,14 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
             num_frames = get_num_frames(length)
             
         condition_frame_length = int(num_frames / 17 * 5 / 3)
+        condition_frame_edit = 0.0
         
         input_size = (num_frames, *image_size)
         latent_size = vae.get_latent_size(input_size)
         multi_resolution = "OpenSora"
         align = 5
         
-        # prepare reference
+        # == prepare mask strategy ==
         if mode == "Text2Image":
             mask_strategy = [None]
         elif mode == "Text2Video":
@@ -235,7 +239,7 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         else:
             raise ValueError(f"Invalid mode: {mode}")
         
-        # prepare refs
+        # == prepare reference ==
         if mode == "Text2Image":
             refs = [""]
         elif mode == "Text2Video":
@@ -251,36 +255,59 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         else:
             raise ValueError(f"Invalid mode: {mode}")
         
-        # refine the user prompt with gpt4o
+        # == get json from prompts ==
         batch_prompts = [prompt_text]
-        if enhance_prompt:
-            # check if openai key is provided
-            if "OPENAI_API_KEY" not in os.environ:
-                gr.Warning("OpenAI API key is not provided, the prompt will not be enhanced.")
-            else:
-                batch_prompts = refine_prompts_by_openai(batch_prompts)
-                
         batch_prompts, refs, mask_strategy = extract_json_from_prompts(batch_prompts, refs, mask_strategy)
-        
+
+        # == get reference for condition ==
         refs = collect_references_batch(refs, vae, image_size)
-        
-        # process scores
-        use_motion_strength = use_motion_strength and mode != "Text2Image"
-        if camera_motion != "none":
-            batch_prompts = [
-                f"{prompt} camera motion: {camera_motion}."
-                for prompt in batch_prompts
-            ]
-        batch_prompts = append_score_to_prompts(
-            batch_prompts,
-            aes=aesthetic_score if use_aesthetic_score else None,
-            flow=motion_strength if use_motion_strength else None
-            )
-        
-        # multi-resolution info 
+
+        # == multi-resolution info ==
         model_args = prepare_multi_resolution_info(
             multi_resolution, len(batch_prompts), image_size, num_frames, fps, device, dtype
         )
+        
+        # == process prompts step by step == 
+        # 0. split prompt
+        # each element in the list is [prompt_segment_list, loop_idx_list]
+        batched_prompt_segment_list = []
+        batched_loop_idx_list = []
+        for prompt in batch_prompts:
+            prompt_segment_list, loop_idx_list = split_prompt(prompt) 
+            batched_prompt_segment_list.append(prompt_segment_list)
+            batched_loop_idx_list.append(loop_idx_list)
+        
+        # 1. refine prompt by openai
+        if refine_prompt:
+            # check if openai key is provided
+            if not has_openai_key():
+                gr.Warning("OpenAI API key is not provided, the prompt will not be enhanced.")
+            else:
+                for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+                    batched_prompt_segment_list[idx] = refine_prompts_by_openai(prompt_segment_list)
+        
+        # process scores
+        aesthetic_score = aesthetic_score if use_aesthetic_score else None
+        motion_strength = motion_strength if use_motion_strength and mode != "Text2Image" else None
+        camera_motion = None if camera_motion == "none" or mode == "Text2Image" else camera_motion
+        # 2. append score
+        for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+            batched_prompt_segment_list[idx] = append_score_to_prompts(
+                prompt_segment_list,
+                aes=aesthetic_score,
+                flow=motion_strength,
+                camera_motion=camera_motion,
+            )
+
+        # 3. clean prompt with T5
+        for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
+            batched_prompt_segment_list[idx] = [text_preprocessing(prompt) for prompt in prompt_segment_list]
+        
+        # 4. merge to obtain the final prompt
+        batch_prompts = []
+        for prompt_segment_list, loop_idx_list in zip(batched_prompt_segment_list, batched_loop_idx_list):
+            batch_prompts.append(merge_prompt(prompt_segment_list, loop_idx_list))
+        
 
         # =========================
         # Generate image/video
@@ -290,11 +317,18 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         for loop_i in range(num_loop):
             # 4.4 sample in hidden space
             batch_prompts_loop = extract_prompts_loop(batch_prompts, loop_i)
-            batch_prompts_cleaned = [text_preprocessing(prompt) for prompt in batch_prompts_loop]
             
             # == loop ==
             if loop_i > 0:
-                refs, mask_strategy = append_generated(vae, video_clips[-1], refs, mask_strategy, loop_i, condition_frame_length)
+                refs, mask_strategy = append_generated(
+                    vae, 
+                    video_clips[-1],
+                    refs,
+                    mask_strategy,
+                    loop_i,
+                    condition_frame_length,
+                    condition_frame_edit
+                    )
             
             # == sampling ==
             z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
@@ -314,7 +348,7 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
                 stdit,
                 text_encoder,
                 z=z,
-                prompts=batch_prompts_cleaned,
+                prompts=batch_prompts_loop,
                 device=device,
                 additional_args=model_args,
                 progress=True,
@@ -361,7 +395,7 @@ def run_image_inference(
     use_aesthetic_score,
     camera_motion,
     reference_image,
-    enhance_prompt,
+    refine_prompt,
     fps,
     num_loop, 
     seed,
@@ -379,7 +413,7 @@ def run_image_inference(
         use_aesthetic_score,
         camera_motion,
         reference_image,
-        enhance_prompt,
+        refine_prompt,
         fps,
         num_loop, 
         seed,
@@ -398,7 +432,7 @@ def run_video_inference(
     use_aesthetic_score, 
     camera_motion,
     reference_image, 
-    enhance_prompt,
+    refine_prompt,
     fps,
     num_loop, 
     seed,
@@ -420,7 +454,7 @@ def run_video_inference(
             use_aesthetic_score, 
             camera_motion,
             reference_image, 
-            enhance_prompt,
+            refine_prompt,
             fps,
             num_loop, 
             seed,
@@ -471,7 +505,7 @@ def main():
                     info="Empty prompt will mean random prompt from OpenAI.",
                     lines=4,
                 )
-                enhance_prompt = gr.Checkbox(value=True, label="Enhance prompt with GPT4o")
+                refine_prompt = gr.Checkbox(value=True, label="Refine prompt with GPT4o")
                 random_prompt_btn = gr.Button("Random Prompt")
                 
                 gr.Markdown("## Basic Settings")
@@ -594,12 +628,12 @@ def main():
 
         image_gen_button.click(
              fn=run_image_inference, 
-             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, enhance_prompt, fps, num_loop, seed, sampling_steps, cfg_scale], 
+             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, refine_prompt, fps, num_loop, seed, sampling_steps, cfg_scale], 
              outputs=reference_image
              )
         video_gen_button.click(
              fn=run_video_inference, 
-             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, enhance_prompt, fps, num_loop, seed, sampling_steps, cfg_scale], 
+             inputs=[prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, refine_prompt, fps, num_loop, seed, sampling_steps, cfg_scale], 
              outputs=output_video
              )
         random_prompt_btn.click(

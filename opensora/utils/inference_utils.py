@@ -115,6 +115,32 @@ def extract_prompts_loop(prompts, num_loop):
         ret_prompts.append(prompt)
     return ret_prompts
 
+def split_prompt(prompt_text):
+    if prompt_text.startswith("|0|"):
+        # this is for prompts which look like 
+        # |0| a beautiful day |1| a sunny day |2| a rainy day
+        # we want to parse it into a list of prompts with the loop index
+        prompt_list = prompt_text.split("|")[1:]
+        text_list = []
+        loop_idx = []
+        for i in range(0, len(prompt_list), 2):
+            start_loop = int(prompt_list[i])
+            text = prompt_list[i + 1].strip()
+            text_list.append(text)
+            loop_idx.append(start_loop)
+        return text_list, loop_idx
+    else:
+        return [prompt_text], None
+    
+def merge_prompt(text_list, loop_idx_list=None):
+    if loop_idx_list is None:
+        return text_list[0]
+    else:
+        prompt = ""
+        for i, text in enumerate(text_list):
+            prompt += f"|{loop_idx_list[i]}|{text}"
+        return prompt
+
 
 MASK_DEFAULT = ["0", "0", "0", "0", "1", "0"]
 
@@ -259,6 +285,8 @@ def refine_prompt_by_openai(prompt):
     response = get_openai_response(REFINE_PROMPTS, prompt)
     return response
 
+def has_openai_key():
+    return "OPENAI_API_KEY" in os.environ
 
 def refine_prompts_by_openai(prompts):
     new_prompts = []
@@ -286,4 +314,5 @@ def add_watermark(
         output_video_path = input_video_path.replace(".mp4", "_watermark.mp4")
     cmd = f'ffmpeg -y -i {input_video_path} -i {watermark_image_path} -filter_complex "[1][0]scale2ref=oh*mdar:ih*0.1[logo][video];[video][logo]overlay" {output_video_path}'
     exit_code = os.system(cmd)
-    return exit_code == 0
+    is_success = exit_code == 0
+    return is_success
