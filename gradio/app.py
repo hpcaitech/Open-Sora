@@ -26,8 +26,8 @@ CONFIG_MAP = {
 }
 HF_STDIT_MAP = {
     "v1.2-stage3": {
-        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step18800/ema.pt",
-        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step18800/model"
+        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200/ema.pt",
+        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200/model"
         }
 }
 
