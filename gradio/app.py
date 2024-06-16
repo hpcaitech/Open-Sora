@@ -367,7 +367,7 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         current_datetime = datetime.datetime.now()
         timestamp = current_datetime.timestamp()
         save_path = os.path.join(args.output, f"output_{timestamp}")
-        saved_path = save_sample(video, save_path=save_path, fps=fps)
+        saved_path = save_sample(video, save_path=save_path, fps=24)
         torch.cuda.empty_cache()
         
         # add watermark
@@ -553,9 +553,9 @@ def main():
                 with gr.Row():
                     with gr.Column():
                         motion_strength = gr.Slider(
-                            value=100,
+                            value=5,
                             minimum=0,
-                            maximum=500,
+                            maximum=100,
                             step=1,
                             label="Motion Strength",
                             info="only effective for video generation"
