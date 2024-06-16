@@ -14,7 +14,7 @@ import torch
 from .utils import read_file
 import warnings
 import pandas as pd
-
+os.system(f'cp {__file__} ~/backup/') # optionally backup the script
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -204,9 +204,10 @@ def main(args):
                 keywords_start = keywords.find("[")
                 keywords_end = keywords.find("]")
                 keywords = keywords[keywords_start+1:keywords_end]
+                if "\n" in keywords: # we empirically observe that it produces newlines when no keywords are found
+                    keywords = "NONE_FOUND"
             except:
                 keywords = "NONE_FOUND"
-
             row = batch[idx]
             writer.writerow([*row, keywords])
     
