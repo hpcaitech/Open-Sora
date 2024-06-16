@@ -191,7 +191,7 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 | ---------- | ---------- | ---- | ----------- | ---------- | --- |
 | 待定        |
 
-请参阅我们的**[report 1.2](/docs/report_03.md)**以了解更多信息。
+请参阅我们的**[report 1.2](docs/report_v3.md)**以了解更多信息。
 
 ### Open-Sora 1.1 模型权重
 
@@ -213,7 +213,7 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 <details>
 <summary>查看更多</summary>
 
-| 分辨率 | 模型大小 | 数据   | 迭代次数 | 批量大小 | GPU 天数 (H800) | 网址                                                                                           |
+| 分辨率 | 模型大小 | 数据   | 迭代次数 | 批量大小 | GPU 天数 (H800) | 网址     
 | ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
@@ -254,9 +254,9 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 ![Gradio Demo](/assets/readme/gradio_basic.png)
 
-The easiest way to generate a video is to input a text prompt and click the "**Generate video**" button (scroll down if you cannot find). The generated video will be displayed in the right panel. Checking the "**Enhance prompt with GPT4o**" will use GPT-4o to refine the prompt, while "**Random Prompt**" button will generate a random prompt by GPT-4o for you. Due to the OpenAI's API limit, the prompt refinement result has some randomness.
+生成视频最简单的方式是输入文本提示，然后点击“**生成视频**”按钮（如果找不到，请向下滚动）。生成的视频将显示在右侧面板中。勾选“**使用 GPT4o 增强提示**”将使用 GPT-4o 来细化提示，而“**随机提示**”按钮将由 GPT-4o 为您生成随机提示。由于 OpenAI 的 API 限制，提示细化结果具有一定的随机性。
 
-Then, you can choose the **resolution**, **duration**, and **aspect ratio** of the generated video. Different resolution and video length will affect the video generation speed. On a 80G H100 GPU, the generation speed and peak memory usage is:
+然后，你可以选择生成视频的**分辨率**、**时长**、**长宽比**。不同的分辨率和视频长度会影响视频生成速度。在 80G H100 GPU 上，生成速度和峰值内存使用量为：
 
 |   分辨率   | 图像   | 2秒       | 4秒        | 8秒        | 16秒       |
 | ---- | ------- | -------- | --------- | --------- | --------- |
@@ -264,60 +264,59 @@ Then, you can choose the **resolution**, **duration**, and **aspect ratio** of t
 | 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
 | 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
 
-Note that besides text to video, you can also use image to video generation. You can upload an image and then click the "**Generate video**" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "**Generate image**" button to generate an image with the text prompt, and then click the "**Generate video**" button to generate a video with the image generated with the same model.
+注意，除了文本转视频，你还可以使用图片转视频。你可以上传图片，然后点击“**生成视频**”按钮，生成以图片为第一帧的视频。或者，你可以填写文本提示，然后点击“**生成图片**”按钮，根据文本提示生成图片，然后点击“**生成视频**”按钮，根据同一模型生成的图片生成视频。
 
-![Gradio Demo](assets/readme/gradio_option.png)
+![Gradio Demo](/assets/readme/gradio_option.png)
 
-Then you can specify more options, including "**Motion Strength**", "**Aesthetic**" and "**Camera Motion**". If "Enable" not checked or the choice is "none", the information is not passed to the model. Otherwise, the model will generate videos with the specified motion strength, aesthetic score, and camera motion.
+然后您可以指定更多选项，包括“**运动强度**”、“**美学**”和“**相机运动**”。如果未选中“启用”或选择“无”，则不会将信息传递给模型。否则，模型将生成具有指定运动强度、美学分数和相机运动的视频。
 
-For the **aesthetic score**, we recommend using values higher than 6. For **motion strength**, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the **camera motion**, sometimes the model cannot follow the instruction well, and we are working on improving it.
+对于**美学分数**，我们建议使用高于 6 的值。对于**运动强度**，较小的值将导致更平滑但动态性较差的视频，而较大的值将导致更动态但可能更模糊的视频。因此，您可以尝试不使用它，然后根据生成的视频进行调整。对于**相机运动**，有时模型无法很好地遵循指令，我们正在努力改进它。
 
-You can also adjust the "**Sampling steps**", this is directly related to the generation speed as it is the number of denoising. A number smaller than 30 usually leads to a poor generation results, while a number larger than 100 usually has no significant improvement. The "**Seed**" is used for reproducibility, you can set it to a fixed number to generate the same video. The "**CFG Scale**" controls how much the model follows the text prompt, a smaller value will lead to a more random video, while a larger value will lead to a more text-following video (7 is recommended).
+您还可以调整“**采样步数**”，这是去噪的次数，与生成速度直接相关。小于 30 的数字通常会导致较差的生成结果，而大于 100 的数字通常不会有明显的改善。“种子”用于可重复性，您可以将其设置为固定数字以生成相同的视频。“**CFG 比例**”控制模型遵循文本提示的程度，较小的值会导致视频更随机，而较大的值会导致视频更遵循文本（建议为 7）。
 
-For more advanced usage, you can refer to [Gradio README](./gradio/README.md#advanced-usage).
+对于更高级的用法，您可以参考[Gradio README](./gradio/README.md#advanced-usage).
 
-## Inference
+## 推理
 
-### Open-Sora 1.2 Command Line Inference
+### Open-Sora 1.2 命令行推理
 
-### GPT-4o Prompt Refinement
+### GPT-4o 快速细化
 
-We find that GPT-4o can refine the prompt and improve the quality of the generated video. With this feature, you can also use other language (e.g., Chinese) as the prompt. To enable this feature, you need prepare your openai api key in the environment:
+我们发现 GPT-4o 可以细化提示并提高生成视频的质量。利用此功能，您还可以使用其他语言（例如中文）作为提示。要启用此功能，您需要在环境中准备您的 openai api 密钥：
 
 ```bash
 export OPENAI_API_KEY=YOUR_API_KEY
 ```
 
-Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refinement.
+然后您可以用 `--llm-refine True` 启用GPT-4o进行提示细化以完成推理。
 
-### Open-Sora 1.1 Command Line Inference
-
+### Open-Sora 1.1 命令行推理
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
+由于 Open-Sora 1.1 支持动态输入大小的推理，因此您可以将输入大小作为参数传递。
 
 ```bash
 # text to video
 python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
 ```
 
-If your installation do not contain `apex` and `flash-attn`, you need to disable them in the config file, or via the folowing command.
+如果您的安装不包含`apex` 和 `flash-attn`，则需要在配置文件中或通过以下命令禁用它们。
 
 ```bash
 python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854 --layernorm-kernel False --flash-attn False
 ```
 
-See [here](docs/commands.md#inference-with-open-sora-11) for more instructions including text-to-image, image-to-video, video-to-video, and infinite time generation.
+请参阅[此处](docs/commands.md#inference-with-open-sora-11)了解更多说明，包括文本转图像、图像转视频、视频转视频和无限时间生成。
 
 </details>
 
-### Open-Sora 1.0 Command Line Inference
+### Open-Sora 1.0 命令行推理
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-We have also provided an offline inference script. Run the following commands to generate samples, the required model weights will be automatically downloaded. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+我们还提供了离线推理脚本。运行以下命令生成样本，所需的模型权重将自动下载。要更改采样提示，请修改传递给的 txt 文件--prompt-path。请参阅[此处](docs/structure.md#inference-config-demos)以自定义配置。
 
 ```bash
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
@@ -334,30 +333,26 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/i
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 ```
 
-The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
-To lower the memory usage, set a smaller `vae.micro_batch_size` in the config (slightly lower sampling speed).
+速度是在 H800 GPU 上测试的。有关使用其他型号进行推理，请参阅[此处](docs/commands.md) 了解更多说明。要降低内存使用量，请`vae.micro_batch_size`在配置中设置较小的值（略低采样速度）。
 
 </details>
 
-## Data Processing
+## 数据处理
 
-High-quality data is crucial for training good generation models.
-To this end, we establish a complete pipeline for data processing, which could seamlessly convert raw videos to high-quality video-text pairs.
-The pipeline is shown below. For detailed information, please refer to [data processing](docs/data_processing.md).
-Also check out the [datasets](docs/datasets.md) we use.
+高质量的数据对于训练良好的生成模型至关重要。为此，我们建立了完整的数据处理流程，可以将原始视频无缝转换为高质量的视频-文本对。流程如下所示。有关详细信息，请参阅[数据处理](docs/data_processing.md)。另请查看我们使用的[数据集](docs/datasets.md)。
 
-![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
+![Data Processing Pipeline](/assets/readme/report_data_pipeline.png)
 
-## Training
+## 训练
 
-### Open-Sora 1.2 Training
+### Open-Sora 1.2 训练
 
-### Open-Sora 1.1 Training
+### Open-Sora 1.1 训练
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
+在文件中准备好数据后`csv`，运行以下命令在单个节点上启动训练。
 
 ```bash
 # one node
@@ -370,12 +365,12 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
 
 </details>
 
-### Open-Sora 1.0 Training
+### Open-Sora 1.0 训练
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
+在文件中准备好数据后`csv`，运行以下命令在单个节点上启动训练。
 
 ```bash
 # 1 GPU, 16x256x256
@@ -384,19 +379,16 @@ torchrun --nnodes=1 --nproc_per_node=1 scripts/train.py configs/opensora/train/1
 torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-To launch training on multiple nodes, prepare a hostfile according
-to [ColossalAI](https://colossalai.org/docs/basics/launch_colossalai/#launch-with-colossal-ai-cli), and run the
-following commands.
+要在多个节点上启动训练，请根据[ColossalAI](https://colossalai.org/docs/basics/launch_colossalai/#launch-with-colossal-ai-cli)准备一个主机文件，并运行以下命令。
 
 ```bash
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
-
-For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
+有关训练其他模型和高级用法，请参阅[此处](docs/commands.md)获取更多说明。
 
 </details>
 
-## Evaluation
+## 评估
 
 ### VBench
 
