@@ -438,29 +438,29 @@ def run_video_inference(
     seed,
     sampling_steps,
     cfg_scale):
-    if (resolution == "480p" and length == "16s") or \
-        (resolution == "720p" and length in ["8s", "16s"]):
-        gr.Warning("Generation is interrupted as the combination of 480p and 16s will lead to CUDA out of memory")
-    else:
-        return run_inference(
-            "Text2Video",
-            prompt_text, 
-            resolution,
-            aspect_ratio, 
-            length, 
-            motion_strength, 
-            aesthetic_score, 
-            use_motion_strength,
-            use_aesthetic_score, 
-            camera_motion,
-            reference_image, 
-            refine_prompt,
-            fps,
-            num_loop, 
-            seed,
-            sampling_steps, 
-            cfg_scale
-            )
+    # if (resolution == "480p" and length == "16s") or \
+    #     (resolution == "720p" and length in ["8s", "16s"]):
+    #     gr.Warning("Generation is interrupted as the combination of 480p and 16s will lead to CUDA out of memory")
+    # else:
+    return run_inference(
+        "Text2Video",
+        prompt_text, 
+        resolution,
+        aspect_ratio, 
+        length, 
+        motion_strength, 
+        aesthetic_score, 
+        use_motion_strength,
+        use_aesthetic_score, 
+        camera_motion,
+        reference_image, 
+        refine_prompt,
+        fps,
+        num_loop, 
+        seed,
+        sampling_steps, 
+        cfg_scale
+        )
 
 
 def generate_random_prompt():
