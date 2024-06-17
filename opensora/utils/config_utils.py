@@ -46,6 +46,7 @@ def parse_args(training=False):
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
         parser.add_argument("--prompt", default=None, type=str, nargs="+", help="prompt list")
         parser.add_argument("--llm-refine", default=None, type=str2bool, help="enable LLM refine")
+        parser.add_argument("--prompt-generator", default=None, type=str, help="prompt generator")
 
         # image/video
         parser.add_argument("--num-frames", default=None, type=str, help="number of frames")
