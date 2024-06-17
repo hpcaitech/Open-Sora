@@ -62,7 +62,19 @@ nohup python caption_pllava.py \
 
 ### PLLaVA VS LLaVA
 In our previous releases, we used [LLaVA](#llava-captioning) for video captioning. 
-<img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA">
+Qualitatively speaking, we observe that PLLaVA has a somewhat higher chance of accurately capture the details in the video.
+<!-- <img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA"> -->
+
+<figure>
+    <img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA">
+    <figcaption>Sample</figcaption>
+</figure>
+
+| LLaVA | PLLaVA |
+|----------|----------|
+| The video is a close-up shot of two gold wedding rings. The rings are placed on a <span style="color: green;">black surface</span>, casting a soft shadow beneath them. The rings are positioned in such a way that <span style="color: red;">they are facing each other, creating a mirror image effect.</span> The rings are identical in size and design, suggesting they are a pair. The lighting in the video is soft and diffused, highlighting the gold color of the rings and creating a warm and inviting atmosphere. The overall style of the video is minimalist and elegant, focusing solely on the rings and their reflection.	| The video shows a pair of gold wedding rings on a <span style="color: green;">reflective surface</span>. The rings are placed one on top of the other, with <span style="color: green;">the top ring slightly tilted to the left</span>. The rings have a shiny, metallic finish and are the main focus of the image. The background is a gradient of dark to light gray, providing a neutral backdrop that highlights the rings. There are no texts or other objects in the image. The style of the video is a simple product display with a focus on the rings, likely intended for promotional or sales purposes. The lighting and shadows suggest a soft, even light source, possibly a studio light, which creates a reflective surface beneath the rings.|
+<!-- |Row2Cell1|Row2Cell2| -->
+
 
 
 
