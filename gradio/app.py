@@ -25,10 +25,7 @@ CONFIG_MAP = {
     "v1.2-stage3": "configs/opensora-v1-2/inference/sample.py",
 }
 HF_STDIT_MAP = {
-    "v1.2-stage3": {
-        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200/ema.pt",
-        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200/model"
-        }
+    "v1.2-stage3": "hpcai-tech/OpenSora-STDiT-v3"
 }
 
 # ============================
@@ -104,11 +101,8 @@ def build_models(model_type, config, enable_optimization=False):
     # build stdit
     # we load model from HuggingFace directly so that we don't need to
     # handle model download logic in HuggingFace Space
-    from opensora.models.stdit.stdit3 import STDiT3, STDiT3Config
-    stdit3_config = STDiT3Config.from_pretrained(HF_STDIT_MAP[model_type]['model'])
-    stdit = STDiT3(stdit3_config)
-    ckpt = torch.load(HF_STDIT_MAP[model_type]['ema'])
-    stdit.load_state_dict(ckpt)
+    from opensora.models.stdit.stdit3 import STDiT3
+    stdit = STDiT3.from_pretrained(HF_STDIT_MAP[model_type])
     stdit = stdit.cuda()
 
     # build scheduler
