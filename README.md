@@ -211,7 +211,7 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 | Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
 | --------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------- |
 | Diffusion | 1.1B       | 30M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
-| VAE       | 384M       | 3M   | 1.18M       |     8      | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
+| VAE       | 384M       | 3M   | 1.18M       | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
 See our **[report 1.2](docs/report_03.md)** for more infomation.
 
@@ -326,6 +326,15 @@ python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
 ```
 
 For image to video generation and other functionalities, the API is compatible with Open-Sora 1.1. See [here](docs/commands.md) for more instructions.
+
+If your installation do not contain `apex` and `flash-attn`, you need to disable them in the config file, or via the folowing command.
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p \
+  --layernorm-kernel False --flash-attn False \
+  --prompt "a beautiful waterfall"
+```
 
 ### GPT-4o Prompt Refinement
 
