@@ -1,6 +1,7 @@
 # Commands
 
 - [Inference](#inference)
+  - [Inference with Open-Sora 1.2](#inference-with-open-sora-12)
   - [Inference with Open-Sora 1.1](#inference-with-open-sora-11)
   - [Inference with DiT pretrained on ImageNet](#inference-with-dit-pretrained-on-imagenet)
   - [Inference with Latte pretrained on UCF101](#inference-with-latte-pretrained-on-ucf101)
