@@ -6,10 +6,10 @@ from tqdm import tqdm
 
 sys.path.append(".")
 
-# ERROR: cannot locate the model file
-from flolpips.pwcnet import Network as PWCNet
 from flolpips.flolpips import FloLPIPS
-loss_fn = FloLPIPS(net='alex', version='0.1').eval().requires_grad_(False)
+from flolpips.pwcnet import Network as PWCNet
+
+loss_fn = FloLPIPS(net="alex", version="0.1").eval().requires_grad_(False)
 flownet = PWCNet().eval().requires_grad_(False)
 
 

@@ -50,7 +50,7 @@ class LPIPS(nn.Module):
         super().__init__()
         self.scaling_layer = ScalingLayer()
         self.chns = [64, 128, 256, 512, 512]  # vg16 features
-        self.net = vgg16(pretrained=True, requires_grad=False)  # NOTE: TODO: need in_channels = 4 to use
+        self.net = vgg16(pretrained=True, requires_grad=False)
         self.lin0 = NetLinLayer(self.chns[0], use_dropout=use_dropout)
         self.lin1 = NetLinLayer(self.chns[1], use_dropout=use_dropout)
         self.lin2 = NetLinLayer(self.chns[2], use_dropout=use_dropout)
@@ -90,7 +90,6 @@ class LPIPS(nn.Module):
         return val
 
 
-# SCH: TODO: this channel shift & scale may need to be changed
 class ScalingLayer(nn.Module):
     def __init__(self):
         super(ScalingLayer, self).__init__()
