@@ -5,8 +5,6 @@ LABEL org.opencontainers.image.source = "https://github.com/hpcaitech/Open-Sora"
 LABEL org.opencontainers.image.licenses = "Apache License 2.0"
 LABEL org.opencontainers.image.base.name = "docker.io/library/hpcaitech/pytorch-cuda:2.1.0-12.1.0"
 
-COPY . /workspace/Open-Sora
-
 # inatall library dependencies
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 

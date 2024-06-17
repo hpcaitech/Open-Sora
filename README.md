@@ -24,16 +24,16 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-* **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-10-model-weights) [[report]](/docs/report_03.md)
-* **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
-* **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
-* **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
+- **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-10-model-weights) [[report]](/docs/report_03.md)
+- **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
+- **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
+- **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
   <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
   acceleration,
   inference, and more. Our model can produce 2s 512x512 videos with only 3 days training. [[checkpoints]](#open-sora-10-model-weights)
   [[blog]](https://hpc-ai.com/blog/open-sora-v1.0) [[report]](/docs/report_01.md)
-* **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
+- **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
   [[blog]](https://hpc-ai.com/blog/open-sora)
 
 ## 🎥 Latest Demo
@@ -75,23 +75,23 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 ## 🔆 New Features/Updates
 
-* 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](docs/report_03.md)** for more details.
-* ✅ Support rectified flow scheduling.
-* ✅ Support more conditioning including fps, aesthetic score, motion strength and camera motion.
-* ✅ Trained our 3D-VAE for temporal dimension compression.
-* 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](/docs/report_02.md)** for more discussions.
-* 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
-* ✅ Improved ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
-* ✅ Support training with any resolution, aspect ratio, and duration (including images).
-* ✅ Support image and video conditioning and video editing, and thus support animating images, connecting videos, etc.
-* 📍 **Open-Sora 1.0** released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800
+- 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](docs/report_03.md)** for more details.
+- ✅ Support rectified flow scheduling.
+- ✅ Support more conditioning including fps, aesthetic score, motion strength and camera motion.
+- ✅ Trained our 3D-VAE for temporal dimension compression.
+- 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](/docs/report_02.md)** for more discussions.
+- 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
+- ✅ Improved ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
+- ✅ Support training with any resolution, aspect ratio, and duration (including images).
+- ✅ Support image and video conditioning and video editing, and thus support animating images, connecting videos, etc.
+- 📍 **Open-Sora 1.0** released. Model weights are available [here](#model-weights). With only 400K video clips and 200 H800
   days (compared with 152M samples in Stable Video Diffusion), we are able to generate 2s 512×512 videos. See our **[report 1.0](docs/report_01.md)** for more discussions.
-* ✅ Three-stage training from an image diffusion model to a video diffusion model. We provide the weights for each
+- ✅ Three-stage training from an image diffusion model to a video diffusion model. We provide the weights for each
   stage.
-* ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism.
+- ✅ Support training acceleration including accelerated transformer, faster T5 and VAE, and sequence parallelism.
   Open-Sora improves **55%** training speed when training on 64x512x512 videos. Details locates
   at [acceleration.md](docs/acceleration.md).
-* 🔧 **Data preprocessing pipeline v1.0**,
+- 🔧 **Data preprocessing pipeline v1.0**,
   including [downloading](tools/datasets/README.md), [video cutting](tools/scene_cut/README.md),
   and [captioning](tools/caption/README.md) tools. Our data collection plan can be found
   at [datasets.md](docs/datasets.md).
@@ -99,18 +99,18 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 <details>
 <summary>View more</summary>
 
-* ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a
+- ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a
   better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in
   the time dimension deteriorates the quality. See our **[report](docs/report_01.md)** for more discussions.
-* ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our **STDiT** achieves a better
+- ✅ We investigate different architectures including DiT, Latte, and our proposed STDiT. Our **STDiT** achieves a better
   trade-off between quality and speed. See our **[report](docs/report_01.md)** for more discussions.
-* ✅ Support clip and T5 text conditioning.
-* ✅ By viewing images as one-frame videos, our project supports training DiT on both images and videos (e.g., ImageNet &
+- ✅ Support clip and T5 text conditioning.
+- ✅ By viewing images as one-frame videos, our project supports training DiT on both images and videos (e.g., ImageNet &
   UCF101). See [commands.md](docs/commands.md) for more instructions.
-* ✅ Support inference with official weights
+- ✅ Support inference with official weights
   from [DiT](https://github.com/facebookresearch/DiT), [Latte](https://github.com/Vchitect/Latte),
   and [PixArt](https://pixart-alpha.github.io/).
-* ✅ Refactor the codebase. See [structure.md](docs/structure.md) to learn the project structure and how to use the
+- ✅ Refactor the codebase. See [structure.md](docs/structure.md) to learn the project structure and how to use the
   config files.
 
 </details>
@@ -120,40 +120,40 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 <details>
 <summary>View more</summary>
 
-* [x] Training Video-VAE and adapt our model to new VAE.
-* [x] Scaling model parameters and dataset size.
-* [x] Incoporate a better scheduler (rectified flow).
-* [x] Evaluation pipeline.
-* [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.). See [the dataset](/docs/datasets.md) for more information
-* [x] Support image and video conditioning.
-* [x] Support variable aspect ratios, resolutions, durations.
+- [x] Training Video-VAE and adapt our model to new VAE.
+- [x] Scaling model parameters and dataset size.
+- [x] Incoporate a better scheduler (rectified flow).
+- [x] Evaluation pipeline.
+- [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.). See [the dataset](/docs/datasets.md) for more information
+- [x] Support image and video conditioning.
+- [x] Support variable aspect ratios, resolutions, durations.
 
 </details>
 
 ## Contents
 
-* [Installation](#installation)
-* [Model Weights](#model-weights)
-* [Gradio Demo](#gradio-demo)
-* [Inference](#inference)
-* [Data Processing](#data-processing)
-* [Training](#training)
-* [Evaluation](#evaluation)
-* [VAE Training & Evaluation](#vae-training--evaluation)
-* [Contribution](#contribution)
-* [Citation](#citation)
-* [Acknowledgement](#acknowledgement)
+- [Installation](#installation)
+- [Model Weights](#model-weights)
+- [Gradio Demo](#gradio-demo)
+- [Inference](#inference)
+- [Data Processing](#data-processing)
+- [Training](#training)
+- [Evaluation](#evaluation)
+- [VAE Training & Evaluation](#vae-training--evaluation)
+- [Contribution](#contribution)
+- [Citation](#citation)
+- [Acknowledgement](#acknowledgement)
 
 Other useful documents and links are listed below.
 
-* Report: [report 1.2](docs/report_03.md), [report 1.1](docs/report_02.md), [report 1.0](docs/report_01.md), [acceleration.md](docs/acceleration.md)
-* Repo structure: [structure.md](docs/structure.md)
-* Config file explanation: [config.md](docs/config.md)
-* Useful commands: [commands.md](docs/commands.md)
-* Data processing pipeline and dataset: [datasets.md](docs/datasets.md)
-* Each data processing tool's README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
-* Evaluation: [eval/README.md](/eval/README.md)
-* Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
+- Report: [report 1.2](docs/report_03.md), [report 1.1](docs/report_02.md), [report 1.0](docs/report_01.md), [acceleration.md](docs/acceleration.md)
+- Repo structure: [structure.md](docs/structure.md)
+- Config file explanation: [config.md](docs/config.md)
+- Useful commands: [commands.md](docs/commands.md)
+- Data processing pipeline and dataset: [datasets.md](docs/datasets.md)
+- Each data processing tool's README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
+- Evaluation: [eval/README.md](/eval/README.md)
+- Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 ## Installation
 
@@ -472,10 +472,10 @@ For training other models and advanced usage, see [here](docs/commands.md) for m
 
 We support evaluation based on:
 
-* Validation loss
-* VBench score
-* VBench-i2v score
-* Batch generation for human evaluation
+- Validation loss
+- VBench score
+- VBench-i2v score
+- Batch generation for human evaluation
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details. Our [report](/docs/report_03.md#evaluation) also provides more information about the evaluation during training. The following table shows Open-Sora 1.2 greatly improves Open-Sora 1.0.
 
@@ -529,19 +529,19 @@ If you wish to contribute to this project, please refer to the [Contribution Gui
 
 Here we only list a few of the projects. For other works and datasets, please refer to our report.
 
-* [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
+- [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
   system.
-* [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
-* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration
+- [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
+- [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration
   strategies for training progress from OpenDiT.
-* [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
-* [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
-* [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
-* [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
-* [T5](https://github.com/google-research/text-to-text-transfer-transformer): A powerful text encoder.
-* [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
-* [PLLaVA](https://github.com/magic-research/PLLaVA): A powerful video captioning model.
-* [MiraData](https://github.com/mira-space/MiraData): A large-scale video dataset with long durations and structured caption.
+- [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
+- [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
+- [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
+- [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
+- [T5](https://github.com/google-research/text-to-text-transfer-transformer): A powerful text encoder.
+- [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
+- [PLLaVA](https://github.com/magic-research/PLLaVA): A powerful video captioning model.
+- [MiraData](https://github.com/mira-space/MiraData): A large-scale video dataset with long durations and structured caption.
 
 We are grateful for their exceptional work and generous contribution to open source. Special thanks go to the authors of [MiraData](https://github.com/mira-space/MiraData) and [Rectified Flow](https://github.com/gnobitab/RectifiedFlow) for their valuable advice and help. We wish to express gratitude towards AK for sharing this project on social media and Hugging Face for providing free GPU resources for our online Gradio demo.
 
