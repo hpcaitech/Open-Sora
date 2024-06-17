@@ -132,7 +132,7 @@ Example commands for inference can be found in [commands.md](/docs/commands.md).
 # Define dataset
 dataset = dict(
     type="VariableVideoTextDataset",   # Select dataset type
-    # VideoTextDataset for OpenSora 1.0, VariableVideoTextDataset for OpenSora 1.1
+    # VideoTextDataset for OpenSora 1.0, VariableVideoTextDataset for OpenSora 1.1 and 1.2
     data_path=None,                    # Path to the dataset
     num_frames=None,                   # Number of frames, set None since we support dynamic training
     frame_interval=3,                  # Frame interval
