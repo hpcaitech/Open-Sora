@@ -21,7 +21,7 @@ num_workers = 4
 # Define model
 model = dict(
     type="OpenSoraVAE_V1_2",
-    from_pretrained="pretrained_models/vae-pipeline",
+    from_pretrained="hpcai-tech/OpenSora-VAE-v1.2",
     micro_frame_size=None,
     micro_batch_size=4,
     cal_loss=True,
