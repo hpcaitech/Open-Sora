@@ -15,6 +15,18 @@
 
 You can modify corresponding config files to change the inference settings. See more details [here](/docs/structure.md#inference-config-demos).
 
+### Inference with Open-Sora 1.2
+
+The inference API is compatible with Open-Sora 1.1. To ease users' experience, we add support to `--resolution` and `--aspect-ratio` options, which is a more user-friendly way to specify the image size.
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+    --resolution 480p --aspect-ratio 9:16
+# equivalent to
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+    --image-size 480 853
+```
+
 ### Inference with Open-Sora 1.1
 
 Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
