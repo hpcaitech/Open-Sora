@@ -1,4 +1,6 @@
 # Data Processing
+>Open-Sora v1.2 uses Data Propcessing Pipeline v1.1.
+
 We establish a complete pipeline for video/image data processing. The pipeline is shown below.
 
 ![pipeline](/assets/readme/report_data_pipeline.png)
