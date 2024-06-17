@@ -61,10 +61,9 @@ nohup python caption_pllava.py \
 ```
 
 ### PLLaVA VS LLaVA
-In our previous releases, we used [LLaVA](#llava-captioning) for video captioning. We notice
-cherry pick one comparison
+In our previous releases, we used [LLaVA](#llava-captioning) for video captioning. 
 
-![LLaVA vs PLLaVA](/home/tom/Open-Sora-dev/assets/readme/llava_vs_pllava_sample.gif)
+![LLaVA vs PLLaVA](../../assets/readme/llava_vs_pllava_sample.gif)
 
 
 ## LLaVA Captioning
