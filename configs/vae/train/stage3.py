@@ -20,7 +20,7 @@ plugin = "zero2"
 model = dict(
     type="VideoAutoencoderPipeline",
     freeze_vae_2d=False,
-    from_pretrained=None,
+    from_pretrained="outputs/vae_stage2",
     cal_loss=True,
     vae_2d=dict(
         type="VideoAutoencoderKL",
@@ -45,7 +45,7 @@ use_image_identity_loss = False
 
 # Others
 seed = 42
-outputs = "outputs"
+outputs = "outputs/vae_stage3"
 wandb = False
 
 epochs = 100  # NOTE: adjust accordingly w.r.t dataset size
