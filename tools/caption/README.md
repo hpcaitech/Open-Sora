@@ -67,8 +67,10 @@ Qualitatively speaking, we observe that PLLaVA has a somewhat higher chance of a
 
 <figure>
     <img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA">
-    <figcaption>Sample</figcaption>
+    <figcaption>Sample video for the comparison below</figcaption>
 </figure>
+
+
 
 | LLaVA | PLLaVA |
 |----------|----------|
