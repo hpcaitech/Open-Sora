@@ -128,6 +128,7 @@ ENV/
 env.bak/
 venv.bak/
 
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -169,20 +170,34 @@ dataset/
 runs/
 checkpoints/
 outputs/
+outputs
 samples/
 samples
 logs/
 pretrained_models/
+pretrained_models
 evaluation_results/
 cache/
 *.swp
 
 # Secret files
 hostfile
+run.sh
 gradio_cached_examples/
 wandb/
+
+# vae weights
+eval/vae/flolpips/weights/
 
 # npm
 node_modules/
 package-lock.json
 package.json
+
+# PLLaVA
+tools/caption/pllava_dir/PLLaVA/
+
+# vbench
+vbench
+!eval/vbench
+vbench2_beta_i2v

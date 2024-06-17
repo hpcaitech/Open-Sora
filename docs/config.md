@@ -132,7 +132,7 @@ Example commands for inference can be found in [commands.md](/docs/commands.md).
 # Define dataset
 dataset = dict(
     type="VariableVideoTextDataset",   # Select dataset type
-    # VideoTextDataset for OpenSora 1.0, VariableVideoTextDataset for OpenSora 1.1
+    # VideoTextDataset for OpenSora 1.0, VariableVideoTextDataset for OpenSora 1.1 and 1.2
     data_path=None,                    # Path to the dataset
     num_frames=None,                   # Number of frames, set None since we support dynamic training
     frame_interval=3,                  # Frame interval
@@ -152,15 +152,15 @@ bucket_config = {
 }
 # mask ratio in training
 mask_ratios = {
-    "mask_no": 0.75,                   # 75% no mask
-    "mask_quarter_random": 0.025,      # 2.5% random mask with 1 frame to 1/4 #frames
-    "mask_quarter_head": 0.025,        # 2.5% mask at the beginning with 1 frame to 1/4 #frames
-    "mask_quarter_tail": 0.025,        # 2.5% mask at the end with 1 frame to 1/4 #frames
-    "mask_quarter_head_tail": 0.05,    # 5% mask at the beginning and end with 1 frame to 1/4 #frames
-    "mask_image_random": 0.025,        # 2.5% random mask with 1 image to 1/4 #images
-    "mask_image_head": 0.025,          # 2.5% mask at the beginning with 1 image to 1/4 #images
-    "mask_image_tail": 0.025,          # 2.5% mask at the end with 1 image to 1/4 #images
-    "mask_image_head_tail": 0.05,      # 5% mask at the beginning and end with 1 image to 1/4 #images
+    "identity": 0.75,                   # 75% no mask
+    "quarter_random": 0.025,      # 2.5% random mask with 1 frame to 1/4 #frames
+    "quarter_head": 0.025,        # 2.5% mask at the beginning with 1 frame to 1/4 #frames
+    "quarter_tail": 0.025,        # 2.5% mask at the end with 1 frame to 1/4 #frames
+    "quarter_head_tail": 0.05,    # 5% mask at the beginning and end with 1 frame to 1/4 #frames
+    "image_random": 0.025,        # 2.5% random mask with 1 image to 1/4 #images
+    "image_head": 0.025,          # 2.5% mask at the beginning with 1 image to 1/4 #images
+    "image_tail": 0.025,          # 2.5% mask at the end with 1 image to 1/4 #images
+    "image_head_tail": 0.05,      # 5% mask at the beginning and end with 1 image to 1/4 #images
 }
 
 # Define acceleration

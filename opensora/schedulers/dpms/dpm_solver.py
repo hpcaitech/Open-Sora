@@ -1255,6 +1255,7 @@ class DPM_Solver:
         atol=0.0078,
         rtol=0.05,
         return_intermediate=False,
+        progress=True,
     ):
         """
         Compute the sample at time `t_end` by DPM-Solver, given the initial `x` at time `t_start`.
@@ -1414,7 +1415,8 @@ class DPM_Solver:
                     t_prev_list.append(t)
                     model_prev_list.append(self.model_fn(x, t))
                 # Compute the remaining values by `order`-th order multistep DPM-Solver.
-                for step in tqdm(range(order, steps + 1)):
+                progress_fn = tqdm if progress else lambda x: x
+                for step in progress_fn(range(order, steps + 1)):
                     t = timesteps[step]
                     # We only use lower order for steps < 10
                     if lower_order_final and steps < 10:

@@ -164,7 +164,13 @@ class GaussianDiffusion:
     """
 
     def __init__(
-        self, *, betas: torch.Tensor, model_mean_type: str, model_var_type: str, loss_type: str, device: str = "cuda"
+        self,
+        *,
+        betas: torch.Tensor,
+        model_mean_type: str,
+        model_var_type: str,
+        loss_type: str,
+        device: str = "cuda",
     ):
         if device == "cuda":
             device = torch.device(f"cuda:{torch.cuda.current_device()}")
@@ -418,6 +424,7 @@ class GaussianDiffusion:
             ) * _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x.shape)
 
             # active noise addition
+            # WARNING: this is a hacky implementation
             mask_t_equall = (mask_t == t.unsqueeze(1))[:, None, :, None, None]
             x = torch.where(mask_t_equall, x_noise, x0)
 
@@ -728,18 +735,20 @@ class GaussianDiffusion:
         output = torch.where((t == 0), decoder_nll, kl)
         return {"output": output, "pred_xstart": out["pred_xstart"]}
 
-    def training_losses(self, model, x_start, t, model_kwargs=None, noise=None, mask=None, weights=None):
+    def training_losses(self, model, x_start, model_kwargs=None, noise=None, mask=None, weights=None, t=None):
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
         :param x_start: the [N x C x ...] tensor of inputs.
-        :param t: a batch of timestep indices.
         :param model_kwargs: if not None, a dict of extra keyword arguments to
             pass to the model. This can be used for conditioning.
         :param noise: if specified, the specific Gaussian noise to try to remove.
         :return: a dict with the key "loss" containing a tensor of shape [N].
                  Some mean or variance settings may also have other keys.
         """
+        # sample timestep
+        t = torch.randint(0, self.num_timesteps, (x_start.shape[0],), device=x_start.device)
+
         if model_kwargs is None:
             model_kwargs = {}
         if noise is None:

@@ -1,6 +1,7 @@
 # Commands
 
 - [Inference](#inference)
+  - [Inference with Open-Sora 1.2](#inference-with-open-sora-12)
   - [Inference with Open-Sora 1.1](#inference-with-open-sora-11)
   - [Inference with DiT pretrained on ImageNet](#inference-with-dit-pretrained-on-imagenet)
   - [Inference with Latte pretrained on UCF101](#inference-with-latte-pretrained-on-ucf101)
@@ -14,6 +15,18 @@
 ## Inference
 
 You can modify corresponding config files to change the inference settings. See more details [here](/docs/structure.md#inference-config-demos).
+
+### Inference with Open-Sora 1.2
+
+The inference API is compatible with Open-Sora 1.1. To ease users' experience, we add support to `--resolution` and `--aspect-ratio` options, which is a more user-friendly way to specify the image size.
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+    --resolution 480p --aspect-ratio 9:16
+# equivalent to
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+    --image-size 480 853
+```
 
 ### Inference with Open-Sora 1.1
 
@@ -169,44 +182,42 @@ You can modify corresponding config files to change the training settings. See m
 To search the batch size for buckets, run the following command.
 
 ```bash
-torchrun --standalone --nproc_per_node 1 scripts/search_bs.py configs/opensora-v1-1/train/benchmark.py --data-path YOUR_CSV_PATH -o YOUR_OUTPUT_CONFIG_PATH --base-resolution 240p --base-frames 128 --batch-size-start 2 --batch-size-end 256 --batch-size-step 2
+torchrun --standalone --nproc_per_node 1 scripts/misc/search_bs.py configs/opensora-v1-2/misc/bs.py --data-path /mnt/nfs-207/sora_data/meta/searchbs.csv
 ```
 
-If your dataset is extremely large, you extract a subset of the dataset for the search.
+Here, your data should be a small one for searching purposes.
 
-```bash
-# each bucket contains 1000 samples
-python tools/datasets/split.py YOUR_CSV_PATH -o YOUR_SUBSET_CSV_PATH -c configs/opensora-v1-1/train/video.py -l 1000
-```
-
-If you want to control the batch size search more granularly, you can configure batch size start, end, and step in the config file.
-
-Bucket config format:
-
-1. `{ resolution: {num_frames: (prob, batch_size)} }`, in this case batch_size is ignored when searching
-2. `{ resolution: {num_frames: (prob, (max_batch_size, ))} }`, batch_size is searched in the range `[batch_size_start, max_batch_size)`, batch_size_start is configured via CLI
-3. `{ resolution: {num_frames: (prob, (min_batch_size, max_batch_size))} }`, batch_size is searched in the range `[min_batch_size, max_batch_size)`
-4. `{ resolution: {num_frames: (prob, (min_batch_size, max_batch_size, step_size))} }`, batch_size is searched in the range `[min_batch_size, max_batch_size)` with step_size (grid search)
-5. `{ resolution: {num_frames: (0.0, None)} }`, this bucket will not be used
+To control the batch size search range, you should specify `bucket_config` in the config file, where the value tuple is `(guess_value, range)` and the search will be performed in `guess_value±range`.
 
 Here is an example of the bucket config:
 
 ```python
 bucket_config = {
-
-    "240p": {
-        16: (1.0, (2, 32)),
-        32: (1.0, (2, 16)),
-        64: (1.0, (2, 8)),
-        128: (1.0, (2, 6)),
+  "240p": {
+        1: (100, 100),
+        51: (24, 10),
+        102: (12, 10),
+        204: (4, 8),
+        408: (2, 8),
     },
-    "256": {1: (1.0, (128, 300))},
-    "512": {1: (0.5, (64, 128))},
-    "480p": {1: (0.4, (32, 128)), 16: (0.4, (2, 32)), 32: (0.0, None)},
-    "720p": {16: (0.1, (2, 16)), 32: (0.0, None)},  # No examples now
-    "1024": {1: (0.3, (8, 64))},
-    "1080p": {1: (0.3, (2, 32))},
+    "480p": {
+        1: (50, 50),
+        51: (6, 6),
+        102: (3, 3),
+        204: (1, 2),
+    },
 }
 ```
 
-It will print the best batch size (and corresponding step time) for each bucket and save the output config file.
+You can also specify a resolution to search for parallelism.
+
+```bash
+torchrun --standalone --nproc_per_node 1 scripts/misc/search_bs.py configs/opensora-v1-2/misc/bs.py --data-path /mnt/nfs-207/sora_data/meta/searchbs.csv --resolution 240p
+```
+
+The searching goal should be specified in the config file as well. There are two ways:
+
+1. Specify a `base_step_time` in the config file. The searching goal is to find the batch size that can achieve the `base_step_time` for each bucket.
+2. If `base_step_time` is not specified, it will be determined by `base` which is a tuple of `(batch_size, step_time)`. The step time is the maximum batch size allowed for the bucket.
+
+The script will print the best batch size (and corresponding step time) for each bucket and save the output config file. Note that we assume a larger batch size is better, so the script use binary search to find the best batch size.

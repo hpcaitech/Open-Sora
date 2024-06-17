@@ -34,6 +34,7 @@ def process_single_row(row):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("meta_path", type=str)
+    parser.add_argument("--num_workers", type=int, default=None, help="#workers for pandarallel")
 
     args = parser.parse_args()
     return args
@@ -42,8 +43,14 @@ def parse_args():
 def main():
     args = parse_args()
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file '{meta_path}' not found. Exit.")
+        exit()
 
-    pandarallel.initialize(progress_bar=True)
+    if args.num_workers is not None:
+        pandarallel.initialize(progress_bar=True, nb_workers=args.num_workers)
+    else:
+        pandarallel.initialize(progress_bar=True)
 
     meta = pd.read_csv(meta_path)
     ret = meta.parallel_apply(process_single_row, axis=1)

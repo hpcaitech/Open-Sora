@@ -141,6 +141,7 @@ class Attention(nn.Module):
         norm_layer: nn.Module = LlamaRMSNorm,
         enable_flash_attn: bool = False,
         rope=None,
+        qk_norm_legacy: bool = False,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -153,6 +154,7 @@ class Attention(nn.Module):
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
         self.q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
         self.k_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+        self.qk_norm_legacy = qk_norm_legacy
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
@@ -171,11 +173,17 @@ class Attention(nn.Module):
 
         qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
-        # WARNING: this may be a bug
-        if self.rope:
-            q = self.rotary_emb(q)
-            k = self.rotary_emb(k)
-        q, k = self.q_norm(q), self.k_norm(k)
+        if self.qk_norm_legacy:
+            # WARNING: this may be a bug
+            if self.rope:
+                q = self.rotary_emb(q)
+                k = self.rotary_emb(k)
+            q, k = self.q_norm(q), self.k_norm(k)
+        else:
+            q, k = self.q_norm(q), self.k_norm(k)
+            if self.rope:
+                q = self.rotary_emb(q)
+                k = self.rotary_emb(k)
 
         if enable_flash_attn:
             from flash_attn import flash_attn_func
@@ -196,6 +204,136 @@ class Attention(nn.Module):
             q = q * self.scale
             attn = q @ k.transpose(-2, -1)  # translate attn to float32
             attn = attn.to(torch.float32)
+            attn = attn.softmax(dim=-1)
+            attn = attn.to(dtype)  # cast back attn to original dtype
+            attn = self.attn_drop(attn)
+            x = attn @ v
+
+        x_output_shape = (B, N, C)
+        if not enable_flash_attn:
+            x = x.transpose(1, 2)
+        x = x.reshape(x_output_shape)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        return x
+
+
+class KVCompressAttention(nn.Module):
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int = 8,
+        qkv_bias: bool = False,
+        qk_norm: bool = False,
+        attn_drop: float = 0.0,
+        proj_drop: float = 0.0,
+        norm_layer: nn.Module = LlamaRMSNorm,
+        enable_flash_attn: bool = False,
+        sampling="conv",
+        sr_ratio=1,
+        mem_eff_attention=False,
+        attn_half=False,
+    ) -> None:
+        super().__init__()
+        assert dim % num_heads == 0, "dim should be divisible by num_heads"
+        self.dim = dim
+        self.num_heads = num_heads
+        self.head_dim = dim // num_heads
+        self.scale = self.head_dim**-0.5
+        self.enable_flash_attn = enable_flash_attn
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+
+        self.sr_ratio = sr_ratio
+        self.sampling = sampling
+        if sr_ratio > 1 and sampling == "conv":
+            # Avg Conv Init.
+            self.sr = nn.Conv2d(dim, dim, groups=dim, kernel_size=sr_ratio, stride=sr_ratio)
+            self.sr.weight.data.fill_(1 / sr_ratio**2)
+            self.sr.bias.data.zero_()
+            self.norm = nn.LayerNorm(dim)
+
+        self.q_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+        self.k_norm = norm_layer(self.head_dim) if qk_norm else nn.Identity()
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+        self.mem_eff_attention = mem_eff_attention
+        self.attn_half = attn_half
+
+    def downsample_2d(self, tensor, H, W, scale_factor, sampling=None):
+        if sampling is None or scale_factor == 1:
+            return tensor
+        B, N, C = tensor.shape
+
+        if sampling == "uniform_every":
+            return tensor[:, ::scale_factor], int(N // scale_factor)
+
+        tensor = tensor.reshape(B, H, W, C).permute(0, 3, 1, 2)
+        new_H, new_W = int(H / scale_factor), int(W / scale_factor)
+        new_N = new_H * new_W
+
+        if sampling == "ave":
+            tensor = F.interpolate(tensor, scale_factor=1 / scale_factor, mode="nearest").permute(0, 2, 3, 1)
+        elif sampling == "uniform":
+            tensor = tensor[:, :, ::scale_factor, ::scale_factor].permute(0, 2, 3, 1)
+        elif sampling == "conv":
+            tensor = self.sr(tensor).reshape(B, C, -1).permute(0, 2, 1)
+            tensor = self.norm(tensor)
+        else:
+            raise ValueError
+
+        return tensor.reshape(B, new_N, C).contiguous(), new_N
+
+    def forward(self, x: torch.Tensor, mask=None, HW=None, block_id=None, **kwargs) -> torch.Tensor:
+        B, N, C = x.shape
+        new_N = N
+        H, W = HW
+        # flash attn is not memory efficient for small sequences, this is empirical
+        enable_flash_attn = self.enable_flash_attn and (N > B)
+
+        qkv = self.qkv(x).reshape(B, N, 3, C)
+        q, k, v = qkv.unbind(2)
+        dtype = q.dtype
+        # KV compression
+        if self.sr_ratio > 1:
+            k, new_N = self.downsample_2d(k, H, W, self.sr_ratio, sampling=self.sampling)
+            v, new_N = self.downsample_2d(v, H, W, self.sr_ratio, sampling=self.sampling)
+
+        q = q.reshape(B, N, self.num_heads, C // self.num_heads).to(dtype)
+        k = k.reshape(B, new_N, self.num_heads, C // self.num_heads).to(dtype)
+        v = v.reshape(B, new_N, self.num_heads, C // self.num_heads).to(dtype)
+
+        q, k = self.q_norm(q), self.k_norm(k)
+
+        if enable_flash_attn:
+            from flash_attn import flash_attn_func
+
+            x = flash_attn_func(
+                q,
+                k,
+                v,
+                dropout_p=self.attn_drop.p if self.training else 0.0,
+                softmax_scale=self.scale,
+            )
+
+        elif self.mem_eff_attention:
+            attn_bias = None
+            if mask is not None:
+                attn_bias = torch.zeros([B * self.num_heads, q.shape[1], k.shape[1]], dtype=q.dtype, device=q.device)
+                attn_bias.masked_fill_(mask.squeeze(1).repeat(self.num_heads, 1, 1) == 0, float("-inf"))
+            x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
+        else:
+            # (B, N, #heads, #dim) -> (B, #heads, N, #dim)
+            q = q.permute(0, 2, 1, 3)
+            k = k.permute(0, 2, 1, 3)
+            v = v.permute(0, 2, 1, 3)
+            dtype = q.dtype
+            q = q * self.scale
+            attn = q @ k.transpose(-2, -1)  # translate attn to float32
+            if not self.attn_half:
+                attn = attn.to(torch.float32)
             attn = attn.softmax(dim=-1)
             attn = attn.to(dtype)  # cast back attn to original dtype
             attn = self.attn_drop(attn)
@@ -239,7 +377,6 @@ class SeqParallelAttention(Attention):
         B, N, C = x.shape  # for sequence parallel here, the N is a local sequence length
         qkv = self.qkv(x)
         qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
-
         qkv = qkv.view(qkv_shape)
 
         sp_group = get_sequence_parallel_group()
@@ -357,20 +494,18 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         # query/value: img tokens; key: condition; mask: if padding tokens
         sp_group = get_sequence_parallel_group()
         sp_size = dist.get_world_size(sp_group)
-        B, SUB_N, C = x.shape
+        B, SUB_N, C = x.shape  # [B, TS/p, C]
         N = SUB_N * sp_size
 
         # shape:
         # q, k, v: [B, SUB_N, NUM_HEADS, HEAD_DIM]
-        q = self.q_linear(x).view(B, -1, self.num_heads, self.head_dim)
-        kv = self.kv_linear(cond).view(B, -1, 2, self.num_heads, self.head_dim)
+        q = self.q_linear(x).view(1, -1, self.num_heads, self.head_dim)
+        kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
+        kv = split_forward_gather_backward(kv, get_sequence_parallel_group(), dim=3, grad_scale="down")
         k, v = kv.unbind(2)
 
         # apply all_to_all to gather sequence and split attention heads
         q = all_to_all(q, sp_group, scatter_dim=2, gather_dim=1)
-
-        k = split_forward_gather_backward(k, get_sequence_parallel_group(), dim=2, grad_scale="down")
-        v = split_forward_gather_backward(v, get_sequence_parallel_group(), dim=2, grad_scale="down")
 
         q = q.view(1, -1, self.num_heads // sp_size, self.head_dim)
         k = k.view(1, -1, self.num_heads // sp_size, self.head_dim)

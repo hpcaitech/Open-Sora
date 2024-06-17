@@ -8,7 +8,7 @@ def set_data_parallel_group(group: dist.ProcessGroup):
 
 
 def get_data_parallel_group():
-    return _GLOBAL_PARALLEL_GROUPS.get("data", None)
+    return _GLOBAL_PARALLEL_GROUPS.get("data", dist.group.WORLD)
 
 
 def set_sequence_parallel_group(group: dist.ProcessGroup):

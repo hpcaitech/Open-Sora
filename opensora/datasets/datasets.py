@@ -1,14 +1,17 @@
 import os
+from glob import glob
 
 import numpy as np
 import torch
-import torchvision
+from PIL import ImageFile
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 
 from opensora.registry import DATASETS
 
+from .read_video import read_video
 from .utils import VID_EXTENSIONS, get_transforms_image, get_transforms_video, read_file, temporal_random_crop
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 IMG_FPS = 120
 
 
@@ -24,7 +27,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        data_path,
+        data_path=None,
         num_frames=16,
         frame_interval=1,
         image_size=(256, 256),
@@ -32,6 +35,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
     ):
         self.data_path = data_path
         self.data = read_file(data_path)
+        self.get_text = "text" in self.data.columns
         self.num_frames = num_frames
         self.frame_interval = frame_interval
         self.image_size = image_size
@@ -61,12 +65,12 @@ class VideoTextDataset(torch.utils.data.Dataset):
     def getitem(self, index):
         sample = self.data.iloc[index]
         path = sample["path"]
-        text = sample["text"]
         file_type = self.get_type(path)
 
         if file_type == "video":
             # loading
-            vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            vframes, vinfo = read_video(path, backend="av")
+            video_fps = vinfo["video_fps"] if "video_fps" in vinfo else 24
 
             # Sampling video frames
             video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)
@@ -77,6 +81,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         else:
             # loading
             image = pil_loader(path)
+            video_fps = IMG_FPS
 
             # transform
             transform = self.transforms["image"]
@@ -87,7 +92,11 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-        return {"video": video, "text": text}
+
+        ret = {"video": video, "fps": video_fps}
+        if self.get_text:
+            ret["text"] = sample["text"]
+        return ret
 
     def __getitem__(self, index):
         for _ in range(10):
@@ -107,15 +116,17 @@ class VideoTextDataset(torch.utils.data.Dataset):
 class VariableVideoTextDataset(VideoTextDataset):
     def __init__(
         self,
-        data_path,
+        data_path=None,
         num_frames=None,
         frame_interval=1,
-        image_size=None,
+        image_size=(None, None),
         transform_name=None,
+        dummy_text_feature=False,
     ):
         super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
         self.transform_name = transform_name
         self.data["id"] = np.arange(len(self.data))
+        self.dummy_text_feature = dummy_text_feature
 
     def get_data_info(self, index):
         T = self.data.iloc[index]["num_frames"]
@@ -129,16 +140,14 @@ class VariableVideoTextDataset(VideoTextDataset):
 
         sample = self.data.iloc[index]
         path = sample["path"]
-        text = sample["text"]
         file_type = self.get_type(path)
         ar = height / width
 
         video_fps = 24  # default fps
         if file_type == "video":
             # loading
-            vframes, _, infos = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-            if "video_fps" in infos:
-                video_fps = infos["video_fps"]
+            vframes, vinfo = read_video(path, backend="av")
+            video_fps = vinfo["video_fps"] if "video_fps" in vinfo else 24
 
             # Sampling video frames
             video = temporal_random_crop(vframes, num_frames, self.frame_interval)
@@ -160,12 +169,75 @@ class VariableVideoTextDataset(VideoTextDataset):
 
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
-        return {
+        ret = {
             "video": video,
-            "text": text,
             "num_frames": num_frames,
             "height": height,
             "width": width,
             "ar": ar,
             "fps": video_fps,
         }
+        if self.get_text:
+            ret["text"] = sample["text"]
+        if self.dummy_text_feature:
+            text_len = 50
+            ret["text"] = torch.zeros((1, text_len, 1152))
+            ret["mask"] = text_len
+        return ret
+
+    def __getitem__(self, index):
+        return self.getitem(index)
+
+
+@DATASETS.register_module()
+class BatchFeatureDataset(torch.utils.data.Dataset):
+    """
+    The dataset is composed of multiple .bin files.
+    Each .bin file is a list of batch data (like a buffer). All .bin files have the same length.
+    In each training iteration, one batch is fetched from the current buffer.
+    Once a buffer is consumed, load another one.
+    Avoid loading the same .bin on two difference GPUs, i.e., one .bin is assigned to one GPU only.
+    """
+
+    def __init__(self, data_path=None):
+        self.path_list = sorted(glob(data_path + "/**/*.bin"))
+
+        self._len_buffer = len(torch.load(self.path_list[0]))
+        self._num_buffers = len(self.path_list)
+        self.num_samples = self.len_buffer * len(self.path_list)
+
+        self.cur_file_idx = -1
+        self.cur_buffer = None
+
+    @property
+    def num_buffers(self):
+        return self._num_buffers
+
+    @property
+    def len_buffer(self):
+        return self._len_buffer
+
+    def _load_buffer(self, idx):
+        file_idx = idx // self.len_buffer
+        if file_idx != self.cur_file_idx:
+            self.cur_file_idx = file_idx
+            self.cur_buffer = torch.load(self.path_list[file_idx])
+
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        self._load_buffer(idx)
+
+        batch = self.cur_buffer[idx % self.len_buffer]  # dict; keys are {'x', 'fps'} and text related
+
+        ret = {
+            "video": batch["x"],
+            "text": batch["y"],
+            "mask": batch["mask"],
+            "fps": batch["fps"],
+            "height": batch["height"],
+            "width": batch["width"],
+            "num_frames": batch["num_frames"],
+        }
+        return ret

@@ -3,6 +3,39 @@ import random
 from collections import OrderedDict
 
 import torch
+import torch.distributed as dist
+from colossalai.booster.plugin import LowLevelZeroPlugin
+
+from opensora.acceleration.parallel_states import set_data_parallel_group, set_sequence_parallel_group
+from opensora.acceleration.plugin import ZeroSeqParallelPlugin
+
+from .misc import get_logger
+
+
+def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
+    if plugin == "zero2":
+        assert sp_size == 1, "Zero2 plugin does not support sequence parallelism"
+        plugin = LowLevelZeroPlugin(
+            stage=2,
+            precision=dtype,
+            initial_scale=2**16,
+            max_norm=grad_clip,
+        )
+        set_data_parallel_group(dist.group.WORLD)
+    elif plugin == "zero2-seq":
+        assert sp_size > 1, "Zero2-seq plugin requires sequence parallelism"
+        plugin = ZeroSeqParallelPlugin(
+            sp_size=sp_size,
+            stage=2,
+            precision=dtype,
+            initial_scale=2**16,
+            max_norm=grad_clip,
+        )
+        set_sequence_parallel_group(plugin.sp_group)
+        set_data_parallel_group(plugin.dp_group)
+    else:
+        raise ValueError(f"Unknown plugin {plugin}")
+    return plugin
 
 
 @torch.no_grad()
@@ -18,7 +51,7 @@ def update_ema(
     for name, param in model_params.items():
         if name == "pos_embed":
             continue
-        if param.requires_grad == False:
+        if not param.requires_grad:
             continue
         if not sharded:
             param_data = param.data
@@ -36,15 +69,17 @@ def update_ema(
 class MaskGenerator:
     def __init__(self, mask_ratios):
         valid_mask_names = [
-            "mask_no",
-            "mask_quarter_random",
-            "mask_quarter_head",
-            "mask_quarter_tail",
-            "mask_quarter_head_tail",
-            "mask_image_random",
-            "mask_image_head",
-            "mask_image_tail",
-            "mask_image_head_tail",
+            "identity",
+            "quarter_random",
+            "quarter_head",
+            "quarter_tail",
+            "quarter_head_tail",
+            "image_random",
+            "image_head",
+            "image_tail",
+            "image_head_tail",
+            "random",
+            "intepolate",
         ]
         assert all(
             mask_name in valid_mask_names for mask_name in mask_ratios.keys()
@@ -56,10 +91,12 @@ class MaskGenerator:
             mask_ratio <= 1 for mask_ratio in mask_ratios.values()
         ), f"mask_ratio should be less than or equal to 1, got {mask_ratios.values()}"
         # sum of mask_ratios should be 1
+        if "identity" not in mask_ratios:
+            mask_ratios["identity"] = 1.0 - sum(mask_ratios.values())
         assert math.isclose(
             sum(mask_ratios.values()), 1.0, abs_tol=1e-6
         ), f"sum of mask_ratios should be 1, got {sum(mask_ratios.values())}"
-        print(f"mask ratios: {mask_ratios}")
+        get_logger().info("mask ratios: %s", mask_ratios)
         self.mask_ratios = mask_ratios
 
     def get_mask(self, x):
@@ -80,34 +117,43 @@ class MaskGenerator:
         if num_frames <= 1:
             return mask
 
-        if mask_name == "mask_quarter_random":
+        if mask_name == "quarter_random":
             random_size = random.randint(1, condition_frames_max)
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
-        elif mask_name == "mask_image_random":
+        elif mask_name == "image_random":
             random_size = 1
             random_pos = random.randint(0, x.shape[2] - random_size)
             mask[random_pos : random_pos + random_size] = 0
-        elif mask_name == "mask_quarter_head":
+        elif mask_name == "quarter_head":
             random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
-        elif mask_name == "mask_image_head":
+        elif mask_name == "image_head":
             random_size = 1
             mask[:random_size] = 0
-        elif mask_name == "mask_quarter_tail":
+        elif mask_name == "quarter_tail":
             random_size = random.randint(1, condition_frames_max)
             mask[-random_size:] = 0
-        elif mask_name == "mask_image_tail":
+        elif mask_name == "image_tail":
             random_size = 1
             mask[-random_size:] = 0
-        elif mask_name == "mask_quarter_head_tail":
+        elif mask_name == "quarter_head_tail":
             random_size = random.randint(1, condition_frames_max)
             mask[:random_size] = 0
             mask[-random_size:] = 0
-        elif mask_name == "mask_image_head_tail":
+        elif mask_name == "image_head_tail":
             random_size = 1
             mask[:random_size] = 0
             mask[-random_size:] = 0
+        elif mask_name == "intepolate":
+            random_start = random.randint(0, 1)
+            mask[random_start::2] = 0
+        elif mask_name == "random":
+            mask_ratio = random.uniform(0.1, 0.9)
+            mask = torch.rand(num_frames, device=x.device) > mask_ratio
+            # if mask is all False, set the last frame to True
+            if not mask.any():
+                mask[-1] = 1
 
         return mask
 

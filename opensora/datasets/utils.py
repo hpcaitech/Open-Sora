@@ -27,6 +27,16 @@ regex = re.compile(
 )
 
 
+def is_img(path):
+    ext = os.path.splitext(path)[-1].lower()
+    return ext in IMG_EXTENSIONS
+
+
+def is_vid(path):
+    ext = os.path.splitext(path)[-1].lower()
+    return ext in VID_EXTENSIONS
+
+
 def is_url(url):
     return re.match(regex, url) is not None
 
@@ -57,7 +67,9 @@ def temporal_random_crop(vframes, num_frames, frame_interval):
     temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
     total_frames = len(vframes)
     start_frame_ind, end_frame_ind = temporal_sample(total_frames)
-    assert end_frame_ind - start_frame_ind >= num_frames
+    assert (
+        end_frame_ind - start_frame_ind >= num_frames
+    ), f"Not enough frames to sample, {end_frame_ind} - {start_frame_ind} < {num_frames}"
     frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, num_frames, dtype=int)
     video = vframes[frame_indice]
     return video
@@ -145,7 +157,7 @@ def read_from_path(path, image_size, transform_name="center"):
         return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
 
 
-def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1), force_video=False):
+def save_sample(x, save_path=None, fps=8, normalize=True, value_range=(-1, 1), force_video=False, verbose=True):
     """
     Args:
         x (Tensor): shape [C, T, H, W]
@@ -165,7 +177,8 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1), f
 
         x = x.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
         write_video(save_path, x, fps=fps, video_codec="h264")
-    print(f"Saved to {save_path}")
+    if verbose:
+        print(f"Saved to {save_path}")
     return save_path
 
 

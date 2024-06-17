@@ -10,6 +10,7 @@ model = dict(
     from_pretrained="hpcai-tech/OpenSora-STDiT-v2-stage3",
     input_sq_size=512,
     qk_norm=True,
+    qk_norm_legacy=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
