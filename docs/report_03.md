@@ -151,4 +151,13 @@ All the evaluation code is released in `eval` folder. Check the [README](/eval/R
 
 ## Sequence parallelism
 
-[TBD by Shenggui]
+We use sequence parallelism to support long-sequence training and inference. Our implementation is based on Ulysses and the workflow is shown below. When sequence parallelism is enabled, we only need to apply the `all-to-all` communication to the spatial block in STDiT as only spatial computation is dependent on the sequence dimension.
+
+![SP](../assets/readme/sequence_parallelism.jpeg)
+
+Currently, we have not used sequence parallelism for training as data resolution is small and we plan to do so in the next release. As for inference, we can use sequence parallelism in case your GPU goes out of memory. A simple benchmark shows that sequence parallelism can achieve speedup
+
+| Resolution | Seconds | Number of GPUs | Enable SP | Time taken/s | Speedup per GPU | 
+| -          | -       | -              | -         | -            | -               | 
+| 720p       | 16s     | 1              | No        | 547.97       | -               |
+| 720p       | 16s     | 2              | Yes       | 244.38       | 12%             | 
