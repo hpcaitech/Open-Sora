@@ -87,7 +87,14 @@ def main(args):
         dist.get_rank(), 
         dist.get_world_size()
     )
-    
+        
+    import os
+    if os.getenv('DEBUG_ADDRESS') != None and dist.get_rank() == 2:
+        import ptvsd; 
+        print('waiting for debugger attachment')
+        ptvsd.enable_attach(address=('localhost', int(os.getenv('DEBUG_ADDRESS'))), redirect_output=True)
+        ptvsd.wait_for_attach()
+        
     output_file = args.output_prefix + f"_rank{dist.get_rank()}" + f"_{args.key}.csv"
     output_file_handle = open(output_file, "w")
     writer = csv.writer(output_file_handle)
@@ -103,7 +110,7 @@ def main(args):
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        num_workers=2,
+        # num_workers=2,
         batch_size=args.batch_size,
         collate_fn=collate_fn,
         shuffle=False,
@@ -199,13 +206,13 @@ def main(args):
         # get the text column from the batch
         texts = [batch[i]['text'] for i in range(len(batch))]
         list_keywords = extract_batch(texts, prompt)
-
+    
         for idx, keywords in enumerate(list_keywords):
             try:
                 keywords_start = keywords.find("[")
                 keywords_end = keywords.find("]")
                 keywords = keywords[keywords_start+1:keywords_end]
-                if "\n" in keywords or len(keywords) == 0: # we empirically observe that it produces newlines when no keywords are found
+                if "\n" in keywords or len(keywords.strip()) == 0: # we empirically observe that it produces newlines when no keywords are found
                     keywords = "NONE_FOUND"
             except:
                 keywords = "NONE_FOUND"
@@ -225,6 +232,8 @@ def main(args):
         # Read each CSV into a DataFrame and append to list
         for file in csv_files:
             df = pd.read_csv(file)
+            # scan each line in the df, if the ``key`` column is NaN, replace it with "NONE_FOUND"
+            df[args.key] = df[args.key].fillna("NONE_FOUND")
             dataframes.append(df)
         # Concatenate all DataFrames
         combined_df = pd.concat(dataframes, ignore_index=True)
@@ -242,8 +251,8 @@ if __name__ == "__main__":
     parser.add_argument("input", type=str, help="Path to the input CSV file")
     parser.add_argument("--output_prefix", type=str, help="Path to the output CSV file")
     parser.add_argument("--prompt", type=str, default="")
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument('--key', type=str)
     args = parser.parse_args()
 
-    main(args)
+    main(args) 
