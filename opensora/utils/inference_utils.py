@@ -115,9 +115,10 @@ def extract_prompts_loop(prompts, num_loop):
         ret_prompts.append(prompt)
     return ret_prompts
 
+
 def split_prompt(prompt_text):
     if prompt_text.startswith("|0|"):
-        # this is for prompts which look like 
+        # this is for prompts which look like
         # |0| a beautiful day |1| a sunny day |2| a rainy day
         # we want to parse it into a list of prompts with the loop index
         prompt_list = prompt_text.split("|")[1:]
@@ -131,7 +132,8 @@ def split_prompt(prompt_text):
         return text_list, loop_idx
     else:
         return [prompt_text], None
-    
+
+
 def merge_prompt(text_list, loop_idx_list=None):
     if loop_idx_list is None:
         return text_list[0]
@@ -285,8 +287,10 @@ def refine_prompt_by_openai(prompt):
     response = get_openai_response(REFINE_PROMPTS, prompt)
     return response
 
+
 def has_openai_key():
     return "OPENAI_API_KEY" in os.environ
+
 
 def refine_prompts_by_openai(prompts):
     new_prompts = []
