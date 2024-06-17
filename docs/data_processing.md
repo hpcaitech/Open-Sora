@@ -65,7 +65,12 @@ python -m tools.datasets.datautil \
   --refine-llm-caption \
   --remove-empty-caption \
   --output ${ROOT_META}/meta_clips_caption_cleaned.csv
+
+# 4.4 Optionally generate tags (e.g., objects) based on the captions. This should output your_output_prefix_{key}.csv
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llama3 ${ROOT_META}/meta_clips_caption_cleaned.csv --key objects --output_prefix your_output_prefix
+
 ```
+
 
 For more information, please refer to:
 - [Dataset Management](../tools/datasets/README.md)
