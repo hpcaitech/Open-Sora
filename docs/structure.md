@@ -15,8 +15,9 @@ Open-Sora
 |   ├── data_pipeline.md           -> Data pipeline documents
 │   ├── structure.md               -> This file
 │   ├── config.md                  -> Configs meaning
-│   ├── report_01.md               -> Report for Open-Sora 1.1
-│   ├── report_02.md               -> Report for Open-Sora 1.0
+│   ├── report_01.md               -> Report for Open-Sora 1.0
+│   ├── report_02.md               -> Report for Open-Sora 1.1
+│   ├── report_03.md               -> Report for Open-Sora 1.2
 │   └── zh_CN                      -> Chinese version of the above
 ├── eval                           -> Evaluation scripts
 │   ├── README.md                  -> Evaluation documentation
