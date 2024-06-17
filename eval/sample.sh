@@ -260,10 +260,17 @@ function run_vbench() {
           --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} \
           --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
         else
-          eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-          --prompt-path assets/texts/VBench/all_dimension.txt \
-          --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} --llm-refine ${LLM_REFINE} \
-          --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          if [ "${FLOW}" = "None" ]; then
+            eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+            --prompt-path assets/texts/VBench/all_dimension.txt \
+            --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --llm-refine ${LLM_REFINE} \
+            --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          else
+            eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+            --prompt-path assets/texts/VBench/all_dimension.txt \
+            --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} --llm-refine ${LLM_REFINE} \
+            --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          fi
         fi
       fi
     fi
