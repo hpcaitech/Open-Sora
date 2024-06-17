@@ -79,6 +79,7 @@ setup(
     extras_require={
         "data": fetch_requirements("requirements/requirements-data.txt"),
         "eval": fetch_requirements("requirements/requirements-eval.txt"),
+        "vae": fetch_requirements("requirements/requirements-vae.txt"),
         "full": fetch_requirements(
             [
                 "requirements/requirements-data.txt",
