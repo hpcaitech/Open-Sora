@@ -197,6 +197,10 @@ vae, text_encoder, stdit, scheduler = build_models(args.model_type, config, enab
 
 
 def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_strength, aesthetic_score, use_motion_strength, use_aesthetic_score, camera_motion, reference_image, refine_prompt, fps, num_loop, seed, sampling_steps, cfg_scale):
+    if prompt_text is None or prompt_text == "":
+        gr.Warning("Your prompt is empty, please enter a valid prompt")
+        return None
+    
     torch.manual_seed(seed)
     with torch.inference_mode():
         # ======================
@@ -496,11 +500,10 @@ def main():
                 prompt_text = gr.Textbox(
                     label="Prompt",
                     placeholder="Describe your video here",
-                    info="Empty prompt will mean random prompt from OpenAI.",
-                    lines=4,
+                    lines=4
                 )
                 refine_prompt = gr.Checkbox(value=True, label="Refine prompt with GPT4o")
-                random_prompt_btn = gr.Button("Random Prompt")
+                random_prompt_btn = gr.Button("Random Prompt By GPT4o")
                 
                 gr.Markdown("## Basic Settings")
                 resolution = gr.Radio(
