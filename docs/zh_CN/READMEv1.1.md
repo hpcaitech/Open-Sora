@@ -21,7 +21,7 @@
 
  <h4>Open-Sora 项目目前处在早期阶段，并将持续更新。</h4>
 
-## 📰 资讯 
+## 📰 资讯
 > 由于文档需要进行翻译，最新资讯请看[英文文档](/README.md#-news)
 * **[2024.04.25]** 🤗 我们在Hugging Face Spaces上发布了Open-Sora的[Gradio demo](https://huggingface.co/spaces/hpcai-tech/open-sora)。
 * **[2024.04.25]** 🔥 我们发布了支持**2秒至15秒、144p至720p、任意宽高比**的文本到图像、文本到视频、图像到视频、视频到视频、无限时间生成的**Open-Sora 1.1**版本。此外，还发布了一个完整的视频处理流程。 [[checkpoints]]() [[report]](/docs/report_02.md)

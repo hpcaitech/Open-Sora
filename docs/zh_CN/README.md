@@ -70,7 +70,7 @@
 
 ## 🔆 新功能/更新
 
-* 📍 **Open-Sora 1.2** 发布。模型权重可在[此处](#model-weights)查看。有关更多详细信息，请参阅我们的**[技术报告 v1.2](docs/report_03.md)** 。 
+* 📍 **Open-Sora 1.2** 发布。模型权重可在[此处](#model-weights)查看。有关更多详细信息，请参阅我们的**[技术报告 v1.2](docs/report_03.md)** 。
 * ✅ 支持整流流调度。
 * ✅ 训练我们的 3D-VAE 进行时间维度压缩。
 * 📍 **Open-Sora 1.1**发布。模型权重可在[此处](#model-weights)获得。它针对**0s~15s、144p 到 720p、各种宽高比**的视频进行训练。有关更多讨论，请参阅我们的**[技术报告 v1.1](/docs/report_02.md)** 。
@@ -213,7 +213,7 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 <details>
 <summary>查看更多</summary>
 
-| 分辨率 | 模型大小 | 数据   | 迭代次数 | 批量大小 | GPU 天数 (H800) | 网址     
+| 分辨率 | 模型大小 | 数据   | 迭代次数 | 批量大小 | GPU 天数 (H800) | 网址
 | ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |

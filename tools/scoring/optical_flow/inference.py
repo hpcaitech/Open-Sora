@@ -80,7 +80,7 @@ def parse_args():
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
-    parser.add_argument("--skip_if_existing", action='store_true')
+    parser.add_argument("--skip_if_existing", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -90,13 +90,13 @@ def main():
 
     meta_path = args.meta_path
     if not os.path.exists(meta_path):
-        print(f"Meta file \'{meta_path}\' not found. Exit.")
+        print(f"Meta file '{meta_path}' not found. Exit.")
         exit()
 
     wo_ext, ext = os.path.splitext(meta_path)
     out_path = f"{wo_ext}_flow{ext}"
     if args.skip_if_existing and os.path.exists(out_path):
-        print(f"Output meta file \'{out_path}\' already exists. Exit.")
+        print(f"Output meta file '{out_path}' already exists. Exit.")
         exit()
 
     torch.backends.cudnn.deterministic = True
@@ -169,9 +169,11 @@ def main():
 
     # save local results
     meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column="flow")
-    save_dir_local = os.path.join(os.path.dirname(out_path), 'parts')
+    save_dir_local = os.path.join(os.path.dirname(out_path), "parts")
     os.makedirs(save_dir_local, exist_ok=True)
-    out_path_local = os.path.join(save_dir_local, os.path.basename(out_path).replace(".csv", f"_part_{dist.get_rank()}.csv"))
+    out_path_local = os.path.join(
+        save_dir_local, os.path.basename(out_path).replace(".csv", f"_part_{dist.get_rank()}.csv")
+    )
     meta_local.to_csv(out_path_local, index=False)
 
     # wait for all ranks to finish data processing

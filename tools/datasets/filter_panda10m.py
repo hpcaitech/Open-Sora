@@ -1,12 +1,12 @@
 # TODO: remove this file before releasing
 
 import argparse
-import os
-import pandas as pd
-import json
 import html
-from tqdm import tqdm
+import os
 import re
+
+import pandas as pd
+from tqdm import tqdm
 
 tqdm.pandas()
 
@@ -157,17 +157,17 @@ def clean_caption(caption):
 
 
 def get_10m_set():
-    meta_path_10m = '/mnt/hdd/data/Panda-70M/raw/meta/train/panda70m_training_10m.csv'
+    meta_path_10m = "/mnt/hdd/data/Panda-70M/raw/meta/train/panda70m_training_10m.csv"
     meta_10m = pd.read_csv(meta_path_10m)
 
     def process_single_caption(row):
-        text_list = eval(row['caption'])
+        text_list = eval(row["caption"])
         clean_list = [clean_caption(x) for x in text_list]
         return str(clean_list)
 
     ret = apply(meta_10m, process_single_caption, axis=1)
     # ret = meta_10m.progress_apply(process_single_caption, axis=1)
-    print('==> text processed.')
+    print("==> text processed.")
 
     text_list = []
     for x in ret:
@@ -191,7 +191,7 @@ def get_10m_set():
 def filter_panda10m_text(meta_path, text_set):
     def process_single_row(row):
         # path = row['path']
-        t = row['text']
+        t = row["text"]
         # fname = os.path.basename(path)
         # video_id = fname[:fname.rindex('_')]
         if t not in text_set:
@@ -210,13 +210,13 @@ def filter_panda10m_text(meta_path, text_set):
 
 
 def filter_panda10m_timestamp(meta_path):
-    meta_path_10m = '/mnt/hdd/data/Panda-70M/raw/meta/train/panda70m_training_10m.csv'
+    meta_path_10m = "/mnt/hdd/data/Panda-70M/raw/meta/train/panda70m_training_10m.csv"
     meta_10m = pd.read_csv(meta_path_10m)
 
     id2t = {}
     for idx, row in tqdm(meta_10m.iterrows(), total=len(meta_10m)):
-        video_id = row['videoID']
-        timestamp = eval(row['timestamp'])
+        video_id = row["videoID"]
+        timestamp = eval(row["timestamp"])
         timestamp = [str(tuple(x)) for x in timestamp]
         id2t[video_id] = timestamp
 
@@ -224,10 +224,10 @@ def filter_panda10m_timestamp(meta_path):
     print(f"==> Loaded meta_10m from '{meta_path_10m}'")
 
     def process_single_row(row):
-        path = row['path']
-        t = row['timestamp']
+        path = row["path"]
+        t = row["timestamp"]
         fname = os.path.basename(path)
-        video_id = fname[:fname.rindex('_')]
+        video_id = fname[: fname.rindex("_")]
         if video_id not in id2t:
             return False
         if t not in id2t[video_id]:
@@ -247,14 +247,14 @@ def filter_panda10m_timestamp(meta_path):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--meta_path', type=str, nargs='+')
-    parser.add_argument('--num_workers', default=5, type=int)
+    parser.add_argument("--meta_path", type=str, nargs="+")
+    parser.add_argument("--num_workers", default=5, type=int)
 
     args = parser.parse_args()
     return args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parse_args()
 
     text_set = get_10m_set()

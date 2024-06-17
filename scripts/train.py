@@ -16,9 +16,9 @@ from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
-from opensora.utils.lr_scheduler import LinearWarmupLR
 from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
+from opensora.utils.lr_scheduler import LinearWarmupLR
 from opensora.utils.misc import (
     Timer,
     all_reduce_mean,
@@ -140,7 +140,7 @@ def main():
             in_channels=vae_out_channels,
             caption_channels=text_encoder_output_dim,
             model_max_length=text_encoder_model_max_length,
-            enable_sequence_parallelism=cfg.get("sp_size", 1) > 1
+            enable_sequence_parallelism=cfg.get("sp_size", 1) > 1,
         )
         .to(device, dtype)
         .train()
@@ -298,7 +298,7 @@ def main():
 
                     # update learning rate
                     if lr_scheduler is not None:
-                        lr_scheduler.step()           
+                        lr_scheduler.step()
                     coordinator.block_all()
                 timer_list.append(backward_t)
 

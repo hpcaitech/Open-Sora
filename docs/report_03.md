@@ -130,7 +130,7 @@ During inference, we can also use the scores to condition the model. For camera 
 
 Previously, we monitor the training process only by human evaluation, as DDPM traning loss is not well correlated with the quality of generated videos. However, for rectified flow, we find the training loss is well correlated with the quality of generated videos as stated in SD3. Thus, we keep track of rectified flow evaluation loss on 100 images and 1k videos.
 
-We sampled 1k videos from pixabay as validation dataset. We calculate the evaluation loss for image and different lengths of videos (2s, 4s, 8s, 16s) for different resolution (144p, 240p, 360p, 480p, 720p). For each setting, we equidistantly sample 10 timesteps. Then all the losses are averaged.
+We sampled 1k videos from pixabay as validation dataset. We calculate the evaluation loss for image and different lengths of videos (2s, 4s, 8s, 16s) for different resolution (144p, 240p, 360p, 480p, 720p). For each setting, we equidistantly sample 10 timesteps. Then all the losses are averaged. We also provide a [video](https://streamable.com/oqkkf1) showing the sampled videos with a fixed prompt for different steps.
 
 ![Evaluation Loss](/assets/readme/report_val_loss.png)
 ![Video Evaluation Loss](/assets/readme/report_vid_val_loss.png)
@@ -141,12 +141,10 @@ In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-pr
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
 
-
 | Model          | Total Score | Quality Score | Semantic Score |
 | -------------- | ----------- | ------------- | -------------- |
 | Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
 | Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
-
 
 ## Sequence parallelism
 
@@ -156,7 +154,7 @@ We use sequence parallelism to support long-sequence training and inference. Our
 
 Currently, we have not used sequence parallelism for training as data resolution is small and we plan to do so in the next release. As for inference, we can use sequence parallelism in case your GPU goes out of memory. A simple benchmark shows that sequence parallelism can achieve speedup
 
-| Resolution | Seconds | Number of GPUs | Enable SP | Time taken/s | Speedup per GPU | 
-| -          | -       | -              | -         | -            | -               | 
+| Resolution | Seconds | Number of GPUs | Enable SP | Time taken/s | Speedup per GPU |
+| ---------- | ------- | -------------- | --------- | ------------ | --------------- |
 | 720p       | 16s     | 1              | No        | 547.97       | -               |
-| 720p       | 16s     | 2              | Yes       | 244.38       | 12%             | 
+| 720p       | 16s     | 2              | Yes       | 244.38       | 12%             |

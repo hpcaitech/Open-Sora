@@ -110,7 +110,7 @@ def process_general_videos(root, output):
     if not os.path.exists(root):
         return
     path_list = get_filelist(root, VID_EXTENSIONS)
-    path_list = list(set(path_list)) # remove duplicates
+    path_list = list(set(path_list))  # remove duplicates
     fname_list = [os.path.splitext(os.path.basename(x))[0] for x in path_list]
     relpath_list = [os.path.relpath(x, root) for x in path_list]
     df = pd.DataFrame(dict(path=path_list, id=fname_list, relpath=relpath_list))
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     parser.add_argument("root", type=str)
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--info", type=str, default=None)
-    parser.add_argument("--output", type=str, default=None, required=True, help='Output path')
+    parser.add_argument("--output", type=str, default=None, required=True, help="Output path")
     args = parser.parse_args()
 
     if args.dataset == "imagenet":

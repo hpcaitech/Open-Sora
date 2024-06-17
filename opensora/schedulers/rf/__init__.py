@@ -100,4 +100,4 @@ class RFLOW:
         return z
 
     def training_losses(self, model, x_start, model_kwargs=None, noise=None, mask=None, weights=None, t=None):
-        return self.scheduler.training_losses(model, x_start, model_kwargs, noise, mask, weights,t)
+        return self.scheduler.training_losses(model, x_start, model_kwargs, noise, mask, weights, t)
