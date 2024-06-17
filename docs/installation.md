@@ -211,4 +211,4 @@ pip install -v .[vae]
 
 ### Step 2: VAE Evaluation (`cupy` and Potential VAE Errors)
 
-Refer to [Evaluation's VAE section](#step-3-install-cupy-for-potential-vae-errors).
+Refer to the [Evaluation's VAE section](#step-3-install-cupy-for-potential-vae-errors) above.

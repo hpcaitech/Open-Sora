@@ -312,7 +312,7 @@ The basic command line inference is as follows:
 ```bash
 # text to video
 python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
-  --num-frames 4s --resolution 720p \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
   --prompt "a beautiful waterfall"
 ```
 
@@ -320,7 +320,7 @@ You can add more options to the command line to customize the generation.
 
 ```bash
 python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
-  --num-frames 4s --resolution 720p \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
   --num-sampling-steps 30 --flow 5 --aes 6.5 \
   --prompt "a beautiful waterfall"
 ```
@@ -402,20 +402,19 @@ Also check out the [datasets](docs/datasets.md) we use.
 
 ## VAE
 We train a VAE pipeline that consists of a spatial VAE followed by a temporal VAE.
-For more details, refer to our [VAE documentation](docs/vae.md).
+For more details, refer to [VAE](docs/vae.md).
 Before you run the following commands, follow our [Installation Documentation](docs/installation.md) to install the required dependencies for VAE and Evaluation.
 
-Once you prepare the data in a `csv` file, run the following commands to train the VAE.
+If you want to train your own VAE, we need to prepare data in the csv following the [data processing](#data-processing) pipeline, then run the following commands.
 Note that you need to adjust the number of trained epochs (`epochs`) in the config file accordingly with respect to your own csv data size.
-
 
 ```bash
 # stage 1 training, 380k steps, 8 GPUs
 torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage1.py --data-path YOUR_CSV_PATH
 # stage 2 training, 260k steps, 8 GPUs
-torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage[1-3].py --data-path YOUR_CSV_PATH
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage2.py --data-path YOUR_CSV_PATH
 # stage 3 training, 540k steps, 24 GPUs
-torchrun --nnodes=3 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage[1-3].py --data-path YOUR_CSV_PATH
+torchrun --nnodes=3 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage3.py --data-path YOUR_CSV_PATH
 ```
 To evaluate the VAE performance, you need to run VAE inference first to generate the videos, then calculate scores on the generated videos:
 
