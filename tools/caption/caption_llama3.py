@@ -17,7 +17,7 @@ import pandas as pd
 os.system(f'cp {__file__} ~/backup/') # optionally backup the script
 warnings.filterwarnings("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
+from torch.distributed.elastic.multiprocessing.errors import record
 
 class CSVTextDataset(Dataset):
     def __init__(self, csv_path):
@@ -69,6 +69,7 @@ def pad_left(sequences, padding_value=0):
     batch = torch.stack(padded_sequences)
     return batch
 
+@record
 def main(args):
     # ======================================================
     # 1. init environment
@@ -204,7 +205,7 @@ def main(args):
                 keywords_start = keywords.find("[")
                 keywords_end = keywords.find("]")
                 keywords = keywords[keywords_start+1:keywords_end]
-                if "\n" in keywords: # we empirically observe that it produces newlines when no keywords are found
+                if "\n" in keywords or len(keywords) == 0: # we empirically observe that it produces newlines when no keywords are found
                     keywords = "NONE_FOUND"
             except:
                 keywords = "NONE_FOUND"
