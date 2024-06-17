@@ -62,8 +62,8 @@ nohup python caption_pllava.py \
 
 ### PLLaVA VS LLaVA
 In our previous releases, we used [LLaVA](#llava-captioning) for video captioning. 
+<img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA">
 
-![LLaVA vs PLLaVA](../../assets/readme/llava_vs_pllava_sample.gif)
 
 
 ## LLaVA Captioning
