@@ -15,6 +15,26 @@ from tqdm import tqdm
 from tools.datasets.utils import extract_frames, is_video
 
 
+def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
+    # reorder
+    indices_list = list(map(lambda x: x[0], gathered_list))
+    scores_list = list(map(lambda x: x[1], gathered_list))
+
+    flat_indices = []
+    for x in zip(*indices_list):
+        flat_indices.extend(x)
+    flat_scores = []
+    for x in zip(*scores_list):
+        flat_scores.extend(x)
+    flat_indices = np.array(flat_indices)
+    flat_scores = np.array(flat_scores)
+
+    # filter duplicates
+    unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
+    meta.loc[unique_indices, column] = flat_scores[unique_indices_idx]
+    return meta
+
+
 class VideoTextDataset(torch.utils.data.Dataset):
     def __init__(self, meta_path, transform):
         self.meta_path = meta_path
@@ -41,39 +61,31 @@ class VideoTextDataset(torch.utils.data.Dataset):
         return len(self.meta)
 
 
-def merge_scores(gathered_list: list, meta: pd.DataFrame):
-    # reorder
-    indices_list = list(map(lambda x: x[0], gathered_list))
-    scores_list = list(map(lambda x: x[1], gathered_list))
-    flat_indices = []
-    for x in zip(*indices_list):
-        flat_indices.extend(x)
-    flat_scores = []
-    for x in zip(*scores_list):
-        flat_scores.extend(x)
-    flat_indices = np.array(flat_indices)
-    flat_scores = np.array(flat_scores)
-    # filter duplicates
-    unique_indices, unique_indices_idx = np.unique(flat_indices, return_index=True)
-    meta.loc[unique_indices, "match"] = flat_scores[unique_indices_idx]
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=16, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--skip_if_existing", action="store_true")
     args = parser.parse_args()
     return args
 
 
 def main():
-    colossalai.launch_from_torch({})
     args = parse_args()
 
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file '{meta_path}' not found. Exit.")
+        exit()
+
     wo_ext, ext = os.path.splitext(meta_path)
     out_path = f"{wo_ext}_match{ext}"
+    if args.skip_if_existing and os.path.exists(out_path):
+        print(f"Output meta file '{out_path}' already exists. Exit.")
+        exit()
+
+    colossalai.launch_from_torch({})
 
     # build model
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -96,7 +108,6 @@ def main():
     )
 
     # compute scores
-    dataset.meta["match"] = np.nan
     indices_list = []
     scores_list = []
     model.eval()
@@ -118,8 +129,8 @@ def main():
     gathered_list = [None] * dist.get_world_size()
     dist.all_gather_object(gathered_list, (indices_list, scores_list))
     if dist.get_rank() == 0:
-        merge_scores(gathered_list, dataset.meta)
-        dataset.meta.to_csv(out_path, index=False)
+        meta_new = merge_scores(gathered_list, dataset.meta, column="match")
+        meta_new.to_csv(out_path, index=False)
         print(f"New meta with matching scores saved to '{out_path}'.")
 
 

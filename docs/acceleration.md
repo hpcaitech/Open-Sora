@@ -1,5 +1,7 @@
 # Acceleration
 
+>This document corresponds to our v1.1 release
+
 Open-Sora aims to provide a high-speed training framework for diffusion models. We can achieve **55%** training speed acceleration when training on **64 frames 512x512 videos**. Our framework support training **1min 1080p videos**.
 
 ## Accelerated Transformer

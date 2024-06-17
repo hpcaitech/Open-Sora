@@ -5,7 +5,7 @@
     - [Scene Detection](#scene-detection)
     - [Video Splitting](#video-splitting)
 
-In many cases, raw videos contain several scenes and are too long for training. Thus, it is essential to split them into shorter 
+In many cases, raw videos contain several scenes and are too long for training. Thus, it is essential to split them into shorter
 clips based on scenes. Here, we provide code for scene detection and video splitting.
 
 ## Prepare Meta Files
@@ -24,20 +24,27 @@ The following command will add a new column `path` to the meta file.
 python tools/scene_cut/convert_id_to_path.py /path/to/meta.csv --folder_path /path/to/video/folder
 ```
 This should output
-- `{prefix}_path-filtered.csv` with column `path` (broken videos filtered) 
+- `{prefix}_path-filtered.csv` with column `path` (broken videos filtered)
 - `{prefix}_path_intact.csv` with column `path` and `intact` (`intact` indicating a video is intact or not)
 
 
 ## Scene Detection
-The next step is to detect scenes in a video. 
-We use [`PySceneDetect`](https://github.com/Breakthrough/PySceneDetect) for this job. 
+
+Install the required dependancies by following our [installation instructions](../../docs/installation.md)'s "Data Dependencies" and "Scene Detection" sections.
+
+<!-- The next step is to detect scenes in a video.
+We use [`PySceneDetect`](https://github.com/Breakthrough/PySceneDetect) for this job.
+```bash
+pip install scenedetect[opencv] --upgrade
+``` -->
+
 **Make sure** the input meta file has column `path`, which is the path of a video.
 
 ```bash
 python tools/scene_cut/scene_detect.py /path/to/meta.csv
 ```
-The output is `{prefix}_timestamp.csv` with column `timestamp`. Each cell in column `timestamp` is a list of tuples, 
-with each tuple indicating the start and end timestamp of a scene 
+The output is `{prefix}_timestamp.csv` with column `timestamp`. Each cell in column `timestamp` is a list of tuples,
+with each tuple indicating the start and end timestamp of a scene
 (e.g., `[('00:00:01.234', '00:00:02.345'), ('00:00:03.456', '00:00:04.567')]`).
 
 ## Video Splitting

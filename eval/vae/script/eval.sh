@@ -1,0 +1,12 @@
+python eval/eval_common_metric.py \
+    --batch_size 2 \
+    --real_video_dir ../test_eval/release/origin \
+    --generated_video_dir ../test_eval/release \
+    --device cuda \
+    --sample_fps 10 \
+    --crop_size 256 \
+    --resolution 256 \
+    --num_frames 17 \
+    --sample_rate 1 \
+    --subset_size 100 \
+    --metric ssim psnr lpips flolpips

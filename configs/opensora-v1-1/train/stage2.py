@@ -18,15 +18,15 @@ bucket_config = {  # 7s/it
     "1080p": {1: (0.4, 8)},
 }
 mask_ratios = {
-    "mask_no": 0.75,
-    "mask_quarter_random": 0.025,
-    "mask_quarter_head": 0.025,
-    "mask_quarter_tail": 0.025,
-    "mask_quarter_head_tail": 0.05,
-    "mask_image_random": 0.025,
-    "mask_image_head": 0.025,
-    "mask_image_tail": 0.025,
-    "mask_image_head_tail": 0.05,
+    "identity": 0.75,
+    "quarter_random": 0.025,
+    "quarter_head": 0.025,
+    "quarter_tail": 0.025,
+    "quarter_head_tail": 0.05,
+    "image_random": 0.025,
+    "image_head": 0.025,
+    "image_tail": 0.025,
+    "image_head_tail": 0.05,
 }
 
 # Define acceleration
@@ -43,6 +43,7 @@ model = dict(
     from_pretrained=None,
     input_sq_size=512,  # pretrained model is trained on 512x512
     qk_norm=True,
+    qk_norm_legacy=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )

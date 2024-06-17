@@ -8,7 +8,7 @@ dataset = dict(
 )
 
 # Define acceleration
-num_workers = 4
+num_workers = 0
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"

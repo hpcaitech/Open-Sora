@@ -1,22 +1,20 @@
 import argparse
 import os
 
+import colossalai
 import numpy as np
 import pandas as pd
 import torch
 import torch.distributed as dist
-import torch.nn.functional as F
-from torchvision.transforms import Resize, CenterCrop, Compose
+from mmengine import Config
+from mmengine.dataset import Compose, default_collate
+from mmengine.registry import DefaultScope
+from mmocr.datasets import PackTextDetInputs
+from mmocr.registry import MODELS
 from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.datasets.folder import pil_loader
+from torchvision.transforms import CenterCrop, Compose, Resize
 from tqdm import tqdm
-
-import colossalai
-from mmengine import Config
-from mmengine.registry import DefaultScope
-from mmengine.dataset import Compose, default_collate
-from mmocr.registry import MODELS
-from mmocr.datasets import PackTextDetInputs
 
 from tools.datasets.utils import extract_frames, is_video
 
@@ -43,11 +41,13 @@ class VideoTextDataset(torch.utils.data.Dataset):
         self.meta_path = meta_path
         self.meta = pd.read_csv(meta_path)
         self.transform = transform
-        self.transform = Compose([
-            Resize(1024),
-            CenterCrop(1024),
-        ])
-        self.formatting = PackTextDetInputs(meta_keys=['scale_factor'])
+        self.transform = Compose(
+            [
+                Resize(1024),
+                CenterCrop(1024),
+            ]
+        )
+        self.formatting = PackTextDetInputs(meta_keys=["scale_factor"])
 
     def __getitem__(self, index):
         row = self.meta.iloc[index]
@@ -61,13 +61,13 @@ class VideoTextDataset(torch.utils.data.Dataset):
         img = self.transform(img)
         img_array = np.array(img)[:, :, ::-1].copy()  # bgr
         results = {
-            'img': img_array,
-            'scale_factor': 1.0,
+            "img": img_array,
+            "scale_factor": 1.0,
             # 'img_shape': img_array.shape[-2],
             # 'ori_shape': img_array.shape[-2],
         }
         results = self.formatting(results)
-        results['index'] = index
+        results["index"] = index
 
         return results
 
@@ -80,6 +80,7 @@ def parse_args():
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
     parser.add_argument("--bs", type=int, default=16, help="Batch size")
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--skip_if_existing", action="store_true")
     args = parser.parse_args()
 
     return args
@@ -87,19 +88,29 @@ def parse_args():
 
 def main():
     args = parse_args()
-    cfg = Config.fromfile('./tools/scoring/ocr/dbnetpp.py')
 
     meta_path = args.meta_path
+    if not os.path.exists(meta_path):
+        print(f"Meta file '{meta_path}' not found. Exit.")
+        exit()
 
+    wo_ext, ext = os.path.splitext(meta_path)
+    out_path = f"{wo_ext}_ocr{ext}"
+    if args.skip_if_existing and os.path.exists(out_path):
+        print(f"Output meta file '{out_path}' already exists. Exit.")
+        exit()
+
+    cfg = Config.fromfile("./tools/scoring/ocr/dbnetpp.py")
     colossalai.launch_from_torch({})
+
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    DefaultScope.get_instance('ocr', scope_name='mmocr')  # use mmocr Registry as default
+    DefaultScope.get_instance("ocr", scope_name="mmocr")  # use mmocr Registry as default
 
     # build model
     model = MODELS.build(cfg.model)
     model.init_weights()
     model.to(device)  # set data_preprocessor._device
-    print('==> Model built.')
+    print("==> Model built.")
 
     # build dataset
     transform = Compose(cfg.test_pipeline)
@@ -117,7 +128,7 @@ def main():
         ),
         collate_fn=default_collate,
     )
-    print('==> Dataloader built.')
+    print("==> Dataloader built.")
 
     # compute scores
     dataset.meta["ocr"] = np.nan
@@ -125,9 +136,9 @@ def main():
     scores_list = []
     model.eval()
     for data in tqdm(dataloader, disable=dist.get_rank() != 0):
-        indices_i = data['index']
+        indices_i = data["index"]
         indices_list.extend(indices_i.tolist())
-        del data['index']
+        del data["index"]
 
         pred = model.test_step(data)  # this line will cast data to device
 
@@ -139,12 +150,9 @@ def main():
 
     if dist.get_rank() == 0:
         merge_scores(gathered_list, dataset.meta)
-
-        wo_ext, ext = os.path.splitext(meta_path)
-        out_path = f"{wo_ext}_ocr{ext}"
         dataset.meta.to_csv(out_path, index=False)
         print(f"New meta (shape={dataset.meta.shape}) with ocr results saved to '{out_path}'.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

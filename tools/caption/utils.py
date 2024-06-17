@@ -7,6 +7,8 @@ from torchvision.datasets.folder import pil_loader
 
 from tools.datasets.utils import extract_frames, is_video
 
+IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
+VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 PROMPTS = {
     "image": {
         "text": "Describe this image and its style to generate a succinct yet informative description. Pay attention to all objects in the image. The description should be useful for AI to re-generate the image. The description should be no more than five sentences. Remember do not exceed 5 sentences.",
