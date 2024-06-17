@@ -40,16 +40,16 @@
 
 | **2秒 240×426**                                                                                                                                              | **2秒 240×426**                                                                                                                                             |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) | [<img src="assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) |
-| [<img src="assets/demo/sora_16x240x426_27.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/f7ce4aaa-528f-40a8-be7a-72e61eaacbbd)  | [<img src="assets/demo/sora_16x240x426_40.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/5d58d71e-1fda-4d90-9ad3-5f2f7b75c6a9) |
+| [<img src="/assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) | [<img src="/assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) |
+| [<img src="/assets/demo/sora_16x240x426_27.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/f7ce4aaa-528f-40a8-be7a-72e61eaacbbd)  | [<img src="/assets/demo/sora_16x240x426_40.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/5d58d71e-1fda-4d90-9ad3-5f2f7b75c6a9) |
 
 | **2秒 426×240**                                                                                                                                             | **4秒 480×854**                                                                                                                                              |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="assets/demo/sora_16x426x240_24.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/34ecb4a0-4eef-4286-ad4c-8e3a87e5a9fd) | [<img src="assets/demo/sample_32x480x854_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c1619333-25d7-42ba-a91c-18dbc1870b18) |
+| [<img src="/assets/demo/sora_16x426x240_24.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/34ecb4a0-4eef-4286-ad4c-8e3a87e5a9fd) | [<img src="/assets/demo/sample_32x480x854_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c1619333-25d7-42ba-a91c-18dbc1870b18) |
 
 | **16秒 320×320**                                                                                                                                        | **16秒 224×448**                                                                                                                                        | **2秒 426×240**                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
+| [<img src="/assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="/assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="/assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
 
 
 </details>
@@ -59,9 +59,9 @@
 
 | **2秒 512×512**                                                                                                                                                                 | **2秒 512×512**                                                                                                                                                              | **2秒 512×512**                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
+| [<img src="/assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="/assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="/assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
 |森林地区宁静的夜景。 [...] 该视频是一段延时摄影，捕捉了白天到夜晚的转变，湖泊和森林始终作为背景。 | 无人机拍摄的镜头捕捉到了海岸悬崖的壮丽美景，[...] 海水轻轻地拍打着岩石底部和紧贴悬崖顶部的绿色植物。| 瀑布从悬崖上倾泻而下，流入宁静的湖泊，气势磅礴。[...] 摄像机角度提供了瀑布的鸟瞰图。 |
-| [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
+| [<img src="/assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="/assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="/assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
 | 夜晚繁华的城市街道，充满了汽车前灯的光芒和路灯的氛围光。 [...]                                                           | 向日葵田的生机勃勃，美不胜收。向日葵整齐排列，给人一种秩序感和对称感。 [...]                                            |宁静的水下场景，一只海龟在珊瑚礁中游动。这只海龟的壳呈绿褐色 [...]                   |
 
 视频经过降采样以.gif用于显示。单击查看原始视频。提示经过修剪以用于显示，请参阅[此处](/assets/texts/t2v_samples.txt)查看完整提示。
@@ -126,20 +126,20 @@
 
 下面列出了其他有用的文档和链接。
 
-* 报告: [技术报告 v1.2](docs/report_03.md), [技术报告 v1.1](docs/report_02.md), [技术报告 v1.0](docs/report_01.md), [训练加速.md](docs/acceleration.md)
+* 报告: [技术报告 v1.2](docs/report_v3.md), [技术报告 v1.1](/docs/report_v2.md), [技术报告 v1.0](/docs/report_v1.md), [训练加速.md](docs/acceleration.md)
 * Repo 结构: [结构.md](docs/structure.md)
 * 配置文件说明: [config.md](docs/config.md)
 * Useful commands: [commands.md](docs/commands.md)
 * 数据处理管道和数据集: [datasets.md](docs/datasets.md)
 * 每个数据处理工具的 README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
-* Evaluation: [eval](/eval/README.md)
-* Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
+* 评估: [eval](/eval/README.md)
+* 画廊: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 ## 安装
 
 ### 从源头安装
 
-For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing.
+对于 CUDA 12.1，您可以使用以下命令[安装](/docs/installation.md)依赖项。否则，请参阅安装以获取有关不同 cuda 版本的更多说明以及数据预处理的其他依赖项。
 
 ```bash
 # create a virtual env and activate (conda as an example)
@@ -170,160 +170,153 @@ pip install flash-attn --no-build-isolation
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 ```
 
-### Use Docker
+### 使用Docker
 
-Run the following command to build a docker image from Dockerfile provided.
+运行以下命令从提供的Dockerfile 构建docker 镜像。
 
 ```bash
 docker build -t opensora ./docker
 ```
 
-Run the following command to start the docker container in interactive mode.
+运行以下命令以交互模式启动docker容器。
 
 ```bash
 docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 ```
 
-## Model Weights
+## 模型权重
 
-### Open-Sora 1.2 Model Weights
-
-| Resolution | Model Size | Data | #iterations | Batch Size | URL |
+### Open-Sora 1.2 模型权重
+| 分辨率 | 模型大小 | 数据 | 迭代次数 | 批次大小 | 网址 |
 | ---------- | ---------- | ---- | ----------- | ---------- | --- |
-| TBD        |
+| 待定        |
 
-See our **[report 1.2](docs/report_03.md)** for more infomation.
+请参阅我们的**[report 1.2](docs/report_v3.md)**以了解更多信息。
 
-### Open-Sora 1.1 Model Weights
+### Open-Sora 1.1 模型权重
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-| Resolution         | Model Size | Data                       | #iterations | Batch Size                                        | URL                                                                  |
+| 分辨率         | M | Data                       | #iterations | Batch Size                                        | URL                                                                  |
 | ------------------ | ---------- | -------------------------- | ----------- | ------------------------------------------------- | -------------------------------------------------------------------- |
 | mainly 144p & 240p | 700M       | 10M videos + 2M images     | 100k        | [dynamic](/configs/opensora-v1-1/train/stage2.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
 | 144p to 720p       | 700M       | 500K HQ videos + 1M images | 4k          | [dynamic](/configs/opensora-v1-1/train/stage3.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
 
-See our **[report 1.1](docs/report_02.md)** for more infomation.
+请参阅我们的 **[报告 1.1](docs/report_02.md)** 以了解更多信息。
 
-:warning: **LIMITATION**: This version contains known issues which we are going to fix in the next version (as we save computation resource for the next release). In addition, the video generation may fail for long duration, and high resolution will have noisy results due to this problem.
+:warning: **局限性**: 此版本包含已知问题，我们将在下一版本中修复这些问题（因为我们为下一版本节省了计算资源）。此外，由于此问题，视频生成可能会长时间失败，高分辨率将产生嘈杂的结果。
 
 </details>
 
-### Open-Sora 1.0 Model Weights
-
+### Open-Sora 1.0 模型权重
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-| Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
+| 分辨率 | 模型大小 | 数据   | 迭代次数 | 批量大小 | GPU 天数 (H800) | 网址     
 | ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
 
-Training orders: 16x256x256 $\rightarrow$ 16x256x256 HQ $\rightarrow$ 16x512x512 HQ.
+训练流程: 16x256x256 $\rightarrow$ 16x256x256 高清 $\rightarrow$ 16x512x512 高质量.
 
-Our model's weight is partially initialized from [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha). The number of
-parameters is 724M. More information about training can be found in our **[report](/docs/report_01.md)**. More about
-the dataset can be found in [datasets.md](/docs/datasets.md). HQ means high quality.
+我们的模型权重部分由 [PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha)初始化，参数数量为724M.更多信息请参阅  **[技术报告v1.0](docs/report_v1.md)**。数据集相关信息请参阅[数据集文件](docs/datasets.md). HQ 表示高质量.
 
-:warning: **LIMITATION**: Our model is trained on a limited budget. The quality and text alignment is relatively poor.
-The model performs badly, especially on generating human beings and cannot follow detailed instructions. We are working
-on improving the quality and text alignment.
+:warning: **局限性**: 我们的模型是在有限的预算下训练的。质量和文本对齐相对较差。该模型表现不佳，特别是在生成人类时，无法遵循详细的说明。我们正在努力提高质量和文本对齐。
 
 </details>
 
-## Gradio Demo
+## Gradio演示
 
-🔥 You can experience Open-Sora on our [🤗 Gradio application](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face online.
+🔥 您可以在Hugging Face 上的[🤗 Gradio 应用程序](https://huggingface.co/spaces/hpcai-tech/open-sora)上在线体验Open-Sora。【由于GPU资源不足，已失效】
 
-### Local Deployment
+### 本地部署
 
-If you want to deploy gradio locally, we have also provided a [Gradio application](./gradio) in this repository, you can use the following the command to start an interactive web application to experience video generation with Open-Sora.
+如果您想在本地部署 gradio，我们还在这个存储库中提供了一个[Gradio 应用程序](./gradio) ，您可以使用以下命令启动一个交互式 Web 应用程序来体验使用 Open-Sora 生成视频。
 
 ```bash
 pip install gradio spaces
 python gradio/app.py
 ```
 
-This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [Gradio README](./gradio/README.md).
+这将在您的本地主机上启动 Gradio 应用程序。如果您想了解有关 Gradio 应用程序的更多信息，可以参考[Gradio README](./gradio/README.md)。
 
-To enable prompt enhancement and other language input (e.g., 中文输入), you need to set the `OPENAI_API_KEY` in the environment. Check [OpenAI's documentation](https://platform.openai.com/docs/quickstart) to get your API key.
+要启用提示增强和其他语言输入（例如中文输入），您需要OPENAI_API_KEY在环境中进行设置。查看[OpenAI的文档](https://platform.openai.com/docs/quickstart)以获取您的 API 密钥。
 
 ```bash
 export OPENAI_API_KEY=YOUR_API_KEY
 ```
 
-### Getting Started
+### 入门
 
-In the Gradio application, the basic options are as follows:
+在 Gradio 应用程序中，基本选项如下：
 
-![Gradio Demo](assets/readme/gradio_basic.png)
+![Gradio Demo](/assets/readme/gradio_basic.png)
 
-The easiest way to generate a video is to input a text prompt and click the "**Generate video**" button (scroll down if you cannot find). The generated video will be displayed in the right panel. Checking the "**Enhance prompt with GPT4o**" will use GPT-4o to refine the prompt, while "**Random Prompt**" button will generate a random prompt by GPT-4o for you. Due to the OpenAI's API limit, the prompt refinement result has some randomness.
+生成视频最简单的方式是输入文本提示，然后点击“**生成视频**”按钮（如果找不到，请向下滚动）。生成的视频将显示在右侧面板中。勾选“**使用 GPT4o 增强提示**”将使用 GPT-4o 来细化提示，而“**随机提示**”按钮将由 GPT-4o 为您生成随机提示。由于 OpenAI 的 API 限制，提示细化结果具有一定的随机性。
 
-Then, you can choose the **resolution**, **duration**, and **aspect ratio** of the generated video. Different resolution and video length will affect the video generation speed. On a 80G H100 GPU, the generation speed and peak memory usage is:
+然后，你可以选择生成视频的**分辨率**、**时长**、**长宽比**。不同的分辨率和视频长度会影响视频生成速度。在 80G H100 GPU 上，生成速度和峰值内存使用量为：
 
-|      | Image   | 2s       | 4s        | 8s        | 16s       |
+|   分辨率   | 图像   | 2秒       | 4秒        | 8秒        | 16秒       |
 | ---- | ------- | -------- | --------- | --------- | --------- |
 | 360p | 3s, 24G | 18s, 27G | 31s, 27G  | 62s, 28G  | 121s, 33G |
 | 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
 | 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
 
-Note that besides text to video, you can also use image to video generation. You can upload an image and then click the "**Generate video**" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "**Generate image**" button to generate an image with the text prompt, and then click the "**Generate video**" button to generate a video with the image generated with the same model.
+注意，除了文本转视频，你还可以使用图片转视频。你可以上传图片，然后点击“**生成视频**”按钮，生成以图片为第一帧的视频。或者，你可以填写文本提示，然后点击“**生成图片**”按钮，根据文本提示生成图片，然后点击“**生成视频**”按钮，根据同一模型生成的图片生成视频。
 
-![Gradio Demo](assets/readme/gradio_option.png)
+![Gradio Demo](/assets/readme/gradio_option.png)
 
-Then you can specify more options, including "**Motion Strength**", "**Aesthetic**" and "**Camera Motion**". If "Enable" not checked or the choice is "none", the information is not passed to the model. Otherwise, the model will generate videos with the specified motion strength, aesthetic score, and camera motion.
+然后您可以指定更多选项，包括“**运动强度**”、“**美学**”和“**相机运动**”。如果未选中“启用”或选择“无”，则不会将信息传递给模型。否则，模型将生成具有指定运动强度、美学分数和相机运动的视频。
 
-For the **aesthetic score**, we recommend using values higher than 6. For **motion strength**, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the **camera motion**, sometimes the model cannot follow the instruction well, and we are working on improving it.
+对于**美学分数**，我们建议使用高于 6 的值。对于**运动强度**，较小的值将导致更平滑但动态性较差的视频，而较大的值将导致更动态但可能更模糊的视频。因此，您可以尝试不使用它，然后根据生成的视频进行调整。对于**相机运动**，有时模型无法很好地遵循指令，我们正在努力改进它。
 
-You can also adjust the "**Sampling steps**", this is directly related to the generation speed as it is the number of denoising. A number smaller than 30 usually leads to a poor generation results, while a number larger than 100 usually has no significant improvement. The "**Seed**" is used for reproducibility, you can set it to a fixed number to generate the same video. The "**CFG Scale**" controls how much the model follows the text prompt, a smaller value will lead to a more random video, while a larger value will lead to a more text-following video (7 is recommended).
+您还可以调整“**采样步数**”，这是去噪的次数，与生成速度直接相关。小于 30 的数字通常会导致较差的生成结果，而大于 100 的数字通常不会有明显的改善。“种子”用于可重复性，您可以将其设置为固定数字以生成相同的视频。“**CFG 比例**”控制模型遵循文本提示的程度，较小的值会导致视频更随机，而较大的值会导致视频更遵循文本（建议为 7）。
 
-For more advanced usage, you can refer to [Gradio README](./gradio/README.md#advanced-usage).
+对于更高级的用法，您可以参考[Gradio README](./gradio/README.md#advanced-usage).
 
-## Inference
+## 推理
 
-### Open-Sora 1.2 Command Line Inference
+### Open-Sora 1.2 命令行推理
 
-### GPT-4o Prompt Refinement
+### GPT-4o 快速细化
 
-We find that GPT-4o can refine the prompt and improve the quality of the generated video. With this feature, you can also use other language (e.g., Chinese) as the prompt. To enable this feature, you need prepare your openai api key in the environment:
+我们发现 GPT-4o 可以细化提示并提高生成视频的质量。利用此功能，您还可以使用其他语言（例如中文）作为提示。要启用此功能，您需要在环境中准备您的 openai api 密钥：
 
 ```bash
 export OPENAI_API_KEY=YOUR_API_KEY
 ```
 
-Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refinement.
+然后您可以用 `--llm-refine True` 启用GPT-4o进行提示细化以完成推理。
 
-### Open-Sora 1.1 Command Line Inference
-
+### Open-Sora 1.1 命令行推理
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
+由于 Open-Sora 1.1 支持动态输入大小的推理，因此您可以将输入大小作为参数传递。
 
 ```bash
 # text to video
 python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854
 ```
 
-If your installation do not contain `apex` and `flash-attn`, you need to disable them in the config file, or via the folowing command.
+如果您的安装不包含`apex` 和 `flash-attn`，则需要在配置文件中或通过以下命令禁用它们。
 
 ```bash
 python scripts/inference.py configs/opensora-v1-1/inference/sample.py --prompt "A beautiful sunset over the city" --num-frames 32 --image-size 480 854 --layernorm-kernel False --flash-attn False
 ```
 
-See [here](docs/commands.md#inference-with-open-sora-11) for more instructions including text-to-image, image-to-video, video-to-video, and infinite time generation.
+请参阅[此处](docs/commands.md#inference-with-open-sora-11)了解更多说明，包括文本转图像、图像转视频、视频转视频和无限时间生成。
 
 </details>
 
-### Open-Sora 1.0 Command Line Inference
+### Open-Sora 1.0 命令行推理
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-We have also provided an offline inference script. Run the following commands to generate samples, the required model weights will be automatically downloaded. To change sampling prompts, modify the txt file passed to `--prompt-path`. See [here](docs/structure.md#inference-config-demos) to customize the configuration.
+我们还提供了离线推理脚本。运行以下命令生成样本，所需的模型权重将自动下载。要更改采样提示，请修改传递给的 txt 文件--prompt-path。请参阅[此处](docs/structure.md#inference-config-demos)以自定义配置。
 
 ```bash
 # Sample 16x512x512 (20s/sample, 100 time steps, 24 GB memory)
@@ -340,30 +333,26 @@ torchrun --standalone --nproc_per_node 1 scripts/inference.py configs/opensora/i
 torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/inference/64x512x512.py --ckpt-path ./path/to/your/ckpt.pth --prompt-path ./assets/texts/t2v_samples.txt
 ```
 
-The speed is tested on H800 GPUs. For inference with other models, see [here](docs/commands.md) for more instructions.
-To lower the memory usage, set a smaller `vae.micro_batch_size` in the config (slightly lower sampling speed).
+速度是在 H800 GPU 上测试的。有关使用其他型号进行推理，请参阅[此处](docs/commands.md) 了解更多说明。要降低内存使用量，请`vae.micro_batch_size`在配置中设置较小的值（略低采样速度）。
 
 </details>
 
-## Data Processing
+## 数据处理
 
-High-quality data is crucial for training good generation models.
-To this end, we establish a complete pipeline for data processing, which could seamlessly convert raw videos to high-quality video-text pairs.
-The pipeline is shown below. For detailed information, please refer to [data processing](docs/data_processing.md).
-Also check out the [datasets](docs/datasets.md) we use.
+高质量的数据对于训练良好的生成模型至关重要。为此，我们建立了完整的数据处理流程，可以将原始视频无缝转换为高质量的视频-文本对。流程如下所示。有关详细信息，请参阅[数据处理](docs/data_processing.md)。另请查看我们使用的[数据集](docs/datasets.md)。
 
-![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
+![Data Processing Pipeline](/assets/readme/report_data_pipeline.png)
 
-## Training
+## 训练
 
-### Open-Sora 1.2 Training
+### Open-Sora 1.2 训练
 
-### Open-Sora 1.1 Training
+### Open-Sora 1.1 训练
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
+在文件中准备好数据后`csv`，运行以下命令在单个节点上启动训练。
 
 ```bash
 # one node
@@ -376,12 +365,12 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
 
 </details>
 
-### Open-Sora 1.0 Training
+### Open-Sora 1.0 训练
 
 <details>
-<summary>View more</summary>
+<summary>查看更多</summary>
 
-Once you prepare the data in a `csv` file, run the following commands to launch training on a single node.
+在文件中准备好数据后`csv`，运行以下命令在单个节点上启动训练。
 
 ```bash
 # 1 GPU, 16x256x256
@@ -390,57 +379,52 @@ torchrun --nnodes=1 --nproc_per_node=1 scripts/train.py configs/opensora/train/1
 torchrun --nnodes=1 --nproc_per_node=8 scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
 
-To launch training on multiple nodes, prepare a hostfile according
-to [ColossalAI](https://colossalai.org/docs/basics/launch_colossalai/#launch-with-colossal-ai-cli), and run the
-following commands.
+要在多个节点上启动训练，请根据[ColossalAI](https://colossalai.org/docs/basics/launch_colossalai/#launch-with-colossal-ai-cli)准备一个主机文件，并运行以下命令。
 
 ```bash
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/opensora/train/64x512x512.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
-
-For training other models and advanced usage, see [here](docs/commands.md) for more instructions.
+有关训练其他模型和高级用法，请参阅[此处](docs/commands.md)获取更多说明。
 
 </details>
 
-## Evaluation
+## 评估
 
 ### VBench
 
 ### VBench-i2v
 
-See [here](eval/README.md) for more instructions.
+请参阅 [c此处](/eval/README.md)了解更多说明。
 
-## Contribution
+## 贡献
 
-Thanks goes to these wonderful contributors:
+感谢以下出色的贡献者：
 
 <a href="https://github.com/hpcaitech/Open-Sora/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=hpcaitech/Open-Sora" />
 </a>
 
-If you wish to contribute to this project, please refer to the [Contribution Guideline](./CONTRIBUTING.md).
+如果您希望为该项目做出贡献，请参阅[Contribution Guideline](./CONTRIBUTING.md)。
 
-## Acknowledgement
+## 致谢
 
-Here we only list a few of the projects. For other works and datasets, please refer to our report.
+这里我们仅列出了部分项目，其他研究成果及数据集请参考我们的报告。
 
-* [ColossalAI](https://github.com/hpcaitech/ColossalAI): A powerful large model parallel acceleration and optimization
-  system.
-* [DiT](https://github.com/facebookresearch/DiT): Scalable Diffusion Models with Transformers.
-* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration
-  strategies for training progress from OpenDiT.
-* [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
-* [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
-* [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
-* [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
-* [T5](https://github.com/google-research/text-to-text-transfer-transformer): A powerful text encoder.
-* [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
-* [PLLaVA](https://github.com/magic-research/PLLaVA): A powerful video captioning model.
-* [MiraData](https://github.com/mira-space/MiraData): A large-scale video dataset with long durations and structured caption.
+* [ColossalAI](https://github.com/hpcaitech/ColossalAI): 强大的大型模型并行加速与优化系统。
+* [DiT](https://github.com/facebookresearch/DiT): 带有 Transformer 的可扩展扩散模型。
+* [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): DiT 训练的加速器。我们从 OpenDiT 中采用了有价值的训练进度加速策略。
+* [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): 一个基于 DiT 的开源文本转图像模型。
+* [Latte](https://github.com/Vchitect/Latte): 尝试高效地训练视频的 DiT。
+* [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): 一个强大的图像 VAE 模型。
+* [CLIP](https://github.com/openai/CLIP): 一个强大的文本图像嵌入模型。
+* [T5](https://github.com/google-research/text-to-text-transfer-transformer): 强大的文本编码器。
+* [LLaVA](https://github.com/haotian-liu/LLaVA): 基于[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) 和 [Yi-34B](https://huggingface.co/01-ai/Yi-34B). 的强大图像字幕模型。
+* [PLLaVA](https://github.com/magic-research/PLLaVA): 一个强大的视频字幕模型。
+* [MiraData](https://github.com/mira-space/MiraData):具有长持续时间和结构化字幕的大规模视频数据集。
 
-We are grateful for their exceptional work and generous contribution to open source.
+我们感谢他们的出色工作和对开源的慷慨贡献。
 
-## Citation
+## 引用
 
 ```bibtex
 @software{opensora,
@@ -452,6 +436,6 @@ We are grateful for their exceptional work and generous contribution to open sou
 }
 ```
 
-## Star History
+## Star增长
 
 [![Star History Chart](https://api.star-history.com/svg?repos=hpcaitech/Open-Sora&type=Date)](https://star-history.com/#hpcaitech/Open-Sora&Date)

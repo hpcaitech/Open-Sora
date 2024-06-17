@@ -26,8 +26,8 @@ CONFIG_MAP = {
 }
 HF_STDIT_MAP = {
     "v1.2-stage3": {
-        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step18800/ema.pt",
-        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step18800/model"
+        "ema": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200/ema.pt",
+        "model": "/mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200/model"
         }
 }
 
@@ -367,7 +367,7 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         current_datetime = datetime.datetime.now()
         timestamp = current_datetime.timestamp()
         save_path = os.path.join(args.output, f"output_{timestamp}")
-        saved_path = save_sample(video, save_path=save_path, fps=fps)
+        saved_path = save_sample(video, save_path=save_path, fps=24)
         torch.cuda.empty_cache()
         
         # add watermark
@@ -438,29 +438,29 @@ def run_video_inference(
     seed,
     sampling_steps,
     cfg_scale):
-    if (resolution == "480p" and length == "16s") or \
-        (resolution == "720p" and length in ["8s", "16s"]):
-        gr.Warning("Generation is interrupted as the combination of 480p and 16s will lead to CUDA out of memory")
-    else:
-        return run_inference(
-            "Text2Video",
-            prompt_text, 
-            resolution,
-            aspect_ratio, 
-            length, 
-            motion_strength, 
-            aesthetic_score, 
-            use_motion_strength,
-            use_aesthetic_score, 
-            camera_motion,
-            reference_image, 
-            refine_prompt,
-            fps,
-            num_loop, 
-            seed,
-            sampling_steps, 
-            cfg_scale
-            )
+    # if (resolution == "480p" and length == "16s") or \
+    #     (resolution == "720p" and length in ["8s", "16s"]):
+    #     gr.Warning("Generation is interrupted as the combination of 480p and 16s will lead to CUDA out of memory")
+    # else:
+    return run_inference(
+        "Text2Video",
+        prompt_text, 
+        resolution,
+        aspect_ratio, 
+        length, 
+        motion_strength, 
+        aesthetic_score, 
+        use_motion_strength,
+        use_aesthetic_score, 
+        camera_motion,
+        reference_image, 
+        refine_prompt,
+        fps,
+        num_loop, 
+        seed,
+        sampling_steps, 
+        cfg_scale
+        )
 
 
 def generate_random_prompt():
@@ -553,9 +553,9 @@ def main():
                 with gr.Row():
                     with gr.Column():
                         motion_strength = gr.Slider(
-                            value=100,
+                            value=5,
                             minimum=0,
-                            maximum=500,
+                            maximum=100,
                             step=1,
                             label="Motion Strength",
                             info="only effective for video generation"
