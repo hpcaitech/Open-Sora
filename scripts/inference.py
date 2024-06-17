@@ -29,7 +29,7 @@ from opensora.utils.inference_utils import (
     prepare_multi_resolution_info,
     refine_prompts_by_openai,
     split_prompt,
-    merge_prompt
+    merge_prompt,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -115,8 +115,10 @@ def main():
     prompts = cfg.get("prompt", None)
     start_idx = cfg.get("start_index", 0)
     if prompts is None:
-        assert cfg.get("prompt_path", None) is not None, "Prompt or prompt_path must be provided"
-        prompts = load_prompts(cfg.prompt_path, start_idx, cfg.get("end_index", None))
+        if cfg.get("prompt_path", None) is not None:
+            prompts = load_prompts(cfg.prompt_path, start_idx, cfg.get("end_index", None))
+        else:
+            prompts = [cfg.get("prompt_generator", "")] * 1_000_000  # endless loop
 
     # == prepare reference ==
     reference_path = cfg.get("reference_path", [""] * len(prompts))
@@ -180,19 +182,19 @@ def main():
             if prompt_as_path and all_exists(save_paths):
                 continue
 
-            # == process prompts step by step == 
+            # == process prompts step by step ==
             # 0. split prompt
             # each element in the list is [prompt_segment_list, loop_idx_list]
             batched_prompt_segment_list = []
             batched_loop_idx_list = []
             for prompt in batch_prompts:
-                prompt_segment_list, loop_idx_list = split_prompt(prompt) 
+                prompt_segment_list, loop_idx_list = split_prompt(prompt)
                 batched_prompt_segment_list.append(prompt_segment_list)
                 batched_loop_idx_list.append(loop_idx_list)
-            
+
             # 1. refine prompt by openai
             if cfg.get("llm_refine", False):
-                # only call openai API when 
+                # only call openai API when
                 # 1. seq parallel is not enabled
                 # 2. seq parallel is enabled and the process is rank 0
                 if not enable_sequence_parallelism or (enable_sequence_parallelism and is_main_process()):
@@ -202,10 +204,16 @@ def main():
                 # sync the prompt if using seq parallel
                 if enable_sequence_parallelism:
                     coordinator.block_all()
-                    prompt_segment_length = [len(prompt_segment_list) for prompt_segment_list in batched_prompt_segment_list]
+                    prompt_segment_length = [
+                        len(prompt_segment_list) for prompt_segment_list in batched_prompt_segment_list
+                    ]
 
                     # flatten the prompt segment list
-                    batched_prompt_segment_list = [prompt_segment for prompt_segment_list in batched_prompt_segment_list for prompt_segment in prompt_segment_list]
+                    batched_prompt_segment_list = [
+                        prompt_segment
+                        for prompt_segment_list in batched_prompt_segment_list
+                        for prompt_segment in prompt_segment_list
+                    ]
 
                     # create a list of size equal to world size
                     broadcast_obj_list = [batched_prompt_segment_list] * coordinator.world_size
@@ -216,9 +224,9 @@ def main():
                     start_idx = 0
                     all_prompts = broadcast_obj_list[0]
                     for num_segment in prompt_segment_length:
-                        batched_prompt_segment_list.append(all_prompts[start_idx:start_idx+num_segment])
+                        batched_prompt_segment_list.append(all_prompts[start_idx : start_idx + num_segment])
                         start_idx += num_segment
-            
+
             # 2. append score
             for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
                 batched_prompt_segment_list[idx] = append_score_to_prompts(
@@ -246,13 +254,7 @@ def main():
                 # == add condition frames for loop ==
                 if loop_i > 0:
                     refs, ms = append_generated(
-                        vae,
-                        video_clips[-1],
-                        refs,
-                        ms,
-                        loop_i,
-                        condition_frame_length,
-                        condition_frame_edit
+                        vae, video_clips[-1], refs, ms, loop_i, condition_frame_length, condition_frame_edit
                     )
 
                 # == sampling ==
