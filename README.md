@@ -137,9 +137,9 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 * [Gradio Demo](#gradio-demo)
 * [Inference](#inference)
 * [Data Processing](#data-processing)
-* [VAE](#vae)
 * [Training](#training)
 * [Evaluation](#evaluation)
+* [VAE Training & Evaluation](#vae-training--evaluation)
 * [Contribution](#contribution)
 * [Citation](#citation)
 * [Acknowledgement](#acknowledgement)
@@ -152,14 +152,14 @@ Other useful documents and links are listed below.
 * Useful commands: [commands.md](docs/commands.md)
 * Data processing pipeline and dataset: [datasets.md](docs/datasets.md)
 * Each data processing tool's README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
-* Evaluation: [eval](/eval/README.md)
+* Evaluation: [eval/README.md](/eval/README.md)
 * Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 ## Installation
 
 ### Install from Source
 
-For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing, VAE, and model evaluation.
+For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation Documentation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing, VAE, and model evaluation.
 
 ```bash
 # create a virtual env and activate (conda as an example)
@@ -175,7 +175,7 @@ cd Open-Sora
 
 # the default installation is for inference only
 pip install -v . # for development mode, `pip install -v -e .`
-
+```
 
 (Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
 
@@ -211,9 +211,9 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 | Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
 | --------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------- |
 | Diffusion | 1.1B       | 30M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
-| VAE       | 384M       | 3M   | 1.18M       | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
+| VAE       | 384M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
-See our **[report 1.2](docs/report_03.md)** for more infomation.
+See our **[report 1.2](docs/report_03.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
 
 ### Open-Sora 1.1 Model Weights
 
@@ -409,35 +409,6 @@ Also check out the [datasets](docs/datasets.md) we use.
 
 ![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
 
-## VAE
-We train a VAE pipeline that consists of a spatial VAE followed by a temporal VAE.
-For more details, refer to [VAE](docs/vae.md).
-Before you run the following commands, follow our [Installation Documentation](docs/installation.md) to install the required dependencies for VAE and Evaluation.
-
-If you want to train your own VAE, we need to prepare data in the csv following the [data processing](#data-processing) pipeline, then run the following commands.
-Note that you need to adjust the number of trained epochs (`epochs`) in the config file accordingly with respect to your own csv data size.
-
-```bash
-# stage 1 training, 380k steps, 8 GPUs
-torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage1.py --data-path YOUR_CSV_PATH
-# stage 2 training, 260k steps, 8 GPUs
-torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage2.py --data-path YOUR_CSV_PATH
-# stage 3 training, 540k steps, 24 GPUs
-torchrun --nnodes=3 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage3.py --data-path YOUR_CSV_PATH
-```
-To evaluate the VAE performance, you need to run VAE inference first to generate the videos, then calculate scores on the generated videos:
-
-```bash
-# video generation
-torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference_vae.py configs/vae/inference/video.py --ckpt-path YOUR_VAE_CKPT_PATH --data-path YOUR_CSV_PATH --save-dir YOUR_VIDEO_DIR
-# the original videos will be saved to `YOUR_VIDEO_DIR_ori`
-# the reconstructed videos through the pipeline will be saved to `YOUR_VIDEO_DIR_rec`
-# the reconstructed videos through the spatial VAE only will be saved to `YOUR_VIDEO_DIR_spatial`
-
-# score calculation
-python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir YOUR_VIDEO_DIR_ori --generated_video_dir YOUR_VIDEO_DIR_rec --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
-```
-
 ## Training
 
 ### Open-Sora 1.2 Training
@@ -499,11 +470,50 @@ For training other models and advanced usage, see [here](docs/commands.md) for m
 
 ## Evaluation
 
-### VBench
+We support evaluation based on:
 
-### VBench-i2v
+* Validation loss
+* VBench score
+* VBench-i2v score
+* Batch generation for human evaluation
 
-See [here](eval/README.md) for more instructions.
+All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details. Our [report](/docs/report_03.md#evaluation) also provides more information about the evaluation during training. The following table shows Open-Sora 1.2 greatly improves Open-Sora 1.0.
+
+| Model          | Total Score | Quality Score | Semantic Score |
+| -------------- | ----------- | ------------- | -------------- |
+| Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
+| Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
+
+## VAE Training & Evaluation
+
+We train a VAE pipeline that consists of a spatial VAE followed by a temporal VAE.
+For more details, refer to [VAE Documentation](docs/vae.md).
+Before you run the following commands, follow our [Installation Documentation](docs/installation.md) to install the required dependencies for VAE and Evaluation.
+
+If you want to train your own VAE, we need to prepare data in the csv following the [data processing](#data-processing) pipeline, then run the following commands.
+Note that you need to adjust the number of trained epochs (`epochs`) in the config file accordingly with respect to your own csv data size.
+
+```bash
+# stage 1 training, 380k steps, 8 GPUs
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage1.py --data-path YOUR_CSV_PATH
+# stage 2 training, 260k steps, 8 GPUs
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage2.py --data-path YOUR_CSV_PATH
+# stage 3 training, 540k steps, 24 GPUs
+torchrun --nnodes=3 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage3.py --data-path YOUR_CSV_PATH
+```
+
+To evaluate the VAE performance, you need to run VAE inference first to generate the videos, then calculate scores on the generated videos:
+
+```bash
+# video generation
+torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference_vae.py configs/vae/inference/video.py --ckpt-path YOUR_VAE_CKPT_PATH --data-path YOUR_CSV_PATH --save-dir YOUR_VIDEO_DIR
+# the original videos will be saved to `YOUR_VIDEO_DIR_ori`
+# the reconstructed videos through the pipeline will be saved to `YOUR_VIDEO_DIR_rec`
+# the reconstructed videos through the spatial VAE only will be saved to `YOUR_VIDEO_DIR_spatial`
+
+# score calculation
+python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir YOUR_VIDEO_DIR_ori --generated_video_dir YOUR_VIDEO_DIR_rec --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
+```
 
 ## Contribution
 

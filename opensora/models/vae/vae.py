@@ -1,12 +1,13 @@
 import os
+
 import torch
 import torch.nn as nn
 from diffusers.models import AutoencoderKL, AutoencoderKLTemporalDecoder
 from einops import rearrange
+from transformers import PretrainedConfig, PreTrainedModel
 
 from opensora.registry import MODELS, build_module
 from opensora.utils.ckpt_utils import load_checkpoint
-from transformers import PretrainedConfig, PreTrainedModel
 
 
 @MODELS.register_module()
@@ -117,9 +118,10 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
     def dtype(self):
         return next(self.parameters()).dtype
 
+
 class VideoAutoencoderPipelineConfig(PretrainedConfig):
     model_type = "VideoAutoencoderPipeline"
-    
+
     def __init__(
         self,
         vae_2d=None,
@@ -130,7 +132,7 @@ class VideoAutoencoderPipelineConfig(PretrainedConfig):
         micro_frame_size=None,
         shift=0.0,
         scale=1.0,
-        **kwargs
+        **kwargs,
     ):
         self.vae_2d = vae_2d
         self.vae_temporal = vae_temporal
@@ -146,11 +148,8 @@ class VideoAutoencoderPipelineConfig(PretrainedConfig):
 @MODELS.register_module()
 class VideoAutoencoderPipeline(PreTrainedModel):
     config_class = VideoAutoencoderPipelineConfig
-    
-    def __init__(
-        self,
-        config: VideoAutoencoderPipelineConfig
-    ):
+
+    def __init__(self, config: VideoAutoencoderPipelineConfig):
         super().__init__(config=config)
         self.spatial_vae = build_module(config.vae_2d, MODELS)
         self.temporal_vae = build_module(config.vae_temporal, MODELS)
@@ -245,6 +244,7 @@ class VideoAutoencoderPipeline(PreTrainedModel):
     def dtype(self):
         return next(self.parameters()).dtype
 
+
 @MODELS.register_module()
 def OpenSoraVAE_V1_2(
     micro_batch_size=4,
@@ -255,12 +255,12 @@ def OpenSoraVAE_V1_2(
     cal_loss=False,
 ):
     vae_2d = dict(
-            type="VideoAutoencoderKL",
-            from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-            subfolder="vae",
-            micro_batch_size=micro_batch_size,
-            local_files_only=local_files_only,
-        )
+        type="VideoAutoencoderKL",
+        from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
+        subfolder="vae",
+        micro_batch_size=micro_batch_size,
+        local_files_only=local_files_only,
+    )
     vae_temporal = dict(
         type="VAE_Temporal_SD",
         from_pretrained=None,
@@ -274,15 +274,15 @@ def OpenSoraVAE_V1_2(
         cal_loss=cal_loss,
         micro_frame_size=micro_frame_size,
         shift=shift,
-        scale=scale
+        scale=scale,
     )
-    
+
     if from_pretrained is not None and not os.path.isdir(from_pretrained):
         model = VideoAutoencoderPipeline.from_pretrained(from_pretrained, **kwargs)
     else:
         config = VideoAutoencoderPipelineConfig(**kwargs)
         model = VideoAutoencoderPipeline(config)
-        
+
         if from_pretrained:
             load_checkpoint(model, from_pretrained)
     return model

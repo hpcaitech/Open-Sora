@@ -1,15 +1,16 @@
 # Originally developed by https://github.com/Vchitect/VBench based on https://github.com/facebookresearch/co-tracker.
 
 import argparse
-from .camera_motion import compute_camera_motion
-import pandas as pd
 from typing import List
-import ptvsd
+
+import pandas as pd
+
+from .camera_motion import compute_camera_motion
 
 
 def process(paths: List[str], threshold: float) -> List[str]:
     device = "cuda"
-    submodules = {'repo': 'facebookresearch/co-tracker', 'model': 'cotracker2'}
+    submodules = {"repo": "facebookresearch/co-tracker", "model": "cotracker2"}
     camera_motion_types = compute_camera_motion(device, submodules, paths, factor=threshold)
     return camera_motion_types
 

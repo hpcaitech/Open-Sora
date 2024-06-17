@@ -409,4 +409,3 @@ class FeatureSaver:
         get_logger().info("Saved to %s", save_path)
         self.data_list = []
         self.bin_cnt += 1
-

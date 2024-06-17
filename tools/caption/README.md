@@ -61,7 +61,7 @@ nohup python caption_pllava.py \
 ```
 
 ### PLLaVA vs. LLaVA
-In our previous releases, we used [LLaVA](#llava-captioning) for video captioning. 
+In our previous releases, we used [LLaVA](#llava-captioning) for video captioning.
 Qualitatively speaking, we observe that PLLaVA has a somewhat higher chance of accurately capture the details in the video than LLaVA. See below for their comparison on a video sample.
 <!-- <img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA"> -->
 
@@ -211,4 +211,3 @@ torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llama3 meta.cs
 ```
 
 This will generate tags based on the `text` column of `meta.csv` and put the results to `output_prefix + key.csv`. Currently the prompts for `objects` and `actions` are supported.
-

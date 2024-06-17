@@ -11,7 +11,7 @@ license: apache-2.0
 preload_from_hub:
     - hpcai-tech/OpenSora-STDiT-v3
     - hpcai-tech/OpenSora-VAE-v1.2
-    - DeepFloyd/t5-v1_1-xxl    
+    - DeepFloyd/t5-v1_1-xxl
 ---
 
 

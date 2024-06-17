@@ -26,10 +26,10 @@ from opensora.utils.inference_utils import (
     extract_prompts_loop,
     get_save_path_name,
     load_prompts,
+    merge_prompt,
     prepare_multi_resolution_info,
     refine_prompts_by_openai,
     split_prompt,
-    merge_prompt,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -224,7 +224,9 @@ def main():
                     segment_start_idx = 0
                     all_prompts = broadcast_obj_list[0]
                     for num_segment in prompt_segment_length:
-                        batched_prompt_segment_list.append(all_prompts[segment_start_idx : segment_start_idx + num_segment])
+                        batched_prompt_segment_list.append(
+                            all_prompts[segment_start_idx : segment_start_idx + num_segment]
+                        )
                         segment_start_idx += num_segment
 
             # 2. append score
