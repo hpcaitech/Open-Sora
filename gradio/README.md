@@ -1,3 +1,20 @@
+---
+title: Open Sora
+emoji: 🎥
+colorFrom: red
+colorTo: purple
+sdk: gradio
+sdk_version: 4.25.0
+app_file: app.py
+pinned: false
+license: apache-2.0
+preload_from_hub:
+    - hpcai-tech/OpenSora-STDiT-v3
+    - hpcai-tech/OpenSora-VAE-v1.2
+    - DeepFloyd/t5-v1_1-xxl    
+---
+
+
 # 🕹 Gradio Demo
 
 We have provided a Gradio demo app for you to generate videos via a web interface. You can choose to run it locally or deploy it to Hugging Face by following the instructions given below.
@@ -12,17 +29,14 @@ We assume that you have already installed `opensora` based on the instructions g
 pip install gradio spaces
 ```
 
-2. Afterwards, you can use the following command to launch different models. Remember to launch the command in the project root directory instead of the `gradio` folder.
+2. Afterwards, you can use the following command to launch the application. Remember to launch the command in the project root directory instead of the `gradio` folder.
 
 ```bash
-# run the default model v1-HQ-16x256x256
+# start the gradio app
 python gradio/app.py
 
-# run the model with higher resolution
-python gradio/app.py --model-type v1-HQ-16x512x512
-
-# run with a different host and port
-python gradio/app.py --port 8000 --host 0.0.0.0
+# run with a different port
+python gradio/app.py --port 8000
 
 # run with acceleration such as flash attention and fused norm
 python gradio/app.py --enable-optimization
@@ -45,13 +59,7 @@ We have also tested this Gradio app on Hugging Face Spaces. You can follow the s
 
 ```text
 - configs
-    - opensora
-        - inference
-            - 16x256x256.py
-            - 16x512x512.py
-            - 64x512x512.py
-        ...
-    ...
+    - ...
 - app.py
 - requirements.txt
 - README.md
@@ -63,7 +71,7 @@ We have also tested this Gradio app on Hugging Face Spaces. You can follow the s
 
 ## Advanced Usage
 
-![Gradio Demo](/assets/readme/gradio_advanced.png)
+![Gradio Demo](../assets/readme/gradio_advanced.png)
 
 For the "**FPS**" option, as now we fix the output video's FPS to 24, this option will not affect the output video's length. Thus, for a smaller FPS, the video is supposed to be longer but accelerated due to 24 FPS. Thus, the video will be less smooth but faster. For a larger FPS, the video will be smoother but slower.
 
