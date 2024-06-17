@@ -104,7 +104,7 @@ In this stage, we collect ~2M video clips with a total length of 5K hours from a
 - [Vript](https://github.com/mutonix/Vript/tree/main): a densely annotated dataset.
 - And some other datasets.
 
-While MiraData and Vript have captions from GPT, we use [PLLaVA](https://github.com/magic-research/PLLaVA) to caption the rest ones. Compared with LLaVA, which is only capable of single frame/image captioning, PLLaVA is specially designed and trained for video captioning. The accelerated PLLaVA is released in our `tools/`. In practice, we use the pretrained PLLaVA 13B model and select 4 frames from each video for captioning.
+While MiraData and Vript have captions from GPT, we use [PLLaVA](https://github.com/magic-research/PLLaVA) to caption the rest ones. Compared with LLaVA, which is only capable of single frame/image captioning, PLLaVA is specially designed and trained for video captioning. The [accelerated PLLaVA](/tools/caption/README.md#pllava-captioning) is released in our `tools/`. In practice, we use the pretrained PLLaVA 13B model and select 4 frames from each video for captioning with a spatial pooling shape of 2*2.
 
 Some statistics of the video data used in this stage are shown below. We present basic statistics of duration and resolution, as well as aesthetic score and optical flow score distribution.
 We also extract tags for objects and actions from video captions and count their frequencies.
