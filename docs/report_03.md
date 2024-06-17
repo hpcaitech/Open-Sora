@@ -7,7 +7,7 @@
 - [Evaluation](#evaluation)
 - [Sequence parallelism](#sequence-parallelism)
 
-In Open-Sora 1.2 release, we train a 1.1B models on >20M data, with training cost 35k H100 GPU hours, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
+In Open-Sora 1.2 release, we train a 1.1B models on >20M data, with training cost 35k H100 GPU hours, supporting 0s~16s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
 
 |      | image | 2s  | 4s  | 8s  | 16s |
 | ---- | ----- | --- | --- | --- | --- |
@@ -44,7 +44,7 @@ Our training involves three stages:
 2. For the next 260k steps, We remove the identity loss and just learn the 3D VAE.
 3. For the last 540k steps , since we find only reconstruction 2D VAE's feature cannot lead to further improvement, we remove the loss and train the whole VAE to reconstruct the original videos. This stage is trained on on 24 GPUs.
 
-For both stage 1 and stage 2 training, we adopt 20% images and 80% videos. We find videos with length different from 17 frames will suffer from blurring. Thus, we use a random number within 34 frames to make our VAE more robust to different video lengths. Our [training](/scripts/train_vae.py) and [inference](/scripts/inference_vae.py) code is available in the Open-Sora 1.2 release.
+For both stage 1 and stage 2 training, we adopt 20% images and 80% videos. Following [Magvit-v2](https://magvit.cs.cmu.edu/v2/), we train video using 17 frames, while zero-padding the first 16 frames for image. However, we find that this setting leads to blurring of videos with length different from 17 frames. Thus, in stage 3, we use a random number within 34 frames for mixed video length training (a.k.a., zero-pad the first  `43-n` frames if we want to train a `n` frame video), to make our VAE more robust to different video lengths. Our [training](/scripts/train_vae.py) and [inference](/scripts/inference_vae.py) code is available in the Open-Sora 1.2 release.
 
 When using the VAE for diffusion model, our stacked VAE requires small memory as the our VAE's input is already compressed. We also split the input videos input several 17 frames clips to make the inference more efficient.  The performance of our VAE is on par with another open-sourced 3D VAE in [Open-Sora-Plan](https://github.com/PKU-YuanGroup/Open-Sora-Plan/blob/main/docs/Report-v1.1.0.md).
 
@@ -125,12 +125,6 @@ For example, a video with aesthetic score 5.5, motion score 10, and a detected c
 ```
 
 During inference, we can also use the scores to condition the model. For camera motion, we only label 13k clips with high confidence, and the camera motion detection module is released in our tools.
-
-[Aesthetic Score Examples TBD]
-
-[Motion Score Examples TBD]
-
-[Camera Motion Detection Module TBD]
 
 ## Evaluation
 
