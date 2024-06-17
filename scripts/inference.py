@@ -221,11 +221,11 @@ def main():
 
                     # recover the prompt list
                     batched_prompt_segment_list = []
-                    start_idx = 0
+                    segment_start_idx = 0
                     all_prompts = broadcast_obj_list[0]
                     for num_segment in prompt_segment_length:
-                        batched_prompt_segment_list.append(all_prompts[start_idx : start_idx + num_segment])
-                        start_idx += num_segment
+                        batched_prompt_segment_list.append(all_prompts[segment_start_idx : segment_start_idx + num_segment])
+                        segment_start_idx += num_segment
 
             # 2. append score
             for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
