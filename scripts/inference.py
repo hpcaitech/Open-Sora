@@ -149,6 +149,7 @@ def main():
 
         # == get json from prompts ==
         batch_prompts, refs, ms = extract_json_from_prompts(batch_prompts, refs, ms)
+        original_batch_prompts = batch_prompts
 
         # == get reference for condition ==
         refs = collect_references_batch(refs, vae, image_size)
@@ -166,7 +167,7 @@ def main():
                     save_dir,
                     sample_name=sample_name,
                     sample_idx=start_idx + idx,
-                    prompt=batch_prompts[idx],
+                    prompt=original_batch_prompts[idx],
                     prompt_as_path=prompt_as_path,
                     num_sample=num_sample,
                     k=k,
