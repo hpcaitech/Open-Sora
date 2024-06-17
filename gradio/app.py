@@ -21,6 +21,7 @@ import datetime
 
 
 MODEL_TYPES = ["v1.2-stage3"]
+WATERMARK_PATH = "./assets/images/watermark/watermark.png"
 CONFIG_MAP = {
     "v1.2-stage3": "configs/opensora-v1-2/inference/sample.py",
 }
@@ -370,9 +371,9 @@ def run_inference(mode, prompt_text, resolution, aspect_ratio, length, motion_st
         
         # add watermark
         # all watermarked videos should have a _watermarked suffix
-        if mode != "Text2Image":
+        if mode != "Text2Image" and os.path.exists(WATERMARK_PATH):
             watermarked_path = saved_path.replace(".mp4", "_watermarked.mp4")
-            success = add_watermark(saved_path, "./assets/images/watermark/watermark.png", watermarked_path)
+            success = add_watermark(saved_path, WATERMARK_PATH, watermarked_path)
             if success:
                 return watermarked_path
             else:
