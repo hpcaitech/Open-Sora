@@ -1,4 +1,4 @@
-num_frames = 1
+num_frames = 33
 image_size = (256, 256)
 
 # Define dataset
@@ -19,7 +19,7 @@ plugin = "zero2"
 # Define model
 model = dict(
     type="VideoAutoencoderPipeline",
-    freeze_vae_2d=True,
+    freeze_vae_2d=False,
     from_pretrained=None,
     cal_loss=True,
     vae_2d=dict(
@@ -35,20 +35,20 @@ model = dict(
 )
 
 # loss weights
-perceptual_loss_weight = 0.0  # use vgg is not None and more than 0
+perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
 kl_loss_weight = 1e-6
 
-mixed_image_ratio = 0.1
-use_real_rec_loss = False
-use_z_rec_loss = True
-use_image_identity_loss = True
+mixed_strategy = "mixed_video_random"
+use_real_rec_loss = True
+use_z_rec_loss = False
+use_image_identity_loss = False
 
 # Others
 seed = 42
 outputs = "outputs"
 wandb = False
 
-epochs = 100
+epochs = 100  # NOTE: adjust accordingly w.r.t dataset size
 log_every = 1
 ckpt_every = 1000
 load = None
