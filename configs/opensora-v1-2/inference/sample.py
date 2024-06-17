@@ -26,7 +26,7 @@ align = 5
 
 model = dict(
     type="STDiT3-XL/2",
-    from_pretrained="/mnt/jfs/sora_checkpoints/042-STDiT3-XL-2/epoch0-global_step7200/ema.pt",
+    from_pretrained="hpcai-tech/OpenSora-STDiT-v3",
     qk_norm=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,

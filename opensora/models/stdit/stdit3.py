@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 import torch.nn as nn
@@ -444,17 +445,24 @@ class STDiT3(PreTrainedModel):
 
 @MODELS.register_module("STDiT3-XL/2")
 def STDiT3_XL_2(from_pretrained=None, **kwargs):
-    config = STDiT3Config(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
-    model = STDiT3(config)
-    if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
+    if from_pretrained is not None and not os.path.isdir(from_pretrained):
+        model = STDiT3.from_pretrained(from_pretrained, **kwargs)
+    else:
+        config = STDiT3Config(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+        model = STDiT3(config)
+        if from_pretrained is not None:
+            load_checkpoint(model, from_pretrained)
     return model
 
 
 @MODELS.register_module("STDiT3-3B/2")
 def STDiT3_3B_2(from_pretrained=None, **kwargs):
-    config = STDiT3Config(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
-    model = STDiT3(config)
-    if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
+    # check if from_pretrained is a path
+    if from_pretrained is not None and not os.path.isdir(from_pretrained):
+        model = STDiT3.from_pretrained(from_pretrained, **kwargs)
+    else:
+        config = STDiT3Config(depth=28, hidden_size=1872, patch_size=(1, 2, 2), num_heads=26, **kwargs)
+        model = STDiT3(config)
+        if from_pretrained is not None:
+            load_checkpoint(model, from_pretrained)
     return model
