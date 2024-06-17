@@ -1,6 +1,6 @@
 # VAE Report
 
-As [Pixart-Sigma](https://arxiv.org/abs/2403.04692) finds that adapting to a new VAE is simple, we develop a temporal VAE for the diffusion model to adapt to.
+As [Pixart-Sigma](https://arxiv.org/abs/2403.04692) finds that adapting to a new VAE is simple, we develop an additional temporal VAE.
 Specifically, our VAE consists of a pipeline of a [spatial VAE](https://huggingface.co/PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers) followed by a temporal VAE.
 For the temporal VAE, we follow the implementation of [MAGVIT-v2](https://arxiv.org/abs/2310.05737), with the following modifications:
 * We remove the architecture specific to the codebook.
