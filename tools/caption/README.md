@@ -198,3 +198,17 @@ Each video is classified according to 8 categories:
             static,
             unclassified`.
 Categories of `tilt`, `pan` and `zoom` can overlap with each other.
+
+
+## Tagging with Llama3
+
+To understand the overall category distribution of our training dataset, we use Llama3 to generate tags based on the video captions.
+
+After obtaining Llama3 usage permission from huggingface/meta, you may generate tags based on the captions using Llama3 like this:
+
+```bash
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llama3 meta.csv --key objects --output_prefix meta
+```
+
+This will generate tags based on the `text` column of `meta.csv` and put the results to `output_prefix + key.csv`. Currently the prompts for `objects` and `actions` are supported.
+
