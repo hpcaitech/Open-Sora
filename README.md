@@ -211,7 +211,7 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 | Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
 | --------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------- |
 | Diffusion | 1.1B       | 30M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
-| VAE       | 384M       |      |             |            | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
+| VAE       | 384M       | 3M   | 1.18M       |     8      | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
 See our **[report 1.2](docs/report_03.md)** for more infomation.
 
@@ -237,7 +237,7 @@ See our **[report 1.1](docs/report_02.md)** for more infomation.
 <summary>View more</summary>
 
 | Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-| ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
+| ---------- | ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
@@ -407,6 +407,7 @@ Before you run the following commands, follow our [Installation Documentation](d
 
 Once you prepare the data in a `csv` file, run the following commands to train the VAE.
 Note that you need to adjust the number of trained epochs (`epochs`) in the config file accordingly with respect to your own csv data size.
+
 
 ```bash
 # stage 1 training, 380k steps, 8 GPUs

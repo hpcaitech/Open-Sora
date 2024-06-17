@@ -59,5 +59,3 @@ We are grateful for the following work:
 * [Taming Transformers](https://github.com/CompVis/taming-transformers): Taming Transformers for High-Resolution Image Synthesis
 * [3D blur pooling](https://github.com/adobe/antialiased-cnns/pull/39/commits/3d6f02b6943c58b68c19c07bc26fad57492ff3bc)
 * [Open-Sora-Plan](https://github.com/PKU-YuanGroup/Open-Sora-Plan)
-
-Special thanks go to the authors of [Open-Sora-Plan](https://github.com/PKU-YuanGroup/Open-Sora-Plan) for their valuable advice and help.

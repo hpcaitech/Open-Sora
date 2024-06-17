@@ -147,7 +147,12 @@ In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-pr
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
 
-[Final performance TBD]
+
+| Model          | Total Score | Quality Score | Semantic Score |
+| -------------- | ----------- | ------------- | -------------- |
+| Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
+| Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
+
 
 ## Sequence parallelism
 

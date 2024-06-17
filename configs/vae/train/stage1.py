@@ -46,7 +46,7 @@ use_image_identity_loss = True
 
 # Others
 seed = 42
-outputs = "outputs"
+outputs = "outputs/vae_stage1"
 wandb = False
 
 epochs = 100  # NOTE: adjust accordingly w.r.t dataset size
