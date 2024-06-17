@@ -44,7 +44,7 @@ Our training involves three stages:
 2. For the next 260k steps, We remove the identity loss and just learn the 3D VAE.
 3. For the last 540k steps , since we find only reconstruction 2D VAE's feature cannot lead to further improvement, we remove the loss and train the whole VAE to reconstruct the original videos. This stage is trained on on 24 GPUs.
 
-For the first half of training, we adopt 20% images and 80% videos. We find videos with length different from 17 frames will suffer from blurring. Thus, we use a random number within 34 frames to make our VAE more robust to different video lengths. Our [training](/scripts/train_vae.py) and [inference](/scripts/inference_vae.py) code is available in the Open-Sora 1.2 release.
+For both stage 1 and stage 2 training, we adopt 20% images and 80% videos. We find videos with length different from 17 frames will suffer from blurring. Thus, we use a random number within 34 frames to make our VAE more robust to different video lengths. Our [training](/scripts/train_vae.py) and [inference](/scripts/inference_vae.py) code is available in the Open-Sora 1.2 release.
 
 When using the VAE for diffusion model, our stacked VAE requires small memory as the our VAE's input is already compressed. We also split the input videos input several 17 frames clips to make the inference more efficient.  The performance of our VAE is on par with another open-sourced 3D VAE in [Open-Sora-Plan](https://github.com/PKU-YuanGroup/Open-Sora-Plan/blob/main/docs/Report-v1.1.0.md).
 
@@ -147,8 +147,22 @@ In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-pr
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
 
-[Final performance TBD]
+
+| Model          | Total Score | Quality Score | Semantic Score |
+| -------------- | ----------- | ------------- | -------------- |
+| Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
+| Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
+
 
 ## Sequence parallelism
 
-[TBD by Shenggui]
+We use sequence parallelism to support long-sequence training and inference. Our implementation is based on Ulysses and the workflow is shown below. When sequence parallelism is enabled, we only need to apply the `all-to-all` communication to the spatial block in STDiT as only spatial computation is dependent on the sequence dimension.
+
+![SP](../assets/readme/sequence_parallelism.jpeg)
+
+Currently, we have not used sequence parallelism for training as data resolution is small and we plan to do so in the next release. As for inference, we can use sequence parallelism in case your GPU goes out of memory. A simple benchmark shows that sequence parallelism can achieve speedup
+
+| Resolution | Seconds | Number of GPUs | Enable SP | Time taken/s | Speedup per GPU | 
+| -          | -       | -              | -         | -            | -               | 
+| 720p       | 16s     | 1              | No        | 547.97       | -               |
+| 720p       | 16s     | 2              | Yes       | 244.38       | 12%             | 

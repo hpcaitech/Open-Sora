@@ -1,0 +1,5 @@
+beartype==0.18.5
+einops==0.8.0
+einops-exts==0.0.4
+opencv-python==4.9.0.80
+pillow==10.3.0
