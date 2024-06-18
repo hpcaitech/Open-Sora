@@ -170,16 +170,16 @@ Other useful documents and links are listed below.
 For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation Documentation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing, VAE, and model evaluation.
 
 ```bash
+# download the repo
+git clone https://github.com/hpcaitech/Open-Sora
+cd Open-Sora
+
 # create a virtual env and activate (conda as an example)
 conda create -n opensora python=3.9
 conda activate opensora
 
 # install torch, torchvision and xformers
 pip install -r requirements/requirements-cu121.txt
-
-# download the repo
-git clone https://github.com/hpcaitech/Open-Sora
-cd Open-Sora
 
 # the default installation is for inference only
 pip install -v . # for development mode, `pip install -v -e .`
