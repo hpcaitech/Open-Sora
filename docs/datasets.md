@@ -17,11 +17,12 @@ We use the [training-10M subset](https://github.com/snap-research/Panda-70M/tree
 which contains ~10M videos of better quality.
 
 ### Mixkit
+
 [Mixkit](https://mixkit.co/) is a video website where we obtained 9k videos.
 
 ### Pixabay
-[Pixabay](https://pixabay.com/videos/) is video website where we obtained 60.5k videos.
 
+[Pixabay](https://pixabay.com/videos/) is video website where we obtained 60.5k videos.
 
 ### Pexels
 
