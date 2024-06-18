@@ -175,13 +175,13 @@ pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation -
 运行以下命令从提供的Dockerfile 构建docker 镜像。
 
 ```bash
-docker build -t opensora ./docker
+docker build -t opensora .
 ```
 
 运行以下命令以交互模式启动docker容器。
 
 ```bash
-docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
+docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 ```
 
 ## 模型权重
