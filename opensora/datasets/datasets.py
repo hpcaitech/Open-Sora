@@ -152,6 +152,8 @@ class VariableVideoTextDataset(VideoTextDataset):
             # Sampling video frames
             video = temporal_random_crop(vframes, num_frames, self.frame_interval)
 
+            video_fps = video_fps // self.frame_interval
+            
             # transform
             transform = get_transforms_video(self.transform_name, (height, width))
             video = transform(video)  # T C H W
