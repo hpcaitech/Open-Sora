@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/readme/icon.png" width="250"/>
+    <img src="../../assets/readme/icon.png" width="250"/>
 </p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
