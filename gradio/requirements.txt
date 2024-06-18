@@ -1,3 +1,5 @@
 xformers
 transformers
-git+https://github.com/hpcaitech/Open-Sora.git#egg=opensora
+pandarallel
+git+https://github.com/FrankLeeeee/test-space.git
+

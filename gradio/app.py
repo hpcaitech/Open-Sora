@@ -42,17 +42,15 @@ def install_dependencies(enable_optimization=False):
         except (ImportError, ModuleNotFoundError):
             return False
 
-    # flash attention is needed no matter optimization is enabled or not
-    # because Hugging Face transformers detects flash_attn is a dependency in STDiT
-    # thus, we need to install it no matter what
-    if not _is_package_available("flash_attn"):
-        subprocess.run(
-            f"{sys.executable} -m pip install flash-attn --no-build-isolation",
-            env={"FLASH_ATTENTION_SKIP_CUDA_BUILD": "TRUE"},
-            shell=True,
-        )
-
     if enable_optimization:
+        # install flash attention
+        if not _is_package_available("flash_attn"):
+            subprocess.run(
+                f"{sys.executable} -m pip install flash-attn --no-build-isolation",
+                env={"FLASH_ATTENTION_SKIP_CUDA_BUILD": "TRUE"},
+                shell=True,
+            )
+            
         # install apex for fused layernorm
         if not _is_package_available("apex"):
             subprocess.run(
@@ -185,6 +183,7 @@ from opensora.utils.inference_utils import (
     prepare_multi_resolution_info,
     refine_prompts_by_openai,
     split_prompt,
+    has_openai_key
 )
 from opensora.utils.misc import to_torch_dtype
 
@@ -514,8 +513,8 @@ def main():
         with gr.Row():
             with gr.Column():
                 prompt_text = gr.Textbox(label="Prompt", placeholder="Describe your video here", lines=4)
-                refine_prompt = gr.Checkbox(value=True, label="Refine prompt with GPT4o")
-                random_prompt_btn = gr.Button("Random Prompt By GPT4o")
+                refine_prompt = gr.Checkbox(value=has_openai_key(), label="Refine prompt with GPT4o", interactive=has_openai_key())
+                random_prompt_btn = gr.Button("Random Prompt By GPT4o", interactive=has_openai_key())
 
                 gr.Markdown("## Basic Settings")
                 resolution = gr.Radio(
