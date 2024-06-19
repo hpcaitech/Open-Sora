@@ -646,7 +646,7 @@ def main():
         random_prompt_btn.click(fn=generate_random_prompt, outputs=prompt_text)
 
     # launch
-    demo.launch(server_port=args.port, server_name=args.host, share=args.share)
+    demo.launch(server_port=args.port, server_name=args.host, share=args.share, max_threads=1)
 
 
 if __name__ == "__main__":
