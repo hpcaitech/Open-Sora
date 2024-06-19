@@ -203,13 +203,13 @@ pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation -
 Run the following command to build a docker image from Dockerfile provided.
 
 ```bash
-docker build -t opensora ./docker
+docker build -t opensora .
 ```
 
 Run the following command to start the docker container in interactive mode.
 
 ```bash
-docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
+docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 ```
 
 ## Model Weights
