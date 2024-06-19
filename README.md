@@ -83,7 +83,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 ## 🔆 New Features/Updates
 
-- 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](docs/report_03.md)** for more details.
+- 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](/docs/report_03.md)** for more details.
 - ✅ Support rectified flow scheduling.
 - ✅ Support more conditioning including fps, aesthetic score, motion strength and camera motion.
 - ✅ Trained our 3D-VAE for temporal dimension compression.
@@ -345,7 +345,7 @@ python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
 ```
 
 ### Sequence Parallelism Inference
-a
+
 To enable sequence parallelism, you need to use `torchrun` to run the inference script. The following command will run the inference with 2 GPUs.
 
 ```bash
