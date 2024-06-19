@@ -227,6 +227,8 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 
 See our **[report 1.2](docs/report_03.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
 
+> For users from mainland China, try `export HF_ENDPOINT=https://hf-mirror.com` to successfully download the weights.
+
 ### Open-Sora 1.1 Model Weights
 
 <details>
