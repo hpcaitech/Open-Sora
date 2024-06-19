@@ -174,12 +174,12 @@ For CUDA 12.1, you can install the dependencies with the following commands. Oth
 conda create -n opensora python=3.9
 conda activate opensora
 
-# install torch, torchvision and xformers
-pip install -r requirements/requirements-cu121.txt
-
 # download the repo
 git clone https://github.com/hpcaitech/Open-Sora
 cd Open-Sora
+
+# install torch, torchvision and xformers
+pip install -r requirements/requirements-cu121.txt
 
 # the default installation is for inference only
 pip install -v . # for development mode, `pip install -v -e .`
