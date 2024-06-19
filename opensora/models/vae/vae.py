@@ -13,15 +13,19 @@ from opensora.utils.ckpt_utils import load_checkpoint
 @MODELS.register_module()
 class VideoAutoencoderKL(nn.Module):
     def __init__(
-        self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False, subfolder=None
+        self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False, subfolder=None, no_pretrained_weights: bool = True,
     ):
         super().__init__()
-        self.module = AutoencoderKL.from_pretrained(
-            from_pretrained,
-            cache_dir=cache_dir,
-            local_files_only=local_files_only,
-            subfolder=subfolder,
-        )
+        if no_pretrained_weights:
+            config, unused_kwargs = AutoencoderKL.load_config(from_pretrained, cache_dir=cache_dir, return_unused_kwargs=True, local_files_only=local_files_only, subfolder=subfolder)
+            self.module = AutoencoderKL.from_config(config, **unused_kwargs)
+        else:
+            self.module = AutoencoderKL.from_pretrained(
+                from_pretrained,
+                cache_dir=cache_dir,
+                local_files_only=local_files_only,
+                subfolder=subfolder,
+            )
         self.out_channels = self.module.config.latent_channels
         self.patch_size = (1, 8, 8)
         self.micro_batch_size = micro_batch_size
