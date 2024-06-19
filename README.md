@@ -345,7 +345,7 @@ python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
 ```
 
 ### Sequence Parallelism Inference
-
+a
 To enable sequence parallelism, you need to use `torchrun` to run the inference script. The following command will run the inference with 2 GPUs.
 
 ```bash
