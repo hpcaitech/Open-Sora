@@ -89,6 +89,10 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 - ✅ Trained our 3D-VAE for temporal dimension compression.
 - 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](/docs/report_02.md)** for more discussions.
 - 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
+
+<details>
+<summary>View more</summary>
+
 - ✅ Improved ST-DiT architecture includes rope positional encoding, qk norm, longer text length, etc.
 - ✅ Support training with any resolution, aspect ratio, and duration (including images).
 - ✅ Support image and video conditioning and video editing, and thus support animating images, connecting videos, etc.
@@ -103,10 +107,6 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
   including [downloading](tools/datasets/README.md), [video cutting](tools/scene_cut/README.md),
   and [captioning](tools/caption/README.md) tools. Our data collection plan can be found
   at [datasets.md](docs/datasets.md).
-
-<details>
-<summary>View more</summary>
-
 - ✅ We find VQ-VAE from [VideoGPT](https://wilson1yan.github.io/videogpt/index.html) has a low quality and thus adopt a
   better VAE from [Stability-AI](https://huggingface.co/stabilityai/sd-vae-ft-mse-original). We also find patching in
   the time dimension deteriorates the quality. See our **[report](docs/report_01.md)** for more discussions.
@@ -154,7 +154,11 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 Other useful documents and links are listed below.
 
-- Report: [report 1.2](docs/report_03.md), [report 1.1](docs/report_02.md), [report 1.0](docs/report_01.md), [acceleration.md](docs/acceleration.md)
+- Report: each version is trained from a image base seperately (not continuously trained), while a newer version will incorporate the techniques from the previous version.
+  - [report 1.2](docs/report_03.md): rectified flow, 3d-VAE, score condition, evaluation, etc.
+  - [report 1.1](docs/report_02.md): multi-resolution/length/aspect-ratio, image/video conditioning/editing, data preprocessing, etc.
+  - [report 1.0](docs/report_01.md): architecture, captioning, etc.
+  - [acceleration.md](docs/acceleration.md)
 - Repo structure: [structure.md](docs/structure.md)
 - Config file explanation: [config.md](docs/config.md)
 - Useful commands: [commands.md](docs/commands.md)
@@ -494,7 +498,7 @@ For training other models and advanced usage, see [here](docs/commands.md) for m
 We support evaluation based on:
 
 - Validation loss
-- VBench score
+- [VBench](https://github.com/Vchitect/VBench/tree/master) score
 - VBench-i2v score
 - Batch generation for human evaluation
 
