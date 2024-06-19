@@ -32,8 +32,6 @@ from opensora.registry import MODELS
 
 
 class T5Embedder:
-    available_models = ["DeepFloyd/t5-v1_1-xxl"]
-
     def __init__(
         self,
         device,
@@ -99,7 +97,6 @@ class T5Embedder:
         self.use_text_preprocessing = use_text_preprocessing
         self.hf_token = hf_token
 
-        assert from_pretrained in self.available_models
         self.tokenizer = AutoTokenizer.from_pretrained(
             from_pretrained,
             cache_dir=cache_dir,
