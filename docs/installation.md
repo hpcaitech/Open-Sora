@@ -7,7 +7,7 @@ Note that besides these packages, some packages needs to be mannually installed,
 
 You need to install `opensora` for training and inference. You can follow the steps below for installation. We also provide guideline for different CUDA versions for compatiblity.
 
-Please note that the default installation is for training and inference only. Other optional dependencies are detailed in the sections [Data Proessing](#data-processing) and [Evaluation](#evaluation) respectively.
+Please note that the default installation is for training and inference only. Other optional dependencies are detailed in the sections [Data Processing](#data-processing), [Evaluation](#evaluation), and [VAE](#vae) respectively.
 
 ### Step 1: Install PyTorch and xformers
 
@@ -56,63 +56,6 @@ pip install flash-attn --no-build-isolation
 # install apex, the compilation will take a long time
 # set enable_layernorm_kernel=False in config to disable apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
-```
-
-## Evaluation
-
-### Step 1: Install Requirements
-
-To conduct evaluation, run the following command to install requirements:
-
-```bash
-pip install -v .[eval]
-# For development:`pip install -v -e .[eval]`
-```
-
-### Step 2: Install VBench
-
-<!-- You need to manually install [VBench](https://github.com/Vchitect/VBench):
-
-```bash
-pip install --no-deps vbench==0.1.1
-# If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
-export PATH="/path/to/vbench:$PATH"
-``` -->
-
-You need to install VBench mannually by:
-```bash
-# first clone their repo
-cd .. # assume you are in the Open-Sora root folder, you may install at other location but make sure the soft link paths later are correct
-git clone https://github.com/Vchitect/VBench.git
-cd VBench
-git checkout v0.1.2
-
-# next, fix their hard-coded path isse
-vim vbench2_beta_i2v/utils.py
-# find `image_root` in the `load_i2v_dimension_info` function, change it to point to your appropriate image folder
-
-# last, create softlinks
-cd ../Open-Sora # or `cd ../Open-Sora-dev` for development
-ln -s ../VBench/vbench vbench # you may need to change ../VBench/vbench to your corresponding path
-ln -s ../VBench/vbench2_beta_i2v vbench2_beta_i2v # you may need to change ../VBench/vbench_beta_i2v to your corresponding path
-# later you need to make sure to run evaluation from your Open-Sora folder, else vbench, vbench2_beta_i2v cannot be found
-```
-
-
-### Step 3: Install `cupy` for Potential VAE Errors
-
-You need to mannually install [cupy](https://docs.cupy.dev/en/stable/install.html).
-
-- For CUDA v11.2~11.8 (x86_64 / aarch64), `pip install cupy-cuda11x`
-- For CUDA v12.x (x86_64 / aarch64), `pip install cupy-cuda12x`
-
-Note that for VAE evaluation, you may run into error with `ModuleNotFoundError: No module named 'torchvision.transforms.functional_tensor'`, in this case, you need to go to the corresponding file (`.../pytorchvideo/transforms/augmentations.py`) reporting this error, then change as following:
-
-```python
-# find the original line:
-import torchvision.transforms.functional_tensor as F_t
-# change to:
-import torchvision.transforms._functional_tensor as F_t
 ```
 
 ## Data Processing
@@ -193,3 +136,79 @@ and change the assert of `mmcv_version < digit_version(mmcv_maximum_version)` to
 
 If you are unsure of your path to the mmdet init file, simply run our [OCR command](../tools/scoring/README.md), wait for the mmdeet assertion error on mmcv versions.
 The error will contain the exact path to the mmdet init file.
+
+
+## Evaluation
+
+### Step 1: Install Requirements
+
+To conduct evaluation, run the following command to install requirements:
+
+```bash
+pip install -v .[eval]
+# For development:`pip install -v -e .[eval]`
+```
+
+### Step 2: Install VBench
+
+<!-- You need to manually install [VBench](https://github.com/Vchitect/VBench):
+
+```bash
+pip install --no-deps vbench==0.1.1
+# If the installation shows a warning about the intalled vbench not in PATH, you need to add it by:
+export PATH="/path/to/vbench:$PATH"
+``` -->
+
+You need to install VBench mannually by:
+```bash
+# first clone their repo
+cd .. # assume you are in the Open-Sora root folder, you may install at other location but make sure the soft link paths later are correct
+git clone https://github.com/Vchitect/VBench.git
+cd VBench
+git checkout v0.1.2
+
+# next, fix their hard-coded path isse
+vim vbench2_beta_i2v/utils.py
+# find `image_root` in the `load_i2v_dimension_info` function, change it to point to your appropriate image folder
+
+# last, create softlinks
+cd ../Open-Sora # or `cd ../Open-Sora-dev` for development
+ln -s ../VBench/vbench vbench # you may need to change ../VBench/vbench to your corresponding path
+ln -s ../VBench/vbench2_beta_i2v vbench2_beta_i2v # you may need to change ../VBench/vbench_beta_i2v to your corresponding path
+# later you need to make sure to run evaluation from your Open-Sora folder, else vbench, vbench2_beta_i2v cannot be found
+```
+
+
+### Step 3: Install `cupy` for Potential VAE Errors
+
+You need to mannually install [cupy](https://docs.cupy.dev/en/stable/install.html).
+
+- For CUDA v11.2~11.8 (x86_64 / aarch64), `pip install cupy-cuda11x`
+- For CUDA v12.x (x86_64 / aarch64), `pip install cupy-cuda12x`
+
+Note that for VAE evaluation, you may run into error with `ModuleNotFoundError: No module named 'torchvision.transforms.functional_tensor'`, in this case, you need to go to the corresponding file (`.../pytorchvideo/transforms/augmentations.py`) reporting this error, then change as following:
+
+```python
+# find the original line:
+import torchvision.transforms.functional_tensor as F_t
+# change to:
+import torchvision.transforms._functional_tensor as F_t
+```
+
+
+
+
+## VAE
+
+### Step 1: Install Requirements
+
+To train and evaluate your own VAE, run the following command to install requirements:
+
+```bash
+pip install -v .[vae]
+# For development:`pip install -v -e .[vae]`
+```
+
+### Step 2: VAE Evaluation (`cupy` and Potential VAE Errors)
+
+Refer to the [Evaluation's VAE section](#step-3-install-cupy-for-potential-vae-errors) above.

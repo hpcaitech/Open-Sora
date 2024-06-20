@@ -45,7 +45,7 @@ def get_save_path_name(
 ):
     if sample_name is None:
         sample_name = "" if prompt_as_path else "sample"
-    sample_name_suffix = prompt if prompt_as_path else f"_{sample_idx}"
+    sample_name_suffix = prompt if prompt_as_path else f"_{sample_idx:04d}"
     save_path = os.path.join(save_dir, f"{sample_name}{sample_name_suffix}")
     if num_sample != 1:
         save_path = f"{save_path}-{k}"
@@ -115,9 +115,10 @@ def extract_prompts_loop(prompts, num_loop):
         ret_prompts.append(prompt)
     return ret_prompts
 
+
 def split_prompt(prompt_text):
     if prompt_text.startswith("|0|"):
-        # this is for prompts which look like 
+        # this is for prompts which look like
         # |0| a beautiful day |1| a sunny day |2| a rainy day
         # we want to parse it into a list of prompts with the loop index
         prompt_list = prompt_text.split("|")[1:]
@@ -131,7 +132,8 @@ def split_prompt(prompt_text):
         return text_list, loop_idx
     else:
         return [prompt_text], None
-    
+
+
 def merge_prompt(text_list, loop_idx_list=None):
     if loop_idx_list is None:
         return text_list[0]
@@ -285,8 +287,10 @@ def refine_prompt_by_openai(prompt):
     response = get_openai_response(REFINE_PROMPTS, prompt)
     return response
 
+
 def has_openai_key():
     return "OPENAI_API_KEY" in os.environ
+
 
 def refine_prompts_by_openai(prompts):
     new_prompts = []

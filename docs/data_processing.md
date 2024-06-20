@@ -1,16 +1,18 @@
 # Data Processing
+>Open-Sora v1.2 uses Data Propcessing Pipeline v1.1.
+
 We establish a complete pipeline for video/image data processing. The pipeline is shown below.
 
 ![pipeline](/assets/readme/report_data_pipeline.png)
 
-First, raw videos, 
-either from the  Internet or public datasets, are split into shorter clips based on scene detection. 
-Then, we evaluate these videos by predicting multiple scores using existing models. We first predict the aesthetic score 
-and the optical flow score for a video. We also conduct OCR to detect texts in the video. Only videos with satisfactory 
-evaluation results are sent to the next step for captioning. After captioning, the matching score is also calculated as 
-an assessment of video-text alignment. Finally, we filter samples based on the matching score and 
-conduct camera motion detection for the remaining samples. 
-In summary, our pipeline produces video-text pairs which have high aesthetic quality, large video motion and strong 
+First, raw videos,
+either from the  Internet or public datasets, are split into shorter clips based on scene detection.
+Then, we evaluate these videos by predicting multiple scores using existing models. We first predict the aesthetic score
+and the optical flow score for a video. We also conduct OCR to detect texts in the video. Only videos with satisfactory
+evaluation results are sent to the next step for captioning. After captioning, the matching score is also calculated as
+an assessment of video-text alignment. Finally, we filter samples based on the matching score and
+conduct camera motion detection for the remaining samples.
+In summary, our pipeline produces video-text pairs which have high aesthetic quality, large video motion and strong
 semantic consistency.
 
 Below is an example workflow to process videos.
@@ -65,7 +67,12 @@ python -m tools.datasets.datautil \
   --refine-llm-caption \
   --remove-empty-caption \
   --output ${ROOT_META}/meta_clips_caption_cleaned.csv
+
+# 4.4 Optionally generate tags (e.g., objects) based on the captions. This should output your_output_prefix_{key}.csv
+torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llama3 ${ROOT_META}/meta_clips_caption_cleaned.csv --key objects --output_prefix your_output_prefix
+
 ```
+
 
 For more information, please refer to:
 - [Dataset Management](../tools/datasets/README.md)

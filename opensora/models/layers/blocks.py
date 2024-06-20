@@ -494,7 +494,7 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         # query/value: img tokens; key: condition; mask: if padding tokens
         sp_group = get_sequence_parallel_group()
         sp_size = dist.get_world_size(sp_group)
-        B, SUB_N, C = x.shape # [B, TS/p, C]
+        B, SUB_N, C = x.shape  # [B, TS/p, C]
         N = SUB_N * sp_size
 
         # shape:

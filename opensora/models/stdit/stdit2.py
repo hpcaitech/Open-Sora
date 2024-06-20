@@ -1,11 +1,13 @@
+import os
+
 import numpy as np
 import torch
 import torch.nn as nn
-import os
 from einops import rearrange
 from rotary_embedding_torch import RotaryEmbedding
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
+from transformers import PretrainedConfig, PreTrainedModel
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
 from opensora.models.layers.blocks import (
@@ -23,7 +25,6 @@ from opensora.models.layers.blocks import (
     t2i_modulate,
 )
 from opensora.registry import MODELS
-from transformers import PretrainedConfig, PreTrainedModel
 from opensora.utils.ckpt_utils import load_checkpoint
 
 
@@ -167,7 +168,6 @@ class STDiT2Block(nn.Module):
 
 
 class STDiT2Config(PretrainedConfig):
-    
     model_type = "STDiT2"
 
     def __init__(
@@ -217,13 +217,9 @@ class STDiT2Config(PretrainedConfig):
 
 @MODELS.register_module()
 class STDiT2(PreTrainedModel):
-
     config_class = STDiT2Config
 
-    def __init__(
-        self,
-        config
-    ):
+    def __init__(self, config):
         super().__init__(config)
         self.pred_sigma = config.pred_sigma
         self.in_channels = config.in_channels
@@ -245,7 +241,9 @@ class STDiT2(PreTrainedModel):
         self.x_embedder = PatchEmbed3D(config.patch_size, config.in_channels, config.hidden_size)
         self.t_embedder = TimestepEmbedder(config.hidden_size)
         self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(config.hidden_size, 6 * config.hidden_size, bias=True))
-        self.t_block_temp = nn.Sequential(nn.SiLU(), nn.Linear(config.hidden_size, 3 * config.hidden_size, bias=True))  # new
+        self.t_block_temp = nn.Sequential(
+            nn.SiLU(), nn.Linear(config.hidden_size, 3 * config.hidden_size, bias=True)
+        )  # new
         self.y_embedder = CaptionEmbedder(
             in_channels=config.caption_channels,
             hidden_size=config.hidden_size,
@@ -512,12 +510,7 @@ def STDiT2_XL_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
         if os.path.isdir(from_pretrained) or os.path.isfile(from_pretrained):
             # if it is a directory or a file, we load the checkpoint manually
-            config = STDiT2Config(
-                depth=28,
-                hidden_size=1152,
-                patch_size=(1, 2, 2),
-                num_heads=16, **kwargs
-            )
+            config = STDiT2Config(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
             model = STDiT2(config)
             load_checkpoint(model, from_pretrained)
             return model
@@ -526,11 +519,6 @@ def STDiT2_XL_2(from_pretrained=None, **kwargs):
             return STDiT2.from_pretrained(from_pretrained)
     else:
         # create a new model
-        config = STDiT2Config(
-            depth=28,
-            hidden_size=1152,
-            patch_size=(1, 2, 2),
-            num_heads=16, **kwargs
-        )
+        config = STDiT2Config(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
         model = STDiT2(config)
     return model

@@ -1,11 +1,11 @@
 import gc
 import math
-import cv2
 import os
 from fractions import Fraction
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import av
+import cv2
 import numpy as np
 import torch
 from torchvision.io.video import (
@@ -144,7 +144,7 @@ def read_video_cv2(video_path):
     else:
         fps = cap.get(cv2.CAP_PROP_FPS)
         vinfo = {
-            'video_fps': fps,
+            "video_fps": fps,
         }
 
         frames = []
@@ -159,7 +159,7 @@ def read_video_cv2(video_path):
             frames.append(frame[:, :, ::-1])  # BGR to RGB
 
             # Exit if 'q' is pressed
-            if cv2.waitKey(25) & 0xFF == ord('q'):
+            if cv2.waitKey(25) & 0xFF == ord("q"):
                 break
 
         # Release the video capture object and close all windows
@@ -172,10 +172,10 @@ def read_video_cv2(video_path):
         return frames, vinfo
 
 
-def read_video(video_path, backend='av'):
-    if backend == 'cv2':
+def read_video(video_path, backend="av"):
+    if backend == "cv2":
         vframes, vinfo = read_video_cv2(video_path)
-    elif backend == 'av':
+    elif backend == "av":
         vframes, _, vinfo = read_video_av(filename=video_path, pts_unit="sec", output_format="TCHW")
     else:
         raise ValueError
@@ -183,6 +183,6 @@ def read_video(video_path, backend='av'):
     return vframes, vinfo
 
 
-if __name__ == '__main__':
-    vframes, vinfo = read_video('./data/colors/9.mp4', backend='cv2')
+if __name__ == "__main__":
+    vframes, vinfo = read_video("./data/colors/9.mp4", backend="cv2")
     x = 0

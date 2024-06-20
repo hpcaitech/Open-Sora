@@ -1,7 +1,9 @@
+import math
+
 import numpy as np
 import torch
 from tqdm import tqdm
-import math
+
 
 def img_psnr(img1, img2):
     # [0,1]
@@ -14,21 +16,23 @@ def img_psnr(img1, img2):
     psnr = 20 * math.log10(1 / math.sqrt(mse))
     return psnr
 
+
 def trans(x):
     return x
+
 
 def calculate_psnr(videos1, videos2):
     print("calculate_psnr...")
 
     # videos [batch_size, timestamps, channel, h, w]
-    
+
     assert videos1.shape == videos2.shape
 
     videos1 = trans(videos1)
     videos2 = trans(videos2)
 
     psnr_results = []
-    
+
     for video_num in tqdm(range(videos1.shape[0])):
         # get a video
         # video [timestamps, channel, h, w]
@@ -43,19 +47,19 @@ def calculate_psnr(videos1, videos2):
 
             img1 = video1[clip_timestamp].numpy()
             img2 = video2[clip_timestamp].numpy()
-            
+
             # calculate psnr of a video
             psnr_results_of_a_video.append(img_psnr(img1, img2))
 
         psnr_results.append(psnr_results_of_a_video)
-    
-    psnr_results = np.array(psnr_results) # [batch_size, num_frames]
+
+    psnr_results = np.array(psnr_results)  # [batch_size, num_frames]
     psnr = {}
     psnr_std = {}
 
     for clip_timestamp in range(len(video1)):
-        psnr[clip_timestamp] = np.mean(psnr_results[:,clip_timestamp])
-        psnr_std[clip_timestamp] = np.std(psnr_results[:,clip_timestamp])
+        psnr[clip_timestamp] = np.mean(psnr_results[:, clip_timestamp])
+        psnr_std[clip_timestamp] = np.std(psnr_results[:, clip_timestamp])
 
     result = {
         "value": psnr,
@@ -66,7 +70,9 @@ def calculate_psnr(videos1, videos2):
 
     return result
 
+
 # test code / using example
+
 
 def main():
     NUMBER_OF_VIDEOS = 8
@@ -77,8 +83,10 @@ def main():
     videos2 = torch.zeros(NUMBER_OF_VIDEOS, VIDEO_LENGTH, CHANNEL, SIZE, SIZE, requires_grad=False)
 
     import json
+
     result = calculate_psnr(videos1, videos2)
     print(json.dumps(result, indent=4))
+
 
 if __name__ == "__main__":
     main()

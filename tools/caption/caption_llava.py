@@ -17,9 +17,9 @@ from llava.utils import disable_torch_init
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
+from ..datasets.utils import IMG_EXTENSIONS, VID_EXTENSIONS
 from .acceleration.llava.policies import LlavaLlamaForCausalLMPolicy, LlavaMistralForCausalLMPolicy
 from .utils import PROMPTS, Timer, VideoTextDataset, collate_fn
-from ..datasets.utils import IMG_EXTENSIONS, VID_EXTENSIONS
 
 disable_torch_init()
 
