@@ -43,7 +43,7 @@ model = dict(
 )
 vae = dict(
     type="OpenSoraVAE_V1_2",
-    from_pretrained="/mnt/jfs/sora_checkpoints/vae-pipeline",
+    from_pretrained="hpcai-tech/OpenSora-VAE-v1.2",
     micro_frame_size=17,
     micro_batch_size=4,
 )
@@ -52,7 +52,6 @@ text_encoder = dict(
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=300,
     shardformer=True,
-    local_files_only=True,
 )
 scheduler = dict(
     type="rflow",

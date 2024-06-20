@@ -21,7 +21,7 @@ We train the VAE using 20% images and 80% videos with 17 frames.
 torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage1.py --data-path YOUR_CSV_PATH
 ```
 
-Next, we remove the indentity loss and train the 3D VAE pipeline to reconstructe the 2D-compressed videos for 260k steps.
+Next, we remove the identity loss and train the 3D VAE pipeline to reconstructe the 2D-compressed videos for 260k steps.
 
 ```bash
 torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage2.py --data-path YOUR_CSV_PATH
