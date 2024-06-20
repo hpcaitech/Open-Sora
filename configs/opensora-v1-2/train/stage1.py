@@ -72,7 +72,6 @@ text_encoder = dict(
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=300,
     shardformer=True,
-    local_files_only=True,
 )
 scheduler = dict(
     type="rflow",
