@@ -3,7 +3,6 @@ from glob import glob
 
 import numpy as np
 import torch
-import torchvision
 from PIL import ImageFile
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
 

@@ -1,7 +1,10 @@
+import os
+
 import torch
 import torch.nn as nn
 from diffusers.models import AutoencoderKL, AutoencoderKLTemporalDecoder
 from einops import rearrange
+from transformers import PretrainedConfig, PreTrainedModel
 
 from opensora.registry import MODELS, build_module
 from opensora.utils.ckpt_utils import load_checkpoint
@@ -116,8 +119,9 @@ class VideoAutoencoderKLTemporalDecoder(nn.Module):
         return next(self.parameters()).dtype
 
 
-@MODELS.register_module()
-class VideoAutoencoderPipeline(nn.Module):
+class VideoAutoencoderPipelineConfig(PretrainedConfig):
+    model_type = "VideoAutoencoderPipeline"
+
     def __init__(
         self,
         vae_2d=None,
@@ -128,25 +132,40 @@ class VideoAutoencoderPipeline(nn.Module):
         micro_frame_size=None,
         shift=0.0,
         scale=1.0,
+        **kwargs,
     ):
-        super().__init__()
-        self.spatial_vae = build_module(vae_2d, MODELS)
-        self.temporal_vae = build_module(vae_temporal, MODELS)
+        self.vae_2d = vae_2d
+        self.vae_temporal = vae_temporal
+        self.from_pretrained = from_pretrained
+        self.freeze_vae_2d = freeze_vae_2d
         self.cal_loss = cal_loss
         self.micro_frame_size = micro_frame_size
-        self.micro_z_frame_size = self.temporal_vae.get_latent_size([micro_frame_size, None, None])[0]
+        self.shift = shift
+        self.scale = scale
+        super().__init__(**kwargs)
 
-        if from_pretrained is not None:
-            load_checkpoint(self, from_pretrained)
-        if freeze_vae_2d:
+
+@MODELS.register_module()
+class VideoAutoencoderPipeline(PreTrainedModel):
+    config_class = VideoAutoencoderPipelineConfig
+
+    def __init__(self, config: VideoAutoencoderPipelineConfig):
+        super().__init__(config=config)
+        self.spatial_vae = build_module(config.vae_2d, MODELS)
+        self.temporal_vae = build_module(config.vae_temporal, MODELS)
+        self.cal_loss = config.cal_loss
+        self.micro_frame_size = config.micro_frame_size
+        self.micro_z_frame_size = self.temporal_vae.get_latent_size([config.micro_frame_size, None, None])[0]
+
+        if config.freeze_vae_2d:
             for param in self.spatial_vae.parameters():
                 param.requires_grad = False
 
         self.out_channels = self.temporal_vae.out_channels
 
         # normalization parameters
-        scale = torch.tensor(scale)
-        shift = torch.tensor(shift)
+        scale = torch.tensor(config.scale)
+        shift = torch.tensor(config.shift)
         if len(scale.shape) > 0:
             scale = scale[None, :, None, None, None]
         if len(shift.shape) > 0:
@@ -227,36 +246,43 @@ class VideoAutoencoderPipeline(nn.Module):
 
 
 @MODELS.register_module()
-class OpenSoraVAE_V1_2(VideoAutoencoderPipeline):
-    def __init__(
-        self,
-        micro_batch_size=4,
-        micro_frame_size=17,
+def OpenSoraVAE_V1_2(
+    micro_batch_size=4,
+    micro_frame_size=17,
+    from_pretrained=None,
+    local_files_only=False,
+    freeze_vae_2d=False,
+    cal_loss=False,
+):
+    vae_2d = dict(
+        type="VideoAutoencoderKL",
+        from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
+        subfolder="vae",
+        micro_batch_size=micro_batch_size,
+        local_files_only=local_files_only,
+    )
+    vae_temporal = dict(
+        type="VAE_Temporal_SD",
         from_pretrained=None,
-        local_files_only=False,
-        freeze_vae_2d=False,
-        cal_loss=False,
-    ):
-        vae_2d = dict(
-            type="VideoAutoencoderKL",
-            from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-            subfolder="vae",
-            micro_batch_size=micro_batch_size,
-            local_files_only=local_files_only,
-        )
-        vae_temporal = dict(
-            type="VAE_Temporal_SD",
-            from_pretrained=None,
-        )
-        shift = (-0.10, 0.34, 0.27, 0.98)
-        scale = (3.85, 2.32, 2.33, 3.06)
-        super().__init__(
-            vae_2d,
-            vae_temporal,
-            from_pretrained,
-            freeze_vae_2d=freeze_vae_2d,
-            cal_loss=cal_loss,
-            micro_frame_size=micro_frame_size,
-            shift=shift,
-            scale=scale,
-        )
+    )
+    shift = (-0.10, 0.34, 0.27, 0.98)
+    scale = (3.85, 2.32, 2.33, 3.06)
+    kwargs = dict(
+        vae_2d=vae_2d,
+        vae_temporal=vae_temporal,
+        freeze_vae_2d=freeze_vae_2d,
+        cal_loss=cal_loss,
+        micro_frame_size=micro_frame_size,
+        shift=shift,
+        scale=scale,
+    )
+
+    if from_pretrained is not None and not os.path.isdir(from_pretrained):
+        model = VideoAutoencoderPipeline.from_pretrained(from_pretrained, **kwargs)
+    else:
+        config = VideoAutoencoderPipelineConfig(**kwargs)
+        model = VideoAutoencoderPipeline(config)
+
+        if from_pretrained:
+            load_checkpoint(model, from_pretrained)
+    return model

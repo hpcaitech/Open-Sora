@@ -7,7 +7,7 @@
 - [Evaluation](#evaluation)
 - [Sequence parallelism](#sequence-parallelism)
 
-In Open-Sora 1.2 release, we train a 1.1B models on >20M data, with training cost 35k H100 GPU hours, supporting 0s~15s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
+In Open-Sora 1.2 release, we train a 1.1B models on >20M data, with training cost 35k H100 GPU hours, supporting 0s~16s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
 
 |      | image | 2s  | 4s  | 8s  | 16s |
 | ---- | ----- | --- | --- | --- | --- |
@@ -40,11 +40,11 @@ We initialize the 2D VAE with [SDXL's VAE](https://huggingface.co/stabilityai/sd
 
 Our training involves three stages:
 
-1. For the first 380k steps, we train on 8 GPUs and freese the 2D VAE. The training objective includes the reconstruction of the compressed features from 2D VAE (pink one in the figure) and also add a loss to make features from the 3D VAE similar to the features from the 2D VAE (pink one and green one, called identity loss). We find the latter loss can quickly make the whole VAE achieve a good performance for image and much faster to converge in the next stage.
+1. For the first 380k steps, we train on 8 GPUs and freeze the 2D VAE. The training objective includes the reconstruction of the compressed features from 2D VAE (pink one in the figure) and also add a loss to make features from the 3D VAE similar to the features from the 2D VAE (pink one and green one, called identity loss). We find the latter loss can quickly make the whole VAE achieve a good performance for image and much faster to converge in the next stage.
 2. For the next 260k steps, We remove the identity loss and just learn the 3D VAE.
 3. For the last 540k steps , since we find only reconstruction 2D VAE's feature cannot lead to further improvement, we remove the loss and train the whole VAE to reconstruct the original videos. This stage is trained on on 24 GPUs.
 
-For the first half of training, we adopt 20% images and 80% videos. We find videos with length different from 17 frames will suffer from blurring. Thus, we use a random number within 34 frames to make our VAE more robust to different video lengths. Our [training](/scripts/train_vae.py) and [inference](/scripts/inference_vae.py) code is available in the Open-Sora 1.2 release.
+For both stage 1 and stage 2 training, we adopt 20% images and 80% videos. Following [Magvit-v2](https://magvit.cs.cmu.edu/v2/), we train video using 17 frames, while zero-padding the first 16 frames for image. However, we find that this setting leads to blurring of videos with length different from 17 frames. Thus, in stage 3, we use a random number within 34 frames for mixed video length training (a.k.a., zero-pad the first  `43-n` frames if we want to train a `n` frame video), to make our VAE more robust to different video lengths. Our [training](/scripts/train_vae.py) and [inference](/scripts/inference_vae.py) code is available in the Open-Sora 1.2 release.
 
 When using the VAE for diffusion model, our stacked VAE requires small memory as the our VAE's input is already compressed. We also split the input videos input several 17 frames clips to make the inference more efficient.  The performance of our VAE is on par with another open-sourced 3D VAE in [Open-Sora-Plan](https://github.com/PKU-YuanGroup/Open-Sora-Plan/blob/main/docs/Report-v1.1.0.md).
 
@@ -104,7 +104,7 @@ In this stage, we collect ~2M video clips with a total length of 5K hours from a
 - [Vript](https://github.com/mutonix/Vript/tree/main): a densely annotated dataset.
 - And some other datasets.
 
-While MiraData and Vript have captions from GPT, we use [PLLaVA](https://github.com/magic-research/PLLaVA) to caption the rest ones. Compared with LLaVA, which is only capable of single frame/image captioning, PLLaVA is specially designed and trained for video captioning. The accelerated PLLaVA is released in our tools. In practice, we use the pretrained PLLaVA 13B model and select 4 frames from each video for captioning.
+While MiraData and Vript have captions from GPT, we use [PLLaVA](https://github.com/magic-research/PLLaVA) to caption the rest ones. Compared with LLaVA, which is only capable of single frame/image captioning, PLLaVA is specially designed and trained for video captioning. The [accelerated PLLaVA](/tools/caption/README.md#pllava-captioning) is released in our `tools/`. In practice, we use the pretrained PLLaVA 13B model and select 4 frames from each video for captioning with a spatial pooling shape of 2*2.
 
 Some statistics of the video data used in this stage are shown below. We present basic statistics of duration and resolution, as well as aesthetic score and optical flow score distribution.
 We also extract tags for objects and actions from video captions and count their frequencies.
@@ -126,17 +126,11 @@ For example, a video with aesthetic score 5.5, motion score 10, and a detected c
 
 During inference, we can also use the scores to condition the model. For camera motion, we only label 13k clips with high confidence, and the camera motion detection module is released in our tools.
 
-[Aesthetic Score Examples TBD]
-
-[Motion Score Examples TBD]
-
-[Camera Motion Detection Module TBD]
-
 ## Evaluation
 
 Previously, we monitor the training process only by human evaluation, as DDPM traning loss is not well correlated with the quality of generated videos. However, for rectified flow, we find the training loss is well correlated with the quality of generated videos as stated in SD3. Thus, we keep track of rectified flow evaluation loss on 100 images and 1k videos.
 
-We sampled 1k videos from pixabay as validation dataset. We calculate the evaluation loss for image and different lengths of videos (2s, 4s, 8s, 16s) for different resolution (144p, 240p, 360p, 480p, 720p). For each setting, we equidistantly sample 10 timesteps. Then all the losses are averaged.
+We sampled 1k videos from pixabay as validation dataset. We calculate the evaluation loss for image and different lengths of videos (2s, 4s, 8s, 16s) for different resolution (144p, 240p, 360p, 480p, 720p). For each setting, we equidistantly sample 10 timesteps. Then all the losses are averaged. We also provide a [video](https://streamable.com/oqkkf1) showing the sampled videos with a fixed prompt for different steps.
 
 ![Evaluation Loss](/assets/readme/report_val_loss.png)
 ![Video Evaluation Loss](/assets/readme/report_vid_val_loss.png)
@@ -147,8 +141,20 @@ In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-pr
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
 
-[Final performance TBD]
+| Model          | Total Score | Quality Score | Semantic Score |
+| -------------- | ----------- | ------------- | -------------- |
+| Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
+| Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
 
 ## Sequence parallelism
 
-[TBD by Shenggui]
+We use sequence parallelism to support long-sequence training and inference. Our implementation is based on Ulysses and the workflow is shown below. When sequence parallelism is enabled, we only need to apply the `all-to-all` communication to the spatial block in STDiT as only spatial computation is dependent on the sequence dimension.
+
+![SP](../assets/readme/sequence_parallelism.jpeg)
+
+Currently, we have not used sequence parallelism for training as data resolution is small and we plan to do so in the next release. As for inference, we can use sequence parallelism in case your GPU goes out of memory. A simple benchmark shows that sequence parallelism can achieve speedup
+
+| Resolution | Seconds | Number of GPUs | Enable SP | Time taken/s | Speedup per GPU |
+| ---------- | ------- | -------------- | --------- | ------------ | --------------- |
+| 720p       | 16s     | 1              | No        | 547.97       | -               |
+| 720p       | 16s     | 2              | Yes       | 244.38       | 12%             |

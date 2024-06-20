@@ -77,6 +77,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 * 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](docs/report_03.md)** for more details.
 * ✅ Support rectified flow scheduling.
+* ✅ Support more conditioning including fps, aesthetic score, motion strength and camera motion.
 * ✅ Trained our 3D-VAE for temporal dimension compression.
 * 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](/docs/report_02.md)** for more discussions.
 * 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
@@ -138,6 +139,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 * [Data Processing](#data-processing)
 * [Training](#training)
 * [Evaluation](#evaluation)
+* [VAE Training & Evaluation](#vae-training--evaluation)
 * [Contribution](#contribution)
 * [Citation](#citation)
 * [Acknowledgement](#acknowledgement)
@@ -150,14 +152,14 @@ Other useful documents and links are listed below.
 * Useful commands: [commands.md](docs/commands.md)
 * Data processing pipeline and dataset: [datasets.md](docs/datasets.md)
 * Each data processing tool's README: [dataset conventions and management](/tools/datasets/README.md), [scene cutting](/tools/scene_cut/README.md), [scoring](/tools/scoring/README.md), [caption](/tools/caption/README.md)
-* Evaluation: [eval](/eval/README.md)
+* Evaluation: [eval/README.md](/eval/README.md)
 * Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 ## Installation
 
 ### Install from Source
 
-For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing.
+For CUDA 12.1, you can install the dependencies with the following commands. Otherwise, please refer to [Installation Documentation](docs/installation.md) for more instructions on different cuda version, and additional dependency for data preprocessing, VAE, and model evaluation.
 
 ```bash
 # create a virtual env and activate (conda as an example)
@@ -173,7 +175,7 @@ cd Open-Sora
 
 # the default installation is for inference only
 pip install -v . # for development mode, `pip install -v -e .`
-
+```
 
 (Optional, recommended for fast speed, especially for training) To enable `layernorm_kernel` and `flash_attn`, you need to install `apex` and `flash-attn` with the following commands.
 
@@ -206,11 +208,12 @@ docker run -ti --gpus all -v {MOUNT_DIR}:/data opensora
 
 ### Open-Sora 1.2 Model Weights
 
-| Resolution | Model Size | Data | #iterations | Batch Size | URL |
-| ---------- | ---------- | ---- | ----------- | ---------- | --- |
-| TBD        |
+| Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
+| --------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------- |
+| Diffusion | 1.1B       | 30M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
+| VAE       | 384M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
-See our **[report 1.2](docs/report_03.md)** for more infomation.
+See our **[report 1.2](docs/report_03.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
 
 ### Open-Sora 1.1 Model Weights
 
@@ -234,7 +237,7 @@ See our **[report 1.1](docs/report_02.md)** for more infomation.
 <summary>View more</summary>
 
 | Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-| ---------- | ---------- | ------ | ----------- | ---------- | --------------- |
+| ---------- | ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
@@ -304,6 +307,35 @@ For more advanced usage, you can refer to [Gradio README](./gradio/README.md#adv
 
 ### Open-Sora 1.2 Command Line Inference
 
+The basic command line inference is as follows:
+
+```bash
+# text to video
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+
+You can add more options to the command line to customize the generation.
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
+  --num-sampling-steps 30 --flow 5 --aes 6.5 \
+  --prompt "a beautiful waterfall"
+```
+
+For image to video generation and other functionalities, the API is compatible with Open-Sora 1.1. See [here](docs/commands.md) for more instructions.
+
+If your installation do not contain `apex` and `flash-attn`, you need to disable them in the config file, or via the folowing command.
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p \
+  --layernorm-kernel False --flash-attn False \
+  --prompt "a beautiful waterfall"
+```
+
 ### GPT-4o Prompt Refinement
 
 We find that GPT-4o can refine the prompt and improve the quality of the generated video. With this feature, you can also use other language (e.g., Chinese) as the prompt. To enable this feature, you need prepare your openai api key in the environment:
@@ -312,7 +344,12 @@ We find that GPT-4o can refine the prompt and improve the quality of the generat
 export OPENAI_API_KEY=YOUR_API_KEY
 ```
 
-Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refinement.
+Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refinement, or leave prompt empty to get a random prompt generated by GPT-4o.
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p --llm-refine True
+```
 
 ### Open-Sora 1.1 Command Line Inference
 
@@ -376,6 +413,17 @@ Also check out the [datasets](docs/datasets.md) we use.
 
 ### Open-Sora 1.2 Training
 
+The training process is same as Open-Sora 1.1.
+
+```bash
+# one node
+torchrun --standalone --nproc_per_node 8 scripts/train.py \
+    configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+# multiple nodes
+colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
+    configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
 ### Open-Sora 1.1 Training
 
 <details>
@@ -422,11 +470,50 @@ For training other models and advanced usage, see [here](docs/commands.md) for m
 
 ## Evaluation
 
-### VBench
+We support evaluation based on:
 
-### VBench-i2v
+* Validation loss
+* VBench score
+* VBench-i2v score
+* Batch generation for human evaluation
 
-See [here](eval/README.md) for more instructions.
+All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details. Our [report](/docs/report_03.md#evaluation) also provides more information about the evaluation during training. The following table shows Open-Sora 1.2 greatly improves Open-Sora 1.0.
+
+| Model          | Total Score | Quality Score | Semantic Score |
+| -------------- | ----------- | ------------- | -------------- |
+| Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
+| Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
+
+## VAE Training & Evaluation
+
+We train a VAE pipeline that consists of a spatial VAE followed by a temporal VAE.
+For more details, refer to [VAE Documentation](docs/vae.md).
+Before you run the following commands, follow our [Installation Documentation](docs/installation.md) to install the required dependencies for VAE and Evaluation.
+
+If you want to train your own VAE, we need to prepare data in the csv following the [data processing](#data-processing) pipeline, then run the following commands.
+Note that you need to adjust the number of trained epochs (`epochs`) in the config file accordingly with respect to your own csv data size.
+
+```bash
+# stage 1 training, 380k steps, 8 GPUs
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage1.py --data-path YOUR_CSV_PATH
+# stage 2 training, 260k steps, 8 GPUs
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage2.py --data-path YOUR_CSV_PATH
+# stage 3 training, 540k steps, 24 GPUs
+torchrun --nnodes=3 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage3.py --data-path YOUR_CSV_PATH
+```
+
+To evaluate the VAE performance, you need to run VAE inference first to generate the videos, then calculate scores on the generated videos:
+
+```bash
+# video generation
+torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference_vae.py configs/vae/inference/video.py --ckpt-path YOUR_VAE_CKPT_PATH --data-path YOUR_CSV_PATH --save-dir YOUR_VIDEO_DIR
+# the original videos will be saved to `YOUR_VIDEO_DIR_ori`
+# the reconstructed videos through the pipeline will be saved to `YOUR_VIDEO_DIR_rec`
+# the reconstructed videos through the spatial VAE only will be saved to `YOUR_VIDEO_DIR_spatial`
+
+# score calculation
+python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir YOUR_VIDEO_DIR_ori --generated_video_dir YOUR_VIDEO_DIR_rec --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
+```
 
 ## Contribution
 

@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 from torchvision.datasets.folder import pil_loader
 
 from tools.datasets.utils import extract_frames, is_video
+
 IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 PROMPTS = {
