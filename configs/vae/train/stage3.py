@@ -18,20 +18,10 @@ plugin = "zero2"
 
 # Define model
 model = dict(
-    type="VideoAutoencoderPipeline",
+    type="OpenSoraVAE_V1_2",
     freeze_vae_2d=False,
     from_pretrained="outputs/vae_stage2",
     cal_loss=True,
-    vae_2d=dict(
-        type="VideoAutoencoderKL",
-        from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-        subfolder="vae",
-        local_files_only=True,
-    ),
-    vae_temporal=dict(
-        type="VAE_Temporal_SD",
-        from_pretrained=None,
-    ),
 )
 
 # loss weights

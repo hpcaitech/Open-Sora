@@ -145,7 +145,6 @@ class VideoAutoencoderPipelineConfig(PretrainedConfig):
         super().__init__(**kwargs)
 
 
-@MODELS.register_module()
 class VideoAutoencoderPipeline(PreTrainedModel):
     config_class = VideoAutoencoderPipelineConfig
 
