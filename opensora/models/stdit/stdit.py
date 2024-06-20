@@ -267,10 +267,10 @@ class STDiT(nn.Module):
         Returns:
             x (torch.Tensor): output latent representation; of shape [B, C, T, H, W]
         """
-
-        x = x.to(self.dtype)
-        timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
+        dtype = self.x_embedder.proj.weight.dtype
+        x = x.to(dtype)
+        timestep = timestep.to(dtype)
+        y = y.to(dtype)
 
         # embedding
         x = self.x_embedder(x)  # [B, N, C]
