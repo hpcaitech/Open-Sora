@@ -57,9 +57,9 @@ When using the VAE for diffusion model, our stacked VAE requires small memory as
 
 Lastest diffusion model like Stable Diffusion 3 adopts the [rectified flow](https://github.com/gnobitab/RectifiedFlow) instead of DDPM for better performance. Pitiably, SD3's rectified flow training code is not open-sourced. However, Open-Sora 1.2 provides the training code following SD3's paper, including:
 
-- Basic rectified flow training
-- Logit-norm sampling for training acceleration
-- Resolution and video length aware timestep sampling
+- Basic rectified flow training ([original rectified flow paper](https://arxiv.org/abs/2209.03003))
+- Logit-norm sampling for training acceleration ([SD3 paper](https://arxiv.org/pdf/2403.03206) Section 3.1, intuitively it is more likely to sample timesteps at middle noise level)
+- Resolution and video length aware timestep sampling ([SD3 paper](https://arxiv.org/pdf/2403.03206) Section 5.3.2, intuitively it is more likely to sample timesteps with more noise for larger resolution, and we extend it to longer video)
 
 For the resolution-aware timestep sampling, we should use more noise for images with larger resolution. We extend this idea to video generation and use more noise for videos with longer length.
 
