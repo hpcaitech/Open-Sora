@@ -35,7 +35,7 @@ sp_size = 1
 #     type="DiT-XL/2",
 #     from_pretrained="/home/zhaowangbo/wangbo/PixArt-alpha/pretrained_models/PixArt-XL-2-512x512.pth",
 #     # input_sq_size=512,  # pretrained model is trained on 512x512
-#     enable_flashattn=True,
+#     enable_flash_attn=True,
 #     enable_layernorm_kernel=True,
 # )
 model = dict(
@@ -44,7 +44,7 @@ model = dict(
     time_scale=1.0,
     no_temporal_pos_emb=True,
     from_pretrained="PixArt-XL-2-512x512.pth",
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 # model = dict(
@@ -54,7 +54,7 @@ model = dict(
 #     no_temporal_pos_emb=True,
 #     # from_pretrained="PixArt-XL-2-512x512.pth",
 #     from_pretrained="/home/zhaowangbo/wangbo/PixArt-alpha/pretrained_models/PixArt-XL-2-512x512.pth",
-#     enable_flashattn=True,
+#     enable_flash_attn=True,
 #     enable_layernorm_kernel=True,
 # )
 vae = dict(

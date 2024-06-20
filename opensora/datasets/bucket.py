@@ -2,6 +2,8 @@ from collections import OrderedDict
 
 import numpy as np
 
+from opensora.utils.misc import get_logger
+
 from .aspect import ASPECT_RATIOS, get_closest_ratio
 
 
@@ -67,7 +69,7 @@ class Bucket:
         self.t_criteria = t_criteria
         self.ar_criteria = ar_criteria
         self.num_bucket = num_bucket
-        print(f"Number of buckets: {num_bucket}")
+        get_logger().info("Number of buckets: %s", num_bucket)
 
     def get_bucket_id(self, T, H, W, frame_interval=1, seed=None):
         resolution = H * W
@@ -92,6 +94,11 @@ class Bucket:
             # otherwise, find suitable t_id for video
             t_fail = True
             for t_id, prob in t_criteria.items():
+                rng = np.random.default_rng(seed + self.bucket_id[hw_id][t_id])
+                if isinstance(prob, tuple):
+                    prob_t = prob[1]
+                    if rng.random() > prob_t:
+                        continue
                 if T > t_id * frame_interval and t_id != 1:
                     t_fail = False
                     break
@@ -99,8 +106,9 @@ class Bucket:
                 continue
 
             # leave the loop if prob is high enough
-            rng = np.random.default_rng(seed + self.bucket_id[hw_id][t_id])
-            if prob == 1 or rng.random() < prob:
+            if isinstance(prob, tuple):
+                prob = prob[0]
+            if prob >= 1 or rng.random() < prob:
                 fail = False
                 break
         if fail:

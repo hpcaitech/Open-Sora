@@ -1,4 +1,4 @@
-num_frames = 1
+num_frames = 17
 image_size = (256, 256)
 
 # Define dataset
@@ -35,20 +35,21 @@ model = dict(
 )
 
 # loss weights
-perceptual_loss_weight = 0.0  # use vgg is not None and more than 0
+perceptual_loss_weight = 0.1  # use vgg is not None and more than 0
 kl_loss_weight = 1e-6
 
-mixed_image_ratio = 0.1
+mixed_strategy = "mixed_video_image"
+mixed_image_ratio = 0.2
 use_real_rec_loss = False
 use_z_rec_loss = True
 use_image_identity_loss = True
 
 # Others
 seed = 42
-outputs = "outputs"
+outputs = "outputs/vae_stage1"
 wandb = False
 
-epochs = 100
+epochs = 100  # NOTE: adjust accordingly w.r.t dataset size
 log_every = 1
 ckpt_every = 1000
 load = None

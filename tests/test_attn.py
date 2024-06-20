@@ -11,7 +11,7 @@ B, S, H = 128, 32, 1152
 N, D = 16, 72
 
 
-def run_attn(enable_flashattn: bool):
+def run_attn(enable_flash_attn: bool):
     get_accelerator().reset_peak_memory_stats()
     rope = RotaryEmbedding(D).to(device=get_current_device(), dtype=torch.bfloat16)
     attn = Attention(
@@ -19,7 +19,7 @@ def run_attn(enable_flashattn: bool):
         N,
         qkv_bias=True,
         rope=rope.rotate_queries_or_keys,
-        enable_flashattn=enable_flashattn,
+        enable_flash_attn=enable_flash_attn,
     ).to(device=get_current_device(), dtype=torch.bfloat16)
     x = torch.randn(B, S, H, device=get_current_device(), dtype=torch.bfloat16).requires_grad_()
     y = attn(x)

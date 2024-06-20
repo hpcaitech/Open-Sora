@@ -374,7 +374,11 @@ class VAE_Temporal(nn.Module):
             if input_size[i] is None:
                 lsize = None
             elif i == 0:
-                time_padding = self.time_downsample_factor - input_size[i] % self.time_downsample_factor
+                time_padding = (
+                    0
+                    if (input_size[i] % self.time_downsample_factor == 0)
+                    else self.time_downsample_factor - input_size[i] % self.time_downsample_factor
+                )
                 lsize = (input_size[i] + time_padding) // self.patch_size[i]
             else:
                 lsize = input_size[i] // self.patch_size[i]
@@ -382,7 +386,11 @@ class VAE_Temporal(nn.Module):
         return latent_size
 
     def encode(self, x):
-        time_padding = self.time_downsample_factor - x.shape[2] % self.time_downsample_factor
+        time_padding = (
+            0
+            if (x.shape[2] % self.time_downsample_factor == 0)
+            else self.time_downsample_factor - x.shape[2] % self.time_downsample_factor
+        )
         x = pad_at_dim(x, (time_padding, 0), dim=2)
         encoded_feature = self.encoder(x)
         moments = self.quant_conv(encoded_feature).to(x.dtype)
@@ -390,7 +398,11 @@ class VAE_Temporal(nn.Module):
         return posterior
 
     def decode(self, z, num_frames=None):
-        time_padding = self.time_downsample_factor - num_frames % self.time_downsample_factor
+        time_padding = (
+            0
+            if (num_frames % self.time_downsample_factor == 0)
+            else self.time_downsample_factor - num_frames % self.time_downsample_factor
+        )
         z = self.post_quant_conv(z)
         x = self.decoder(z)
         x = x[:, :, time_padding:]

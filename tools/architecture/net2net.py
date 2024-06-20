@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     from opensora.models.pixart import PixArt_1B_2
 
-    model = PixArt_1B_2(no_temporal_pos_emb=True, space_scale=4, enable_flashattn=True, enable_layernorm_kernel=True)
+    model = PixArt_1B_2(no_temporal_pos_emb=True, space_scale=4, enable_flash_attn=True, enable_layernorm_kernel=True)
     print("load model done")
 
     ckpt = torch.load("/home/zhouyukun/projs/opensora/pretrained_models/PixArt-Sigma-XL-2-2K-MS.pth")

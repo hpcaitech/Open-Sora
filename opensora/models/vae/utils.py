@@ -1,24 +1,7 @@
 import numpy as np
 import torch
 
-# from taming.modules.losses.lpips import LPIPS # need to pip install https://github.com/CompVis/taming-transformers
-# from taming.modules.discriminator.model import NLayerDiscriminator, weights_init
-
 """Stripped version of https://github.com/richzhang/PerceptualSimilarity/tree/master/models"""
-
-
-## NOTE: not used since we only have 'GN'
-# def get_norm_layer(norm_type, dtype):
-#   if norm_type == 'LN':
-#     # supply a few args with partial function and pass the rest of the args when this norm_fn is called
-#     norm_fn = functools.partial(nn.LayerNorm, dtype=dtype)
-#   elif norm_type == 'GN': #
-#     norm_fn = functools.partial(nn.GroupNorm, dtype=dtype)
-#   elif norm_type is None:
-#     norm_fn = lambda: (lambda x: x)
-#   else:
-#     raise NotImplementedError(f'norm_type: {norm_type}')
-#   return norm_fn
 
 
 class DiagonalGaussianDistribution(object):
@@ -57,7 +40,7 @@ class DiagonalGaussianDistribution(object):
                     dim=[1, 2, 3, 4],
                 )
 
-    def nll(self, sample, dims=[1, 2, 3, 4]):  # TODO: what does this do?
+    def nll(self, sample, dims=[1, 2, 3, 4]):
         if self.deterministic:
             return torch.Tensor([0.0])
         logtwopi = np.log(2.0 * np.pi)

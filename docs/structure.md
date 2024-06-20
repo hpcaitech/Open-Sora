@@ -5,38 +5,48 @@ Open-Sora
 ├── README.md
 ├── assets
 │   ├── images                     -> images used for image-conditioned generation
+│   ├── demo                       -> images used for demo
 │   ├── texts                      -> prompts used for text-conditioned generation
 │   └── readme                     -> images used in README
 ├── configs                        -> Configs for training & inference
+├── docker                         -> dockerfile for Open-Sora
 ├── docs
 │   ├── acceleration.md            -> Report on acceleration & speed benchmark
-│   ├── command.md                 -> Commands for training & inference
+│   ├── commands.md                -> Commands for training & inference
 │   ├── datasets.md                -> Datasets used in this project
-|   ├── data_pipeline.md           -> Data pipeline documents
+|   ├── data_processing.md         -> Data pipeline documents
+|   ├── installation.md            -> Data pipeline documents
 │   ├── structure.md               -> This file
-│   ├── config.md                  -> Configs meaning
-│   ├── report_01.md               -> Report for Open-Sora 1.1
-│   ├── report_02.md               -> Report for Open-Sora 1.0
+│   ├── config.md                  -> Configs for training and inference
+│   ├── report_01.md               -> Report for Open-Sora 1.0
+│   ├── report_02.md               -> Report for Open-Sora 1.1
+│   ├── report_03.md               -> Report for Open-Sora 1.2
+│   ├── vae.md                     -> our VAE report
 │   └── zh_CN                      -> Chinese version of the above
 ├── eval                           -> Evaluation scripts
 │   ├── README.md                  -> Evaluation documentation
-|   ├── sample.sh                  -> script for quickly launching inference on predefined prompts
+|   ├── human_eval                 -> for human eval
 |   ├── launch.sh                  -> script for launching 8 cards sampling
+|   ├── loss                       -> eval loss
+|   ├── sample.sh                  -> script for quickly launching inference on predefined prompts
+|   ├── vae                        -> for vae eval
 |   ├── vbench                     -> for VBench evaluation
 │   └── vbench_i2v                 -> for VBench i2v evaluation
 ├── gradio                         -> Gradio demo related code
 ├── notebooks                      -> Jupyter notebooks for generating commands to run
 ├── scripts
 │   ├── train.py                   -> diffusion training script
+│   ├── train_vae.py               -> vae training script
 │   ├── inference.py               -> diffusion inference script
-│   ├── inference-long.py          -> inference script supporting more advanced features
+│   ├── inference_vae.py           -> vae inference script
 │   └── misc                       -> misc scripts, including batch size search
 ├── opensora
 │   ├── __init__.py
 │   ├── registry.py                -> Registry helper
 │   ├── acceleration               -> Acceleration related code
-│   ├── dataset                    -> Dataset related code
+│   ├── datasets                    -> Dataset related code
 │   ├── models
+│   │   ├── dit                    -> DiT
 │   │   ├── layers                 -> Common layers
 │   │   ├── vae                    -> VAE as image encoder
 │   │   ├── text_encoder           -> Text encoder

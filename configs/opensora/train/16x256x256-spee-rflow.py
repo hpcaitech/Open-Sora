@@ -22,14 +22,14 @@ model = dict(
     # from_pretrained="PixArt-XL-2-512x512.pth",
     # from_pretrained = "/home/zhaowangbo/wangbo/PixArt-alpha/pretrained_models/OpenSora-v1-HQ-16x512x512.pth",
     # from_pretrained = "OpenSora-v1-HQ-16x512x512.pth",
-    from_pretrained =  "PRETRAINED_MODEL",
-    enable_flashattn=True,
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 # mask_ratios = [0.5, 0.29, 0.07, 0.07, 0.07]
 # mask_ratios = {
-#     "mask_no": 0.9,
-#     "mask_random": 0.06,
+#     "identity": 0.9,
+#     "random": 0.06,
 #     "mask_head": 0.01,
 #     "mask_tail": 0.01,
 #     "mask_head_tail": 0.02,

@@ -21,7 +21,7 @@ model = dict(
     space_scale=1.0,
     time_scale=2 / 3,
     from_pretrained=None,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
