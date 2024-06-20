@@ -1,5 +1,5 @@
 image_size = (256, 256)
-num_frames = 17
+num_frames = 51
 
 dtype = "bf16"
 batch_size = 1
