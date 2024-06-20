@@ -252,7 +252,7 @@ def OpenSoraVAE_V1_2(
     local_files_only=False,
     freeze_vae_2d=False,
     cal_loss=False,
-    force_huggingface=True,
+    force_huggingface=False,
 ):
     vae_2d = dict(
         type="VideoAutoencoderKL",
