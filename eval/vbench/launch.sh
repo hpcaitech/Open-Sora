@@ -24,6 +24,8 @@ TASK_ID_LIST=(4a 4b 4c 4d 4e 4f 4g 4h) # for log records only
 START_INDEX_LIST=(0 120 240 360 480 600 720 840)
 END_INDEX_LIST=(120 240 360 480 600 720 840 2000)
 
+## Modify the following to run on multiple machines for faster results
+## 720p will take quite long on a single machine
 # START_INDEX_LIST=(60 180 300 420 540 660 780 900)
 # END_INDEX_LIST=(120 240 360 480 600 720 840 2000)
 # LOG_BASE=$(dirname $CKPT)/eval/last_60
