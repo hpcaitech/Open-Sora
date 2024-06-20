@@ -48,8 +48,14 @@ First, generate the relevant videos with the following commands:
 ```bash
 # vbench task, if evaluation all set start_index to 0, end_index to 2000
 bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log  -4 start_index end_index
+
 # Alternatively, launch 8 jobs at once (you must read the script to understand the details)
 bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name
+
+# in addition, you can specify resolution, aspect ratio, sampling steps, flow, and llm-refine
+bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name res_value aspect_ratio_value steps_value flow_value llm_refine_value
+# for example
+# bash eval/vbench/launch.sh /mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200_llm_refine/ema.pt 51 042-STDiT3-XL-2 240p 9:16 30 2 True
 ```
 
 After generation, install the VBench package following our [installation](../docs/installation.md)'s sections of "Evaluation Dependencies". Then, run the following commands to evaluate the generated samples.
