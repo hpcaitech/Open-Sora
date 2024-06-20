@@ -1,47 +1,42 @@
-num_frames = 1
-fps = 1
-image_size = (2560, 1536)
+resolution = "240p"
+aspect_ratio = "9:16"
+num_frames = 51
+fps = 24
+frame_interval = 1
+save_fps = 24
+
+save_dir = "./samples/samples/"
+seed = 42
+batch_size = 1
 multi_resolution = "STDiT2"
+dtype = "bf16"
+condition_frame_length = 5
+align = 5
 
 model = dict(
     type="STDiT3-XL/2",
-    from_pretrained=None,
+    from_pretrained="hpcai-tech/OpenSora-STDiT-v3",
     qk_norm=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(
-    type="VideoAutoencoderPipeline",
-    from_pretrained="pretrained_models/vae-v1",
-    vae_2d=dict(
-        type="VideoAutoencoderKL",
-        from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-        subfolder="vae",
-        micro_batch_size=4,
-        local_files_only=True,
-    ),
-    vae_temporal=dict(
-        type="VAE_Temporal_SD",
-        from_pretrained=None,
-    ),
+    type="OpenSoraVAE_V1_2",
+    from_pretrained="hpcai-tech/OpenSora-VAE-v1.2",
+    micro_frame_size=17,
+    micro_batch_size=4,
 )
 text_encoder = dict(
     type="t5",
     from_pretrained="DeepFloyd/t5-v1_1-xxl",
     model_max_length=300,
-    local_files_only=True,
 )
 scheduler = dict(
     type="rflow",
-    use_discrete_timesteps=False,
     use_timestep_transform=True,
     num_sampling_steps=30,
-    cfg_scale=4.5,
+    cfg_scale=7.0,
 )
-dtype = "bf16"
 
-# Others
-batch_size = 1
-seed = 42
-prompt_path = "./assets/texts/t2i_sigma.txt"
-save_dir = "./samples/samples/"
+aes = 6.5
+flow = None

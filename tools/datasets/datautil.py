@@ -10,8 +10,10 @@ from glob import glob
 import cv2
 import numpy as np
 import pandas as pd
-import torchvision
+from PIL import Image
 from tqdm import tqdm
+
+from opensora.datasets.read_video import read_video
 
 from .utils import IMG_EXTENSIONS
 
@@ -48,13 +50,13 @@ def get_video_length(cap, method="header"):
     return length
 
 
-def get_info(path):
+def get_info_old(path):
     try:
         ext = os.path.splitext(path)[1].lower()
         if ext in IMG_EXTENSIONS:
             im = cv2.imread(path)
             if im is None:
-                return 0, 0, 0, np.nan, np.nan
+                return 0, 0, 0, np.nan, np.nan, np.nan
             height, width = im.shape[:2]
             num_frames, fps = 1, np.nan
         else:
@@ -72,16 +74,76 @@ def get_info(path):
         return 0, 0, 0, np.nan, np.nan, np.nan
 
 
-def get_video_info(path):
+def get_info(path):
     try:
-        vframes, _, _ = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
-        num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
-        aspect_ratio = height / width
-        fps = np.nan
-        resolution = height * width
-        return num_frames, height, width, aspect_ratio, fps, resolution
+        ext = os.path.splitext(path)[1].lower()
+        if ext in IMG_EXTENSIONS:
+            return get_image_info(path)
+        else:
+            return get_video_info(path)
     except:
         return 0, 0, 0, np.nan, np.nan, np.nan
+
+
+def get_image_info(path, backend="pillow"):
+    if backend == "pillow":
+        try:
+            with open(path, "rb") as f:
+                img = Image.open(f)
+                img = img.convert("RGB")
+            width, height = img.size
+            num_frames, fps = 1, np.nan
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    elif backend == "cv2":
+        try:
+            im = cv2.imread(path)
+            if im is None:
+                return 0, 0, 0, np.nan, np.nan, np.nan
+            height, width = im.shape[:2]
+            num_frames, fps = 1, np.nan
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    else:
+        raise ValueError
+
+
+def get_video_info(path, backend="torchvision"):
+    if backend == "torchvision":
+        try:
+            vframes, infos = read_video(path)
+            num_frames, height, width = vframes.shape[0], vframes.shape[2], vframes.shape[3]
+            if "video_fps" in infos:
+                fps = infos["video_fps"]
+            else:
+                fps = np.nan
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    elif backend == "cv2":
+        try:
+            cap = cv2.VideoCapture(path)
+            num_frames, height, width, fps = (
+                get_video_length(cap, method="header"),
+                int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                float(cap.get(cv2.CAP_PROP_FPS)),
+            )
+            hw = height * width
+            aspect_ratio = height / width if width > 0 else np.nan
+            return num_frames, height, width, aspect_ratio, fps, hw
+        except:
+            return 0, 0, 0, np.nan, np.nan, np.nan
+    else:
+        raise ValueError
 
 
 # ======================================================
@@ -124,29 +186,29 @@ def remove_caption_prefix(caption):
 # ======================================================
 
 CMOTION_TEXT = {
-    "static": "The camera is static.",
-    "dynamic": "The camera is moving.",
-    "unknown": None,
-    "zoom in": "The camera is zooming in.",
-    "zoom out": "The camera is zooming out.",
-    "pan left": "The camera is panning left.",
-    "pan right": "The camera is panning right.",
-    "tilt up": "The camera is tilting up.",
-    "tilt down": "The camera is tilting down.",
-    "pan/tilt": "The camera is panning.",
+    "static": "static",
+    "pan_right": "pan right",
+    "pan_left": "pan left",
+    "zoom_in": "zoom in",
+    "zoom_out": "zoom out",
+    "tilt_up": "tilt up",
+    "tilt_down": "tilt down",
+    # "pan/tilt": "The camera is panning.",
+    # "dynamic": "The camera is moving.",
+    # "unknown": None,
 }
 CMOTION_PROBS = {
     # hard-coded probabilities
     "static": 1.0,
-    "dynamic": 1.0,
-    "unknown": 0.0,
-    "zoom in": 1.0,
-    "zoom out": 1.0,
-    "pan left": 1.0,
-    "pan right": 1.0,
-    "tilt up": 1.0,
-    "tilt down": 1.0,
-    "pan/tilt": 1.0,
+    "zoom_in": 1.0,
+    "zoom_out": 1.0,
+    "pan_left": 1.0,
+    "pan_right": 1.0,
+    "tilt_up": 1.0,
+    "tilt_down": 1.0,
+    # "dynamic": 1.0,
+    # "unknown": 0.0,
+    # "pan/tilt": 1.0,
 }
 
 
@@ -154,7 +216,7 @@ def merge_cmotion(caption, cmotion):
     text = CMOTION_TEXT[cmotion]
     prob = CMOTION_PROBS[cmotion]
     if text is not None and random.random() < prob:
-        caption = f"{caption} {text}"
+        caption = f"{caption} Camera motion: {text}."
     return caption
 
 
@@ -345,6 +407,32 @@ def load_caption(path, ext):
 
 
 # ======================================================
+# --clean-caption
+# ======================================================
+
+DROP_SCORE_PROB = 0.2
+
+
+def score_to_text(data):
+    text = data["text"]
+    scores = []
+    # aesthetic
+    if "aes" in data:
+        aes = data["aes"]
+        if random.random() > DROP_SCORE_PROB:
+            score_text = f"aesthetic score: {aes:.1f}"
+            scores.append(score_text)
+    if "flow" in data:
+        flow = data["flow"]
+        if random.random() > DROP_SCORE_PROB:
+            score_text = f"motion score: {flow:.1f}"
+            scores.append(score_text)
+    if len(scores) > 0:
+        text = f"{text} [{', '.join(scores)}]"
+    return text
+
+
+# ======================================================
 # read & write
 # ======================================================
 
@@ -378,14 +466,18 @@ def read_data(input_paths):
         input_list.extend(glob(input_path))
     print("Input files:", input_list)
     for i, input_path in enumerate(input_list):
-        assert os.path.exists(input_path)
+        if not os.path.exists(input_path):
+            continue
         data.append(read_file(input_path))
         input_name += os.path.basename(input_path).split(".")[0]
         if i != len(input_list) - 1:
             input_name += "+"
-        print(f"Loaded {len(data[-1])} samples from {input_path}.")
+        print(f"Loaded {len(data[-1])} samples from '{input_path}'.")
+    if len(data) == 0:
+        print(f"No samples to process. Exit.")
+        exit()
     data = pd.concat(data, ignore_index=True, sort=False)
-    print(f"Total number of samples: {len(data)}.")
+    print(f"Total number of samples: {len(data)}")
     return data, input_name
 
 
@@ -412,15 +504,13 @@ def main(args):
         data_new = pd.read_csv(args.intersection)
         print(f"Intersection csv contains {len(data_new)} samples.")
         cols_to_use = data_new.columns.difference(data.columns)
-        cols_to_use = cols_to_use.insert(0, "path")
-        data = pd.merge(data, data_new[cols_to_use], on="path", how="inner")
-        print(f"Intersection number of samples: {len(data)}.")
 
-    # train columns
-    if args.train_column:
-        all_columns = data.columns
-        columns_to_drop = all_columns.difference(TRAIN_COLUMNS)
-        data = data.drop(columns=columns_to_drop)
+        col_on = "path"
+        # if 'id' in data.columns and 'id' in data_new.columns:
+        #     col_on = 'id'
+        cols_to_use = cols_to_use.insert(0, col_on)
+        data = pd.merge(data, data_new[cols_to_use], on=col_on, how="inner")
+        print(f"Intersection number of samples: {len(data)}.")
 
     # get output path
     output_path = get_output_path(args, input_name)
@@ -468,6 +558,10 @@ def main(args):
     if args.lang is not None:
         assert "text" in data.columns
         data = data[data["text"].progress_apply(detect_lang)]  # cannot parallelize
+    if args.remove_empty_path:
+        assert "path" in data.columns
+        data = data[data["path"].str.len() > 0]
+        data = data[~data["path"].isna()]
     if args.remove_empty_caption:
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
@@ -475,27 +569,43 @@ def main(args):
     if args.remove_path_duplication:
         assert "path" in data.columns
         data = data.drop_duplicates(subset=["path"])
+    if args.path_subset:
+        data = data[data["path"].str.contains(args.path_subset)]
 
     # processing
     if args.relpath is not None:
         data["path"] = apply(data["path"], lambda x: os.path.relpath(x, args.relpath))
     if args.abspath is not None:
         data["path"] = apply(data["path"], lambda x: os.path.join(args.abspath, x))
+    if args.path_to_id:
+        data["id"] = apply(data["path"], lambda x: os.path.splitext(os.path.basename(x))[0])
     if args.merge_cmotion:
         data["text"] = apply(data, lambda x: merge_cmotion(x["text"], x["cmotion"]), axis=1)
     if args.refine_llm_caption:
         assert "text" in data.columns
         data["text"] = apply(data["text"], remove_caption_prefix)
+    if args.append_text is not None:
+        assert "text" in data.columns
+        data["text"] = data["text"] + args.append_text
+    if args.score_to_text:
+        data["text"] = apply(data, score_to_text, axis=1)
     if args.clean_caption:
         assert "text" in data.columns
         data["text"] = apply(
             data["text"],
             partial(text_preprocessing, use_text_preprocessing=True),
         )
-
     if args.count_num_token is not None:
         assert "text" in data.columns
         data["text_len"] = apply(data["text"], lambda x: len(tokenizer(x)["input_ids"]))
+    if args.update_text is not None:
+        data_new = pd.read_csv(args.update_text)
+        num_updated = data.path.isin(data_new.path).sum()
+        print(f"Number of updated samples: {num_updated}.")
+        data = data.set_index("path")
+        data_new = data_new[["path", "text"]].set_index("path")
+        data.update(data_new)
+        data = data.reset_index()
 
     # sort
     if args.sort is not None:
@@ -504,6 +614,12 @@ def main(args):
         data = data.sort_values(by=args.sort_ascending, ascending=True)
 
     # filtering
+    if args.filesize:
+        assert "path" in data.columns
+        data["filesize"] = apply(data["path"], lambda x: os.stat(x).st_size / 1024 / 1024)
+    if args.fsmax is not None:
+        assert "filesize" in data.columns
+        data = data[data["filesize"] <= args.fsmax]
     if args.remove_empty_caption:
         assert "text" in data.columns
         data = data[data["text"].str.len() > 0]
@@ -514,6 +630,9 @@ def main(args):
     if args.fmax is not None:
         assert "num_frames" in data.columns
         data = data[data["num_frames"] <= args.fmax]
+    if args.fpsmax is not None:
+        assert "fps" in data.columns
+        data = data[(data["fps"] <= args.fpsmax) | np.isnan(data["fps"])]
     if args.hwmax is not None:
         if "resolution" not in data.columns:
             height = data["height"]
@@ -531,6 +650,23 @@ def main(args):
         data = data[data["flow"] >= args.flowmin]
     if args.remove_text_duplication:
         data = data.drop_duplicates(subset=["text"], keep="first")
+    if args.img_only:
+        data = data[data["path"].str.lower().str.endswith(IMG_EXTENSIONS)]
+    if args.vid_only:
+        data = data[~data["path"].str.lower().str.endswith(IMG_EXTENSIONS)]
+
+    # process data
+    if args.shuffle:
+        data = data.sample(frac=1).reset_index(drop=True)  # shuffle
+    if args.head is not None:
+        data = data.head(args.head)
+
+    # train columns
+    if args.train_column:
+        all_columns = data.columns
+        columns_to_drop = all_columns.difference(TRAIN_COLUMNS)
+        data = data.drop(columns=columns_to_drop)
+
     print(f"Filtered number of samples: {len(data)}.")
 
     # shard data
@@ -553,7 +689,7 @@ def parse_args():
     parser.add_argument("--format", type=str, default="csv", help="output format", choices=["csv", "parquet"])
     parser.add_argument("--disable-parallel", action="store_true", help="disable parallel processing")
     parser.add_argument("--num-workers", type=int, default=None, help="number of workers")
-    parser.add_argument("--seed", type=int, default=None, help="random seed")
+    parser.add_argument("--seed", type=int, default=42, help="random seed")
 
     # special case
     parser.add_argument("--shard", type=int, default=None, help="shard the dataset")
@@ -576,6 +712,15 @@ def parse_args():
     # path processing
     parser.add_argument("--relpath", type=str, default=None, help="modify the path to relative path by root given")
     parser.add_argument("--abspath", type=str, default=None, help="modify the path to absolute path by root given")
+    parser.add_argument("--path-to-id", action="store_true", help="add id based on path")
+    parser.add_argument(
+        "--path-subset", type=str, default=None, help="extract a subset data containing the given `path-subset` value"
+    )
+    parser.add_argument(
+        "--remove-empty-path",
+        action="store_true",
+        help="remove rows with empty path",  # caused by transform, cannot read path
+    )
 
     # caption filtering
     parser.add_argument(
@@ -597,14 +742,26 @@ def parse_args():
     parser.add_argument(
         "--count-num-token", type=str, choices=["t5"], default=None, help="Count the number of tokens in the caption"
     )
+    parser.add_argument("--append-text", type=str, default=None, help="append text to the caption")
+    parser.add_argument("--score-to-text", action="store_true", help="convert score to text")
+    parser.add_argument("--update-text", type=str, default=None, help="update the text with the given text")
 
     # score filtering
+    parser.add_argument("--filesize", action="store_true", help="get the filesize of each video and image in MB")
+    parser.add_argument("--fsmax", type=int, default=None, help="filter the dataset by maximum filesize")
     parser.add_argument("--fmin", type=int, default=None, help="filter the dataset by minimum number of frames")
     parser.add_argument("--fmax", type=int, default=None, help="filter the dataset by maximum number of frames")
     parser.add_argument("--hwmax", type=int, default=None, help="filter the dataset by maximum resolution")
     parser.add_argument("--aesmin", type=float, default=None, help="filter the dataset by minimum aes score")
     parser.add_argument("--matchmin", type=float, default=None, help="filter the dataset by minimum match score")
     parser.add_argument("--flowmin", type=float, default=None, help="filter the dataset by minimum flow score")
+    parser.add_argument("--fpsmax", type=float, default=None, help="filter the dataset by maximum fps")
+    parser.add_argument("--img-only", action="store_true", help="only keep the image data")
+    parser.add_argument("--vid-only", action="store_true", help="only keep the video data")
+
+    # data processing
+    parser.add_argument("--shuffle", default=False, action="store_true", help="shuffle the dataset")
+    parser.add_argument("--head", type=int, default=None, help="return the first n rows of data")
 
     return parser.parse_args()
 
@@ -639,6 +796,8 @@ def get_output_path(args, input_name):
         name += "_relpath"
     if args.abspath is not None:
         name += "_abspath"
+    if args.remove_empty_path:
+        name += "_noemptypath"
 
     # caption filtering
     if args.remove_empty_caption:
@@ -651,6 +810,8 @@ def get_output_path(args, input_name):
         name += "_noduppath"
     if args.remove_text_duplication:
         name += "_noduptext"
+    if args.path_subset:
+        name += "_subset"
 
     # caption processing
     if args.refine_llm_caption:
@@ -661,12 +822,24 @@ def get_output_path(args, input_name):
         name += "_cmcaption"
     if args.count_num_token:
         name += "_ntoken"
+    if args.append_text is not None:
+        name += "_appendtext"
+    if args.score_to_text:
+        name += "_score2text"
+    if args.update_text is not None:
+        name += "_update"
 
     # score filtering
+    if args.filesize:
+        name += "_filesize"
+    if args.fsmax is not None:
+        name += f"_fsmax{args.fsmax}"
     if args.fmin is not None:
         name += f"_fmin{args.fmin}"
     if args.fmax is not None:
         name += f"_fmax{args.fmax}"
+    if args.fpsmax is not None:
+        name += f"_fpsmax{args.fpsmax}"
     if args.hwmax is not None:
         name += f"_hwmax{args.hwmax}"
     if args.aesmin is not None:
@@ -675,6 +848,16 @@ def get_output_path(args, input_name):
         name += f"_matchmin{args.matchmin}"
     if args.flowmin is not None:
         name += f"_flowmin{args.flowmin}"
+    if args.img_only:
+        name += "_img"
+    if args.vid_only:
+        name += "_vid"
+
+    # processing
+    if args.shuffle:
+        name += f"_shuffled_seed{args.seed}"
+    if args.head is not None:
+        name += f"_first_{args.head}_data"
 
     output_path = os.path.join(dir_path, f"{name}.{args.format}")
     return output_path

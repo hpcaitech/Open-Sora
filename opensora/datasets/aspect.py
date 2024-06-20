@@ -1,8 +1,7 @@
 import math
 
-# Ours
 
-
+# computation
 def get_h_w(a, ts, eps=1e-4):
     h = (ts * a) ** 0.5
     h = h + eps
@@ -13,33 +12,41 @@ def get_h_w(a, ts, eps=1e-4):
     return h, w
 
 
-AR = (
-    3 / 8,
-    9 / 21,
-    0.48,
-    1 / 2,
-    9 / 17,
-    1 / 1.85,
-    9 / 16,
-    5 / 8,
-    2 / 3,
-    3 / 4,
-    1 / 1,
-    4 / 3,
-    3 / 2,
-    16 / 9,
-    17 / 9,
-    2 / 1,
-    1 / 0.48,
-)
-ARV = (0.375, 0.43, 0.48, 0.50, 0.53, 0.54, 0.56, 0.62, 0.67, 0.75, 1, 1.33, 1.50, 1.78, 1.89, 2, 2.08)
-
-
-def get_aspect_ratios_dict(ts=360 * 640, ars=AR):
+def get_aspect_ratios_dict(ars, ts=360 * 640):
     est = {f"{a:.2f}": get_h_w(a, ts) for a in ars}
     return est
 
 
+def get_ar(ratio):
+    h, w = ratio.split(":")
+    return int(h) / int(w)
+
+
+# H:W
+ASPECT_RATIO_MAP = {
+    "3:8": "0.38",
+    "9:21": "0.43",
+    "12:25": "0.48",
+    "1:2": "0.50",
+    "9:17": "0.53",
+    "27:50": "0.54",
+    "9:16": "0.56",
+    "5:8": "0.62",
+    "2:3": "0.67",
+    "3:4": "0.75",
+    "1:1": "1.00",
+    "4:3": "1.33",
+    "3:2": "1.50",
+    "16:9": "1.78",
+    "17:9": "1.89",
+    "2:1": "2.00",
+    "50:27": "2.08",
+}
+
+
+AR = [get_ar(ratio) for ratio in ASPECT_RATIO_MAP.keys()]
+
+# computed from above code
 # S = 8294400
 ASPECT_RATIO_4K = {
     "0.38": (1764, 4704),
@@ -451,3 +458,35 @@ ASPECT_RATIOS = {
     "2880": (8294400, ASPECT_RATIO_2880),
     "4k": (8294400, ASPECT_RATIO_4K),
 }
+
+
+def get_num_pixels(name):
+    return ASPECT_RATIOS[name][0]
+
+
+def get_image_size(resolution, ar_ratio):
+    ar_key = ASPECT_RATIO_MAP[ar_ratio]
+    rs_dict = ASPECT_RATIOS[resolution][1]
+    assert ar_key in rs_dict, f"Aspect ratio {ar_ratio} not found for resolution {resolution}"
+    return rs_dict[ar_key]
+
+
+NUM_FRAMES_MAP = {
+    "1x": 51,
+    "2x": 102,
+    "4x": 204,
+    "8x": 408,
+    "16x": 816,
+    "2s": 51,
+    "4s": 102,
+    "8s": 204,
+    "16s": 408,
+    "32s": 816,
+}
+
+
+def get_num_frames(num_frames):
+    if num_frames in NUM_FRAMES_MAP:
+        return NUM_FRAMES_MAP[num_frames]
+    else:
+        return int(num_frames)

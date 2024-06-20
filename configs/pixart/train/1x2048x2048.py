@@ -20,7 +20,7 @@ model = dict(
     space_scale=4.0,
     no_temporal_pos_emb=True,
     from_pretrained="PixArt-1B-2.pth",
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 
