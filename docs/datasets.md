@@ -17,11 +17,12 @@ We use the [training-10M subset](https://github.com/snap-research/Panda-70M/tree
 which contains ~10M videos of better quality.
 
 ### Mixkit
+
 [Mixkit](https://mixkit.co/) is a video website where we obtained 9k videos.
 
 ### Pixabay
-[Pixabay](https://pixabay.com/videos/) is video website where we obtained 60.5k videos.
 
+[Pixabay](https://pixabay.com/videos/) is video website where we obtained 60.5k videos.
 
 ### Pexels
 
@@ -64,7 +65,7 @@ This dataset is proposed for exploring the relationship of prompts and high-qual
 Moreover, this dataset is divided into two subsets: original and upscale.
 This dataset is proposed for enabling research on text-to-image model prompting.
 
-### upsplash-lite
+### Unsplash-lite
 
 The [Unsplash-lite](https://github.com/unsplash/datasets) Dataset comprises 25k nature-themed Unsplash photos, 25k keywords, and 1M searches.
 This dataset covers a vast range of uses and contexts. Its extensive scope in intent and semantics opens new avenues for research and learning.

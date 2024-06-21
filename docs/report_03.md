@@ -7,7 +7,7 @@
 - [Evaluation](#evaluation)
 - [Sequence parallelism](#sequence-parallelism)
 
-In Open-Sora 1.2 release, we train a 1.1B models on >20M data, with training cost 35k H100 GPU hours, supporting 0s~16s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
+In Open-Sora 1.2 release, we train a 1.1B models on >30M data (~80k hours), with training cost 35k H100 GPU hours, supporting 0s~16s, 144p to 720p, various aspect ratios video generation. Our configurations is listed below. Following our 1.1 version, Open-Sora 1.2 can also do image-to-video generation and video extension.
 
 |      | image | 2s  | 4s  | 8s  | 16s |
 | ---- | ----- | --- | --- | --- | --- |
@@ -57,13 +57,13 @@ When using the VAE for diffusion model, our stacked VAE requires small memory as
 
 Lastest diffusion model like Stable Diffusion 3 adopts the [rectified flow](https://github.com/gnobitab/RectifiedFlow) instead of DDPM for better performance. Pitiably, SD3's rectified flow training code is not open-sourced. However, Open-Sora 1.2 provides the training code following SD3's paper, including:
 
-- Basic rectified flow training
-- Logit-norm sampling for training acceleration
-- Resolution and video length aware timestep sampling
+- Basic rectified flow training ([original rectified flow paper](https://arxiv.org/abs/2209.03003))
+- Logit-norm sampling for training acceleration ([SD3 paper](https://arxiv.org/pdf/2403.03206) Section 3.1, intuitively it is more likely to sample timesteps at middle noise level)
+- Resolution and video length aware timestep sampling ([SD3 paper](https://arxiv.org/pdf/2403.03206) Section 5.3.2, intuitively it is more likely to sample timesteps with more noise for larger resolution, and we extend it to longer video)
 
 For the resolution-aware timestep sampling, we should use more noise for images with larger resolution. We extend this idea to video generation and use more noise for videos with longer length.
 
-Open-Sora 1.2 starts from the [PixArt-Σ 2K](https://github.com/PixArt-alpha/PixArt-sigma) checkpoint. Note that this model is trained with DDPM and SDXL VAE, also a much higher resolution. We find finetuning on a small dataset can easily adapt the model for our video generation setting. The adaptation process is as follows, all training is done on 8 GPUs:
+Open-Sora 1.2 starts from the [PixArt-Σ 2K](https://github.com/PixArt-alpha/PixArt-sigma) checkpoint. Note that this model is trained with DDPM and SDXL VAE, also a much higher resolution. We find finetuning on a small dataset can easily adapt the model for our video generation setting. The adaptation process is as follows, all training is done on 8 GPUs (the adaptation for the diffusion model is quite fast and straightforward):
 
 1. Multi-resolution image generation ability: we train the model to generate different resolution ranging from 144p to 2K for 20k steps.
 2. QK-norm: we add the QK-norm to the model and train for 18k steps.
