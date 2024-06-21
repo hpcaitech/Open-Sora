@@ -248,6 +248,7 @@ def main():
                 with Timer("move data") as move_data_t:
                     x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
                     y = batch.pop("text")
+                timer_list.append(move_data_t)
 
                 # == visual and text encoding ==
                 with Timer("encode") as encode_t:
