@@ -171,7 +171,7 @@ class VariableVideoTextDataset(VideoTextDataset):
             # repeat
             video = image.unsqueeze(0)
 
-        # # TCHW -> CTHW
+        # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
         ret = {
             "video": video,
