@@ -28,6 +28,8 @@ python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
     --image-size 480 853
 ```
 
+In this version, we have merged all functions in previous `inference-long.py` into `inference.py`. The command line arguments are the same as before (only note that the frame index and length is calculated with 4x compressed).
+
 ### Inference with Open-Sora 1.1
 
 Since Open-Sora 1.1 supports inference with dynamic input size, you can pass the input size as an argument.
