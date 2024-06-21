@@ -9,7 +9,7 @@ bucket_config = {"480p": {51: (0.5, 5)}}
 grad_checkpoint = True
 
 # Acceleration settings
-num_workers = 0
+num_workers = 8
 num_bucket_build_workers = 16
 dtype = "bf16"
 plugin = "zero2"
@@ -40,21 +40,6 @@ scheduler = dict(
     use_timestep_transform=True,
     sample_method="logit-normal",
 )
-
-# Mask settings
-# 25%
-mask_ratios = {
-    "random": 0.01,
-    "intepolate": 0.002,
-    "quarter_random": 0.002,
-    "quarter_head": 0.002,
-    "quarter_tail": 0.002,
-    "quarter_head_tail": 0.002,
-    "image_random": 0.0,
-    "image_head": 0.22,
-    "image_tail": 0.005,
-    "image_head_tail": 0.005,
-}
 
 # Log settings
 seed = 42
