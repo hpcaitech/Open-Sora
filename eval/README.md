@@ -95,6 +95,15 @@ python eval/vbench_i2v/tabulate_vbench_i2v_scores.py path/to/videos/folder path/
 
 ```
 
+Similarly as VBench, you can specify resolution, aspect ratio, sampling steps, flow, and llm-refine
+
+```bash
+bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name_for_log res_value aspect_ratio_value steps_value flow_value llm_refine_value
+# for example
+# bash eval/vbench_i2v/launch.sh /mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200_llm_refine/ema.pt 51 042-STDiT3-XL-2 240p 9:16 30 2 True
+# if no flow control, use "None" instead
+```
+
 ## VAE
 
 Install the dependencies package following our [installation](../docs/installation.md)'s s sections of "Evaluation Dependencies". Then, run the following evaluation command:
