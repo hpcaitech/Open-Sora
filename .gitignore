@@ -185,3 +185,7 @@ wandb/
 
 # vae weights
 eval/vae/flolpips/weights/
+
+outputs
+vbench
+vbench2_beta_i2v
