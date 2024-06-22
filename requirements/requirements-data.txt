@@ -1,0 +1,30 @@
+gdown>=5.2.0
+
+# [caption llava]
+ninja>=1.11.1.1
+shortuuid>=1.0.13
+markdown2[all]
+scikit-learn>=1.4.2
+einops-exts>=0.0.4
+
+# [camera_motion]
+decord==0.6.0
+ptvsd==4.3.2
+imageio-ffmpeg>=0.4.9
+
+# [datasets]
+ffmpeg-python==0.2.0
+lingua-language-detector==2.0.2
+
+# [frame interpolation]
+imageio>=2.34.1
+
+# [aesthetic]
+setuptools==68.2.2
+clip @ git+https://github.com/openai/CLIP.git
+
+# [ocr]
+mmcv==2.1.0
+mmdet==3.1.0
+mmocr==1.0.1
+detectron2 @ git+https://github.com/facebookresearch/detectron2.git@ff53992

@@ -37,13 +37,13 @@ class STDiTBlock(nn.Module):
         d_t=None,
         mlp_ratio=4.0,
         drop_path=0.0,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
     ):
         super().__init__()
         self.hidden_size = hidden_size
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self._enable_sequence_parallelism = enable_sequence_parallelism
 
         if enable_sequence_parallelism:
@@ -58,7 +58,7 @@ class STDiTBlock(nn.Module):
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=enable_flashattn,
+            enable_flash_attn=enable_flash_attn,
         )
         self.cross_attn = self.mha_cls(hidden_size, num_heads)
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -82,7 +82,7 @@ class STDiTBlock(nn.Module):
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
-            enable_flashattn=self.enable_flashattn,
+            enable_flash_attn=self.enable_flash_attn,
         )
 
     def t_mask_select(self, x, masked_x, x_mask):
@@ -174,7 +174,7 @@ class STDiT(nn.Module):
         space_scale=1.0,
         time_scale=1.0,
         freeze=None,
-        enable_flashattn=False,
+        enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
     ):
@@ -194,7 +194,7 @@ class STDiT(nn.Module):
         self.no_temporal_pos_emb = no_temporal_pos_emb
         self.depth = depth
         self.mlp_ratio = mlp_ratio
-        self.enable_flashattn = enable_flashattn
+        self.enable_flash_attn = enable_flash_attn
         self.enable_layernorm_kernel = enable_layernorm_kernel
         self.space_scale = space_scale
         self.time_scale = time_scale
@@ -221,7 +221,7 @@ class STDiT(nn.Module):
                     self.num_heads,
                     mlp_ratio=self.mlp_ratio,
                     drop_path=drop_path[i],
-                    enable_flashattn=self.enable_flashattn,
+                    enable_flash_attn=self.enable_flash_attn,
                     enable_layernorm_kernel=self.enable_layernorm_kernel,
                     enable_sequence_parallelism=enable_sequence_parallelism,
                     d_t=self.num_temporal,
@@ -255,7 +255,7 @@ class STDiT(nn.Module):
         else:
             self.sp_rank = None
 
-    def forward(self, x, timestep, y, mask=None, x_mask=None):
+    def forward(self, x, timestep, y, mask=None, x_mask=None, **kwargs):
         """
         Forward pass of STDiT.
         Args:
@@ -267,10 +267,10 @@ class STDiT(nn.Module):
         Returns:
             x (torch.Tensor): output latent representation; of shape [B, C, T, H, W]
         """
-
-        x = x.to(self.dtype)
-        timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
+        dtype = self.x_embedder.proj.weight.dtype
+        x = x.to(dtype)
+        timestep = timestep.to(dtype)
+        y = y.to(dtype)
 
         # embedding
         x = self.x_embedder(x)  # [B, N, C]

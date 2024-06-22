@@ -8,7 +8,7 @@ model = dict(
     from_pretrained="PixArt-Sigma-XL-2-2K-MS.pth",
     space_scale=4,
     no_temporal_pos_emb=True,
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
     base_size=2048 // 8,
 )
