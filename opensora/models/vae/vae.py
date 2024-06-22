@@ -277,7 +277,7 @@ def OpenSoraVAE_V1_2(
         scale=scale,
     )
 
-    if force_huggingface or (from_pretrained is not None and not os.path.isdir(from_pretrained)):
+    if force_huggingface or (from_pretrained is not None and not os.path.exists(from_pretrained)):
         model = VideoAutoencoderPipeline.from_pretrained(from_pretrained, **kwargs)
     else:
         config = VideoAutoencoderPipelineConfig(**kwargs)
