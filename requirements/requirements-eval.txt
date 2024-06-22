@@ -1,0 +1,15 @@
+# [vbench]
+detectron2 @ git+https://github.com/facebookresearch/detectron2.git@ff53992
+imageio>=2.34.1
+pyiqa==0.1.10
+scikit-learn>=1.4.2
+scikit-image>=0.20.0
+lvis==0.5.3
+boto3>=1.34.113
+easydict>=1.9
+fairscale>=0.4.13
+
+# [vae]
+decord==0.6.0
+pytorchvideo==0.1.5
+lpips==0.1.4

@@ -8,7 +8,7 @@ dataset = dict(
 )
 
 # Define acceleration
-num_workers = 4
+num_workers = 0
 dtype = "bf16"
 grad_checkpoint = True
 plugin = "zero2"
@@ -20,7 +20,7 @@ model = dict(
     space_scale=0.5,
     time_scale=1.0,
     from_pretrained="PixArt-XL-2-512x512.pth",
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 vae = dict(

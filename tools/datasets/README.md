@@ -79,33 +79,34 @@ Use `datautil` to manage the dataset.
 
 ### Requirement
 
-To accelerate processing speed, you can install [pandarallel](https://github.com/nalepae/pandarallel):
+Follow our [installation guide](../../docs/installation.md)'s "Data Dependencies" and "Datasets" section to install the required packages.
+<!-- To accelerate processing speed, you can install [pandarallel](https://github.com/nalepae/pandarallel):
 
 ```bash
 pip install pandarallel
-```
+``` -->
 
-To get image and video information, you need to install [opencv-python](https://github.com/opencv/opencv-python):
+<!-- To get image and video information, you need to install [opencv-python](https://github.com/opencv/opencv-python): -->
 
-```bash
+<!-- ```bash
 pip install opencv-python
 # If your videos are in av1 codec instead of h264, you need to
 # - install ffmpeg first
 # - install via conda to support av1 codec
 conda install -c conda-forge opencv
-```
+``` -->
 
-Or to get video information, you can install ffmpeg and ffmpeg-python:
+<!-- Or to get video information, you can install ffmpeg and ffmpeg-python:
 
 ```bash
 pip install ffmpeg-python
-```
+``` -->
 
-To filter a specific language, you need to install [lingua](https://github.com/pemistahl/lingua-py):
+<!-- To filter a specific language, you need to install [lingua](https://github.com/pemistahl/lingua-py):
 
 ```bash
 pip install lingua-language-detector
-```
+``` -->
 
 ### Basic Usage
 

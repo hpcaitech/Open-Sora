@@ -27,6 +27,16 @@ regex = re.compile(
 )
 
 
+def is_img(path):
+    ext = os.path.splitext(path)[-1].lower()
+    return ext in IMG_EXTENSIONS
+
+
+def is_vid(path):
+    ext = os.path.splitext(path)[-1].lower()
+    return ext in VID_EXTENSIONS
+
+
 def is_url(url):
     return re.match(regex, url) is not None
 
@@ -42,8 +52,7 @@ def read_file(input_path):
 
 def download_url(input_path):
     output_dir = "cache"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
     base_name = os.path.basename(input_path)
     output_path = os.path.join(output_dir, base_name)
     img_data = requests.get(input_path).content
@@ -57,7 +66,9 @@ def temporal_random_crop(vframes, num_frames, frame_interval):
     temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
     total_frames = len(vframes)
     start_frame_ind, end_frame_ind = temporal_sample(total_frames)
-    assert end_frame_ind - start_frame_ind >= num_frames
+    assert (
+        end_frame_ind - start_frame_ind >= num_frames
+    ), f"Not enough frames to sample, {end_frame_ind} - {start_frame_ind} < {num_frames}"
     frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, num_frames, dtype=int)
     video = vframes[frame_indice]
     return video

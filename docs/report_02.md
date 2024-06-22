@@ -21,7 +21,7 @@ We made the following modifications to the original ST-DiT for better training s
 
 - **[Rope embedding](https://arxiv.org/abs/2104.09864) for temporal attention**: Following LLM's best practice, we change the sinusoidal positional encoding to rope embedding for temporal attention since it is also a sequence prediction task.
 - **AdaIN and Layernorm for temporal attention**: we wrap the temporal attention with AdaIN and layernorm as the spatial attention to stabilize the training.
-- **[QK-normalization](https://arxiv.org/abs/2302.05442) with [RMSNorm](https://arxiv.org/abs/1910.07467)**: Following [SD3](https://arxiv.org/pdf/2403.03206.pdf), we appy QK-normalization to the all attention for better training stability in half-precision.
+- **[QK-normalization](https://arxiv.org/abs/2302.05442) with [RMSNorm](https://arxiv.org/abs/1910.07467)**: Following [SD3](https://arxiv.org/pdf/2403.03206.pdf), we apply QK-normalization to the all attention for better training stability in half-precision.
 - **Dynamic input size support and video infomation condition**: To support multi-resolution, aspect ratio, and fps training, we make ST-DiT-2 to accept any input size, and automatically scale positional embeddings. Extending [PixArt-alpha](https://github.com/PixArt-alpha/PixArt-alpha)'s idea, we conditioned on video's height, width, aspect ratio, frame length, and fps.
 - **Extending T5 tokens from 120 to 200**: our caption is usually less than 200 tokens, and we find the model can handle longer text well.
 
@@ -106,12 +106,12 @@ To summarize, the training of Open-Sora 1.1 requires approximately **9 days** on
 
 As we get one step closer to the replication of Sora, we find many limitations for the current model, and these limitations point to the future work.
 
-- **Generation Failure**: we fine many cases (especially when the total token number is large or the content is complex),  our model fails to generate the scene. There may be a collapse in the temporal attention and we have identified a potential bug in our code. We are working hard to fix it.
+- **Generation Failure**: we fine many cases (especially when the total token number is large or the content is complex),  our model fails to generate the scene. There may be a collapse in the temporal attention and we have identified a potential bug in our code. We are working hard to fix it. Besides, we will increase our model size and training data to improve the generation quality in the next version.
 - **Noisy generation and influency**: we find the generated model is sometimes noisy and not fluent, especially for long videos. We think the problem is due to not using a temporal VAE. As [Pixart-Sigma](https://arxiv.org/abs/2403.04692) finds that adapting to a new VAE is simple, we plan to develop a temporal VAE for the model in the next version.
 - **Lack of time consistency**: we find the model cannot generate videos with high time consistency. We think the problem is due to the lack of training FLOPs. We plan to collect more data and continue training the model to improve the time consistency.
 - **Bad human generation**: We find the model cannot generate high-quality human videos. We think the problem is due to the lack of human data. We plan to collect more human data and continue training the model to improve the human generation.
 - **Low aesthetic score**: we find the model's aesthetic score is not high. The problem is due to the lack of aesthetic score filtering, which is not conducted due to IO bottleneck. We plan to filter the data by aesthetic score and finetuning the model to improve the aesthetic score.
-- **Worse quality for longer video genration**: we find with a same prompt, the longer video has worse quality. This means the image quality is not equally adapted to different lengths of sequences.
+- **Worse quality for longer video generation**: we find with a same prompt, the longer video has worse quality. This means the image quality is not equally adapted to different lengths of sequences.
 
-> - **Algorithm & Acceleration**: Zangwei Zheng, Xiangyu Peng, Shenggui Li, Hongxing Liu, Yukun Zhou
+> - **Algorithm & Acceleration**: Zangwei Zheng, Xiangyu Peng, Shenggui Li, Hongxing Liu, Yukun Zhou, Tianyi Li
 > - **Data Collection & Pipeline**: Xiangyu Peng, Zangwei Zheng, Chenhui Shen, Tom Young, Junjie Wang, Chenfeng Yu

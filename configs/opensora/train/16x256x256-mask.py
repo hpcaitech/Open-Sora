@@ -20,12 +20,12 @@ model = dict(
     space_scale=0.5,
     time_scale=1.0,
     from_pretrained="PixArt-XL-2-512x512.pth",
-    enable_flashattn=True,
+    enable_flash_attn=True,
     enable_layernorm_kernel=True,
 )
 mask_ratios = {
-    "mask_no": 0.7,
-    "mask_random": 0.15,
+    "identity": 0.7,
+    "random": 0.15,
     "mask_head": 0.05,
     "mask_tail": 0.05,
     "mask_head_tail": 0.05,
