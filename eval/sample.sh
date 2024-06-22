@@ -39,7 +39,7 @@ DEFAULT_BS=1
 # called inside run_video_b
 function run_image() { # 14min
   # 1.1 1024x1024
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 1024 --aspect_ratio 1:1 --sample-name image_1024_1_1 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 1024 --aspect-ratio 1:1 --sample-name image_1024_1_1 --batch-size $DEFAULT_BS
 
   # 1.2 240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 240p --aspect-ratio 9:16 --sample-name image_240p_9_16 --end-index 3 --batch-size $DEFAULT_BS
