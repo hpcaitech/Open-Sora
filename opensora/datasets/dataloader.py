@@ -34,6 +34,7 @@ def prepare_dataloader(
     process_group: Optional[ProcessGroup] = None,
     bucket_config=None,
     num_bucket_build_workers=1,
+    prefetch_factor=None,
     **kwargs,
 ):
     _kwargs = kwargs.copy()
@@ -57,6 +58,7 @@ def prepare_dataloader(
                 pin_memory=pin_memory,
                 num_workers=num_workers,
                 collate_fn=collate_fn_default,
+                prefetch_factor=prefetch_factor,
                 **_kwargs,
             ),
             batch_sampler,
@@ -79,6 +81,7 @@ def prepare_dataloader(
                 pin_memory=pin_memory,
                 num_workers=num_workers,
                 collate_fn=collate_fn_default,
+                prefetch_factor=prefetch_factor,
                 **_kwargs,
             ),
             sampler,
@@ -98,6 +101,7 @@ def prepare_dataloader(
                 pin_memory=pin_memory,
                 num_workers=num_workers,
                 collate_fn=collate_fn_batch,
+                prefetch_factor=prefetch_factor,
                 **_kwargs,
             ),
             sampler,
