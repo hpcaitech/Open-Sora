@@ -98,6 +98,7 @@ def main():
         drop_last=True,
         pin_memory=True,
         process_group=get_data_parallel_group(),
+        prefetch_factor=cfg.get("prefetch_factor", None),
     )
     dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
