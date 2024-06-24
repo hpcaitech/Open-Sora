@@ -19,10 +19,16 @@ fi
 LOG_BASE=$(dirname $CKPT)/eval
 echo "Logging to $LOG_BASE"
 
-GPUS=(0 1 2 3 4 5 6 7)
-TASK_ID_LIST=(5a 5b 5c 5d 5e 5f 5g 5h) # for log records only
-START_INDEX_LIST=(0 140 280 420 560 700 840 980)
-END_INDEX_LIST=(140 280 420 560 700 840 980 2000)
+# GPUS=(0 1 2 3 4 5 6 7)
+# TASK_ID_LIST=(5a 5b 5c 5d 5e 5f 5g 5h) # for log records only
+# START_INDEX_LIST=(0 140 280 420 560 700 840 980)
+# END_INDEX_LIST=(140 280 420 560 700 840 980 2000)
+
+GPUS=(4 5 6 7)
+TASK_ID_LIST=(5a 5b 5c 5d) # for log records only
+START_INDEX_LIST=(0 140 280 420)
+END_INDEX_LIST=(140 280 420 560)
+
 
 for i in "${!GPUS[@]}"; do
     if [ -z ${RES} ] || [ -z ${ASP_RATIO} ]  ;
