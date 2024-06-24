@@ -8,24 +8,30 @@ from vbench import VBench
 
 full_info_path = "eval/vbench/VBench_full_info.json"
 dimensions = [
-    # Quality Score
-    "subject_consistency",
-    "background_consistency",
-    "motion_smoothness",
-    "dynamic_degree",
-    "aesthetic_quality",
-    "imaging_quality",
-    "temporal_flickering",
-    # Semantic Score
-    "object_class",
-    "multiple_objects",
-    "color",
-    "spatial_relationship",
-    "scene",
-    "temporal_style",
-    "overall_consistency",
-    "human_action",
-    "appearance_style",
+    # a: 10min
+    "subject_consistency",  # 4min
+    "imaging_quality",  # 6min
+    # b: 12min
+    "background_consistency",  # 2min
+    "motion_smoothness",  # 5min
+    "overall_consistency",  # 2min
+    "human_action",  # 3min
+    # c: 14min
+    "multiple_objects",  # 14min
+    # d: 14min
+    "spatial_relationship",  # 14min
+    # e: 12min
+    "object_class",  # 12min
+    # f: 12min
+    "color",  # 12min
+    # g: 10.5min
+    "aesthetic_quality",  # 2.5min
+    "appearance_style",  # 6min
+    "temporal_flickering",  # 2min
+    # h: 9min
+    "scene",  # 3min
+    "temporal_style",  # 2min
+    "dynamic_degree",  # 4min
 ]
 
 
