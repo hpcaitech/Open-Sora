@@ -204,9 +204,11 @@ class PixArt(nn.Module):
         t: (N,) tensor of diffusion timesteps
         y: (N, 1, 120, C) tensor of class labels
         """
-        x = x.to(self.dtype)
-        timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
+        dtype = self.x_embedder.proj.weight.dtype
+        B = x.size(0)
+        x = x.to(dtype)
+        timestep = timestep.to(dtype)
+        y = y.to(dtype)
 
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
