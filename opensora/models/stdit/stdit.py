@@ -255,7 +255,7 @@ class STDiT(nn.Module):
         else:
             self.sp_rank = None
 
-    def forward(self, x, timestep, y, mask=None, x_mask=None):
+    def forward(self, x, timestep, y, mask=None, x_mask=None, **kwargs):
         """
         Forward pass of STDiT.
         Args:
