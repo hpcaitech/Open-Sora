@@ -299,9 +299,9 @@ Then, you can choose the **resolution**, **duration**, and **aspect ratio** of t
 
 |      | Image   | 2s       | 4s        | 8s        | 16s       |
 | ---- | ------- | -------- | --------- | --------- | --------- |
-| 360p | 3s, 24G | 18s, 27G | 31s, 27G  | 62s, 28G  | 121s, 33G |
-| 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
-| 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
+| 360p | 3s, --G | 18s, --G | 31s, --G  | 62s, --G  | 121s, --G |
+| 480p | 2s, --G | 29s, --G | 55s, --G  | 108s, --G | 219s, --G |
+| 720p | 6s, --G | 68s, --G | 130s, --G | 260s, --G | 547s, 18G |
 
 Note that besides text to video, you can also use **image to video generation**. You can upload an image and then click the "**Generate video**" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "**Generate image**" button to generate an image with the text prompt, and then click the "**Generate video**" button to generate a video with the image generated with the same model.
 
