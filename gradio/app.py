@@ -89,11 +89,11 @@ def build_models(model_type, config, enable_optimization=False):
     # build vae
     from opensora.registry import MODELS, build_module
 
-    vae = build_module(config.vae, MODELS).cuda()
+    vae = build_module(config.vae, MODELS)#.cuda()
 
     # build text encoder
     text_encoder = build_module(config.text_encoder, MODELS)  # T5 must be fp32
-    text_encoder.t5.model = text_encoder.t5.model.cuda()
+    # text_encoder.t5.model = text_encoder.t5.model.cuda()
 
     # build stdit
     # we load model from HuggingFace directly so that we don't need to
@@ -102,7 +102,8 @@ def build_models(model_type, config, enable_optimization=False):
 
     model_kwargs = {k: v for k, v in config.model.items() if k not in ("type", "from_pretrained", "force_huggingface")}
     stdit = STDiT3.from_pretrained(HF_STDIT_MAP[model_type], **model_kwargs)
-    stdit = stdit.cuda()
+    # stdit = torch.compile(stdit, mode="reduce-overhead")
+    # stdit = stdit.cuda()
 
     # build scheduler
     from opensora.registry import SCHEDULERS
@@ -195,7 +196,7 @@ device = torch.device("cuda")
 vae, text_encoder, stdit, scheduler = build_models(
     args.model_type, config, enable_optimization=args.enable_optimization
 )
-
+print(scheduler)
 
 def run_inference(
     mode,
@@ -363,8 +364,10 @@ def run_inference(
                 progress=True,
                 mask=masks,
             )
+            vae.cuda()
             samples = vae.decode(samples.to(dtype), num_frames=num_frames)
             video_clips.append(samples)
+            vae.cpu()
 
         # =========================
         # Save output
