@@ -368,12 +368,17 @@ class STDiT3(PreTrainedModel):
         # for simplicity, we can adjust the height to make it divisible
         if self.enable_sequence_parallelism:
             sp_size = dist.get_world_size(get_sequence_parallel_group())
-            h_pad_size = sp_size - H % sp_size
-            hx_pad_size = h_pad_size * self.patch_size[1]
+            if H % sp_size != 0:
+                h_pad_size = sp_size - H % sp_size
+            else:
+                h_pad_size = 0
 
-            # pad x along the H dimension
-            H += h_pad_size
-            x = F.pad(x, (0, 0, 0, hx_pad_size))
+            if h_pad_size > 0:
+                hx_pad_size = h_pad_size * self.patch_size[1]
+
+                # pad x along the H dimension
+                H += h_pad_size
+                x = F.pad(x, (0, 0, 0, hx_pad_size))
 
         S = H * W
         base_size = round(S**0.5)
