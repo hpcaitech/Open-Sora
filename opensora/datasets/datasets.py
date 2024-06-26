@@ -190,7 +190,10 @@ class VariableVideoTextDataset(VideoTextDataset):
         return ret
 
     def __getitem__(self, index):
-        return self.getitem(index)
+        try:
+            return self.getitem(index)
+        except:
+            return None
 
 
 @DATASETS.register_module()
