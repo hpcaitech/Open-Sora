@@ -197,7 +197,7 @@ class PixArt(nn.Module):
             if freeze == "text":
                 self.freeze_text()
 
-    def forward(self, x, timestep, y, mask=None):
+    def forward(self, x, timestep, y, mask=None, **kwargs):
         """
         Forward pass of PixArt.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
