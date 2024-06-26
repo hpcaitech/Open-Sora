@@ -1,6 +1,6 @@
 num_frames = 1
 fps = 1
-image_size = (2560, 1536)
+# image_size = (2560, 1536)
 # image_size = (2048, 2048)
 
 model = dict(

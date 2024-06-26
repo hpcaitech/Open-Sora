@@ -9,6 +9,10 @@ VBENCH_END_INDEX=$6
 VBENCH_RES=$7
 VBENCH_ASP_RATIO=$8
 
+NUM_SAMPLING_STEPS=$9
+FLOW=${10}
+LLM_REFINE=${11}
+
 echo "NUM_FRAMES=${NUM_FRAMES}"
 
 if [ -z "${NUM_FRAMES}" ]; then
@@ -39,7 +43,7 @@ DEFAULT_BS=1
 # called inside run_video_b
 function run_image() { # 14min
   # 1.1 1024x1024
-  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 1024 --aspect_ratio 1:1 --sample-name image_1024_1_1 --batch-size $DEFAULT_BS
+  eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 1024 --aspect-ratio 1:1 --sample-name image_1024_1_1 --batch-size $DEFAULT_BS
 
   # 1.2 240x426
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2i_samples.txt --save-dir $OUTPUT --num-frames 1 --resolution 240p --aspect-ratio 9:16 --sample-name image_240p_9_16 --end-index 3 --batch-size $DEFAULT_BS
@@ -238,10 +242,38 @@ function run_vbench() {
       --image-size $VBENCH_H $VBENCH_W \
       --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
   else
-    eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
-      --prompt-path assets/texts/VBench/all_dimension.txt \
-      --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
-      --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+    if [ -z ${NUM_SAMPLING_STEPS} ]; then
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_dimension.txt \
+        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
+        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+    else
+      if [ -z ${FLOW} ]; then
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_dimension.txt \
+        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} \
+        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+      else
+        if [ -z ${LLM_REFINE} ]; then
+          eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+          --prompt-path assets/texts/VBench/all_dimension.txt \
+          --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} \
+          --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+        else
+          if [ "${FLOW}" = "None" ]; then
+            eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+            --prompt-path assets/texts/VBench/all_dimension.txt \
+            --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --llm-refine ${LLM_REFINE} \
+            --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          else
+            eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench --prompt-as-path --num-sample 5 \
+            --prompt-path assets/texts/VBench/all_dimension.txt \
+            --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} --llm-refine ${LLM_REFINE} \
+            --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          fi
+        fi
+      fi
+    fi
   fi
 }
 
@@ -255,16 +287,41 @@ function run_vbench_i2v() {
     eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
       --prompt-path assets/texts/VBench/all_i2v.txt \
       --image-size $VBENCH_I2V_H $VBENCH_I2V_W \
-      --start-index $1 --end-index $2 \
-      --num-frames $NUM_FRAMES --batch-size $VBENCH_BS
+      --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
   else
-    eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
-      --prompt-path assets/texts/VBench/all_i2v.txt \
-      --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
-      --start-index $1 --end-index $2 \
-      --num-frames $NUM_FRAMES --batch-size $VBENCH_BS
+    if [ -z ${NUM_SAMPLING_STEPS} ]; then
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_i2v.txt \
+        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO \
+        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+    else
+      if [ -z ${FLOW} ]; then
+        eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+        --prompt-path assets/texts/VBench/all_i2v.txt \
+        --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} \
+        --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+      else
+        if [ -z ${LLM_REFINE} ]; then
+          eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+          --prompt-path assets/texts/VBench/all_i2v.txt \
+          --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} \
+          --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+        else
+          if [ "${FLOW}" = "None" ]; then
+            eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+            --prompt-path assets/texts/VBench/all_i2v.txt \
+            --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --llm-refine ${LLM_REFINE} \
+            --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          else
+            eval $CMD --ckpt-path $CKPT --save-dir ${OUTPUT}_vbench_i2v --prompt-as-path --num-sample 5 \
+            --prompt-path assets/texts/VBench/all_i2v.txt \
+            --resolution $VBENCH_RES --aspect-ratio $VBENCH_ASP_RATIO --num-sampling-steps ${NUM_SAMPLING_STEPS} --flow ${FLOW} --llm-refine ${LLM_REFINE} \
+            --batch-size $VBENCH_BS --num-frames $NUM_FRAMES --start-index $1 --end-index $2
+          fi
+        fi
+      fi
+    fi
   fi
-
 }
 
 ### Main
