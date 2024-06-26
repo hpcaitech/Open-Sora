@@ -16,6 +16,7 @@ vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
     subfolder="vae",
+    scaling_factor=0.13025,
 )
 text_encoder = dict(
     type="t5",

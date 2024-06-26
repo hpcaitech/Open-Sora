@@ -1419,7 +1419,7 @@ class DPM_Solver:
                 for step in progress_fn(range(order, steps + 1)):
                     t = timesteps[step]
                     # We only use lower order for steps < 10
-                    if lower_order_final and steps < 10:
+                    if lower_order_final:  # recommended by Shuchen Xue
                         step_order = min(order, steps + 1 - step)
                     else:
                         step_order = order
