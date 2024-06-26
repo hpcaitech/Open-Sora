@@ -20,20 +20,26 @@
 
 ## 📰 资讯
 
-* **[2024.06.17]** 🔥
-* 我们发布了**Open-Sora 1.2**，其中包括**3D-VAE**，**整流流**和**得分条件**。视频质量大大提高。[[checkpoints]](#open-sora-10-model-weights) [[report]](/docs/report_03.md)
+* **[2024.06.22]** 🔥我们在[潞晨云](https://cloud.luchentech.com/)上发布了Open-Sora1.2镜像，并在B站上传了详细的[使用教程](https://www.bilibili.com/video/BV1ow4m1e7PX/)
+* **[2024.06.17]** 🔥我们发布了**Open-Sora 1.2**，其中包括**3D-VAE**，**整流流**和**得分条件**。视频质量大大提高。[[模型权重]](#模型权重) [[技术报告]](report_v3.md) [[公众号文章]](https://mp.weixin.qq.com/s/QHq2eItZS9e00BVZnivdjg)
 * **[2024.04.25]** 🤗 我们在 Hugging Face Spaces 上发布了 [Open-Sora的Gradio演示](https://huggingface.co/spaces/hpcai-tech/open-sora)。
-* **[2024.04.25]** 我们发布了**Open-Sora 1.1**，支持**2s~15s、144p 到 720p、任意比例的文本转图片、文本转视频、图片转视频、视频转视频、无限时间生成**。此外，还发布了完整的视频处理管道。 [[checkpoints]]() [[report]](/docs/report_02.md)
+* **[2024.04.25]** 我们发布了**Open-Sora 1.1**，支持**2s~15s、144p 到 720p、任意比例的文本转图片、文本转视频、图片转视频、视频转视频、无限时间生成**。此外，还发布了完整的视频处理管道。 [[模型权重]](#模型权重) [[技术报告]](report_v2.md)[[公众号文章]](https://mp.weixin.qq.com/s/nkPSTep2se__tzp5OfiRQQ)
 * **[2024.03.18]** 我们发布了 **Open-Sora 1.0**, 一个完全开源的视频生成项目。Open-Sora 1.0 支持完整的视频数据预处理流程、加速训练
-  <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
-、推理等。我们的模型只需 3 天的训练就可以生成 2 秒的 512x512 视频。 [[checkpoints]](#open-sora-10-model-weights)
-  [[blog]](https://hpc-ai.com/blog/open-sora-v1.0) [[report]](/docs/report_01.md)
+  <a href="https://github.com/hpcaitech/ColossalAI"><img src="/assets/readme/colossal_ai.png" width="8%" ></a>
+、推理等。我们的模型只需 3 天的训练就可以生成 2 秒的 512x512 视频。 [[模型权重]](#模型权重)
+  [[公众号文章]](https://mp.weixin.qq.com/s/H52GW8i4z1Dco3Sg--tCGw) [[技术报告]](report_v1.md)
 * **[2024.03.04]** Open-Sora 提供培训，成本降低 46%。
-  [[blog]](https://hpc-ai.com/blog/open-sora)
+  [[公众号文章]](https://mp.weixin.qq.com/s/OjRUdrM55SufDHjwCCAvXg)
 
 ## 🎥 Latest Demo
 
 🔥 您可以在HuggingFace上的 [🤗 Gradio应用程序](https://huggingface.co/spaces/hpcai-tech/open-sora)上体验Open-Sora. 我们的[画廊](https://hpcaitech.github.io/Open-Sora/)中提供了更多示例.
+
+| **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="/assets/demo/v1.2/sample_0013.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/7895aab6-ed23-488c-8486-091480c26327) | [<img src="/assets/demo/v1.2/sample_1718.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/20f07c7b-182b-4562-bbee-f1df74c86c9a) | [<img src="/assets/demo/v1.2/sample_0087.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3d897e0d-dc21-453a-b911-b3bda838acc2) |
+| [<img src="/assets/demo/v1.2/sample_0052.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/644bf938-96ce-44aa-b797-b3c0b513d64c) | [<img src="/assets/demo/v1.2/sample_1719.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/272d88ac-4b4a-484d-a665-8d07431671d0) | [<img src="/assets/demo/v1.2/sample_0002.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ebbac621-c34e-4bb4-9543-1c34f8989764) |
+| [<img src="/assets/demo/v1.2/sample_0011.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/a1e3a1a3-4abd-45f5-8df2-6cced69da4ca) | [<img src="/assets/demo/v1.2/sample_0004.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/d6ce9c13-28e1-4dff-9644-cc01f5f11926) | [<img src="/assets/demo/v1.2/sample_0061.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/561978f8-f1b0-4f4d-ae7b-45bec9001b4a) |
 
 <details>
 <summary>OpenSora 1.1 演示</summary>
@@ -189,7 +195,8 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 ### Open-Sora 1.2 模型权重
 | 分辨率 | 模型大小 | 数据 | 迭代次数 | 批次大小 | 网址 |
 | ---------- | ---------- | ---- | ----------- | ---------- | --- |
-| 待定        |
+| Diffusion | 1.1B       | 30M  | 70k         | 动态大小    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
+| VAE       | 384M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
 请参阅我们的**[report 1.2](docs/report_v3.md)**以了解更多信息。
 
@@ -280,6 +287,49 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 ### Open-Sora 1.2 命令行推理
 
+基础的命令行推理:
+
+```bash
+# text to video
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+
+您可以向命令行添加更多选项来定制生成。
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
+  --num-sampling-steps 30 --flow 5 --aes 6.5 \
+  --prompt "a beautiful waterfall"
+```
+
+对于图像到视频生成和其他功能，API 与 Open-Sora 1.1 兼容。请参阅[此处]](commands.md)了解更多说明。
+
+如果您的安装不包含 `apex` 和 `flash-attn`, 则需要在配置文件中或通过以下命令禁用它们。
+
+```bash
+python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p \
+  --layernorm-kernel False --flash-attn False \
+  --prompt "a beautiful waterfall"
+```
+
+### 序列并行推理
+
+要启用序列并行，您需要使用 `torchrun` 来运行推理脚本。以下命令将使用 2 个 GPU 运行推理。
+
+```bash
+# text to video
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py configs/opensora-v1-2/inference/sample.py \
+  --num-frames 4s --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+
+:warning: **注意**: gradio 部署不支持序列并行。目前，只有当维度可以除以 GPU 数量时才支持序列并行。因此，在某些情况下可能会失败。我们测试了 4 个 GPU 用于 720p 和 2 个 GPU 用于 480p。
+
+
 ### GPT-4o 快速细化
 
 我们发现 GPT-4o 可以细化提示并提高生成视频的质量。利用此功能，您还可以使用其他语言（例如中文）作为提示。要启用此功能，您需要在环境中准备您的 openai api 密钥：
@@ -347,6 +397,17 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 ### Open-Sora 1.2 训练
 
+训练过程与Open-Sora 1.1相同。
+
+```bash
+# one node
+torchrun --standalone --nproc_per_node 8 scripts/train.py \
+    configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+# multiple nodes
+colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
+    configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
 ### Open-Sora 1.1 训练
 
 <details>
@@ -390,11 +451,48 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 
 ## 评估
 
-### VBench
+我们支持基于以下方面的评估：
 
-### VBench-i2v
+- 验证损失
+- [VBench](https://github.com/Vchitect/VBench/tree/master)h分数
+- VBench-i2v 分数
+- 批量生成以供人工评估
+所有评估代码均发布在 `eval`文件夹中。查看[README](/eval/README.md)了解更多详细信息。我们的 [技术报告](report_v3.md#评估)还提供了有关训练期间评估的更多信息。下表显示 Open-Sora 1.2 大大改进了 Open-Sora 1.0。
 
-请参阅 [c此处](/eval/README.md)了解更多说明。
+| 模型          | 总得分 | 质量得分 | 语义得分 |
+| -------------- | ----------- | ------------- | -------------- |
+| Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
+| Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
+
+## VAE 训练与评估
+
+我们训练一个由空间 VAE 和时间 VAE 组成的 VAE 管道。有关更多详细信息，请参阅[VAE 文档](vae.md)。在运行以下命令之前，请按照我们的[安装文档](installation.md)安装 VAE 和评估所需的依赖项。
+
+如果您想训练自己的 VAE，我们需要按照[数据处理](#data-processing)流程在 csv 中准备数据，然后运行以下命令。请注意，您需要根据自己的 csv 数据大小相应地调整配置文件中的训练`epochs`数量。
+
+
+```bash
+# stage 1 training, 380k steps, 8 GPUs
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage1.py --data-path YOUR_CSV_PATH
+# stage 2 training, 260k steps, 8 GPUs
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage2.py --data-path YOUR_CSV_PATH
+# stage 3 training, 540k steps, 24 GPUs
+torchrun --nnodes=3 --nproc_per_node=8 scripts/train_vae.py configs/vae/train/stage3.py --data-path YOUR_CSV_PATH
+```
+
+为了评估 VAE 的性能，您需要首先运行 VAE 推理来生成视频，然后计算生成的视频的分数：
+
+```bash
+# video generation
+torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference_vae.py configs/vae/inference/video.py --ckpt-path YOUR_VAE_CKPT_PATH --data-path YOUR_CSV_PATH --save-dir YOUR_VIDEO_DIR
+# the original videos will be saved to `YOUR_VIDEO_DIR_ori`
+# the reconstructed videos through the pipeline will be saved to `YOUR_VIDEO_DIR_rec`
+# the reconstructed videos through the spatial VAE only will be saved to `YOUR_VIDEO_DIR_spatial`
+
+# score calculation
+python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir YOUR_VIDEO_DIR_ori --generated_video_dir YOUR_VIDEO_DIR_rec --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
+```
+
 
 ## 贡献
 
