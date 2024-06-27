@@ -28,21 +28,21 @@ END_INDEX_LIST=(140 280 420 560 700 840 980 2000)
 for i in "${!GPUS[@]}"; do
     if [ -z ${RES} ] || [ -z ${ASP_RATIO} ]  ;
         then
-            CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+            CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT $NUM_FRAMES $MODEL_NAME -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
         else
             if [ -z ${NUM_SAMPLING_STEPS} ];
                 then
-                    CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+                    CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
                 else
                     if [ -z ${FLOW} ];
                     then
-                        CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} ${NUM_SAMPLING_STEPS}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+                        CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} ${NUM_SAMPLING_STEPS} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
                     else
                         if [ -z ${LLM_REFINE} ];
                             then
-                                CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} ${NUM_SAMPLING_STEPS} ${FLOW}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+                                CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} ${NUM_SAMPLING_STEPS} ${FLOW} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
                             else
-                                CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} ${NUM_SAMPLING_STEPS} ${FLOW} ${LLM_REFINE}>${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
+                                CUDA_VISIBLE_DEVICES=${GPUS[i]} bash eval/sample.sh $CKPT ${NUM_FRAMES} ${MODEL_NAME} -5 ${START_INDEX_LIST[i]} ${END_INDEX_LIST[i]} ${RES} ${ASP_RATIO} ${NUM_SAMPLING_STEPS} ${FLOW} ${LLM_REFINE} > ${LOG_BASE}/${TASK_ID_LIST[i]}.log 2>&1 &
                         fi
                     fi
             fi
