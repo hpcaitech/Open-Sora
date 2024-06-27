@@ -146,7 +146,7 @@ function run_video_b() { # 18min + 14min = 32min, short 16x240p & 64x240p
   # short, 480p, 9:16, 8s: ~24min
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 8s --resolution ${ASPECT_RATIO_INCR_1} --aspect-ratio 9:16 --sample-name short_8s_${ASPECT_RATIO_INCR_1} --batch-size $DEFAULT_BS
 
-  # short, 240p, 9:16, 16s: ~24min
+  # short, 360p, 9:16, 16s: ~24min
   eval $CMD --ckpt-path $CKPT --prompt-path assets/texts/t2v_short.txt --save-dir $OUTPUT --num-frames 16s --resolution ${BASE_ASPECT_RATIO} --aspect-ratio 9:16 --sample-name short_16s_${BASE_ASPECT_RATIO} --batch-size $DEFAULT_BS
 
 }
