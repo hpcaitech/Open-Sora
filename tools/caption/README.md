@@ -4,7 +4,7 @@ Human labeling of videos is expensive and time-consuming. We adopt powerful imag
 
 ## PLLaVA Captioning
 
-To balance captioning speed and performance, we chose the 13B version of PLLaVA configured with 2*2 spatial pooling. We feed it with 4 frames evenly extracted from the video.
+To balance captioning speed and performance, we chose the 13B version of PLLaVA configured with 2*2 spatial pooling. We feed it with 4 frames evenly extracted from the video. We accelerate its inference via (1) batching and (2) offload frame extraction to a separate process such that the GPU computations and frame extraction happen in parallel.
 
 ### Installation
 Install the required dependancies by following our [installation instructions](../../docs/installation.md)'s "Data Dependencies" and "PLLaVA Captioning" sections.

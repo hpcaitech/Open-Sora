@@ -19,8 +19,8 @@ Note that currently our model loading for vae and diffusion model supports two t
 * load from local file path
 * load from huggingface
 
-Our config supports loading from huggingface by default.
-If you wish to load from a local path, you need to set `force_huggingface=True`, for instance:
+Our config supports loading from huggingface online image by default.
+If you wish to load from a local path downloaded from huggingface image, you need to set `force_huggingface=True`, for instance:
 
 ```python
 # for vae
@@ -41,6 +41,7 @@ model = dict(
     force_huggingface=True, # NOTE: set here
 )
 ```
+However, if you want to load a self-trained model, do not set `force_huggingface=True` since your image won't be in huggingface format.
 
 ## Inference
 

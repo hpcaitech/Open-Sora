@@ -29,15 +29,20 @@ def process_single_row(row, args):
     # check mp4 integrity
     # if not is_intact_video(video_path, logger=logger):
     #     return False
-
-    if "timestamp" in row:
-        timestamp = row["timestamp"]
-        if not (timestamp.startswith("[") and timestamp.endswith("]")):
+    try:
+        if "timestamp" in row:
+            timestamp = row["timestamp"]
+            if not (timestamp.startswith("[") and timestamp.endswith("]")):
+                return False
+            scene_list = eval(timestamp)
+            scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
+        else:
+            scene_list = [None]
+        if args.drop_invalid_timestamps:
+            return True
+    except Exception as e:
+        if args.drop_invalid_timestamps:
             return False
-        scene_list = eval(timestamp)
-        scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
-    else:
-        scene_list = [None]
 
     if "relpath" in row:
         save_dir = os.path.dirname(os.path.join(args.save_dir, row["relpath"]))
@@ -61,7 +66,7 @@ def process_single_row(row, args):
         shorter_size=shorter_size,
         logger=logger,
     )
-
+    return True
 
 def split_video(
     video_path,
@@ -108,7 +113,10 @@ def split_video(
         fname_wo_ext = os.path.splitext(fname)[0]
         # TODO: fname pattern
         save_path = os.path.join(save_dir, f"{fname_wo_ext}_scene-{idx}.mp4")
-
+        if os.path.exists(save_path):
+            # print_log(f"File '{save_path}' already exists. Skip.", logger=logger)
+            continue
+        
         # ffmpeg cmd
         cmd = [FFMPEG_PATH]
 
@@ -134,7 +142,7 @@ def split_video(
             # cmd += ['-vf', f"scale='if(gt(iw,ih),{shorter_size},trunc(ow/a/2)*2)':-2"]
 
         cmd += ["-map", "0:v", save_path]
-
+        # print(cmd)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = proc.communicate()
         # stdout = stdout.decode("utf-8")
@@ -163,7 +171,7 @@ def parse_args():
     )
     parser.add_argument("--num_workers", type=int, default=None, help="#workers for pandarallel")
     parser.add_argument("--disable_parallel", action="store_true", help="disable parallel processing")
-
+    parser.add_argument("--drop_invalid_timestamps", action="store_true", help="drop rows with invalid timestamps")
     args = parser.parse_args()
     return args
 
@@ -175,7 +183,7 @@ def main():
         print(f"Meta file '{meta_path}' not found. Exit.")
         exit()
 
-    # create logger
+    # create save_dir
     os.makedirs(args.save_dir, exist_ok=True)
 
     # initialize pandarallel
@@ -189,10 +197,13 @@ def main():
     # process
     meta = pd.read_csv(args.meta_path)
     if not args.disable_parallel:
-        meta.parallel_apply(process_single_row_partial, axis=1)
+        results = meta.parallel_apply(process_single_row_partial, axis=1)
     else:
-        meta.apply(process_single_row_partial, axis=1)
-
-
+        results = meta.apply(process_single_row_partial, axis=1)
+    if args.drop_invalid_timestamps:
+        meta = meta[results]
+        assert args.meta_path.endswith("timestamp.csv"), "Only support *timestamp.csv"
+        meta.to_csv(args.meta_path.replace("timestamp.csv", "correct_timestamp.csv"), index=False)
+        print(f"Corrected timestamp file saved to '{args.meta_path.replace('timestamp.csv', 'correct_timestamp.csv')}'")
 if __name__ == "__main__":
     main()
