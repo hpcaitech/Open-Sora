@@ -79,6 +79,7 @@ def parse_args(training=False):
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
         parser.add_argument("--start-from-scratch", action="store_true", help="start training from scratch")
         parser.add_argument("--warmup-steps", default=None, type=int, help="warmup steps")
+        parser.add_argument("--record-time", default=False, action="store_true", help="record time of each part")
 
     return parser.parse_args()
 
