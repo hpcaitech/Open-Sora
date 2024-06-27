@@ -6,11 +6,12 @@ import time
 from collections import OrderedDict
 from collections.abc import Sequence
 from itertools import repeat
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
 import torch.distributed as dist
+from colossalai.cluster.dist_coordinator import DistCoordinator
 
 # ======================================================
 # Logging
@@ -358,11 +359,12 @@ def all_exists(paths):
 
 
 class Timer:
-    def __init__(self, name, log=False):
+    def __init__(self, name, log=False, coordinator: Optional[DistCoordinator] = None):
         self.name = name
         self.start_time = None
         self.end_time = None
         self.log = log
+        self.coordinator = coordinator
 
     @property
     def elapsed_time(self):
@@ -374,6 +376,8 @@ class Timer:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.coordinator is not None:
+            self.coordinator.block_all()
         torch.cuda.synchronize()
         self.end_time = time.time()
         if self.log:

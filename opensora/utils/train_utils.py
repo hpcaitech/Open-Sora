@@ -12,7 +12,7 @@ from opensora.acceleration.plugin import ZeroSeqParallelPlugin
 from .misc import get_logger
 
 
-def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
+def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size, reduce_bucket_size_in_m: int = 20):
     if plugin == "zero2":
         assert sp_size == 1, "Zero2 plugin does not support sequence parallelism"
         plugin = LowLevelZeroPlugin(
@@ -20,6 +20,7 @@ def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
             precision=dtype,
             initial_scale=2**16,
             max_norm=grad_clip,
+            reduce_bucket_size_in_m=reduce_bucket_size_in_m,
         )
         set_data_parallel_group(dist.group.WORLD)
     elif plugin == "zero2-seq":
@@ -30,6 +31,7 @@ def create_colossalai_plugin(plugin, dtype, grad_clip, sp_size):
             precision=dtype,
             initial_scale=2**16,
             max_norm=grad_clip,
+            reduce_bucket_size_in_m=reduce_bucket_size_in_m,
         )
         set_sequence_parallel_group(plugin.sp_group)
         set_data_parallel_group(plugin.dp_group)
