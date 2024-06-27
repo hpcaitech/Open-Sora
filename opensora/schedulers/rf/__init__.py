@@ -49,11 +49,14 @@ class RFLOW:
 
         n = len(prompts)
         # text encoding
+        text_encoder.t5.model = text_encoder.t5.model.cuda()
+
         model_args = text_encoder.encode(prompts)
-        y_null = text_encoder.null(n)
+        y_null = text_encoder.null(n).cuda()
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
         if additional_args is not None:
             model_args.update(additional_args)
+        text_encoder.t5.model = text_encoder.t5.model.cpu()
 
         # prepare timesteps
         timesteps = [(1.0 - i / self.num_sampling_steps) * self.num_timesteps for i in range(self.num_sampling_steps)]
@@ -66,7 +69,7 @@ class RFLOW:
         if mask is not None:
             noise_added = torch.zeros_like(mask, dtype=torch.bool)
             noise_added = noise_added | (mask == 1)
-
+        model = model.cuda()
         progress_wrap = tqdm if progress else (lambda x: x)
         for i, t in progress_wrap(enumerate(timesteps)):
             # mask for adding noise
@@ -96,6 +99,7 @@ class RFLOW:
 
             if mask is not None:
                 z = torch.where(mask_t_upper[:, None, :, None, None], z, x0)
+        model = model.cpu()
 
         return z
 
