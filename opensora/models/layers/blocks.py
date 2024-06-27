@@ -163,6 +163,8 @@ class Attention(nn.Module):
         if rope is not None:
             self.rope = True
             self.rotary_emb = rope
+        
+        self.is_causal = False
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, N, C = x.shape
@@ -198,12 +200,17 @@ class Attention(nn.Module):
                 v,
                 dropout_p=self.attn_drop.p if self.training else 0.0,
                 softmax_scale=self.scale,
+                causal=self.is_causal,
             )
         else:
             dtype = q.dtype
             q = q * self.scale
             attn = q @ k.transpose(-2, -1)  # translate attn to float32
             attn = attn.to(torch.float32)
+            if self.is_causal:
+                causal_mask = torch.tril(torch.ones_like(attn), diagonal=0)
+                causal_mask = torch.where(causal_mask.bool(), 0, float('-inf'))
+                attn += causal_mask
             attn = attn.softmax(dim=-1)
             attn = attn.to(dtype)  # cast back attn to original dtype
             attn = self.attn_drop(attn)
@@ -499,7 +506,7 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
 
         # shape:
         # q, k, v: [B, SUB_N, NUM_HEADS, HEAD_DIM]
-        q = self.q_linear(x).view(1, -1, self.num_heads, self.head_dim)
+        q = self.q_linear(x).view(B, -1, self.num_heads, self.head_dim)
         kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
         kv = split_forward_gather_backward(kv, get_sequence_parallel_group(), dim=3, grad_scale="down")
         k, v = kv.unbind(2)
