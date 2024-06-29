@@ -375,7 +375,7 @@ def main():
     # write the dataframe to a new csv file called '*_pllava_13b_caption.csv'
     new_csv_path = args.csv_path.replace(".csv", "_text.csv")
     df.to_csv(new_csv_path, index=False)
-
+    print(f"Results saved to {new_csv_path}")
 
 if __name__ == "__main__":
     main()
