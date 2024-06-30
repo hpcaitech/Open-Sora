@@ -236,7 +236,7 @@ def infer(
     processor,
     video_list,
     conv_mode,
-    print_res=True,
+    print_res=False,
 ):
     # check if any video in video_list is None, if so, raise an exception
     if any([video is None for video in video_list]):
@@ -314,7 +314,8 @@ def run(rank, args, world_size, output_queue):
             )
         except Exception as e:
             logger.error(f"error in {batch}: {str(e)}")
-            preds = args.error_message
+            # preds = args.error_message duplicated for each video in the batch
+            preds = [args.error_message] * len(batch)
         result_list.extend(preds)
     output_queue.put((rank, result_list))
     return result_list
