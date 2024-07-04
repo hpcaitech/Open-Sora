@@ -179,6 +179,7 @@ pretrained_models
 evaluation_results/
 cache/
 *.swp
+debug/
 
 # Secret files
 hostfile
