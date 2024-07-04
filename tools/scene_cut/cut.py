@@ -167,7 +167,7 @@ def parse_args():
     )
     parser.add_argument("--target_fps", type=int, default=None, help="target fps of clips")
     parser.add_argument(
-        "--shorter_size", type=int, default=1080, help="resize the shorter size by keeping ratio; will not do upscale"
+        "--shorter_size", type=int, default=None, help="resize the shorter size by keeping ratio; will not do upscale"
     )
     parser.add_argument("--num_workers", type=int, default=None, help="#workers for pandarallel")
     parser.add_argument("--disable_parallel", action="store_true", help="disable parallel processing")
