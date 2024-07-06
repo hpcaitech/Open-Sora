@@ -126,7 +126,6 @@ def _read_from_stream(
     stream_name: Dict[str, Optional[Union[int, Tuple[int, ...], List[int]]]],
     filename: Optional[str] = None,
 ) -> List["av.frame.Frame"]:
-
     if pts_unit == "sec":
         # TODO: we should change all of this from ground up to simply take
         # sec and convert to MS in C++
