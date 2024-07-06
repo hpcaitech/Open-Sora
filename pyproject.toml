@@ -1,0 +1,16 @@
+[tool.autoflake]
+remove-unused-variables = true
+remove-all-unused-imports = true
+ignore-init-module-imports = true
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+ignore_comments = true
+profile = "black"
+honor_noqa = true
+
+[tool.black]
+line-length = 120
+target-version = ["py37", "py38", "py39", "py310"]

@@ -5,7 +5,7 @@ repos:
     hooks:
       - id: autoflake
         name: autoflake (python)
-        args: ['--in-place', '--remove-unused-variables', '--remove-all-unused-imports', '--ignore-init-module-imports']
+        args: ['--in-place']
 
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
@@ -18,7 +18,6 @@ repos:
     hooks:
     - id: black
       name: black formatter
-      args: ['--line-length=120', '--target-version=py37', '--target-version=py38', '--target-version=py39','--target-version=py310']
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.3.0
