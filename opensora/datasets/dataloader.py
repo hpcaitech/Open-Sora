@@ -111,6 +111,9 @@ def prepare_dataloader(
 
 
 def collate_fn_default(batch):
+    # filter out None
+    batch = [x for x in batch if x is not None]
+
     # HACK: for loading text features
     use_mask = False
     if "mask" in batch[0] and isinstance(batch[0]["mask"], int):
@@ -132,6 +135,9 @@ def collate_fn_batch(batch):
     """
     Used only with BatchDistributedSampler
     """
+    # filter out None
+    batch = [x for x in batch if x is not None]
+    
     res = torch.utils.data.default_collate(batch)
 
     # squeeze the first dimension, which is due to torch.stack() in default_collate()

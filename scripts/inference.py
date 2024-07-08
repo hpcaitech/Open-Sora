@@ -260,6 +260,7 @@ def main():
                     )
 
                 # == sampling ==
+                torch.manual_seed(1024)
                 z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
                 masks = apply_mask_strategy(z, refs, ms, loop_i, align=align)
                 samples = scheduler.sample(

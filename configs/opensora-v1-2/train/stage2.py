@@ -60,18 +60,20 @@ scheduler = dict(
 )
 
 # Mask settings
+# 25%
 mask_ratios = {
-    "random": 0.05,
-    "intepolate": 0.005,
-    "quarter_random": 0.005,
-    "quarter_head": 0.005,
-    "quarter_tail": 0.005,
-    "quarter_head_tail": 0.005,
-    "image_random": 0.025,
-    "image_head": 0.05,
-    "image_tail": 0.025,
-    "image_head_tail": 0.025,
+    "random": 0.005,
+    "intepolate": 0.002,
+    "quarter_random": 0.007,
+    "quarter_head": 0.002,
+    "quarter_tail": 0.002,
+    "quarter_head_tail": 0.002,
+    "image_random": 0.0,
+    "image_head": 0.22,
+    "image_tail": 0.005,
+    "image_head_tail": 0.005,
 }
+
 
 # Log settings
 seed = 42
