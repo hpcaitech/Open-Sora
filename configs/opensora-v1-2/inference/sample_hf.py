@@ -19,12 +19,14 @@ model = dict(
     qk_norm=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
+    force_huggingface=True,
 )
 vae = dict(
     type="OpenSoraVAE_V1_2",
     from_pretrained="hpcai-tech/OpenSora-VAE-v1.2",
     micro_frame_size=17,
     micro_batch_size=4,
+    force_huggingface=True,
 )
 text_encoder = dict(
     type="t5",

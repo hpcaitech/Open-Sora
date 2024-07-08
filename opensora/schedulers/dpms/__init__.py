@@ -24,7 +24,8 @@ class DPM_SOLVER:
         mask=None,
         progress=True,
     ):
-        assert mask is None, "mask is not supported in dpm-solver"
+        if mask is not None:
+            print("[WARNING] mask is not supported in dpm-solver, it will be ignored")
         n = len(prompts)
         model_args = text_encoder.encode(prompts)
         y = model_args.pop("y")

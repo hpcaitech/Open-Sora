@@ -6,7 +6,7 @@ import pandas as pd
 from torchvision.datasets import ImageNet
 
 IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".ppm", ".bmp", ".pgm", ".tif", ".tiff", ".webp")
-VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
+VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv", ".m2ts")
 
 
 def scan_recursively(root):

@@ -3,8 +3,16 @@
 CMD="torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py"
 CKPT_PATH=$1
 MODEL_NAME=$2
-IMG_PATH="/mnt/jfs-hdd/sora/meta/validation/img_1k.csv"
-VID_PATH="/mnt/jfs-hdd/sora/meta/validation/vid_100.csv"
+IMG_PATH=$3
+VID_PATH=$4
+
+if [ -z $IMG_PATH ]; then
+    IMG_PATH="/mnt/jfs-hdd/sora/meta/validation/img_1k.csv"
+fi
+
+if [ -z $VID_PATH ]; then
+    VID_PATH="/mnt/jfs-hdd/sora/meta/validation/vid_100.csv"
+fi
 
 if [[ $CKPT_PATH == *"ema"* ]]; then
     parentdir=$(dirname $CKPT_PATH)
