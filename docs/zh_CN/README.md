@@ -16,7 +16,7 @@
 
 我们设计并实施了**Open-Sora**，这是一项致力于高效制作高质量视频的计划。我们希望让所有人都能使用模型、工具和所有细节。通过采用开源原则，Open-Sora 不仅使高级视频生成技术的使用变得民主化，而且还提供了一个简化且用户友好的平台，简化了视频生成的复杂性。借助 Open-Sora，我们的目标是在内容创作领域促进创新、创造力和包容性。
 
-[[中文文档]](/docs/zh_CN/README.md) [[潞晨云部署视频教程]](https://www.bilibili.com/video/BV141421R7Ag)
+[[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)]
 
 ## 📰 资讯
 
