@@ -1,6 +1,6 @@
 num_frames = 1
 fps = 1
-image_size = (2560, 1536)
+# image_size = (2560, 1536)
 # image_size = (2048, 2048)
 
 model = dict(
@@ -16,6 +16,7 @@ vae = dict(
     type="VideoAutoencoderKL",
     from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
     subfolder="vae",
+    scaling_factor=0.13025,
 )
 text_encoder = dict(
     type="t5",

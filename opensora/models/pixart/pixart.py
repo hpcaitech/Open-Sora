@@ -197,16 +197,18 @@ class PixArt(nn.Module):
             if freeze == "text":
                 self.freeze_text()
 
-    def forward(self, x, timestep, y, mask=None):
+    def forward(self, x, timestep, y, mask=None, **kwargs):
         """
         Forward pass of PixArt.
         x: (N, C, H, W) tensor of spatial inputs (images or latent representations of images)
         t: (N,) tensor of diffusion timesteps
         y: (N, 1, 120, C) tensor of class labels
         """
-        x = x.to(self.dtype)
-        timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
+        dtype = self.x_embedder.proj.weight.dtype
+        B = x.size(0)
+        x = x.to(dtype)
+        timestep = timestep.to(dtype)
+        y = y.to(dtype)
 
         # embedding
         x = self.x_embedder(x)  # (B, N, D)

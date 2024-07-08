@@ -13,7 +13,13 @@ from opensora.utils.ckpt_utils import load_checkpoint
 @MODELS.register_module()
 class VideoAutoencoderKL(nn.Module):
     def __init__(
-        self, from_pretrained=None, micro_batch_size=None, cache_dir=None, local_files_only=False, subfolder=None
+        self,
+        from_pretrained=None,
+        micro_batch_size=None,
+        cache_dir=None,
+        local_files_only=False,
+        subfolder=None,
+        scaling_factor=0.18215,
     ):
         super().__init__()
         self.module = AutoencoderKL.from_pretrained(
@@ -25,6 +31,7 @@ class VideoAutoencoderKL(nn.Module):
         self.out_channels = self.module.config.latent_channels
         self.patch_size = (1, 8, 8)
         self.micro_batch_size = micro_batch_size
+        self.scaling_factor = scaling_factor
 
     def encode(self, x):
         # x: (B, C, T, H, W)
@@ -32,14 +39,14 @@ class VideoAutoencoderKL(nn.Module):
         x = rearrange(x, "B C T H W -> (B T) C H W")
 
         if self.micro_batch_size is None:
-            x = self.module.encode(x).latent_dist.sample().mul_(0.18215)
+            x = self.module.encode(x).latent_dist.sample().mul_(self.scaling_factor)
         else:
             # NOTE: cannot be used for training
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
                 x_bs = x[i : i + bs]
-                x_bs = self.module.encode(x_bs).latent_dist.sample().mul_(0.18215)
+                x_bs = self.module.encode(x_bs).latent_dist.sample().mul_(self.scaling_factor)
                 x_out.append(x_bs)
             x = torch.cat(x_out, dim=0)
         x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
@@ -50,14 +57,14 @@ class VideoAutoencoderKL(nn.Module):
         B = x.shape[0]
         x = rearrange(x, "B C T H W -> (B T) C H W")
         if self.micro_batch_size is None:
-            x = self.module.decode(x / 0.18215).sample
+            x = self.module.decode(x / self.scaling_factor).sample
         else:
             # NOTE: cannot be used for training
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
                 x_bs = x[i : i + bs]
-                x_bs = self.module.decode(x_bs / 0.18215).sample
+                x_bs = self.module.decode(x_bs / self.scaling_factor).sample
                 x_out.append(x_bs)
             x = torch.cat(x_out, dim=0)
         x = rearrange(x, "(B T) C H W -> B C T H W", B=B)

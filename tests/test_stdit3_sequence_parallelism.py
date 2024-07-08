@@ -9,7 +9,7 @@ from opensora.models.stdit.stdit3 import STDiT3, STDiT3Config
 
 
 def get_sample_data():
-    x = torch.rand([1, 4, 15, 20, 27], dtype=torch.bfloat16)  # (B, C, T, H, W)
+    x = torch.rand([1, 4, 15, 20, 28], dtype=torch.bfloat16)  # (B, C, T, H, W)
     timestep = torch.Tensor([924.0]).to(torch.bfloat16)
     y = torch.rand(1, 1, 300, 4096, dtype=torch.bfloat16)
     mask = torch.ones([1, 300], dtype=torch.int32)
@@ -66,6 +66,17 @@ def run_model(rank, world_size, port):
     set_seed(1024)
     dist_model_cfg = get_stdit3_config(enable_sequence_parallelism=True)
     dist_model = STDiT3(dist_model_cfg).cuda().to(torch.bfloat16)
+
+    # ensure model weights are equal
+    for p1, p2 in zip(non_dist_model.parameters(), dist_model.parameters()):
+        assert torch.equal(p1, p2)
+
+    # ensure model weights are equal across all ranks
+    for p in dist_model.parameters():
+        p_list = [torch.zeros_like(p) for _ in range(world_size)]
+        dist.all_gather(p_list, p, group=dist.group.WORLD)
+        assert torch.equal(*p_list)
+
     dist_out = dist_model(**data)
     dist_out.mean().backward()
 
@@ -84,9 +95,8 @@ def run_model(rank, world_size, port):
     for (n1, p1), (n2, p2) in zip(non_dist_model.named_parameters(), dist_model.named_parameters()):
         assert n1 == n2
         if p1.grad is not None and p2.grad is not None:
-            if not torch.allclose(p1.grad, p2.grad, rtol=1e-2, atol=1e-4):
-                if dist.get_rank() == 0:
-                    print(f"gradient of {n1} is not equal, {p1.grad} vs {p2.grad}")
+            if not torch.allclose(p1.grad, p2.grad, rtol=1e-2, atol=1e-4) and dist.get_rank() == 0:
+                print(f"gradient of {n1} is not equal, {p1.grad} vs {p2.grad}")
         else:
             assert p1.grad is None and p2.grad is None
 

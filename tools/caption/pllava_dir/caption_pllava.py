@@ -1,3 +1,17 @@
+import sys
+import os
+import os
+from pathlib import Path
+
+current_file = Path(__file__)  # Gets the path of the current file
+fourth_level_parent = current_file.parents[3]
+
+datasets_dir = os.path.join(fourth_level_parent, "opensora/datasets")
+import sys
+sys.path.append(datasets_dir)
+from read_video import read_video_av
+sys.path.remove(datasets_dir)
+
 import itertools
 import logging
 import multiprocessing as mp
@@ -95,21 +109,49 @@ def get_index(num_frames, num_segments):
     return offsets
 
 
+# def load_video(video_path, num_frames, return_msg=False, resolution=336):
+#     transforms = torchvision.transforms.Resize(size=resolution)
+#     vr = VideoReader(video_path, ctx=cpu(0), num_threads=1)
+#     total_num_frames = len(vr)
+#     frame_indices = get_index(total_num_frames, num_frames)
+#     images_group = list()
+#     for frame_index in frame_indices:
+#         img = Image.fromarray(vr[frame_index].asnumpy())
+#         images_group.append(transforms(img))
+#     if return_msg:
+#         fps = float(vr.get_avg_fps())
+#         sec = ", ".join([str(round(f / fps, 1)) for f in frame_indices])
+#         # " " should be added in the start and end
+#         msg = f"The video contains {len(frame_indices)} frames sampled at {sec} seconds."
+#         return images_group, msg
+#     else:
+#         return images_group
+
+
 def load_video(video_path, num_frames, return_msg=False, resolution=336):
     transforms = torchvision.transforms.Resize(size=resolution)
-    vr = VideoReader(video_path, ctx=cpu(0), num_threads=1)
-    total_num_frames = len(vr)
+    # vr = VideoReader(video_path, ctx=cpu(0), num_threads=1)
+    vframes, aframes, info = read_video_av(
+        video_path,
+        pts_unit="sec", 
+        output_format="THWC"
+    )
+    print(vframes.shape)
+    total_num_frames = len(vframes)
+    # print("Video path: ", video_path)
+    # print("Total number of frames: ", total_num_frames)
     frame_indices = get_index(total_num_frames, num_frames)
     images_group = list()
     for frame_index in frame_indices:
-        img = Image.fromarray(vr[frame_index].asnumpy())
+        img = Image.fromarray(vframes[frame_index].numpy())
         images_group.append(transforms(img))
     if return_msg:
-        fps = float(vr.get_avg_fps())
-        sec = ", ".join([str(round(f / fps, 1)) for f in frame_indices])
-        # " " should be added in the start and end
-        msg = f"The video contains {len(frame_indices)} frames sampled at {sec} seconds."
-        return images_group, msg
+        # fps = float(vframes.get_avg_fps())
+        # sec = ", ".join([str(round(f / fps, 1)) for f in frame_indices])
+        # # " " should be added in the start and end
+        # msg = f"The video contains {len(frame_indices)} frames sampled at {sec} seconds."
+        # return images_group, msg
+        exit('return_msg not implemented yet')
     else:
         return images_group
 
@@ -130,7 +172,10 @@ class CSVDataset(Dataset):
     def __getitem__(self, idx):
         if idx < 0 or idx >= len(self.data_list):
             raise IndexError
-        video = load_video(self.data_list[idx], self.num_frames, resolution=RESOLUTION)
+        try:
+            video = load_video(self.data_list[idx], self.num_frames, resolution=RESOLUTION)
+        except:
+            return None
         return video
 
     def set_rank_and_world_size(self, rank, world_size):
@@ -191,7 +236,7 @@ def parse_args():
         "--error_message",
         type=str,
         required=False,
-        default=None,
+        default='error occured during captioning',
     )
     args = parser.parse_args()
     return args
@@ -233,8 +278,11 @@ def infer(
     processor,
     video_list,
     conv_mode,
-    print_res=True,
+    print_res=False,
 ):
+    # check if any video in video_list is None, if so, raise an exception
+    if any([video is None for video in video_list]):
+        raise Exception("Video not loaded properly")
     conv = conv_template.copy()
     conv.user_query("Describe the video in details.", is_mm=True)
 
@@ -308,7 +356,8 @@ def run(rank, args, world_size, output_queue):
             )
         except Exception as e:
             logger.error(f"error in {batch}: {str(e)}")
-            preds = args.error_message
+            # preds = args.error_message duplicated for each video in the batch
+            preds = [args.error_message] * len(batch)
         result_list.extend(preds)
     output_queue.put((rank, result_list))
     return result_list
@@ -369,7 +418,7 @@ def main():
     # write the dataframe to a new csv file called '*_pllava_13b_caption.csv'
     new_csv_path = args.csv_path.replace(".csv", "_text.csv")
     df.to_csv(new_csv_path, index=False)
-
+    print(f"Results saved to {new_csv_path}")
 
 if __name__ == "__main__":
     main()

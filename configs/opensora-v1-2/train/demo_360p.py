@@ -5,7 +5,7 @@ dataset = dict(
 )
 
 # webvid
-bucket_config = {"360p": {102: (1.0, 5)}}
+bucket_config = {"360p": {102: (1.0, 1)}}
 grad_checkpoint = True
 
 # Acceleration settings
