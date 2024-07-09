@@ -35,7 +35,7 @@ def process_single_row(row, args):
             if not (timestamp.startswith("[") and timestamp.endswith("]")):
                 return False
             scene_list = eval(timestamp)
-            scene_list = [(FrameTimecode(s, fps=1), FrameTimecode(t, fps=1)) for s, t in scene_list]
+            scene_list = [(FrameTimecode(s, fps=100), FrameTimecode(t, fps=100)) for s, t in scene_list]
         else:
             scene_list = [None]
         if args.drop_invalid_timestamps:
@@ -104,8 +104,7 @@ def split_video(
             duration = t - s
             if max_seconds is not None:
                 fps = s.framerate
-                max_duration = FrameTimecode(timecode="00:00:00", fps=fps)
-                max_duration.frame_num = round(fps * max_seconds)
+                max_duration = FrameTimecode(max_seconds, fps=fps)
                 duration = min(max_duration, duration)
 
         # save path
