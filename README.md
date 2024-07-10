@@ -361,6 +361,14 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py config
 
 :warning: **LIMITATION**: The sequence parallelism is not supported for gradio deployment. For now, the sequence parallelism is only supported when the dimension can be divided by the number of GPUs. Thus, it may fail for some cases. We tested 4 GPUs for 720p and 2 GPUs for 480p.
 
+### Separate Inference 720p video with 24G VRAM
+```bash
+# text to video
+./scripts/separate_inference.sh 4s 720p "9:16" "a beautiful waterfall"
+```
+
+:warning: **LIMITATION**: The separate inference not implement reference yet.
+
 ### GPT-4o Prompt Refinement
 
 We find that GPT-4o can refine the prompt and improve the quality of the generated video. With this feature, you can also use other language (e.g., Chinese) as the prompt. To enable this feature, you need prepare your openai api key in the environment:
