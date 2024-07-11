@@ -367,7 +367,10 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py config
 ./scripts/separate_inference.sh 4s 720p "9:16" "a beautiful waterfall"
 ```
 
-:warning: **LIMITATION**: The separate inference not implement reference yet.
+```bash
+# image to video
+./scripts/separate_inference.sh 4s 720p "9:16" "a beautiful waterfall. {\"reference_path\": \"path2reference.png\",\"mask_strategy\": \"0\"}""
+```
 
 ### GPT-4o Prompt Refinement
 
