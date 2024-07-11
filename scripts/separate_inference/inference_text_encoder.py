@@ -214,7 +214,7 @@ def main():
                     torch.save(emb_masks, os.path.join(save_dir, date, saved_idx, f"{i}_{loop_i}_prompt_masks.pt"))
 
         start_idx += len(batch_prompts)
-    logger.info("Inference finished.")
+    logger.info("Inference text_encoder finished.")
     logger.info("Saved %s samples to %s/%s/%s", start_idx, save_dir, date, saved_idx)
 
 

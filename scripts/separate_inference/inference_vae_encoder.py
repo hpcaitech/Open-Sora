@@ -12,17 +12,17 @@ from tqdm import tqdm
 from opensora.acceleration.parallel_states import set_sequence_parallel_group
 from opensora.datasets.aspect import get_image_size, get_num_frames
 from opensora.models.text_encoder.t5 import text_preprocessing
-from opensora.registry import MODELS, SCHEDULERS, build_module
+from opensora.registry import MODELS, build_module
 from opensora.utils.config_utils import parse_configs
 from opensora.utils.inference_utils import (
+    append_generated,
     append_score_to_prompts,
-    apply_mask_strategy,
+    collect_references_batch,
     extract_json_from_prompts,
     extract_prompts_loop,
     get_save_path_name,
     load_prompts,
     merge_prompt,
-    prepare_multi_resolution_info,
     refine_prompts_by_openai,
     split_prompt,
 )
@@ -67,6 +67,8 @@ def main():
     # build model & load weights
     # ======================================================
     logger.info("Building models...")
+    # == build text-encoder and vae ==
+    vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
 
     # == prepare video size ==
     image_size = cfg.get("image_size", None)
@@ -80,35 +82,8 @@ def main():
     num_frames = get_num_frames(cfg.num_frames)
 
     # == build diffusion model ==
-    (num_frames, *image_size)
-
-    # == get vae temporal size ==
-    micro_frame_size = cfg.get("micro_frame_size", 17)
-    time_padding = 0 if micro_frame_size % 4 == 0 else 4 - micro_frame_size % 4
-    lsize = (micro_frame_size + time_padding) // 4
-    frame_size = lsize * (num_frames // micro_frame_size)
-    remain_temporal_size = num_frames % micro_frame_size
-    if remain_temporal_size > 0:
-        time_padding = 0 if remain_temporal_size % 4 == 0 else 4 - remain_temporal_size % 4
-        remain_size = (remain_temporal_size + time_padding) // 4
-        frame_size += remain_size
-
-    latent_size = (frame_size, image_size[0] // 8, image_size[1] // 8)
-    model = (
-        build_module(
-            cfg.model,
-            MODELS,
-            input_size=latent_size,
-            in_channels=4,
-            caption_channels=4096,
-            model_max_length=300,
-            enable_sequence_parallelism=enable_sequence_parallelism,
-        )
-        .to(device, dtype)
-        .eval()
-    )
-    # == build scheduler ==
-    scheduler = build_module(cfg.scheduler, SCHEDULERS)
+    input_size = (num_frames, *image_size)
+    vae.get_latent_size(input_size)
 
     # ======================================================
     # inference
@@ -131,13 +106,13 @@ def main():
     # == prepare arguments ==
     fps = cfg.fps
     cfg.get("save_fps", fps // cfg.get("frame_interval", 1))
-    multi_resolution = cfg.get("multi_resolution", None)
+    cfg.get("multi_resolution", None)
     batch_size = cfg.get("batch_size", 1)
     num_sample = cfg.get("num_sample", 1)
     loop = cfg.get("loop", 1)
-    cfg.get("condition_frame_length", 5)
-    cfg.get("condition_frame_edit", 0.0)
-    align = cfg.get("align", None)
+    condition_frame_length = cfg.get("condition_frame_length", 5)
+    condition_frame_edit = cfg.get("condition_frame_edit", 0.0)
+    cfg.get("align", None)
 
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
@@ -164,23 +139,7 @@ def main():
         original_batch_prompts = batch_prompts
 
         # == get reference for condition ==
-        # refs = collect_references_batch(refs, vae, image_size)
-        refs_x = []  # refs_x: [batch, ref_num, C, T, H, W]
-        for reference_path in refs:
-            if reference_path == "":
-                refs_x.append([])
-                continue
-            ref_path = reference_path.split(";")
-            ref = []
-            for r_path in ref_path:
-                ref.append("placehold")
-            refs_x.append(ref)
-        refs = refs_x
-
-        # == multi-resolution info ==
-        model_args = prepare_multi_resolution_info(
-            multi_resolution, len(batch_prompts), image_size, num_frames, fps, device, dtype
-        )
+        refs = collect_references_batch(refs, vae, image_size)
 
         # == Iter over number of sampling for one prompt ==
         for k in range(num_sample):
@@ -269,47 +228,26 @@ def main():
                 batch_prompts.append(merge_prompt(prompt_segment_list, loop_idx_list))
 
             # == Iter over loop generation ==
+            video_clips = []
             for loop_i in range(loop):
                 # == get prompt for loop i ==
-                batch_prompts_loop = extract_prompts_loop(batch_prompts, loop_i)
+                extract_prompts_loop(batch_prompts, loop_i)
 
                 # == add condition frames for loop ==
-                if os.path.exists(os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_ref.pt")):
-                    ref = torch.load(os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_ref.pt"))
-                    ref = ref.to(dtype)
-                    ref = ref.to(device)
-                    refs[i][loop_i] = ref
-                    ms[i] = open(os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_ms")).readlines()[0].strip()
-
-                # == get text embedding ==
-                caption_embs = torch.load(os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_prompt.pt"))
-                caption_emb_masks = torch.load(
-                    os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_prompt_masks.pt")
-                )
-                caption_embs = caption_embs.to(device, torch.float32)
-                caption_emb_masks = caption_emb_masks.to(device, torch.int64)
-
-                # == sampling ==
-                torch.manual_seed(1024)
-                z = torch.randn(len(batch_prompts), 4, *latent_size, device=device, dtype=dtype)
-                masks = apply_mask_strategy(z, refs, ms, loop_i, align=align)
-                samples = scheduler.sample(
-                    model,
-                    text_encoder=None,
-                    z=z,
-                    prompts=batch_prompts_loop,
-                    device=device,
-                    additional_args=model_args,
-                    progress=verbose >= 2,
-                    mask=masks,
-                    caption_embs=caption_embs,
-                    caption_emb_masks=caption_emb_masks,
-                )
+                if loop_i > 0:
+                    refs, ms = append_generated(
+                        vae, video_clips[-1], refs, ms, loop_i, condition_frame_length, condition_frame_edit
+                    )
                 if is_main_process():
-                    torch.save(samples.cpu(), os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_latents.pt"))
+                    torch.save(
+                        refs[i][loop_i].cpu(), os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_ref.pt")
+                    )
+                    with open(os.path.join(save_dir, cur_date, saved_idx, f"{i}_{loop_i}_ms"), "w") as f:
+                        f.write(ms[i])
+
         start_idx += len(batch_prompts)
-    logger.info("Inference STDiT finished.")
-    logger.info("Saved %s samples to %s/%s/%s", start_idx, save_dir, cur_date, saved_idx)
+    logger.info("Inference VAE encoder finished.")
+    logger.info("Saved %s samples to %s", start_idx, save_dir)
 
 
 if __name__ == "__main__":

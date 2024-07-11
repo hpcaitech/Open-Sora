@@ -8,6 +8,9 @@ set_default_params() {
 
 set_default_params "$@"
 
-CUDA_VISIBLE_DEVICES=0,1 torchrun  --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_text_encoder.py configs/opensora-v1-2/inference/sample.py --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_stdit.py configs/opensora-v1-2/inference/sample.py --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_vae_decoder.py configs/opensora-v1-2/inference/sample.py --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"
+CUDA_VISIBLE_DEVICES=0,1 torchrun  --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_text_encoder.py configs/opensora-v1-2/inference/sample.py --aes 7 --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"
+if echo "$prompt" | grep -q "reference_path"; then
+    CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_vae_encoder.py configs/opensora-v1-2/inference/sample.py --aes 7 --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"
+fi
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_stdit.py configs/opensora-v1-2/inference/sample.py --aes 7 --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 --master_port=23456 scripts/separate_inference/inference_vae_decoder.py configs/opensora-v1-2/inference/sample.py --aes 7 --num-frames "$num_frames" --resolution "$resolution" --aspect-ratio "$aspect_ratio" --prompt "$prompt"

@@ -135,7 +135,7 @@ def main():
                     time.sleep(1)  # prevent loading previous generated video
                     add_watermark(save_path)
         start_idx += len(batch_prompts)
-    logger.info("Inference finished.")
+    logger.info("Inference VAE decoder finished.")
     logger.info("Saved %s samples to %s/%s/%s", start_idx, save_dir, cur_date, saved_idx)
 
 
