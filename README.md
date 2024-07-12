@@ -363,8 +363,6 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py config
 
 ### Separate Inference 720p video with 24G VRAM
 
-The original Open-Sora inference script requires a large amount of VRAM, making it only suitable for high-end professional GPUs. However, by breaking down the inference process into multiple steps, we can generate high-quality videos on consumer-grade GPUs like the RTX 4090.
-
 The Open-Sora project consists of three main components: text_encoder, VAE, and STDiT. By running inference for each component separately, we can complete the entire process with limited VRAM.
 
 #### Step-by-Step Inference
@@ -406,6 +404,8 @@ The basic image2video script is as follows:
 # image to video
 ./scripts/separate_inference.sh "0,1" 4s 720p "9:16" 7 "a beautiful waterfall. {\"reference_path\": \"path2reference.png\",\"mask_strategy\": \"0\"}""
 ```
+
+:warning: **LIMITATION**: Due to the text_encoder requiring over 18GB of VRAM, this script currently only supports GPUs with more than 18GB of VRAM. If you want to use it on machines with less than 16GB of VRAM, you'll need to modify the inference precision of the text_encoder yourself.
 
 ### GPT-4o Prompt Refinement
 
