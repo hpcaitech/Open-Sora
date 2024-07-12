@@ -79,9 +79,6 @@ def main():
         image_size = get_image_size(resolution, aspect_ratio)
     num_frames = get_num_frames(cfg.num_frames)
 
-    # == build diffusion model ==
-    (num_frames, *image_size)
-
     # == get vae temporal size ==
     micro_frame_size = cfg.get("micro_frame_size", 17)
     time_padding = 0 if micro_frame_size % 4 == 0 else 4 - micro_frame_size % 4

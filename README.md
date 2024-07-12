@@ -362,14 +362,49 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py config
 :warning: **LIMITATION**: The sequence parallelism is not supported for gradio deployment. For now, the sequence parallelism is only supported when the dimension can be divided by the number of GPUs. Thus, it may fail for some cases. We tested 4 GPUs for 720p and 2 GPUs for 480p.
 
 ### Separate Inference 720p video with 24G VRAM
+
+The original Open-Sora inference script requires a large amount of VRAM, making it only suitable for high-end professional GPUs. However, by breaking down the inference process into multiple steps, we can generate high-quality videos on consumer-grade GPUs like the RTX 4090.
+
+The Open-Sora project consists of three main components: text_encoder, VAE, and STDiT. By running inference for each component separately, we can complete the entire process with limited VRAM.
+
+#### Step-by-Step Inference
+
+1. First, run the text_encoder inference and save text embedding.
+2. If you are using reference image, run VAE encoder and save reference latents. (optional)
+3. Then, run STDiT with saved text embedding and save latents.
+4. Finally, run VAE decoder with saved latents.
+
+#### All-in-one script
+
+The basic text2video script is as follows:
+
 ```bash
 # text to video
-./scripts/separate_inference.sh 4s 720p "9:16" "a beautiful waterfall"
+./scripts/separate_inference.sh "0,1" 4s 720p "9:16" 7 "a beautiful waterfall"
+
+# Parameter explanations:
+# "0,1"    : GPU indices to use (e.g., "0,1" uses GPUs 0 and 1)
+# 4s       : Duration of the video (4 seconds in this case)
+# 720p     : Resolution of the video (720p)
+# "9:16"   : Aspect ratio of the video (9:16 vertical format)
+# 7        : aes score
+# "a beautiful waterfall" : Text prompt describing the video content
 ```
+
+The basic image2video script is as follows:
+
+1. Generate image with text2video.
+
+```bash
+# text to image
+./scripts/separate_inference.sh "0,1" 1 1080p "9:16" 7 "a beautiful waterfall"
+```
+
+2. Generate video with reference image.
 
 ```bash
 # image to video
-./scripts/separate_inference.sh 4s 720p "9:16" "a beautiful waterfall. {\"reference_path\": \"path2reference.png\",\"mask_strategy\": \"0\"}""
+./scripts/separate_inference.sh "0,1" 4s 720p "9:16" 7 "a beautiful waterfall. {\"reference_path\": \"path2reference.png\",\"mask_strategy\": \"0\"}""
 ```
 
 ### GPT-4o Prompt Refinement
