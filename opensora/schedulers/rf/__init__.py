@@ -42,6 +42,8 @@ class RFLOW:
         mask=None,
         guidance_scale=None,
         progress=True,
+        caption_embs=None,
+        caption_emb_masks=None,
     ):
         # if no specific guidance scale is provided, use the default scale when initializing the scheduler
         if guidance_scale is None:
@@ -49,9 +51,16 @@ class RFLOW:
 
         n = len(prompts)
         # text encoding
-        model_args = text_encoder.encode(prompts)
-        y_null = text_encoder.null(n)
-        model_args["y"] = torch.cat([model_args["y"], y_null], 0)
+        if text_encoder is not None:
+            model_args = text_encoder.encode(prompts)
+            y_null = text_encoder.null(n)
+            model_args["y"] = torch.cat([model_args["y"], y_null], 0)
+        else:
+            # use pre-inference text embeddings
+            model_args = dict(mask=caption_emb_masks)
+            y_null = model.y_embedder.y_embedding[None].repeat(n, 1, 1)[:, None]
+            model_args["y"] = torch.cat([caption_embs, y_null], 0)
+
         if additional_args is not None:
             model_args.update(additional_args)
 
