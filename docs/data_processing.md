@@ -46,19 +46,19 @@ torchrun --nproc_per_node 8 -m tools.scoring.aesthetic.inference \
   --bs 1024 \
   --num_workers 16
 
-# 3.2 Filter by aesthetic scores. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.csv
+# 3.2 Filter by aesthetic scores. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.0.csv
 python -m tools.datasets.datautil ${ROOT_META}/meta_clips_info_fmin1_aes.csv --aesmin 5
 
-# 4.1 Generate caption. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5_caption_part*.csv
+# 4.1 Generate caption. This should output ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.0_caption_part*.csv
 torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llava \
-  ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.csv \
+  ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.0.csv \
   --dp-size 8 \
   --tp-size 1 \
   --model-path /path/to/llava-v1.6-mistral-7b \
   --prompt video
 
 # 4.2 Merge caption results. This should output ${ROOT_META}/meta_clips_caption.csv
-python -m tools.datasets.datautil ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5_caption_part*.csv --output ${ROOT_META}/meta_clips_caption.csv
+python -m tools.datasets.datautil ${ROOT_META}/meta_clips_info_fmin1_aes_aesmin5.0_caption_part*.csv --output ${ROOT_META}/meta_clips_caption.csv
 
 # 4.3 Clean caption. This should output ${ROOT_META}/meta_clips_caption_cleaned.csv
 python -m tools.datasets.datautil \
