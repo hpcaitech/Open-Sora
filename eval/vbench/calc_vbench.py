@@ -3,7 +3,6 @@ import os
 import time
 
 import torch
-
 from vbench import VBench
 
 full_info_path = "eval/vbench/VBench_full_info.json"
