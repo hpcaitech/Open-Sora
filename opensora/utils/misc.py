@@ -136,6 +136,23 @@ def format_time(seconds):
         f = "0ms"
     return f
 
+def split_batch(conditional: bool, *args):
+    batch = []
+    for arg in args:
+        if isinstance(arg, torch.Tensor):
+            if arg.shape[0] == 2:
+                arg = arg[:1] if conditional else arg[1:]
+                batch.append(arg)
+            else:
+                batch.append(arg)
+        else:
+            batch.append(arg)
+    
+    return batch
+
+            
+
+
 
 class BColors:
     HEADER = "\033[95m"

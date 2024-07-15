@@ -186,3 +186,27 @@ def split_forward_gather_backward(input_, process_group, dim, grad_scale=1.0):
 
 def gather_forward_split_backward(input_, process_group, dim, grad_scale=None):
     return _GatherForwardSplitBackward.apply(input_, process_group, dim, grad_scale)
+
+def broadcast_cp_forward(input_, cond_pg, uncond_pg):
+    cond_ranks = dist.get_process_group_ranks(cond_pg)
+    uncond_ranks = dist.get_process_group_ranks(uncond_pg)
+    x_cond = input_ if dist.get_rank() in cond_ranks else torch.zeros_like(input_)
+    x_uncond = input_ if dist.get_rank() in uncond_ranks else torch.zeros_like(input_)
+    reqs = []
+    for src, dst in zip(cond_ranks, uncond_ranks):
+        if dist.get_rank() == src:
+            reqs.append(dist.isend(x_cond, dst))
+        if dist.get_rank() == dst:
+            reqs.append(dist.irecv(x_cond, src))
+    
+    for src, dst in zip(uncond_ranks, cond_ranks):
+        if dist.get_rank() == src:
+            reqs.append(dist.isend(x_uncond, dst))
+        if dist.get_rank() == dst:
+            reqs.append(dist.irecv(x_uncond, src))
+    
+    for req in reqs:
+        req.wait()
+    
+    x = torch.cat([x_cond, x_uncond], dim=0)
+    return x

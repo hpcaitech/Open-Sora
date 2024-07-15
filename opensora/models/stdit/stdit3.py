@@ -12,8 +12,11 @@ from timm.models.vision_transformer import Mlp
 from transformers import PretrainedConfig, PreTrainedModel
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
-from opensora.acceleration.communications import gather_forward_split_backward, split_forward_gather_backward
-from opensora.acceleration.parallel_states import get_sequence_parallel_group
+from opensora.acceleration.communications import gather_forward_split_backward, split_forward_gather_backward, broadcast_cp_forward
+from opensora.acceleration.parallel_states import get_sequence_parallel_group, \
+    get_cond_parallel_group, \
+        get_uncond_parallel_group, \
+        check_cond
 from opensora.models.layers.blocks import (
     Attention,
     CaptionEmbedder,
@@ -31,6 +34,7 @@ from opensora.models.layers.blocks import (
 )
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
+from opensora.utils.misc import split_batch
 
 
 class STDiT3Block(nn.Module):
@@ -212,6 +216,10 @@ class STDiT3(PreTrainedModel):
 
     def __init__(self, config):
         super().__init__(config)
+
+        # process group
+        self.pg = get_sequence_parallel_group()
+
         self.pred_sigma = config.pred_sigma
         self.in_channels = config.in_channels
         self.out_channels = config.in_channels * 2 if config.pred_sigma else config.in_channels
@@ -353,6 +361,11 @@ class STDiT3(PreTrainedModel):
         return y, y_lens
 
     def forward(self, x, timestep, y, mask=None, x_mask=None, fps=None, height=None, width=None, **kwargs):
+
+        if kwargs.get("cp", False):
+            self.pg = get_cond_parallel_group() if check_cond() else get_uncond_parallel_group()
+            x, timestep, y, x_mask, mask = split_batch(check_cond(), x, timestep, y, x_mask, mask)
+
         dtype = self.x_embedder.proj.weight.dtype
         B = x.size(0)
         x = x.to(dtype)
@@ -413,8 +426,8 @@ class STDiT3(PreTrainedModel):
 
         # shard over the sequence dim if sp is enabled
         if self.enable_sequence_parallelism:
-            x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=2, grad_scale="down")
-            S = S // dist.get_world_size(get_sequence_parallel_group())
+            x = split_forward_gather_backward(x, self.pg, dim=2, grad_scale="down")
+            S = S // dist.get_world_size(self.pg)
 
         x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
@@ -425,8 +438,8 @@ class STDiT3(PreTrainedModel):
 
         if self.enable_sequence_parallelism:
             x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
-            x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=2, grad_scale="up")
-            S = S * dist.get_world_size(get_sequence_parallel_group())
+            x = gather_forward_split_backward(x, self.pg, dim=2, grad_scale="up")
+            S = S * dist.get_world_size(self.pg)
             x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
         # === final layer ===
@@ -435,6 +448,9 @@ class STDiT3(PreTrainedModel):
 
         # cast to float32 for better accuracy
         x = x.to(torch.float32)
+        # === gather output ===
+        if kwargs.get("cp", False):
+            x = broadcast_cp_forward(x, get_cond_parallel_group(), get_uncond_parallel_group())
         return x
 
     def unpatchify(self, x, N_t, N_h, N_w, R_t, R_h, R_w):
