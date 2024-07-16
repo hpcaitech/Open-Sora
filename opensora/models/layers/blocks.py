@@ -467,6 +467,11 @@ class MultiHeadCrossAttention(nn.Module):
         # query/value: img tokens; key: condition; mask: if padding tokens
         B, N, C = x.shape
 
+        if mask is None:
+            Bc, Nc, _ = cond.shape
+            assert Bc == B
+            mask = [Nc] * B
+
         q = self.q_linear(x).view(1, -1, self.num_heads, self.head_dim)
         kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
         k, v = kv.unbind(2)
@@ -503,6 +508,11 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         sp_size = dist.get_world_size(sp_group)
         B, SUB_N, C = x.shape  # [B, TS/p, C]
         N = SUB_N * sp_size
+
+        if mask is None:
+            Bc, Nc, _ = cond.shape
+            assert Bc == B
+            mask = [Nc] * B
 
         # shape:
         # q, k, v: [B, SUB_N, NUM_HEADS, HEAD_DIM]
