@@ -158,7 +158,7 @@ class DiT(nn.Module):
     def get_spatial_pos_embed(self):
         pos_embed = get_2d_sincos_pos_embed(
             self.hidden_size,
-            self.input_size[1] // self.patch_size[1],
+            (self.input_size[1] // self.patch_size[1], self.input_size[2] // self.patch_size[2])
         )
         pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
