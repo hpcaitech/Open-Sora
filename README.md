@@ -128,7 +128,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 - [x] Training Video-VAE and adapt our model to new VAE.
 - [x] Scaling model parameters and dataset size.
-- [x] Incoporate a better scheduler (rectified flow).
+- [x] Incorporate a better scheduler (rectified flow).
 - [x] Evaluation pipeline.
 - [x] Complete the data processing pipeline (including dense optical flow, aesthetics scores, text-image similarity, etc.). See [the dataset](/docs/datasets.md) for more information
 - [x] Support image and video conditioning.
@@ -152,7 +152,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 Other useful documents and links are listed below.
 
-- Report: each version is trained from a image base seperately (not continuously trained), while a newer version will incorporate the techniques from the previous version.
+- Report: each version is trained from a image base separately (not continuously trained), while a newer version will incorporate the techniques from the previous version.
   - [report 1.2](docs/report_03.md): rectified flow, 3d-VAE, score condition, evaluation, etc.
   - [report 1.1](docs/report_02.md): multi-resolution/length/aspect-ratio, image/video conditioning/editing, data preprocessing, etc.
   - [report 1.0](docs/report_01.md): architecture, captioning, etc.
@@ -223,7 +223,7 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 | Diffusion | 1.1B       | 30M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
 | VAE       | 384M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
-See our **[report 1.2](docs/report_03.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
+See our **[report 1.2](docs/report_03.md)** for more information. Weight will be automatically downloaded when you run the inference script.
 
 > For users from mainland China, try `export HF_ENDPOINT=https://hf-mirror.com` to successfully download the weights.
 
@@ -237,7 +237,7 @@ See our **[report 1.2](docs/report_03.md)** for more infomation. Weight will be 
 | mainly 144p & 240p | 700M       | 10M videos + 2M images     | 100k        | [dynamic](/configs/opensora-v1-1/train/stage2.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
 | 144p to 720p       | 700M       | 500K HQ videos + 1M images | 4k          | [dynamic](/configs/opensora-v1-1/train/stage3.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
 
-See our **[report 1.1](docs/report_02.md)** for more infomation.
+See our **[report 1.1](docs/report_02.md)** for more information.
 
 :warning: **LIMITATION**: This version contains known issues which we are going to fix in the next version (as we save computation resource for the next release). In addition, the video generation may fail for long duration, and high resolution will have noisy results due to this problem.
 
@@ -279,7 +279,7 @@ pip install gradio spaces
 python gradio/app.py
 ```
 
-This will launch a Gradio application on your localhost. If you want to know more about the Gradio applicaiton, you can refer to the [Gradio README](./gradio/README.md).
+This will launch a Gradio application on your localhost. If you want to know more about the Gradio application, you can refer to the [Gradio README](./gradio/README.md).
 
 To enable prompt enhancement and other language input (e.g., 中文输入), you need to set the `OPENAI_API_KEY` in the environment. Check [OpenAI's documentation](https://platform.openai.com/docs/quickstart) to get your API key.
 
