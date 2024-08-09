@@ -162,20 +162,21 @@ def save_sample(x, save_path=None, fps=8, normalize=True, value_range=(-1, 1), f
         x (Tensor): shape [C, T, H, W]
     """
     assert x.ndim == 4
+    _x = x.clone()
 
-    if not force_video and x.shape[1] == 1:  # T = 1: save as image
+    if not force_video and _x.shape[1] == 1:  # T = 1: save as image
         save_path += ".png"
-        x = x.squeeze(1)
-        save_image([x], save_path, normalize=normalize, value_range=value_range)
+        _x = _x.squeeze(1)
+        save_image([_x], save_path, normalize=normalize, value_range=value_range)
     else:
         save_path += ".mp4"
         if normalize:
             low, high = value_range
-            x.clamp_(min=low, max=high)
-            x.sub_(low).div_(max(high - low, 1e-5))
+            _x.clamp_(min=low, max=high)
+            _x.sub_(low).div_(max(high - low, 1e-5))
 
-        x = x.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
-        write_video(save_path, x, fps=fps, video_codec="h264")
+        _x = _x.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
+        write_video(save_path, _x, fps=fps, video_codec="h264")
     if verbose:
         print(f"Saved to {save_path}")
     return save_path
