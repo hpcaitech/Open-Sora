@@ -5,11 +5,6 @@ LABEL org.opencontainers.image.source = "https://github.com/hpcaitech/Open-Sora"
 LABEL org.opencontainers.image.licenses = "Apache License 2.0"
 LABEL org.opencontainers.image.base.name = "docker.io/library/hpcaitech/pytorch-cuda:2.1.0-12.1.0"
 
-# Set the working directory
-WORKDIR /workspace/Open-Sora
-# Copy the current directory contents into the container at /workspace/Open-Sora
-COPY . .
-
 # inatall library dependencies
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
@@ -21,6 +16,11 @@ RUN pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolati
 
 # install xformers
 RUN pip install xformers --index-url https://download.pytorch.org/whl/cu121
+
+# Set the working directory
+WORKDIR /workspace/Open-Sora
+# Copy the current directory contents into the container at /workspace/Open-Sora
+COPY . .
 
 # install this project
 RUN pip install -v .
