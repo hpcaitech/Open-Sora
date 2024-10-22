@@ -10,6 +10,7 @@
     <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-小助手加群-green?logo=wechat&amp"></a>
     <a href="https://hpc-ai.com/blog/open-sora-v1.0"><img src="https://img.shields.io/badge/Open_Sora-Blog-blue"></a>
     <a href="https://huggingface.co/spaces/hpcai-tech/open-sora"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Gradio Demo-blue"></a>
+    <a href="https://modelers.cn/spaces/MindSpore-Lab/OpenSora-hpcai"><img src="https://img.shields.io/badge/%E9%AD%94%E4%B9%90-%E6%A8%A1%E5%9E%8B%E4%BD%93%E9%AA%8C-blue"></a>
 </div>
 
 ## Open-Sora: Democratizing Efficient Video Production for All
