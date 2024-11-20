@@ -1,0 +1,1 @@
+torch_musa==2.0.0 --index-url https://oss.mthreads.com:9001/buckets/ai-product/browse/ZGFpbHkvZnJhbWV3b3JrL3RvcmNoX211c2EvMjAyNDA3MDlfdG9yY2hfbXVzYS90b3JjaC0yLjAuMC1jcDMxMC1jcDMxMC1saW51eF94ODZfNjQud2hs
