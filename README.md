@@ -22,6 +22,11 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 [[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)]
 
+<div align="center">
+   <a href="https://hpc-ai.com/?utm_source=github&utm_medium=social&utm_campaign=promotion&utm_content=opensora&utm_term=Hello">
+   <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/1.gif" width="850" />
+   </a>
+</div>
 ## 📰 News
 
 - **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-10-model-weights) [[report]](/docs/report_03.md)   [[blog]](https://hpc-ai.com/blog/open-sora-from-hpc-ai-tech-team-continues-open-source-generate-any-16-second-720p-hd-video-with-one-click-model-weights-ready-to-use)
