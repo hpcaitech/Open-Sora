@@ -1,0 +1,1 @@
+torchrun --nnodes=1 --nproc_per_node=8 scripts/train_benchmark_accum.py configs/opensora-v1-1/train/16x256x256.py --data-path ./dataset/panda_train_2/meta/meta_clips_caption_cleaned_fixed_rm5_format.csv 
