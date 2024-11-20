@@ -23,7 +23,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 [[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)]
 
 <div align="center">
-   <a href="https://hpc-ai.com/?utm_source=github&utm_medium=social&utm_campaign=promotion&utm_content=opensora&utm_term=Hello">
+   <a href="https://hpc-ai.com/?utm_source=github&utm_medium=social&utm_campaign=promotion-opensora">
    <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/1.gif" width="850" />
    </a>
 </div>
