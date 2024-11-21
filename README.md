@@ -157,7 +157,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 Other useful documents and links are listed below.
 
-- Report: each version is trained from a image base seperately (not continuously trained), while a newer version will incorporate the techniques from the previous version.
+- Report: each version is trained from a image base separately (not continuously trained), while a newer version will incorporate the techniques from the previous version.
   - [report 1.2](docs/report_03.md): rectified flow, 3d-VAE, score condition, evaluation, etc.
   - [report 1.1](docs/report_02.md): multi-resolution/length/aspect-ratio, image/video conditioning/editing, data preprocessing, etc.
   - [report 1.0](docs/report_01.md): architecture, captioning, etc.
