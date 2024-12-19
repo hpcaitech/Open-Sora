@@ -170,14 +170,8 @@ class T5Encoder:
         from opensora.utils.misc import requires_grad
 
         shard_config = ShardConfig(
-            tensor_parallel_process_group=None,
-            pipeline_stage_manager=None,
             enable_tensor_parallelism=False,
-            enable_fused_normalization=False,
-            enable_flash_attention=False,
             enable_jit_fused=True,
-            enable_sequence_parallelism=False,
-            enable_sequence_overlap=False,
         )
         shard_former = ShardFormer(shard_config=shard_config)
         optim_model, _ = shard_former.optimize(self.t5.model, policy=T5EncoderPolicy())
