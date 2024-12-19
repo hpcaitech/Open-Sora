@@ -17,6 +17,7 @@ from tqdm import tqdm
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
+from opensora.datasets.pin_memory_cache import PinMemoryCache
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
 from opensora.utils.ckpt_utils import CheckpointIO, model_sharding, record_model_param_shape
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
@@ -54,6 +55,9 @@ def main():
     dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
     torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
     set_seed(cfg.get("seed", 1024))
+    PinMemoryCache.force_dtype = dtype
+    pin_memory_cache_pre_alloc_numels = cfg.get("pin_memory_cache_pre_alloc_numels", [])
+    PinMemoryCache.pre_alloc_numels = pin_memory_cache_pre_alloc_numels
     coordinator = DistCoordinator()
     device = get_current_device()
 
@@ -94,6 +98,7 @@ def main():
     logger.info("Dataset contains %s samples.", len(dataset))
 
     # == build dataloader ==
+    cache_pin_memory = cfg.get("cache_pin_memory", False)
     dataloader_args = dict(
         dataset=dataset,
         batch_size=cfg.get("batch_size", None),
@@ -104,6 +109,7 @@ def main():
         pin_memory=True,
         process_group=get_data_parallel_group(),
         prefetch_factor=cfg.get("prefetch_factor", None),
+        cache_pin_memory=cache_pin_memory,
     )
     dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
@@ -265,9 +271,12 @@ def main():
             total=num_steps_per_epoch,
         ) as pbar:
             for step, batch in pbar:
+                # if cache_pin_memory:
+                #     print(f"==debug== rank{dist.get_rank()} {dataloader_iter.get_cache_info()}")
                 timer_list = []
                 with timers["move_data"] as move_data_t:
-                    x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
+                    pinned_video = batch.pop("video")
+                    x = pinned_video.to(device, dtype, non_blocking=True)  # [B, C, T, H, W]
                     y = batch.pop("text")
                 if record_time:
                     timer_list.append(move_data_t)
@@ -305,6 +314,9 @@ def main():
                 for k, v in batch.items():
                     if isinstance(v, torch.Tensor):
                         model_args[k] = v.to(device, dtype)
+
+                if cache_pin_memory:
+                    dataloader_iter.remove_cache(pinned_video)
 
                 # == diffusion loss computation ==
                 with timers["diffusion"] as loss_t:
