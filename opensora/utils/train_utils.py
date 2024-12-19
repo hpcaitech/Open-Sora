@@ -61,7 +61,7 @@ def update_ema(
         else:
             if param.data.dtype != torch.float32:
                 param_id = id(param)
-                master_param = optimizer._param_store.working_to_master_param[param_id]
+                master_param = optimizer.get_working_to_master_map()[param_id]
                 param_data = master_param.data
             else:
                 param_data = param.data
