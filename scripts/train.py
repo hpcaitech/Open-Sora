@@ -1,4 +1,5 @@
 import os
+import subprocess
 from contextlib import nullcontext
 from copy import deepcopy
 from datetime import timedelta
@@ -16,8 +17,9 @@ from tqdm import tqdm
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
+from opensora.datasets.pin_memory_cache import PinMemoryCache
 from opensora.registry import DATASETS, MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import load, model_gathering, model_sharding, record_model_param_shape, save
+from opensora.utils.ckpt_utils import CheckpointIO, model_sharding, record_model_param_shape
 from opensora.utils.config_utils import define_experiment_workspace, parse_configs, save_training_config
 from opensora.utils.lr_scheduler import LinearWarmupLR
 from opensora.utils.misc import (
@@ -46,12 +48,16 @@ def main():
     cfg_dtype = cfg.get("dtype", "bf16")
     assert cfg_dtype in ["fp16", "bf16"], f"Unknown mixed precision {cfg_dtype}"
     dtype = to_torch_dtype(cfg.get("dtype", "bf16"))
+    checkpoint_io = CheckpointIO()
 
     # == colossalai init distributed training ==
     # NOTE: A very large timeout is set to avoid some processes exit early
     dist.init_process_group(backend="nccl", timeout=timedelta(hours=24))
     torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
     set_seed(cfg.get("seed", 1024))
+    PinMemoryCache.force_dtype = dtype
+    pin_memory_cache_pre_alloc_numels = cfg.get("pin_memory_cache_pre_alloc_numels", [])
+    PinMemoryCache.pre_alloc_numels = pin_memory_cache_pre_alloc_numels
     coordinator = DistCoordinator()
     device = get_current_device()
 
@@ -92,6 +98,7 @@ def main():
     logger.info("Dataset contains %s samples.", len(dataset))
 
     # == build dataloader ==
+    cache_pin_memory = cfg.get("cache_pin_memory", False)
     dataloader_args = dict(
         dataset=dataset,
         batch_size=cfg.get("batch_size", None),
@@ -102,6 +109,7 @@ def main():
         pin_memory=True,
         process_group=get_data_parallel_group(),
         prefetch_factor=cfg.get("prefetch_factor", None),
+        cache_pin_memory=cache_pin_memory,
     )
     dataloader, sampler = prepare_dataloader(
         bucket_config=cfg.get("bucket_config", None),
@@ -157,11 +165,10 @@ def main():
     )
 
     # == build ema for diffusion model ==
-    ema = deepcopy(model).to(torch.float32).to(device)
+    ema = deepcopy(model).cpu().to(torch.float32)
     requires_grad(ema, False)
     ema_shape_dict = record_model_param_shape(ema)
     ema.eval()
-    update_ema(ema, model, decay=0, sharded=False)
 
     # == setup loss function, build scheduler ==
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
@@ -213,7 +220,7 @@ def main():
     # == resume ==
     if cfg.get("load", None) is not None:
         logger.info("Loading checkpoint")
-        ret = load(
+        ret = checkpoint_io.load(
             booster,
             cfg.load,
             model=model,
@@ -226,7 +233,7 @@ def main():
             start_epoch, start_step = ret
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, start_epoch, start_step)
 
-    model_sharding(ema)
+    model_sharding(ema, device=device)
 
     # =======================================================
     # 5. training loop
@@ -241,6 +248,8 @@ def main():
         "backward",
         "update_ema",
         "reduce_loss",
+        "optim",
+        "ckpt",
     ]
     for key in timer_keys:
         if record_time:
@@ -262,9 +271,12 @@ def main():
             total=num_steps_per_epoch,
         ) as pbar:
             for step, batch in pbar:
+                # if cache_pin_memory:
+                #     print(f"==debug== rank{dist.get_rank()} {dataloader_iter.get_cache_info()}")
                 timer_list = []
                 with timers["move_data"] as move_data_t:
-                    x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
+                    pinned_video = batch.pop("video")
+                    x = pinned_video.to(device, dtype, non_blocking=True)  # [B, C, T, H, W]
                     y = batch.pop("text")
                 if record_time:
                     timer_list.append(move_data_t)
@@ -303,6 +315,9 @@ def main():
                     if isinstance(v, torch.Tensor):
                         model_args[k] = v.to(device, dtype)
 
+                if cache_pin_memory:
+                    dataloader_iter.remove_cache(pinned_video)
+
                 # == diffusion loss computation ==
                 with timers["diffusion"] as loss_t:
                     loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
@@ -313,6 +328,10 @@ def main():
                 with timers["backward"] as backward_t:
                     loss = loss_dict["loss"].mean()
                     booster.backward(loss=loss, optimizer=optimizer)
+                if record_time:
+                    timer_list.append(backward_t)
+
+                with timers["optim"] as optim_t:
                     optimizer.step()
                     optimizer.zero_grad()
 
@@ -320,7 +339,7 @@ def main():
                     if lr_scheduler is not None:
                         lr_scheduler.step()
                 if record_time:
-                    timer_list.append(backward_t)
+                    timer_list.append(optim_t)
 
                 # == update EMA ==
                 with timers["update_ema"] as ema_t:
@@ -372,32 +391,42 @@ def main():
                     running_loss = 0.0
                     log_step = 0
 
+                # == uncomment to clear ram cache ==
+                # if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0 and coordinator.is_master():
+                #     subprocess.run("sync && sudo sh -c \"echo 3 > /proc/sys/vm/drop_caches\"", shell=True)
+
                 # == checkpoint saving ==
                 ckpt_every = cfg.get("ckpt_every", 0)
-                if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0:
-                    model_gathering(ema, ema_shape_dict)
-                    save_dir = save(
-                        booster,
-                        exp_dir,
-                        model=model,
-                        ema=ema,
-                        optimizer=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        sampler=sampler,
-                        epoch=epoch,
-                        step=step + 1,
-                        global_step=global_step + 1,
-                        batch_size=cfg.get("batch_size", None),
-                    )
-                    if dist.get_rank() == 0:
-                        model_sharding(ema)
-                    logger.info(
-                        "Saved checkpoint at epoch %s, step %s, global_step %s to %s",
-                        epoch,
-                        step + 1,
-                        global_step + 1,
-                        save_dir,
-                    )
+                with timers["ckpt"] as ckpt_t:
+                    if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0:
+                        save_dir = checkpoint_io.save(
+                            booster,
+                            exp_dir,
+                            model=model,
+                            ema=ema,
+                            optimizer=optimizer,
+                            lr_scheduler=lr_scheduler,
+                            sampler=sampler,
+                            epoch=epoch,
+                            step=step + 1,
+                            global_step=global_step + 1,
+                            batch_size=cfg.get("batch_size", None),
+                            ema_shape_dict=ema_shape_dict,
+                            async_io=True,
+                        )
+                        logger.info(
+                            "Saved checkpoint at epoch %s, step %s, global_step %s to %s",
+                            epoch,
+                            step + 1,
+                            global_step + 1,
+                            save_dir,
+                        )
+                if record_time:
+                    timer_list.append(ckpt_t)
+                # uncomment below 3 lines to benchmark checkpoint
+                # if ckpt_every > 0 and (global_step + 1) % ckpt_every == 0:
+                #     booster.checkpoint_io._sync_io()
+                #     checkpoint_io._sync_io()
                 if record_time:
                     log_str = f"Rank {dist.get_rank()} | Epoch {epoch} | Step {step} | "
                     for timer in timer_list:
