@@ -20,6 +20,7 @@
 
 ## 📰 资讯
 
+* **[2024.12.23]** 🔥[视频生成模型开发成本直降50%，开源解决方案来了，还能白嫖GPU算力](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers)  [[代码]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[代金券]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 * **[2024.06.22]** 🔥我们在[潞晨云](https://cloud.luchentech.com/)上发布了Open-Sora1.2镜像，并在B站上传了详细的[使用教程](https://www.bilibili.com/video/BV1ow4m1e7PX/)
 * **[2024.06.17]** 🔥我们发布了**Open-Sora 1.2**，其中包括**3D-VAE**，**整流流**和**得分条件**。视频质量大大提高。[[模型权重]](#模型权重) [[技术报告]](report_v3.md) [[公众号文章]](https://mp.weixin.qq.com/s/QHq2eItZS9e00BVZnivdjg)
 * **[2024.04.25]** 🤗 我们在 Hugging Face Spaces 上发布了 [Open-Sora的Gradio演示](https://huggingface.co/spaces/hpcai-tech/open-sora)。
