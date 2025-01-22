@@ -32,6 +32,8 @@ class ZeroSeqParallelPlugin(LowLevelZeroPlugin):
         cpu_offload: bool = False,
         master_weights: bool = True,
         verbose: bool = False,
+        overlap_allgather: bool = False,
+        cast_inputs: bool = False,
     ) -> None:
         super().__init__(
             stage=stage,
@@ -51,6 +53,8 @@ class ZeroSeqParallelPlugin(LowLevelZeroPlugin):
             cpu_offload=cpu_offload,
             master_weights=master_weights,
             verbose=verbose,
+            overlap_allgather=overlap_allgather,
+            cast_inputs=cast_inputs,
         )
         self.sp_size = sp_size
         assert self.world_size % sp_size == 0, "world_size must be divisible by sp_size"

@@ -23,6 +23,7 @@
 
 import html
 import re
+from functools import partial
 
 import ftfy
 import torch
@@ -109,10 +110,8 @@ class T5Embedder:
             **t5_model_kwargs,
         ).eval()
         self.model_max_length = model_max_length
-
-    def get_text_embeddings(self, texts):
-        text_tokens_and_mask = self.tokenizer(
-            texts,
+        self.tokenize_fn = partial(
+            self.tokenizer,
             max_length=self.model_max_length,
             padding="max_length",
             truncation=True,
@@ -121,8 +120,10 @@ class T5Embedder:
             return_tensors="pt",
         )
 
-        input_ids = text_tokens_and_mask["input_ids"].to(self.device)
-        attention_mask = text_tokens_and_mask["attention_mask"].to(self.device)
+    def get_text_embeddings(self, input_ids: torch.Tensor, attention_mask):
+        input_ids = input_ids.to(self.device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(self.device)
         with torch.no_grad():
             text_encoder_embs = self.model(
                 input_ids=input_ids,
@@ -170,8 +171,14 @@ class T5Encoder:
         from opensora.utils.misc import requires_grad
 
         shard_config = ShardConfig(
+            tensor_parallel_process_group=None,
+            pipeline_stage_manager=None,
             enable_tensor_parallelism=False,
+            enable_fused_normalization=False,
+            enable_flash_attention=False,
             enable_jit_fused=True,
+            enable_sequence_parallelism=False,
+            enable_sequence_overlap=False,
         )
         shard_former = ShardFormer(shard_config=shard_config)
         optim_model, _ = shard_former.optimize(self.t5.model, policy=T5EncoderPolicy())
@@ -180,8 +187,12 @@ class T5Encoder:
         # ensure the weights are frozen
         requires_grad(self.t5.model, False)
 
-    def encode(self, text):
-        caption_embs, emb_masks = self.t5.get_text_embeddings(text)
+    @property
+    def tokenize_fn(self):
+        return self.t5.tokenize_fn
+
+    def encode(self, input_ids, attention_mask=None):
+        caption_embs, emb_masks = self.t5.get_text_embeddings(input_ids, attention_mask)
         caption_embs = caption_embs[:, None]
         return dict(y=caption_embs, mask=emb_masks)
 

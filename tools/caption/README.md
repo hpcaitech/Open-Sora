@@ -49,7 +49,7 @@ cd .. # step back to pllava_dir
 
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 PYTHONPATH='$PYTHONPATH:OPEN_SORA_HOME/tools/caption/pllava_dir/PLLaVA' \
-nohup python caption_pllava.py \
+nohup torchrun --nproc_per_node 8 --standalone caption_pllava.py \
   --pretrained_model_name_or_path PLLaVA/MODELS/pllava-13b \
   --use_lora \
   --lora_alpha 4 \
@@ -71,10 +71,10 @@ Qualitatively speaking, we observe that PLLaVA has a somewhat higher chance of a
 
 
 
-| LLaVA | PLLaVA |
-|----------|----------|
-| The video is a close-up shot of two gold wedding rings. The rings are placed on a (black surface)✅, casting a soft shadow beneath them. The rings are positioned in such a way that (they are facing each other)❌, creating a mirror image effect. The rings are (identical in size and design)✅, suggesting they are a pair. The lighting in the video is soft and diffused, highlighting the gold color of the rings and creating a warm and inviting atmosphere. The overall style of the video is minimalist and elegant, focusing solely on the rings and their reflection.	| The video shows a pair of gold wedding rings on a (reflective surface)✅. The rings are placed one on top of the other, (with the top ring slightly tilted to the left)✅. The rings have a (shiny, metallic finish)✅ and are the main focus of the image. The background is a gradient of dark to light gray, providing a neutral backdrop that highlights the rings. There are no texts or other objects in the image. The style of the video is a simple product display with a focus on the rings, likely intended for promotional or sales purposes. The lighting and shadows suggest a soft, even light source, (possibly a studio light)✅, which creates a reflective surface beneath the rings.|
-<!-- |Row2Cell1|Row2Cell2| -->
+     | LLaVA                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | PLLaVA                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+-----|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----
+     | The video is a close-up shot of two gold wedding rings. The rings are placed on a (black surface)✅, casting a soft shadow beneath them. The rings are positioned in such a way that (they are facing each other)❌, creating a mirror image effect. The rings are (identical in size and design)✅, suggesting they are a pair. The lighting in the video is soft and diffused, highlighting the gold color of the rings and creating a warm and inviting atmosphere. The overall style of the video is minimalist and elegant, focusing solely on the rings and their reflection. | The video shows a pair of gold wedding rings on a (reflective surface)✅. The rings are placed one on top of the other, (with the top ring slightly tilted to the left)✅. The rings have a (shiny, metallic finish)✅ and are the main focus of the image. The background is a gradient of dark to light gray, providing a neutral backdrop that highlights the rings. There are no texts or other objects in the image. The style of the video is a simple product display with a focus on the rings, likely intended for promotional or sales purposes. The lighting and shadows suggest a soft, even light source, (possibly a studio light)✅, which creates a reflective surface beneath the rings. |
+<!-- | Row2Cell1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Row2Cell2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | -->
 
 
 
@@ -211,3 +211,43 @@ torchrun --nproc_per_node 8 --standalone -m tools.caption.caption_llama3 meta.cs
 ```
 
 This will generate tags based on the `text` column of `meta.csv` and put the results to `output_prefix + key.csv`. Currently the prompts for `objects` and `actions` are supported.
+
+
+
+## LLaVA-Next Captioning
+LLaVA-NeXT-Video-32B-Qwen, based on Qwen-32B, improves captioning accuracy and linguistic diversity through enhanced language understanding and better visual-text alignment. Using 32 video frames, it captures detailed spatial information for more contextually accurate captions. To optimize efficiency, we batch frames for GPU utilization and employ multi-threaded frame extraction to run in parallel with GPU computations, preventing bottlenecks. Loading in 8-bits is currently buggy and needs to be fixed.
+
+### Installation
+
+You need to install VllaVA
+
+```
+# install VLLaVA
+git clone https://github.com/LLaVA-VL/LLaVA-NeXT
+cd LLaVA-NeXT
+conda create -n llava python=3.10 -y
+conda activate llava
+pip install --upgrade pip  # Enable PEP 660 support.
+pip install -e ".[train]"
+
+# we use fixed transformers version
+pip install transformers==0.40.0
+```
+
+### Usage
+
+The script takes one csv dataset file and lauch World_Size processes, each handle one split of the caption jobs.
+
+```
+CUDA_VISIBLE_DEVICES=1,2,3,4 python3 caption_llava_next.py \
+    --model-path /PATH/TO/LLaVA-NeXT-Video-32B-Qwen \
+    --data_file /PATH/TO/data.csv \
+    --output_folder /PATH/TO/output_dir \
+    --overwrite true \
+    --mm_spatial_pool_stride 2 \
+    --for_get_frames_num 32 \
+    --conv-mode qwen_2 \
+    --mm_spatial_pool_mode average \
+    --mm_newline_position grid \
+    --prompt "Please provide a detailed description of the video, focusing on the main subjects, their actions, the background scenes."
+```

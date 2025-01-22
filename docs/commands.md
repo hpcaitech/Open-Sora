@@ -2,6 +2,7 @@
 
 - [Config](#Config)
 - [Inference](#inference)
+  - [Inference with Open-Sora 1.3](#inference-with-open-sora-13)
   - [Inference with Open-Sora 1.2](#inference-with-open-sora-12)
   - [Inference with Open-Sora 1.1](#inference-with-open-sora-11)
   - [Inference with DiT pretrained on ImageNet](#inference-with-dit-pretrained-on-imagenet)
@@ -46,6 +47,49 @@ However, if you want to load a self-trained model, do not set `force_huggingface
 ## Inference
 
 You can modify corresponding config files to change the inference settings. See more details [here](/docs/structure.md#inference-config-demos).
+
+### Inference with Open-Sora 1.3
+```bash
+# t2v
+
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 --llm-refine True \
+  --aes "very good" --flow "fair" \
+  --prompt "a beautiful waterfall"
+```
+
+```bash
+# i2v & v2v
+
+# first-frame condition generation
+python scripts/inference_i2v.py configs/opensora-v1-3/inference/v2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio "9:16" --cond-type i2v_head --use-sdedit True \
+  --use-oscillation-guidance-for-image True --image-cfg-scale 2.0 \
+  --use-oscillation-guidance-for-text True --cfg-scale 7.5 \
+  --prompt 'A breathtaking sunrise scene.{"reference_path": "assets/images/condition/wave.png"}'
+
+# last-frame condition generation
+python scripts/inference_i2v.py configs/opensora-v1-3/inference/v2v.py \ 
+  --save-dir samples/i2v/i2v_tail --seed 42 --ckpt-path path/to/your/ckpt \ # You can also load your self-trained checkpoints
+  --prompt-path assets/texts/i2v/prompts_human_i2v_head.txt \ # Support for inputting multiple prompts via a text or csv file
+  --num-frames 113 --resolution 360p --aspect-ratio 9:16 \
+  --use-sdedit False --cond-type i2v_tail \
+  --use-oscillation-guidance-for-image True --image-cfg-scale 2.5 --use-oscillation-guidance-for-text True --cfg-scale 7.5
+
+# video extending
+python scripts/inference_i2v.py configs/opensora-v1-3/inference/v2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio "9:16" --cond-type v2v_head --use-sdedit True \
+  --use-oscillation-guidance-for-image True --image-cfg-scale 2.0 \
+  --use-oscillation-guidance-for-text True --cfg-scale 7.5 \
+  --prompt 'A car driving on the ocean.{"reference_path": "https://cdn.openai.com/tmp/s/interp/d0.mp4"}'
+
+# video connecting
+python scripts/inference_i2v.py configs/opensora-v1-3/inference/v2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio "9:16" --cond-type i2v_loop --use-sdedit True \
+  --use-oscillation-guidance-for-image True --image-cfg-scale 2.0 \
+  --use-oscillation-guidance-for-text True --cfg-scale 7.5 \
+  --prompt 'A breathtaking sunrise scene.{"reference_path": "assets/images/condition/sunset1.png;assets/images/condition/sunset2.png"}'
+```
 
 ### Inference with Open-Sora 1.2
 

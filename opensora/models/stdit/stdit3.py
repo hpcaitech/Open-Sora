@@ -1,4 +1,5 @@
 import os
+from typing import Optional, Sequence
 
 import numpy as np
 import torch
@@ -6,7 +7,6 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-from rotary_embedding_torch import RotaryEmbedding
 from timm.models.layers import DropPath
 from timm.models.vision_transformer import Mlp
 from transformers import PretrainedConfig, PreTrainedModel
@@ -29,6 +29,7 @@ from opensora.models.layers.blocks import (
     get_layernorm,
     t2i_modulate,
 )
+from opensora.models.layers.rotary_embedding_torch import RotaryEmbedding
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
 
@@ -46,6 +47,7 @@ class STDiT3Block(nn.Module):
         enable_flash_attn=False,
         enable_layernorm_kernel=False,
         enable_sequence_parallelism=False,
+        kernel_size: Optional[Sequence[int]] = None,
     ):
         super().__init__()
         self.temporal = temporal
@@ -53,12 +55,14 @@ class STDiT3Block(nn.Module):
         self.enable_flash_attn = enable_flash_attn
         self.enable_sequence_parallelism = enable_sequence_parallelism
 
-        if self.enable_sequence_parallelism and not temporal:
+        if self.enable_sequence_parallelism:
             attn_cls = SeqParallelAttention
             mha_cls = SeqParallelMultiHeadCrossAttention
+            attn_kwargs = dict(kernel_size=kernel_size, temporal=temporal)
         else:
             attn_cls = Attention
             mha_cls = MultiHeadCrossAttention
+            attn_kwargs = dict(kernel_size=kernel_size)
 
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = attn_cls(
@@ -68,6 +72,7 @@ class STDiT3Block(nn.Module):
             qk_norm=qk_norm,
             rope=rope,
             enable_flash_attn=enable_flash_attn,
+            **attn_kwargs,
         )
         self.cross_attn = mha_cls(hidden_size, num_heads)
         self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
@@ -76,6 +81,7 @@ class STDiT3Block(nn.Module):
         )
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
+        self.enable_2d_rope = rope is not None and not temporal
 
     def t_mask_select(self, x_mask, x, masked_x, T, S):
         # x: [B, (T, S), C]
@@ -97,6 +103,11 @@ class STDiT3Block(nn.Module):
         t0=None,  # t with timestamp=0
         T=None,  # number of frames
         S=None,  # number of pixel patches
+        H=None,
+        W=None,
+        scale=None,
+        mask_index=None,  # for i2v and v2v
+        y_null=None,  # for cfg training
     ):
         # prepare modulate parameters
         B, N, C = x.shape
@@ -116,13 +127,23 @@ class STDiT3Block(nn.Module):
 
         # attention
         if self.temporal:
-            x_m = rearrange(x_m, "B (T S) C -> (B S) T C", T=T, S=S)
-            x_m = self.attn(x_m)
-            x_m = rearrange(x_m, "(B S) T C -> B (T S) C", T=T, S=S)
+            if getattr(self.attn, "kernel_size", None) is not None:
+                x_m = rearrange(x_m, "B (T H W) C -> B H W T C", T=T, H=H, W=W)
+                x_m = self.attn(x_m, scale=scale)
+                x_m = rearrange(x_m, "B H W T C -> B (T H W) C", T=T, H=H, W=W)
+            else:
+                x_m = rearrange(x_m, "B (T S) C -> (B S) T C", T=T, S=S)
+                x_m = self.attn(x_m)
+                x_m = rearrange(x_m, "(B S) T C -> B (T S) C", T=T, S=S)
         else:
-            x_m = rearrange(x_m, "B (T S) C -> (B T) S C", T=T, S=S)
-            x_m = self.attn(x_m)
-            x_m = rearrange(x_m, "(B T) S C -> B (T S) C", T=T, S=S)
+            if self.enable_2d_rope:
+                x_m = rearrange(x_m, "B (T S) C -> (B T) S C", T=T, S=S)
+                x_m = self.attn(x_m, H=H, W=W, scale=scale)
+                x_m = rearrange(x_m, "(B T) S C -> B (T S) C", T=T, S=S)
+            else:
+                x_m = rearrange(x_m, "B (T S) C -> (B T) S C", T=T, S=S)
+                x_m = self.attn(x_m)
+                x_m = rearrange(x_m, "(B T) S C -> B (T S) C", T=T, S=S)
 
         # modulate (attention)
         x_m_s = gate_msa * x_m
@@ -134,7 +155,26 @@ class STDiT3Block(nn.Module):
         x = x + self.drop_path(x_m_s)
 
         # cross attention
-        x = x + self.cross_attn(x, y, mask)
+        if mask_index is not None and len(mask_index) > 0:  # i2v, v2v
+            x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
+            x_rec = x[:, mask_index, :, :]
+            assert len([i for i in mask_index if i < 0]) == 0  # mask_index cannot contain negative values
+            rest_mask = [i for i in range(x.shape[1]) if i not in mask_index]
+            x_pred = x[:, rest_mask, :, :]
+            rec_frames = len(mask_index)  # reconstruction
+            pred_frames = len(rest_mask)  # prediction
+            x_rec = rearrange(x_rec, "B T S C -> B (T S) C", T=rec_frames, S=S)
+            x_pred = rearrange(x_pred, "B T S C -> B (T S) C", T=pred_frames, S=S)
+            x_rec = x_rec + self.cross_attn(x_rec, y_null, mask)  # given video, remove text influence
+            x_pred = x_pred + self.cross_attn(x_pred, y, mask)
+            x_rec = rearrange(x_rec, "B (T S) C -> B T S C", T=rec_frames, S=S)
+            x_pred = rearrange(x_pred, "B (T S) C -> B T S C", T=pred_frames, S=S)
+            # concat according to mask_index and rest_mask positions, allow mask_index to be non_continuous
+            x[:, mask_index] = x_rec
+            x[:, rest_mask] = x_pred
+            x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
+        else:
+            x = x + self.cross_attn(x, y, mask)
 
         # modulate (MLP)
         x_m = t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)
@@ -164,7 +204,7 @@ class STDiT3Config(PretrainedConfig):
         self,
         input_size=(None, None, None),
         input_sq_size=512,
-        in_channels=4,
+        in_channels=16,
         patch_size=(1, 2, 2),
         hidden_size=1152,
         depth=28,
@@ -181,7 +221,10 @@ class STDiT3Config(PretrainedConfig):
         enable_sequence_parallelism=False,
         only_train_temporal=False,
         freeze_y_embedder=False,
+        skip_temporal=False,
         skip_y_embedder=False,
+        kernel_size=None,
+        use_spatial_rope=False,
         **kwargs,
     ):
         self.input_size = input_size
@@ -204,6 +247,9 @@ class STDiT3Config(PretrainedConfig):
         self.only_train_temporal = only_train_temporal
         self.freeze_y_embedder = freeze_y_embedder
         self.skip_y_embedder = skip_y_embedder
+        self.skip_temporal = skip_temporal
+        self.kernel_size = kernel_size
+        self.use_spatial_rope = use_spatial_rope
         super().__init__(**kwargs)
 
 
@@ -232,10 +278,18 @@ class STDiT3(PreTrainedModel):
         self.patch_size = config.patch_size
         self.input_sq_size = config.input_sq_size
         self.pos_embed = PositionEmbedding2D(config.hidden_size)
-        self.rope = RotaryEmbedding(dim=self.hidden_size // self.num_heads)
+        self.kernel_size = config.kernel_size
+        rotation_dim = self.hidden_size // self.num_heads
+        if self.kernel_size is not None:
+            rotation_dim = rotation_dim // 3  # use 3D rotation
+        self.rope = RotaryEmbedding(dim=rotation_dim, cache_if_possible=False)
 
         # embedding
         self.x_embedder = PatchEmbed3D(config.patch_size, config.in_channels, config.hidden_size)
+        # i2v/v2v cond embeddings
+        self.x_embedder_cond = PatchEmbed3D(config.patch_size, config.in_channels, config.hidden_size)
+        self.x_embedder_cond_mask = PatchEmbed3D(config.patch_size, config.in_channels, config.hidden_size)
+
         self.t_embedder = TimestepEmbedder(config.hidden_size)
         self.fps_embedder = SizeEmbedder(self.hidden_size)
         self.t_block = nn.Sequential(
@@ -252,6 +306,7 @@ class STDiT3(PreTrainedModel):
 
         # spatial blocks
         drop_path = [x.item() for x in torch.linspace(0, self.drop_path, config.depth)]
+        assert not config.use_spatial_rope or self.kernel_size is not None, "Spatial rope requires kernel_size"
         self.spatial_blocks = nn.ModuleList(
             [
                 STDiT3Block(
@@ -263,31 +318,36 @@ class STDiT3(PreTrainedModel):
                     enable_flash_attn=config.enable_flash_attn,
                     enable_layernorm_kernel=config.enable_layernorm_kernel,
                     enable_sequence_parallelism=config.enable_sequence_parallelism,
+                    # spatial
+                    rope=self.rope.rotate_queries_or_keys if config.use_spatial_rope else None,
                 )
                 for i in range(config.depth)
             ]
         )
 
         # temporal blocks
-        drop_path = [x.item() for x in torch.linspace(0, self.drop_path, config.depth)]
-        self.temporal_blocks = nn.ModuleList(
-            [
-                STDiT3Block(
-                    hidden_size=config.hidden_size,
-                    num_heads=config.num_heads,
-                    mlp_ratio=config.mlp_ratio,
-                    drop_path=drop_path[i],
-                    qk_norm=config.qk_norm,
-                    enable_flash_attn=config.enable_flash_attn,
-                    enable_layernorm_kernel=config.enable_layernorm_kernel,
-                    enable_sequence_parallelism=config.enable_sequence_parallelism,
-                    # temporal
-                    temporal=True,
-                    rope=self.rope.rotate_queries_or_keys,
-                )
-                for i in range(config.depth)
-            ]
-        )
+        self.skip_temporal = config.skip_temporal
+        if not self.skip_temporal:
+            drop_path = [x.item() for x in torch.linspace(0, self.drop_path, config.depth)]
+            self.temporal_blocks = nn.ModuleList(
+                [
+                    STDiT3Block(
+                        hidden_size=config.hidden_size,
+                        num_heads=config.num_heads,
+                        mlp_ratio=config.mlp_ratio,
+                        drop_path=drop_path[i],
+                        qk_norm=config.qk_norm,
+                        enable_flash_attn=config.enable_flash_attn,
+                        enable_layernorm_kernel=config.enable_layernorm_kernel,
+                        enable_sequence_parallelism=config.enable_sequence_parallelism,
+                        # temporal
+                        temporal=True,
+                        rope=self.rope.rotate_queries_or_keys,
+                        kernel_size=config.kernel_size,
+                    )
+                    for i in range(config.depth)
+                ]
+            )
 
         # final layer
         self.final_layer = T2IFinalLayer(config.hidden_size, np.prod(self.patch_size), self.out_channels)
@@ -314,6 +374,12 @@ class STDiT3(PreTrainedModel):
 
         self.apply(_basic_init)
 
+        # Initialize condition embedding
+        torch.nn.init.zeros_(self.x_embedder_cond.proj.weight)
+        torch.nn.init.zeros_(self.x_embedder_cond.proj.bias)
+        torch.nn.init.zeros_(self.x_embedder_cond_mask.proj.weight)
+        torch.nn.init.zeros_(self.x_embedder_cond_mask.proj.bias)
+
         # Initialize fps_embedder
         nn.init.normal_(self.fps_embedder.mlp[0].weight, std=0.02)
         nn.init.constant_(self.fps_embedder.mlp[0].bias, 0)
@@ -321,10 +387,11 @@ class STDiT3(PreTrainedModel):
         nn.init.constant_(self.fps_embedder.mlp[2].bias, 0)
 
         # Initialize timporal blocks
-        for block in self.temporal_blocks:
-            nn.init.constant_(block.attn.proj.weight, 0)
-            nn.init.constant_(block.cross_attn.proj.weight, 0)
-            nn.init.constant_(block.mlp.fc2.weight, 0)
+        if not self.skip_temporal:
+            for block in self.temporal_blocks:
+                nn.init.constant_(block.attn.proj.weight, 0)
+                nn.init.constant_(block.cross_attn.proj.weight, 0)
+                nn.init.constant_(block.mlp.fc2.weight, 0)
 
     def get_dynamic_size(self, x):
         _, _, T, H, W = x.size()
@@ -339,24 +406,41 @@ class STDiT3(PreTrainedModel):
         W = W // self.patch_size[2]
         return (T, H, W)
 
-    def encode_text(self, y, mask=None):
-        y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
+    def encode_text(self, y, mask=None, uncond_prob=None):
+        y = self.y_embedder(y, self.training, uncond_prob=uncond_prob)  # [B, 1, N_token, C]
         if mask is not None:
             if mask.shape[0] != y.shape[0]:
                 mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
             mask = mask.squeeze(1).squeeze(1)
-            y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, self.hidden_size)
+            y = (
+                y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, self.hidden_size)
+            )  # [B, valid_id_count, 1152] --> [1, B*valid_id_count, 1152]
             y_lens = mask.sum(dim=1).tolist()
         else:
             y_lens = [y.shape[2]] * y.shape[0]
             y = y.squeeze(1).view(1, -1, self.hidden_size)
         return y, y_lens
 
-    def forward(self, x, timestep, y, mask=None, x_mask=None, fps=None, height=None, width=None, **kwargs):
+    def forward(
+        self,
+        x,
+        timestep,
+        y,
+        mask=None,
+        x_mask=None,
+        fps=None,
+        height=None,
+        width=None,
+        cond=None,
+        cond_mask=None,
+        mask_index=None,
+        y_null=None,
+        text_uncond_prob=None,
+        **kwargs,
+    ):
         dtype = self.x_embedder.proj.weight.dtype
         B = x.size(0)
         x = x.to(dtype)
-        timestep = timestep.to(dtype)
         y = y.to(dtype)
 
         # === get pos embed ===
@@ -404,10 +488,17 @@ class STDiT3(PreTrainedModel):
             if isinstance(y_lens, torch.Tensor):
                 y_lens = y_lens.long().tolist()
         else:
-            y, y_lens = self.encode_text(y, mask)
+            y, y_lens = self.encode_text(y, mask, uncond_prob=text_uncond_prob)
+            if y_null is not None:
+                y_null, _ = self.encode_text(y_null, mask, uncond_prob=text_uncond_prob)
 
         # === get x embed ===
         x = self.x_embedder(x)  # [B, N, C]
+
+        # i2v, v2v
+        if mask_index is not None:
+            x = x + self.x_embedder_cond(cond) + self.x_embedder_cond_mask(cond_mask)
+
         x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
         x = x + pos_emb
 
@@ -415,18 +506,69 @@ class STDiT3(PreTrainedModel):
         if self.enable_sequence_parallelism:
             x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=2, grad_scale="down")
             S = S // dist.get_world_size(get_sequence_parallel_group())
+            H = H // dist.get_world_size(get_sequence_parallel_group())
 
         x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
         # === blocks ===
-        for spatial_block, temporal_block in zip(self.spatial_blocks, self.temporal_blocks):
-            x = auto_grad_checkpoint(spatial_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
-            x = auto_grad_checkpoint(temporal_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
+        if not self.skip_temporal:
+            for spatial_block, temporal_block in zip(self.spatial_blocks, self.temporal_blocks):
+                x = auto_grad_checkpoint(
+                    spatial_block,
+                    x,
+                    y,
+                    t_mlp,
+                    y_lens,
+                    x_mask,
+                    t0_mlp,
+                    T,
+                    S,
+                    H,
+                    W,
+                    scale,
+                    mask_index=mask_index,
+                    y_null=y_null,
+                )
+                x = auto_grad_checkpoint(
+                    temporal_block,
+                    x,
+                    y,
+                    t_mlp,
+                    y_lens,
+                    x_mask,
+                    t0_mlp,
+                    T,
+                    S,
+                    H,
+                    W,
+                    scale,
+                    mask_index=mask_index,
+                    y_null=y_null,
+                )
+        else:
+            for spatial_block in self.spatial_blocks:
+                x = auto_grad_checkpoint(
+                    spatial_block,
+                    x,
+                    y,
+                    t_mlp,
+                    y_lens,
+                    x_mask,
+                    t0_mlp,
+                    T,
+                    S,
+                    H,
+                    W,
+                    scale,
+                    mask_index=mask_index,
+                    y_null=y_null,
+                )
 
         if self.enable_sequence_parallelism:
             x = rearrange(x, "B (T S) C -> B T S C", T=T, S=S)
             x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=2, grad_scale="up")
             S = S * dist.get_world_size(get_sequence_parallel_group())
+            H = H * dist.get_world_size(get_sequence_parallel_group())
             x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
         # === final layer ===
@@ -467,13 +609,14 @@ class STDiT3(PreTrainedModel):
 @MODELS.register_module("STDiT3-XL/2")
 def STDiT3_XL_2(from_pretrained=None, **kwargs):
     force_huggingface = kwargs.pop("force_huggingface", False)
+    adapt_16ch = kwargs.pop("adapt_16ch", False)
     if force_huggingface or from_pretrained is not None and not os.path.exists(from_pretrained):
         model = STDiT3.from_pretrained(from_pretrained, **kwargs)
     else:
         config = STDiT3Config(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
         model = STDiT3(config)
         if from_pretrained is not None:
-            load_checkpoint(model, from_pretrained)
+            load_checkpoint(model, from_pretrained, adapt_16ch=adapt_16ch)
     return model
 
 

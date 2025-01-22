@@ -12,9 +12,10 @@ class ClassEncoder:
         self.model_max_length = model_max_length
         self.output_dim = None
         self.device = device
+        self.tokenize_fn = None
 
-    def encode(self, text):
-        return dict(y=torch.tensor([int(t) for t in text]).to(self.device))
+    def encode(self, input_ids, attention_mask=None):
+        return dict(y=input_ids.to(self.device))
 
     def null(self, n):
         return torch.tensor([self.num_classes] * n).to(self.device)

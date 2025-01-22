@@ -65,8 +65,7 @@ class VideoTextDataset(torch.utils.data.Dataset):
         if not is_video(path):
             images = [pil_loader(path)]
         else:
-            num_frames = sample["num_frames"] if "num_frames" in sample else None
-            images = extract_frames(sample["path"], points=self.points, backend="opencv", num_frames=num_frames)
+            images = extract_frames(sample["path"], points=self.points, backend="opencv")
 
         # transform
         images = [self.transform(img) for img in images]

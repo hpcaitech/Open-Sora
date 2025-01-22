@@ -1,4 +1,5 @@
 import math
+from copy import deepcopy
 
 
 # computation
@@ -443,7 +444,7 @@ def get_closest_ratio(height: float, width: float, ratios: dict):
     return closest_ratio
 
 
-ASPECT_RATIOS = {
+OLD_ASPECT_RATIOS = {
     "144p": (36864, ASPECT_RATIO_144P),
     "256": (65536, ASPECT_RATIO_256),
     "240p": (102240, ASPECT_RATIO_240P),
@@ -458,6 +459,15 @@ ASPECT_RATIOS = {
     "2880": (8294400, ASPECT_RATIO_2880),
     "4k": (8294400, ASPECT_RATIO_4K),
 }
+
+ASPECT_RATIOS = {}
+for name, aspect_ratio in OLD_ASPECT_RATIOS.items():
+    aspect_ratio = deepcopy(aspect_ratio)
+    for ap_key, ap_value in aspect_ratio[1].items():
+        h, w = ap_value[0] // 16 * 16, ap_value[1] // 16 * 16
+        aspect_ratio[1][ap_key] = (h, w)
+    ASPECT_RATIOS[f"{name}_16d"] = aspect_ratio
+ASPECT_RATIOS.update(OLD_ASPECT_RATIOS)
 
 
 def get_num_pixels(name):

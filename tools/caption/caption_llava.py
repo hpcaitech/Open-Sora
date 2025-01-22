@@ -22,6 +22,9 @@ from .acceleration.llava.policies import LlavaLlamaForCausalLMPolicy, LlavaMistr
 from .utils import PROMPTS, Timer, VideoTextDataset, collate_fn
 
 disable_torch_init()
+import transformers
+
+transformers.logging.set_verbosity_error()
 
 
 class NoPaddingDistributedSampler(DistributedSampler):
@@ -67,10 +70,10 @@ def main(args):
     set_seed(1024)
     coordinator = DistCoordinator()
 
-    # prepare the dp and tp groups
     assert (
         args.dp_size * args.tp_size == coordinator.world_size
     ), f"DP size {args.dp_size} * TP size {args.tp_size} must equal to world size {coordinator.world_size}"
+
     mesh = ProcessGroupMesh(args.dp_size, args.tp_size)
     dp_group = mesh.get_group_along_axis(0)
     tp_group = mesh.get_group_along_axis(1)
@@ -80,7 +83,7 @@ def main(args):
     # ======================================================
     model_path = args.model_path
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")  # Pytorch non-meta copying warning fills out the console
+        warnings.simplefilter("ignore")
         tokenizer, model, image_processor, context_len = load_pretrained_model(
             model_path=model_path,
             model_base=None,
@@ -127,7 +130,6 @@ def main(args):
             query_text = query.format(text)
             conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + query_text)
             prompt = conv.get_prompt()
-            # add num_frames images
             t = prompt.split("<image>")
             prompt = t[0] + "<image>" * args.num_frames + t[1]
             input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
@@ -138,7 +140,6 @@ def main(args):
         conv = conv_templates["chatml_direct"].copy()
         conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + query)
         prompt = conv.get_prompt()
-        # add num_frames images
         t = prompt.split("<image>")
         prompt = t[0] + "<image>" * args.num_frames + t[1]
         input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt")
@@ -167,11 +168,11 @@ def main(args):
     if prompt_type == "image":
         assert (
             data_extension.lower() in IMG_EXTENSIONS
-        ), f"The prompt is suitable for an image dataset but the data is not image. The first data is of format {data_extension}"
+        ), f"The prompt is suitable for an image dataset but the data is not image."
     elif prompt_type == "video":
         assert (
             data_extension.lower() in VID_EXTENSIONS
-        ), f"The prompt is suitable for a video dataset but the data is not video. The first data is of format {data_extension}"
+        ), f"The prompt is suitable for a video dataset but the data is not video."
     else:
         raise ValueError(f"Found invalid prompt type {prompt_type}")
 
@@ -182,7 +183,6 @@ def main(args):
     dp_size = dist.get_world_size(dp_group)
     sampler = NoPaddingDistributedSampler(dataset, rank=dp_rank, num_replicas=dp_size)
 
-    # build dataloader
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=args.bs,
@@ -194,24 +194,18 @@ def main(args):
         collate_fn=collate_fn,
     )
 
+    with open(args.input, "r") as f:
+        reader = csv.DictReader(f)
+        original_data = [row for row in reader]
+    headers = reader.fieldnames
+
     # prepare output file reader
     output_file = args.input.replace(".csv", "_caption.csv")
-
-    # create csv writer
-    has_dp_writter = dist.get_rank(tp_group) == 0
-
-    if has_dp_writter:
-        # the dp writer takes care of the files processed on the current dp rank
-        # so we use write mode
-        output_file_split = output_file.replace(".csv", f"_part{dp_rank}.csv")
-        dp_file = open(output_file_split, "w")
-        dp_writer = csv.writer(dp_file)
-        dp_writer.writerow(["path", "text", "num_frames"])
 
     # ======================================================
     # 5. generate captions
     # ======================================================
-    if dist.get_rank(tp_group) == 0:
+    if dist.get_rank() == 0:
         pbar = tqdm(dataloader, position=dp_rank, desc=f"Data Parallel Rank {dist.get_rank(dp_group)}")
     else:
         pbar = dataloader
@@ -222,6 +216,7 @@ def main(args):
         output_length = []
         total_time = []
 
+    results = []
     for i, batch in enumerate(pbar):
         # measure time
         if args.profile:
@@ -262,16 +257,14 @@ def main(args):
         ]
         inputs_embeds = torch.cat(inputs_embeds, dim=0)
 
-        # generate outputs
         with Timer() as generate_timer:
             output_ids = super(type(model), model).generate(
                 inputs_embeds=inputs_embeds,
                 attention_mask=attention_mask,
-                do_sample=False,  # sampling is not deterministic and may cause TP to hang
+                do_sample=False,
                 max_new_tokens=args.max_tokens,
                 use_cache=True,
             )
-
             # skip warmup and add profiling data
             if args.profile and i >= args.profile_warmup:
                 output_length.append(output_ids.size(0) * output_ids.size(1))
@@ -289,11 +282,11 @@ def main(args):
             encode_time.append(encode_timer.time_taken)
             generate_time.append(generate_timer.time_taken)
 
-        # save results
-        if has_dp_writter:
-            result = list(zip(video_files, outputs, video_lengths))
-            for t in result:
-                dp_writer.writerow(t)
+        for video_file, output_text, video_length in zip(video_files, outputs, video_lengths):
+            original_row = next(row for row in original_data if row["path"] == video_file)
+            original_row["text"] = output_text
+            original_row["num_frames"] = video_length
+            results.append(original_row)
 
     # display profiling info
     if args.profile:
@@ -306,15 +299,26 @@ def main(args):
         print(f"Max GPU allocated / GB: {torch.cuda.max_memory_allocated() / 1024**3}")
         print(f"Max GPU reserved / GB: {torch.cuda.max_memory_reserved() / 1024**3}")
 
-    # ======================================================
-    # 6. shutdown
-    # ======================================================
-    # close file writing
-    if has_dp_writter:
-        dp_file.close()
-    dist.barrier()
+    if dist.get_rank() == 0:
+        all_results = [None] * dist.get_world_size()
+    else:
+        all_results = None
+    dist.gather_object(results, all_results, dst=0)
 
-    # terminate distributed env
+    if dist.get_rank() == 0:
+        all_results = [item for sublist in all_results if sublist is not None for item in sublist]
+
+        with open(output_file, "w", newline="") as f:
+            if "num_frames" not in headers:
+                writer = csv.DictWriter(f, fieldnames=headers + ["text", "num_frames"])
+            else:
+                writer = csv.DictWriter(f, fieldnames=headers + ["text"])
+            writer.writeheader()
+            writer.writerows(all_results)
+
+        print(f"Results saved to {output_file}")
+
+    dist.barrier()
     dist.destroy_process_group()
 
 
@@ -326,7 +330,6 @@ if __name__ == "__main__":
     parser.add_argument("--resize", type=int, default=336)
     parser.add_argument("--num-frames", type=int, default=1)
     parser.add_argument("--max-tokens", type=int, default=300)
-    # speed related
     parser.add_argument("--bs", type=int, default=16)
     parser.add_argument("--tp-size", type=int, default=2)
     parser.add_argument("--dp-size", type=int, default=4)

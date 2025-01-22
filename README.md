@@ -27,12 +27,13 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
    <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/1.gif" width="850" />
    </a>
 </div>
-## 📰 News
 
+## 📰 News
+- **[2024.01.20]** 🔥 We released **Open-Sora 1.3**. With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** 🔥 [The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
-- **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-10-model-weights) [[report]](/docs/report_03.md)   [[blog]](https://hpc-ai.com/blog/open-sora-from-hpc-ai-tech-team-continues-open-source-generate-any-16-second-720p-hd-video-with-one-click-model-weights-ready-to-use)
+- **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md)   [[blog]](https://hpc-ai.com/blog/open-sora-from-hpc-ai-tech-team-continues-open-source-generate-any-16-second-720p-hd-video-with-one-click-model-weights-ready-to-use)
 - **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
-- **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
+- **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]](#open-sora-11-model-weights) [[report]](/docs/report_02.md)
 - **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
   <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
@@ -46,11 +47,23 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 🔥 You can experience Open-Sora on our [🤗 Gradio application on Hugging Face](https://huggingface.co/spaces/hpcai-tech/open-sora). More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
+| **5s 720×1280**                                                                                                                                      | **5s 720×1280**                                                                                                                                      | **5s 720×1280**                                                                                                                                      |
+|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [<img src="assets/demo/open_sora_v1.3/demo_tomato.gif" width="">](https://streamable.com/e/r0imrp?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_fisherman.gif" width="">](https://streamable.com/e/hfvjkh?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_girl2.gif" width="">](https://streamable.com/e/kutmma?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_grape.gif" width="">](https://streamable.com/e/osn1la?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_mushroom.gif" width="">](https://streamable.com/e/l1pzws?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_parrot.gif" width="">](https://streamable.com/e/2vqari?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_trans.gif" width="">](https://streamable.com/e/1in7d6?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_bear.gif" width="">](https://streamable.com/e/e9bi4o?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_futureflower.gif" width="">](https://streamable.com/e/09z7xi?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_fire.gif" width="">](https://streamable.com/e/16c3hk?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_man.gif" width="">](https://streamable.com/e/wi250w?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_black.gif" width="">](https://streamable.com/e/vw5b64?quality=highest&amp;autoplay=1) |
+
+
+<details>
+<summary>OpenSora 1.2 Demo</summary>
+
 | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      |
 |------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [<img src="assets/demo/v1.2/sample_0013.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/7895aab6-ed23-488c-8486-091480c26327) | [<img src="assets/demo/v1.2/sample_1718.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/20f07c7b-182b-4562-bbee-f1df74c86c9a) | [<img src="assets/demo/v1.2/sample_0087.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3d897e0d-dc21-453a-b911-b3bda838acc2) |
 | [<img src="assets/demo/v1.2/sample_0052.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/644bf938-96ce-44aa-b797-b3c0b513d64c) | [<img src="assets/demo/v1.2/sample_1719.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/272d88ac-4b4a-484d-a665-8d07431671d0) | [<img src="assets/demo/v1.2/sample_0002.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ebbac621-c34e-4bb4-9543-1c34f8989764) |
 | [<img src="assets/demo/v1.2/sample_0011.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/a1e3a1a3-4abd-45f5-8df2-6cced69da4ca) | [<img src="assets/demo/v1.2/sample_0004.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/d6ce9c13-28e1-4dff-9644-cc01f5f11926) | [<img src="assets/demo/v1.2/sample_0061.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/561978f8-f1b0-4f4d-ae7b-45bec9001b4a) |
+</details>
 
 <details>
 <summary>OpenSora 1.1 Demo</summary>
@@ -86,12 +99,11 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 </details>
 
 ## 🔆 New Features/Updates
-
-- 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](/docs/report_03.md)** for more details.
-- ✅ Support rectified flow scheduling.
-- ✅ Support more conditioning including fps, aesthetic score, motion strength and camera motion.
-- ✅ Trained our 3D-VAE for temporal dimension compression.
-- 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](/docs/report_02.md)** for more discussions.
+- 📍 **Open-Sora 1.3** released. Model weights are available [here](#model-weights). See our **[report 1.3](docs/report_04.md)** for more infomation.
+  - ✅ Upgraded model architecture, delivering enhanced performance and efficiency.
+  - ✅ Incorporated more high-quality training data, significantly improving overall results.
+- 📍 **Open-Sora 1.2** released. Model weights are available [here](#model-weights). See our **[report 1.2](docs/report_03.md)** for more details.
+- 📍 **Open-Sora 1.1** released. Model weights are available [here](#model-weights). It is trained on **0s~15s, 144p to 720p, various aspect ratios** videos. See our **[report 1.1](docs/report_02.md)** for more discussions.
 - 🔧 **Data processing pipeline v1.1** is released. An automatic [processing pipeline](#data-processing) from raw videos to (text, video clip) pairs is provided, including scene cutting $\rightarrow$ filtering(aesthetic, optical flow, OCR, etc.) $\rightarrow$ captioning $\rightarrow$ managing. With this tool, you can easily build your video dataset.
 
 <details>
@@ -159,6 +171,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 Other useful documents and links are listed below.
 
 - Report: each version is trained from a image base seperately (not continuously trained), while a newer version will incorporate the techniques from the previous version.
+  - [report 1.3](docs/report_04.md): shift-window attention, unified spatial-temporal VAE, etc.
   - [report 1.2](docs/report_03.md): rectified flow, 3d-VAE, score condition, evaluation, etc.
   - [report 1.1](docs/report_02.md): multi-resolution/length/aspect-ratio, image/video conditioning/editing, data preprocessing, etc.
   - [report 1.0](docs/report_01.md): architecture, captioning, etc.
@@ -228,7 +241,23 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 
 ## Model Weights
 
+### Open-Sora 1.3 Model Weights
+
+| Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
+|-----------|------------|------|-------------|------------|---------------------------------------------------------------|
+| Diffusion | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4) |
+| Diffusion-360p | 1.1B  | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4-360p) |
+| Diffusion-i2v | 1.1B   | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3-i2v) |
+| VAE       | 259M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.3) |
+
+See our **[report 1.3](docs/report_04.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
+
+> For users from mainland China, try `export HF_ENDPOINT=https://hf-mirror.com` to successfully download the weights.
+
 ### Open-Sora 1.2 Model Weights
+
+<details>
+<summary>View more</summary>
 
 | Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
 |-----------|------------|------|-------------|------------|---------------------------------------------------------------|
@@ -238,6 +267,7 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 See our **[report 1.2](docs/report_03.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
 
 > For users from mainland China, try `export HF_ENDPOINT=https://hf-mirror.com` to successfully download the weights.
+</details>
 
 ### Open-Sora 1.1 Model Weights
 
@@ -307,13 +337,12 @@ In the Gradio application, the basic options are as follows:
 
 The easiest way to generate a video is to input a text prompt and click the "**Generate video**" button (scroll down if you cannot find). The generated video will be displayed in the right panel. Checking the "**Enhance prompt with GPT4o**" will use GPT-4o to refine the prompt, while "**Random Prompt**" button will generate a random prompt by GPT-4o for you. Due to the OpenAI's API limit, the prompt refinement result has some randomness.
 
-Then, you can choose the **resolution**, **duration**, and **aspect ratio** of the generated video. Different resolution and video length will affect the video generation speed. On a 80G H100 GPU, the generation speed (with `num_sampling_step=30`) and peak memory usage is:
+Then, you can choose the **resolution**, **duration**, and **aspect ratio** of the generated video. Different resolution and video length will affect the video generation speed. On a 140G H200 GPU, the generation speed (with `num_sampling_step=30`) and peak memory usage is:
 
-|      | Image   | 2s       | 4s        | 8s        | 16s       |
-|------|---------|----------|-----------|-----------|-----------|
-| 360p | 3s, 24G | 18s, 27G | 31s, 27G  | 62s, 28G  | 121s, 33G |
-| 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
-| 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
+|      | Image    |49 Frames | 65 Frames | 81 Frames | 97 Frames |113 Frames |
+|------|----------|----------|-----------|-----------|-----------|-----------|
+| 360p | 10s, 23G | 16s, 23G | 21s, 24G  | 27s, 24G  | 33s, 25G  | 39s, 25G  |
+| 720p | 13s, 24G | 61s, 28G | 83s, 29G  | 106s, 31G | 130s, 33G | 157s, 35G |
 
 Note that besides text to video, you can also use **image to video generation**. You can upload an image and then click the "**Generate video**" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "**Generate image**" button to generate an image with the text prompt, and then click the "**Generate video**" button to generate a video with the image generated with the same model.
 
@@ -321,7 +350,7 @@ Note that besides text to video, you can also use **image to video generation**.
 
 Then you can specify more options, including "**Motion Strength**", "**Aesthetic**" and "**Camera Motion**". If "Enable" not checked or the choice is "none", the information is not passed to the model. Otherwise, the model will generate videos with the specified motion strength, aesthetic score, and camera motion.
 
-For the **aesthetic score**, we recommend using values higher than 6. For **motion strength**, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the **camera motion**, sometimes the model cannot follow the instruction well, and we are working on improving it.
+For the **aesthetic score**, we recommend using values 'excellent'. For **motion strength**, a smaller value will lead to a smoother but less dynamic video, while a larger value will lead to a more dynamic but likely more blurry video. Thus, you can try without it and then adjust it according to the generated video. For the **camera motion**, sometimes the model cannot follow the instruction well, and we are working on improving it.
 
 You can also adjust the "**Sampling steps**", this is directly related to the generation speed as it is the number of denoising. A number smaller than 30 usually leads to a poor generation results, while a number larger than 100 usually has no significant improvement. The "**Seed**" is used for reproducibility, you can set it to a fixed number to generate the same video. The "**CFG Scale**" controls how much the model follows the text prompt, a smaller value will lead to a more random video, while a larger value will lead to a more text-following video (7 is recommended).
 
@@ -329,7 +358,57 @@ For more advanced usage, you can refer to [Gradio README](./gradio/README.md#adv
 
 ## Inference
 
+### Open-Sora 1.3 Command Line Inference
+The basic command line inference is as follows:
+
+```bash
+# text to video
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+
+You can add more options to the command line to customize the generation.
+
+```bash
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 --num-sample 1 \
+  --aes "very good" --flow "fair" \
+  --prompt "a beautiful waterfall"
+```
+
+For image to video generation and other functionalities, see [here](docs/commands.md) for more instructions.
+
+### Sequence Parallelism Inference
+
+To enable sequence parallelism, you need to use `torchrun` to run the inference script. The following command will run the inference with 2 GPUs.
+
+```bash
+# text to video
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+
+### GPT-4o Prompt Refinement
+
+We find that GPT-4o can refine the prompt and improve the quality of the generated video. With this feature, you can also use other language (e.g., Chinese) as the prompt. To enable this feature, you need prepare your openai api key in the environment:
+
+```bash
+export OPENAI_API_KEY=YOUR_API_KEY
+```
+
+Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refinement, or leave prompt empty to get a random prompt generated by GPT-4o.
+
+```bash
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --llm-refine True \
+  --prompt "a beautiful waterfall"
+```
+
 ### Open-Sora 1.2 Command Line Inference
+<details>
+<summary>View more</summary>
 
 The basic command line inference is as follows:
 
@@ -387,6 +466,8 @@ Then you can inference with `--llm-refine True` to enable the GPT-4o prompt refi
 python scripts/inference.py configs/opensora-v1-2/inference/sample.py \
   --num-frames 4s --resolution 720p --llm-refine True
 ```
+
+</details>
 
 ### Open-Sora 1.1 Command Line Inference
 
@@ -448,7 +529,21 @@ Also check out the [datasets](docs/datasets.md) we use.
 
 ## Training
 
+### Open-Sora 1.3 Training
+
+```bash
+# one node
+torchrun --standalone --nproc_per_node 8 scripts/train.py \
+    configs/opensora-v1-3/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+# multiple nodes
+colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
+    configs/opensora-v1-3/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
 ### Open-Sora 1.2 Training
+
+<details>
+<summary>View more</summary>
 
 The training process is same as Open-Sora 1.1.
 
@@ -463,6 +558,7 @@ torchrun --standalone --nproc_per_node 8 scripts/train.py \
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
     configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
+</details>
 
 ### Open-Sora 1.1 Training
 
@@ -517,7 +613,7 @@ We support evaluation based on:
 - VBench-i2v score
 - Batch generation for human evaluation
 
-All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details. Our [report](/docs/report_03.md#evaluation) also provides more information about the evaluation during training. The following table shows Open-Sora 1.2 greatly improves Open-Sora 1.0.
+All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details. Our [report](/docs/report_04.md#evaluation) also provides more information about the evaluation during training. The following table shows Open-Sora 1.3 greatly improves Open-Sora 1.2.
 
 | Model          | Total Score | Quality Score | Semantic Score |
 |----------------|-------------|---------------|----------------|
@@ -525,6 +621,24 @@ All the evaluation code is released in `eval` folder. Check the [README](/eval/R
 | Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
 
 ## VAE Training & Evaluation
+
+### Open-Sora 1.3 VAE Training
+We implement and train a unified spatial-temporal VAE for better compress videos as well as preserve details. For more detailes, refer to [Open-Sora 1.3 VAE Documentation](docs/vae_v1_3.md). Before you run the following commands, follow our [Installation Documentation](docs/installation.md) to install the required dependencies for VAE and Evaluation.
+```bash
+## Train VAE with 8 GPUs
+colossalai run --hostfile hostfile --nproc_per_node 8 scripts/train_opensoravae_v1_3.py configs/vae_v1_3/train/video_16z.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT --wandb True > logs/train_opensoravae_v1_3.log 2>&1 &
+```
+
+### Evaluate VAE performance
+You need to run VAE inference first to generate the videos, then calculate scores on the generated videos:
+```bash
+VID_PATH=YOUR_CSV_PATH CUDA_VISIBLE_DEVICES=0 bash eval/vae/launch.sh pretrained_models/OpenSoraVAE_V1_3/model.pt
+```
+
+### Open-Sora 1.2 VAE Training
+
+<details>
+<summary>View more</summary>
 
 We train a VAE pipeline that consists of a spatial VAE followed by a temporal VAE.
 For more details, refer to [VAE Documentation](docs/vae.md).
@@ -554,6 +668,8 @@ torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference_vae.py con
 # score calculation
 python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir YOUR_VIDEO_DIR_ori --generated_video_dir YOUR_VIDEO_DIR_rec --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
 ```
+
+</details>
 
 ## Contribution
 

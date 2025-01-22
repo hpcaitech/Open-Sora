@@ -1,0 +1,14 @@
+Harris and Trump shakes hands.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_1.jpeg"}
+The female and male politician shakes hands.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_1.jpeg"}
+Harris and Trump shakes hands.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_2.jpeg"}
+The female and male politician shakes hands.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_2.jpeg"}
+Harris and Trump shakes hands.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_3.jpeg"}
+The female and male politician shakes hands.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_3.jpeg"}
+As Harris and Trump shakes hands, they break into hugging each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_1.jpeg"}
+As the female and male politician shakes hands, they break into hugging each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_1.jpeg"}
+As Harris and Trump shakes hands, they break into hugging each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_2.jpeg"}
+As the female and male politician shakes hands, they break into hugging each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_2.jpeg"}
+As Harris and Trump shakes hands, they break into hugging each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_3.jpeg"}
+As the female and male politician shakes hands, they break into hugging each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_shake_3.jpeg"}
+As the woman speaks, the man from the back steps in front and hugs her.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_speech_1.jpeg"}
+As the man on the left and woman on the left speak, they suddenly hug each other.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/harris_trump_speech_2.jpeg"}

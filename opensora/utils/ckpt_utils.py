@@ -2,16 +2,18 @@ import functools
 import json
 import operator
 import os
-from typing import Dict, Optional, Tuple
+import re
+import shutil
+from glob import glob
+from typing import Tuple
 
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 from colossalai.booster import Booster
 from colossalai.checkpoint_io import GeneralCheckpointIO
-from colossalai.utils.safetensors import save as async_save
+from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
-from tensornvme.async_file_io import AsyncFileWriter
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torchvision.datasets.utils import download_url
@@ -103,7 +105,7 @@ def reparameter(ckpt, name=None, model=None):
             )
             ckpt["y_embedder.y_embedding"] = ckpt["y_embedder.y_embedding"][: model.y_embedder.y_embedding.shape[0]]
     # stdit3 special case
-    if type(model).__name__ == "STDiT3" and "PixArt-Sigma" in name:
+    if type(model).__name__ == "STDiT3" and "PixArt" in model_name:
         ckpt_keys = list(ckpt.keys())
         for key in ckpt_keys:
             if "blocks." in key:
@@ -153,14 +155,7 @@ def load_from_sharded_state_dict(model, ckpt_path, model_name="model", strict=Fa
     ckpt_io.load_model(model, os.path.join(ckpt_path, model_name), strict=strict)
 
 
-def model_sharding(model: torch.nn.Module, device: torch.device = None):
-    """
-    Sharding the model parameters across multiple GPUs.
-
-    Args:
-        model (torch.nn.Module): The model to shard.
-        device (torch.device): The device to shard the model to.
-    """
+def model_sharding(model: torch.nn.Module, device=None):
     global_rank = dist.get_rank()
     world_size = dist.get_world_size()
     for _, param in model.named_parameters():
@@ -176,31 +171,17 @@ def model_sharding(model: torch.nn.Module, device: torch.device = None):
         param.data = splited_params.to(device)
 
 
-def model_gathering(model: torch.nn.Module, model_shape_dict: dict, pinned_state_dict: dict) -> None:
-    """
-    Gather the model parameters from multiple GPUs.
-
-    Args:
-        model (torch.nn.Module): The model to gather.
-        model_shape_dict (dict): The shape of the model parameters.
-        device (torch.device): The device to gather the model to.
-    """
+def model_gathering(model: torch.nn.Module, model_shape_dict: dict, device=None):
     global_rank = dist.get_rank()
     global_size = dist.get_world_size()
-    params = set()
     for name, param in model.named_parameters():
-        params.add(name)
+        if device is None:
+            device = param.device
         all_params = [torch.empty_like(param.data) for _ in range(global_size)]
         dist.all_gather(all_params, param.data, group=dist.group.WORLD)
         if int(global_rank) == 0:
             all_params = torch.cat(all_params)
-            gathered_param = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name])
-            pinned_state_dict[name].copy_(gathered_param)
-    if int(global_rank) == 0:
-        for k, v in model.state_dict(keep_vars=True).items():
-            if k not in params:
-                pinned_state_dict[k].copy_(v)
-
+            param.data = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name]).to(device)
     dist.barrier()
 
 
@@ -215,28 +196,85 @@ def record_model_param_shape(model: torch.nn.Module) -> dict:
     return param_shape
 
 
-def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model", strict=False):
-    if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
-        state_dict = find_model(ckpt_path, model=model)
+def adapt_16ch_vae(state_dict):
+    if "x_embedder.proj.weight" in state_dict:
+        #     state_dict.pop("x_embedder.proj.weight")
+        #     state_dict.pop("final_layer.linear.bias")
+        #     state_dict.pop("final_layer.linear.weight")
+
+        state_dict["x_embedder.proj.weight"] = state_dict["x_embedder.proj.weight"].repeat(1, 4, 1, 1, 1) / 4
+        state_dict["x_embedder.proj.bias"] = state_dict["x_embedder.proj.bias"]
+        state_dict["final_layer.linear.weight"] = (
+            state_dict["final_layer.linear.weight"].reshape(4, 2, 4, -1).repeat(1, 1, 4, 1).reshape(128, -1)
+        )
+        state_dict["final_layer.linear.bias"] = (
+            state_dict["final_layer.linear.bias"].reshape(4, 2, 4).repeat(1, 1, 4).reshape(128)
+        )
+    return state_dict
+
+
+# def adapt_v2v(state_dict, first_adapter = False):
+#     if first_adapter:
+#         ori_dim = state_dict['final_layer.linear.weight'].shape[0]
+#         state_dict['final_layer.linear.weight'] = state_dict['final_layer.linear.weight'][:ori_dim//2,:]
+#         state_dict['final_layer.linear.bias'] = state_dict['final_layer.linear.bias'][:ori_dim//2]
+#     else:
+#         pass
+#     return state_dict
+
+
+def load_from_hf_hub(repo_path, cache_dir):
+    repo_id = "/".join(repo_path.split("/")[:-1])
+    repo_file = repo_path.split("/")[-1]
+    try:
+        ckpt_path = hf_hub_download(repo_id=repo_id, filename=repo_file, cache_dir=cache_dir)
+        return ckpt_path
+    except Exception as e:
+        print(f"Error downloading from Hugging Face Hub: {e}")
+        return None
+
+
+def load_checkpoint(
+    model,
+    ckpt_path,
+    save_as_pt=False,
+    model_name="model",
+    strict=False,
+    adapt_16ch=False,
+    cache_dir=None,
+    device: torch.device | str = "cpu",
+):
+    if not os.path.exists(ckpt_path):
+        get_logger().info(f"Checkpoint not found at {ckpt_path} trying to download from Hugging Face Hub")
+        ckpt_path = load_from_hf_hub(ckpt_path, cache_dir)
+
+    get_logger().info(f"Loading checkpoint from {ckpt_path}")
+
+    if ckpt_path.endswith(".safetensors"):
+        ckpt = load_file(ckpt_path, device=str(device))
+        missing_keys, unexpected_keys = model.load_state_dict(ckpt, strict=strict)
+        get_logger().info("Missing keys: %s", missing_keys)
+        get_logger().info("Unexpected keys: %s", unexpected_keys)
+
+    elif ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
+        # state_dict = find_model(ckpt_path, model=model)
+        state_dict = torch.load(ckpt_path, map_location=device)
+        if adapt_16ch:
+            state_dict = adapt_16ch_vae(state_dict)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=strict)
         get_logger().info("Missing keys: %s", missing_keys)
         get_logger().info("Unexpected keys: %s", unexpected_keys)
-    elif ckpt_path.endswith(".safetensors"):
-        from safetensors.torch import load_file
 
-        state_dict = load_file(ckpt_path)
-        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-        print(f"Missing keys: {missing_keys}")
-        print(f"Unexpected keys: {unexpected_keys}")
-    elif os.path.isdir(ckpt_path):
+    else:
+        assert os.path.isdir(ckpt_path), f"Invalid checkpoint path: {ckpt_path}"
         load_from_sharded_state_dict(model, ckpt_path, model_name, strict=strict)
         get_logger().info("Model checkpoint loaded from %s", ckpt_path)
         if save_as_pt:
             save_path = os.path.join(ckpt_path, model_name + "_ckpt.pt")
             torch.save(model.state_dict(), save_path)
             get_logger().info("Model checkpoint saved to %s", save_path)
-    else:
-        raise ValueError(f"Invalid checkpoint path: {ckpt_path}")
+
+    return model
 
 
 def load_json(file_path: str):
@@ -252,130 +290,113 @@ def save_json(data, file_path: str):
 # save and load for training
 
 
-def _prepare_ema_pinned_state_dict(model: nn.Module, ema_shape_dict: dict):
-    ema_pinned_state_dict = dict()
-    for name, p in model.named_parameters():
-        ema_pinned_state_dict[name] = torch.empty(ema_shape_dict[name], pin_memory=True, device="cpu", dtype=p.dtype)
-    sd = model.state_dict(keep_vars=True)
-    # handle buffers
-    for k, v in sd.items():
-        if k not in ema_pinned_state_dict:
-            ema_pinned_state_dict[k] = torch.empty(v.shape, pin_memory=True, device="cpu", dtype=v.dtype)
-
-    return ema_pinned_state_dict
-
-
-class CheckpointIO:
-    def __init__(self, n_write_entries: int = 32):
-        self.n_write_entries = n_write_entries
-        self.writer: Optional[AsyncFileWriter] = None
-        self.pinned_state_dict: Optional[Dict[str, torch.Tensor]] = None
-
-    def _sync_io(self):
-        if self.writer is not None:
-            self.writer = None
-
-    def __del__(self):
-        self._sync_io()
-
-    def _prepare_pinned_state_dict(self, ema: nn.Module, ema_shape_dict: dict):
-        if self.pinned_state_dict is None and dist.get_rank() == 0:
-            self.pinned_state_dict = _prepare_ema_pinned_state_dict(ema, ema_shape_dict)
-
-    def save(
-        self,
-        booster: Booster,
-        save_dir: str,
-        model: nn.Module = None,
-        ema: nn.Module = None,
-        optimizer: Optimizer = None,
-        lr_scheduler: _LRScheduler = None,
-        sampler=None,
-        epoch: int = None,
-        step: int = None,
-        global_step: int = None,
-        batch_size: int = None,
-        ema_shape_dict: dict = None,
-        async_io: bool = True,
-    ):
-        self._sync_io()
-        save_dir = os.path.join(save_dir, f"epoch{epoch}-global_step{global_step}")
-        os.environ["TENSORNVME_DEBUG_LOG"] = os.path.join(save_dir, "async_file_io.log")
+def save(
+    booster: Booster,
+    save_dir: str,
+    model: nn.Module = None,
+    ema: nn.Module = None,
+    optimizer: Optimizer = None,
+    lr_scheduler: _LRScheduler = None,
+    sampler=None,
+    epoch: int = None,
+    step: int = None,
+    global_step: int = None,
+    batch_size: int = None,
+    is_lora_train: bool = False,
+    is_save_both_lora_and_main: bool = False,
+):
+    save_dir = os.path.join(save_dir, f"epoch{epoch}-global_step{global_step}")
+    if is_lora_train:
+        os.makedirs(os.path.join(save_dir, "lora"), exist_ok=True)
+    else:
         os.makedirs(os.path.join(save_dir, "model"), exist_ok=True)
 
-        if model is not None:
-            booster.save_model(
-                model,
-                os.path.join(save_dir, "model"),
-                shard=True,
-                use_safetensors=True,
-                size_per_shard=4096,
-                use_async=async_io,
-            )
-        if optimizer is not None:
-            booster.save_optimizer(
-                optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096, use_async=async_io
-            )
-        if lr_scheduler is not None:
-            booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
-        if ema is not None:
-            self._prepare_pinned_state_dict(ema, ema_shape_dict)
-            model_gathering(ema, ema_shape_dict, self.pinned_state_dict)
-        if dist.get_rank() == 0:
-            running_states = {
-                "epoch": epoch,
-                "step": step,
-                "global_step": global_step,
-                "batch_size": batch_size,
-            }
-            save_json(running_states, os.path.join(save_dir, "running_states.json"))
-
-            if ema is not None:
-                if async_io:
-                    self.writer = async_save(os.path.join(save_dir, "ema.safetensors"), self.pinned_state_dict)
-                else:
-                    torch.save(self.pinned_state_dict, os.path.join(save_dir, "ema.pt"))
-
-            if sampler is not None:
-                # only for VariableVideoBatchSampler
-                torch.save(sampler.state_dict(step), os.path.join(save_dir, "sampler"))
-        dist.barrier()
-        return save_dir
-
-    def load(
-        self,
-        booster: Booster,
-        load_dir: str,
-        model: nn.Module = None,
-        ema: nn.Module = None,
-        optimizer: Optimizer = None,
-        lr_scheduler: _LRScheduler = None,
-        sampler=None,
-    ) -> Tuple[int, int, int]:
-        assert os.path.exists(load_dir), f"Checkpoint directory {load_dir} does not exist"
-        assert os.path.exists(os.path.join(load_dir, "running_states.json")), "running_states.json does not exist"
-        running_states = load_json(os.path.join(load_dir, "running_states.json"))
-        if model is not None:
-            booster.load_model(model, os.path.join(load_dir, "model"))
-        if ema is not None:
-            # ema is not boosted, so we don't use booster.load_model
-            if os.path.exists(os.path.join(load_dir, "ema.safetensors")):
-                ema_state_dict = load_file(os.path.join(load_dir, "ema.safetensors"))
+    if model is not None:
+        if not is_lora_train:
+            booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
+        else:
+            if is_save_both_lora_and_main:
+                booster.save_model(model, os.path.join(save_dir, "model"), shard=True)
+                booster.save_lora_as_pretrained(model, os.path.join(save_dir, "lora"))
             else:
-                ema_state_dict = torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu"))
-            ema.load_state_dict(
-                ema_state_dict,
-                strict=False,
-            )
-        if optimizer is not None:
-            booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
-        if lr_scheduler is not None:
-            booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
-        if sampler is not None:
-            sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
-        dist.barrier()
+                booster.save_lora_as_pretrained(model, os.path.join(save_dir, "lora"))
 
-        return (
-            running_states["epoch"],
-            running_states["step"],
+    if optimizer is not None:
+        booster.save_optimizer(optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096)
+    if lr_scheduler is not None:
+        booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
+    if dist.get_rank() == 0:
+        running_states = {
+            "epoch": epoch,
+            "step": step,
+            "global_step": global_step,
+            "batch_size": batch_size,
+        }
+        save_json(running_states, os.path.join(save_dir, "running_states.json"))
+
+        if ema is not None:
+            torch.save(ema.state_dict(), os.path.join(save_dir, "ema.pt"))
+
+        if sampler is not None:
+            # only for VariableVideoBatchSampler
+            torch.save(sampler.state_dict(step), os.path.join(save_dir, "sampler"))
+    dist.barrier()
+    return save_dir
+
+
+def load(
+    booster: Booster,
+    load_dir: str,
+    model: nn.Module = None,
+    ema: nn.Module = None,
+    optimizer: Optimizer = None,
+    lr_scheduler: _LRScheduler = None,
+    sampler=None,
+    is_lora_train: bool = False,
+    is_load_both_lora_and_main: bool = False,
+) -> Tuple[int, int, int]:
+    assert os.path.exists(load_dir), f"Checkpoint directory {load_dir} does not exist"
+    assert os.path.exists(os.path.join(load_dir, "running_states.json")), "running_states.json does not exist"
+    running_states = load_json(os.path.join(load_dir, "running_states.json"))
+    if model is not None:
+        if is_lora_train:
+            if is_load_both_lora_and_main:
+                booster.load_model(model, os.path.join(load_dir, "lora", "adapter_model.bin"), strict=False)
+                booster.load_model(model, os.path.join(load_dir, "model"), strict=False)
+            else:
+                booster.load_model(model, os.path.join(load_dir, "lora", "adapter_model.bin"), strict=False)
+        else:
+            booster.load_model(model, os.path.join(load_dir, "model"), strict=False)
+    if ema is not None:
+        # ema is not boosted, so we don't use booster.load_model
+        ema.load_state_dict(
+            torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")),
+            strict=False,
         )
+    if optimizer is not None:
+        booster.load_optimizer(optimizer, os.path.join(load_dir, "optimizer"))
+    if lr_scheduler is not None:
+        booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
+    if sampler is not None:
+        sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
+    dist.barrier()
+
+    return (
+        running_states["epoch"],
+        running_states["step"],
+    )
+
+
+def rm_checkpoints(
+    save_dir: str,
+    keep_n_latest: int = 0,
+):
+    if keep_n_latest <= 0 or dist.get_rank() != 0:
+        return
+    files = glob(os.path.join(save_dir, "epoch*-global_step*"))
+    files = sorted(
+        files, key=lambda s: tuple(map(int, re.search(r"epoch(\d+)-global_step(\d+)", s).groups())), reverse=True
+    )
+    to_remove = files[keep_n_latest:]
+    for f in to_remove:
+        shutil.rmtree(f)

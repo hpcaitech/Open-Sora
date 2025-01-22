@@ -13,24 +13,32 @@ from opensora.models.layers.blocks import (
 )
 
 
-def run_attention(rank, world_size):
+def run_attention(rank, world_size, kernel_size=None, temporal=False):
     # create model
     torch.manual_seed(1024)
     set_sequence_parallel_group(dist.group.WORLD)
 
-    seq_parallel_attention = SeqParallelAttention(dim=256, num_heads=4, qkv_bias=True, enable_flash_attn=False).cuda()
+    seq_parallel_attention = SeqParallelAttention(
+        dim=1152, num_heads=16, qkv_bias=True, enable_flash_attn=False, kernel_size=kernel_size, temporal=temporal
+    ).cuda()
+    # seq_parallel_attention = SeqParallelAttention(dim=256, num_heads=4, qkv_bias=True, enable_flash_attn=False, kernel_size=kernel_size).cuda()
 
     torch.manual_seed(1024)
     attention = Attention(
-        dim=256,
-        num_heads=4,
+        dim=1152,
+        num_heads=16,
         qkv_bias=True,
         enable_flash_attn=False,
+        kernel_size=kernel_size,
     ).cuda()
 
     # create inputs
     torch.manual_seed(1024)
-    x = torch.randn(4, 64, 256).cuda()
+    # x = torch.randn(4, 64, 256).cuda()
+    if kernel_size:
+        x = torch.randn(3, 12, 40, 30, 1152).cuda()
+    else:
+        x = torch.randn(3, 16 * 8, 1152).cuda()
     seq_x = x.clone().detach()
 
     x.requires_grad = True
@@ -38,14 +46,33 @@ def run_attention(rank, world_size):
     seq_x.requires_grad = True
     seq_x.retain_grad()
 
-    sub_seq_x = split_forward_gather_backward(seq_x, dist.group.WORLD, dim=1, grad_scale="down")
+    if kernel_size is None and temporal is True:
+        from einops import rearrange
 
-    # run model
-    out = attention(x)
-    sub_seq_out = seq_parallel_attention(sub_seq_x)
-    seq_out = gather_forward_split_backward(sub_seq_out, dist.group.WORLD, dim=1, grad_scale="up")
+        seq_x_ = rearrange(seq_x, "B (T S) C -> B T S C", T=16, S=8)
+        sub_seq_x = split_forward_gather_backward(seq_x_, dist.group.WORLD, dim=2, grad_scale="down")
+        sub_seq_x = rearrange(sub_seq_x, "B T S C -> (B S) T C", T=16, S=8 // world_size)
 
-    assert torch.allclose(seq_out, out, atol=1e-7), f"{seq_out}\nvs\n{out}"
+        sub_seq_out = seq_parallel_attention(sub_seq_x)
+
+        sub_seq_out = rearrange(sub_seq_out, "(B S) T C -> B T S C", T=16, S=8 // world_size)
+        seq_out = gather_forward_split_backward(sub_seq_out, dist.group.WORLD, dim=2, grad_scale="up")
+        seq_out = rearrange(seq_out, "B T S C -> B (T S) C", T=16, S=8)
+
+        x_ = rearrange(x, "B (T S) C -> (B S) T C", T=16, S=8)
+        out = attention(x_)
+        out = rearrange(out, "(B S) T C -> B (T S) C", T=16, S=8)
+
+    else:
+        sub_seq_x = split_forward_gather_backward(seq_x, dist.group.WORLD, dim=1, grad_scale="down")
+        sub_seq_out = seq_parallel_attention(sub_seq_x)
+        seq_out = gather_forward_split_backward(sub_seq_out, dist.group.WORLD, dim=1, grad_scale="up")
+
+        # run model
+        out = attention(x)
+    seq_out = seq_out.view(out.shape)
+
+    assert torch.allclose(seq_out, out, atol=1e-6), f"{seq_out.view(-1)[:10]}\nvs\n{out.view(-1)[:10]}"
 
     # run backward
     seq_out.mean().backward()
@@ -146,13 +173,16 @@ def run_cross_attention(rank, world_size):
 
 
 def run_dist(rank, world_size, port):
-    colossalai.launch({}, rank=rank, world_size=world_size, host="localhost", port=port)
-    # run_attention(rank, world_size)
-    run_cross_attention(rank, world_size)
+    colossalai.launch(rank=rank, world_size=world_size, host="localhost", port=port)
+    run_attention(rank, world_size, temporal=True)
+    run_attention(rank, world_size, temporal=False)
+    run_attention(rank, world_size, kernel_size=(8, 8, -1), temporal=True)
+    run_attention(rank, world_size, kernel_size=(8, 8, -1), temporal=False)
+    # run_cross_attention(rank, world_size)
 
 
 def test_seq_parallel_attention():
-    spawn(run_dist, nprocs=2)
+    spawn(run_dist, nprocs=4)
 
 
 if __name__ == "__main__":

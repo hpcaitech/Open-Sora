@@ -21,15 +21,19 @@ from opensora.utils.inference_utils import (
     append_score_to_prompts,
     apply_mask_strategy,
     collect_references_batch,
-    dframe_to_frame,
+    deflicker,
     extract_json_from_prompts,
     extract_prompts_loop,
     get_save_path_name,
     load_prompts,
     merge_prompt,
+    prep_ref_and_mask,
+    prep_ref_and_update_mask_in_loop,
     prepare_multi_resolution_info,
+    print_memory_usage,
     refine_prompts_by_openai,
     split_prompt,
+    super_resolution,
 )
 from opensora.utils.misc import all_exists, create_logger, is_distributed, is_main_process, to_torch_dtype
 
@@ -121,6 +125,7 @@ def main():
             prompts = [cfg.get("prompt_generator", "")] * 1_000_000  # endless loop
 
     # == prepare reference ==
+    neg_prompts = cfg.get("neg_prompt", [None] * len(prompts))
     reference_path = cfg.get("reference_path", [""] * len(prompts))
     mask_strategy = cfg.get("mask_strategy", [""] * len(prompts))
     assert len(reference_path) == len(prompts), "Length of reference must be the same as prompts"
@@ -142,12 +147,17 @@ def main():
     sample_name = cfg.get("sample_name", None)
     prompt_as_path = cfg.get("prompt_as_path", False)
 
+    use_sdedit = cfg.get("use_sdedit", False)
+    use_oscillation_guidance_for_text = cfg.get("use_oscillation_guidance_for_text", None)
+    use_oscillation_guidance_for_image = cfg.get("use_oscillation_guidance_for_image", None)
+
     # == Iter over all samples ==
     for i in progress_wrap(range(0, len(prompts), batch_size)):
         # == prepare batch prompts ==
         batch_prompts = prompts[i : i + batch_size]
         ms = mask_strategy[i : i + batch_size]
         refs = reference_path[i : i + batch_size]
+        neg_prompts_batch = neg_prompts[i : i + batch_size]
 
         # == get json from prompts ==
         batch_prompts, refs, ms = extract_json_from_prompts(batch_prompts, refs, ms)
@@ -241,6 +251,10 @@ def main():
             # 3. clean prompt with T5
             for idx, prompt_segment_list in enumerate(batched_prompt_segment_list):
                 batched_prompt_segment_list[idx] = [text_preprocessing(prompt) for prompt in prompt_segment_list]
+            if neg_prompts_batch[0] is None:
+                neg_prompts_batch_cl = None
+            else:
+                neg_prompts_batch_cl = [text_preprocessing(prompt) for prompt in neg_prompts_batch]
 
             # 4. merge to obtain the final prompt
             batch_prompts = []
@@ -248,32 +262,81 @@ def main():
                 batch_prompts.append(merge_prompt(prompt_segment_list, loop_idx_list))
 
             # == Iter over loop generation ==
+            mask_index = None
+            ref = None
+            cond_type = cfg.get("cond_type", None)
+            cond_type = None if cond_type == "none" else cond_type
+            image_cfg_scale = None
+            target_shape = [len(batch_prompts), vae.out_channels, *latent_size]
+            if cond_type is not None:  # i2v or v2v
+                image_cfg_scale = cfg.get("image_cfg_scale", 7.5)
+                ref, mask_index = prep_ref_and_mask(
+                    cond_type, condition_frame_length, refs, target_shape, loop, device, dtype
+                )
+
             video_clips = []
             for loop_i in range(loop):
                 # == get prompt for loop i ==
                 batch_prompts_loop = extract_prompts_loop(batch_prompts, loop_i)
-
-                # == add condition frames for loop ==
-                if loop_i > 0:
-                    refs, ms = append_generated(
-                        vae, video_clips[-1], refs, ms, loop_i, condition_frame_length, condition_frame_edit
-                    )
-
                 # == sampling ==
                 torch.manual_seed(1024)
                 z = torch.randn(len(batch_prompts), vae.out_channels, *latent_size, device=device, dtype=dtype)
-                masks = apply_mask_strategy(z, refs, ms, loop_i, align=align)
+                masks = (
+                    apply_mask_strategy(z, refs, ms, loop_i, align=align) if mask_index is None else None
+                )  # no mask for i2v and v2v
+                x_cond_mask = (
+                    torch.zeros(len(batch_prompts), vae.out_channels, *latent_size, device=device).to(dtype)
+                    if mask_index is not None
+                    else None
+                )
+                if x_cond_mask is not None and mask_index is not None:
+                    x_cond_mask[:, :, mask_index, :, :] = 1.0
+
                 samples = scheduler.sample(
                     model,
                     text_encoder,
                     z=z,
+                    z_cond=ref,
+                    z_cond_mask=x_cond_mask,
                     prompts=batch_prompts_loop,
                     device=device,
                     additional_args=model_args,
                     progress=verbose >= 2,
                     mask=masks,
+                    mask_index=mask_index,
+                    image_cfg_scale=image_cfg_scale,
+                    neg_prompts=neg_prompts_batch_cl if mask_index is None else None,  # no mask for i2v and v2v
+                    use_sdedit=use_sdedit,
+                    use_oscillation_guidance_for_text=use_oscillation_guidance_for_text,
+                    use_oscillation_guidance_for_image=use_oscillation_guidance_for_image,
                 )
-                samples = vae.decode(samples.to(dtype), num_frames=num_frames)
+
+                if loop > 1:  # process conditions for subsequent loop
+                    if cond_type is not None:  # i2v or v2v
+                        is_last_loop = loop_i == loop - 1
+                        ref, mask_index = prep_ref_and_update_mask_in_loop(
+                            cond_type,
+                            condition_frame_length,
+                            samples,
+                            refs,
+                            target_shape,
+                            is_last_loop,
+                            device,
+                            dtype,
+                        )
+                    else:
+                        refs, ms = append_generated(
+                            vae,
+                            samples,
+                            refs,
+                            ms,
+                            loop_i,
+                            condition_frame_length,
+                            condition_frame_edit,
+                            is_latent=True,
+                        )
+
+                # samples = vae.decode(samples.to(dtype), num_frames=num_frames)
                 video_clips.append(samples)
 
             # == save samples ==
@@ -284,20 +347,36 @@ def main():
                     save_path = save_paths[idx]
                     video = [video_clips[i][idx] for i in range(loop)]
                     for i in range(1, loop):
-                        video[i] = video[i][:, dframe_to_frame(condition_frame_length) :]
-                    video = torch.cat(video, dim=1)
+                        # video[i] = video[i][:, dframe_to_frame(condition_frame_length) :]
+                        video[i] = video[i][:, condition_frame_length:]  # latent video concat
+                    video = torch.cat(video, dim=1)  # latent [C, T, H, W]
+                    # ensure latent frame size is multiples of 5
+                    t_cut = video.size(1) // 5 * 5
+                    if t_cut < video.size(1):
+                        video = video[:, :t_cut]
+
+                    video = vae.decode(video.to(dtype), num_frames=t_cut * 17 // 5).squeeze(0)
+
+                    print("video size:", video.size())
                     save_path = save_sample(
                         video,
                         fps=save_fps,
                         save_path=save_path,
                         verbose=verbose >= 2,
                     )
+                    if save_path.endswith(".mp4") and cfg.get("deflicker", False):
+                        time.sleep(1)
+                        save_path = deflicker(save_path)
+                    if save_path.endswith(".mp4") and cfg.get("super_resolution", False):
+                        time.sleep(1)
+                        save_path = super_resolution(save_path, cfg.get("super_resolution"))
                     if save_path.endswith(".mp4") and cfg.get("watermark", False):
                         time.sleep(1)  # prevent loading previous generated video
                         add_watermark(save_path)
         start_idx += len(batch_prompts)
     logger.info("Inference finished.")
     logger.info("Saved %s samples to %s", start_idx, save_dir)
+    print_memory_usage("After inference", device)
 
 
 if __name__ == "__main__":

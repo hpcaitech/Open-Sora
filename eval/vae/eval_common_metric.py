@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import json
 import os
 import os.path as osp
 import sys
@@ -35,9 +35,11 @@ from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 from decord import VideoReader, cpu
 from pytorchvideo.transforms import ShortSideScale
 from torch.utils.data import DataLoader, Dataset, Subset
+from torchvision.datasets.folder import pil_loader
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import CenterCropVideo
 
@@ -58,6 +60,7 @@ except ImportError:
 class VideoDataset(Dataset):
     def __init__(
         self,
+        type,  # image or video
         real_video_dir,
         generated_video_dir,
         num_frames,
@@ -66,6 +69,7 @@ class VideoDataset(Dataset):
         resolution=128,
     ) -> None:
         super().__init__()
+        self.type = type
         self.real_video_files = self._combine_without_prefix(real_video_dir)
         self.generated_video_files = self._combine_without_prefix(generated_video_dir)
         self.num_frames = num_frames
@@ -79,12 +83,27 @@ class VideoDataset(Dataset):
     def __getitem__(self, index):
         if index >= len(self):
             raise IndexError
+
         real_video_file = self.real_video_files[index]
         generated_video_file = self.generated_video_files[index]
         print(real_video_file, generated_video_file)
-        real_video_tensor = self._load_video(real_video_file)
-        generated_video_tensor = self._load_video(generated_video_file)
+
+        if self.type == "video":
+            real_video_tensor = self._load_video(real_video_file)
+            generated_video_tensor = self._load_video(generated_video_file)
+        else:
+            real_video_tensor = self._load_image(real_video_file)
+            generated_video_tensor = self._load_image(generated_video_file)
+
         return {"real": real_video_tensor, "generated": generated_video_tensor}
+
+    def _load_image(self, image_path):
+        image = pil_loader(image_path)
+        transform = transforms.Compose([transforms.ToTensor()])
+        image = transform(image)
+        video = image.unsqueeze(0)
+        video = video.permute(1, 0, 2, 3)  # TCHW -> CTHW
+        return _preprocess(video, short_size=self.short_size, crop_size=self.crop_size)
 
     def _load_video(self, video_path):
         num_frames = self.num_frames
@@ -169,6 +188,9 @@ def calculate_common_metric(args, dataloader, device):
 
 def main():
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        "--type", type=str, choices=["video", "image"], default="video", help="whether evaluating images or videos"
+    )
     parser.add_argument("--batch_size", type=int, default=2, help="Batch size to use")
     parser.add_argument("--real_video_dir", type=str, help=("the path of real videos`"))
     parser.add_argument("--generated_video_dir", type=str, help=("the path of generated videos`"))
@@ -188,7 +210,7 @@ def main():
     # parser.add_argument("--metric", type=str, default="fvd",choices=['fvd','psnr','ssim','lpips', 'flolpips'])
     parser.add_argument("--metric", nargs="+", default=[])
     parser.add_argument("--fvd_method", type=str, default="styleganv", choices=["styleganv", "videogpt"])
-
+    parser.add_argument("--res_dir", type=str, default=None, help="dir to save result json")
     args = parser.parse_args()
 
     if args.device is None:
@@ -210,6 +232,7 @@ def main():
         num_workers = args.num_workers
 
     dataset = VideoDataset(
+        args.type,
         args.real_video_dir,
         args.generated_video_dir,
         num_frames=args.num_frames,
@@ -225,7 +248,17 @@ def main():
     dataloader = DataLoader(dataset, args.batch_size, num_workers=num_workers, pin_memory=True)
 
     metric_score = calculate_common_metric(args, dataloader, device)
+    for k, v in metric_score.items():
+        metric_score[k] = round(v, 3)
     print("metric: ", args.metric, " ", metric_score)
+
+    if args.res_dir:
+        output_file_path = os.path.join(
+            args.res_dir, "metric_" + str(args.num_frames) + "f_" + str(args.resolution) + "res.json"
+        )
+        with open(output_file_path, "w") as outfile:
+            json.dump(metric_score, outfile, indent=4, sort_keys=True)
+        print(f"metric results saved to: {output_file_path}")
 
 
 if __name__ == "__main__":

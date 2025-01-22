@@ -1,6 +1,8 @@
 import os
+import random
 import re
 
+import cv2
 import numpy as np
 import pandas as pd
 import requests
@@ -70,6 +72,7 @@ def temporal_random_crop(vframes, num_frames, frame_interval):
         end_frame_ind - start_frame_ind >= num_frames
     ), f"Not enough frames to sample, {end_frame_ind} - {start_frame_ind} < {num_frames}"
     frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, num_frames, dtype=int)
+    # print(frame_indice)
     video = vframes[frame_indice]
     return video
 
@@ -95,6 +98,14 @@ def get_transforms_video(name="center", image_size=(256, 256)):
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
             ]
         )
+    elif name == "rand_size_crop":
+        transform_video = transforms.Compose(
+            [
+                video_transforms.ToTensorVideo(),  # TCHW
+                video_transforms.RandomSizedCrop(image_size),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            ]
+        )
     else:
         raise NotImplementedError(f"Transform {name} not implemented")
     return transform_video
@@ -117,6 +128,14 @@ def get_transforms_image(name="center", image_size=(256, 256)):
         transform = transforms.Compose(
             [
                 transforms.Lambda(lambda pil_image: resize_crop_to_fill(pil_image, image_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            ]
+        )
+    elif name == "rand_size_crop":
+        transform = transforms.Compose(
+            [
+                transforms.Lambda(lambda pil_image: rand_size_crop_arr(pil_image, image_size)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
             ]
@@ -156,7 +175,33 @@ def read_from_path(path, image_size, transform_name="center"):
         return read_image_from_path(path, image_size=image_size, transform_name=transform_name)
 
 
-def save_sample(x, save_path=None, fps=8, normalize=True, value_range=(-1, 1), force_video=False, verbose=True):
+def write_video_cv2(
+    filename: str,
+    video: torch.Tensor,
+    fps: float,
+):
+    image_size = (video.size(2), video.size(1))
+    fourcc = cv2.VideoWriter_fourcc(
+        *"avc1"
+    )  # NOTE: your opencv must be installed with `conda install -c conda-forge opencv` else the video may not display on browser
+    output = cv2.VideoWriter(filename, fourcc, fps, image_size)
+    for frame_idx in range(video.size(0)):
+        frame = np.array(video[frame_idx])  # H,W,C
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        output.write(frame)
+    output.release()
+
+
+def save_sample(
+    x,
+    save_path=None,
+    fps=8,
+    normalize=True,
+    value_range=(-1, 1),
+    force_video=False,
+    verbose=True,
+    write_video_backend="cv2",
+):
     """
     Args:
         x (Tensor): shape [C, T, H, W]
@@ -164,18 +209,35 @@ def save_sample(x, save_path=None, fps=8, normalize=True, value_range=(-1, 1), f
     assert x.ndim == 4
 
     if not force_video and x.shape[1] == 1:  # T = 1: save as image
-        save_path += ".png"
+        with_ext = False
+        for ext in IMG_EXTENSIONS:
+            if save_path.endswith(ext):
+                with_ext = True
+                break
+        if not with_ext:
+            save_path += ".png"
+
         x = x.squeeze(1)
         save_image([x], save_path, normalize=normalize, value_range=value_range)
     else:
-        save_path += ".mp4"
+        with_ext = False
+        for ext in VID_EXTENSIONS:
+            if save_path.endswith(ext):
+                with_ext = True
+                break
+        if not with_ext:
+            save_path += ".mp4"
+
         if normalize:
             low, high = value_range
             x.clamp_(min=low, max=high)
             x.sub_(low).div_(max(high - low, 1e-5))
 
         x = x.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 3, 0).to("cpu", torch.uint8)
-        write_video(save_path, x, fps=fps, video_codec="h264")
+        if write_video_backend == "cv2":
+            write_video_cv2(save_path, x, fps=fps)
+        else:
+            write_video(save_path, x, fps=fps, video_codec="h264")
     if verbose:
         print(f"Saved to {save_path}")
     return save_path
@@ -198,6 +260,27 @@ def center_crop_arr(pil_image, image_size):
     return Image.fromarray(arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size])
 
 
+def rand_size_crop_arr(pil_image, image_size):
+    """
+    Randomly crop image for height and width, ranging from image_size[0] to image_size[1]
+    """
+    arr = np.array(pil_image)
+
+    # get random target h w
+    height = random.randint(image_size[0], image_size[1])
+    width = random.randint(image_size[0], image_size[1])
+    # ensure that h w are factors of 8
+    height = height - height % 8
+    width = width - width % 8
+
+    # get random start pos
+    h_start = random.randint(0, max(len(arr) - height, 0))
+    w_start = random.randint(0, max(len(arr[0]) - height, 0))
+
+    # crop
+    return Image.fromarray(arr[h_start : h_start + height, w_start : w_start + width])
+
+
 def resize_crop_to_fill(pil_image, image_size):
     w, h = pil_image.size  # PIL is (W, H)
     th, tw = image_size
@@ -214,4 +297,28 @@ def resize_crop_to_fill(pil_image, image_size):
         j = 0
     arr = np.array(image)
     assert i + th <= arr.shape[0] and j + tw <= arr.shape[1]
+    return Image.fromarray(arr[i : i + th, j : j + tw])
+
+
+def rand_size_crop_arr(pil_image, image_size):
+    w, h = pil_image.size  # PIL is (W, H)
+    th = random.randint(self.size[0], self.size[1])
+    tw = random.randint(self.size[0], self.size[1])
+    # ensure that h w are factors of 8
+    th = th - th % multiples_of
+    tw = tw - tw % multiples_of
+
+    if h < th:
+        th = h - h % multiples_of
+    if w < tw:
+        tw = w - w % multiples_of
+
+    if w == tw and h == th:
+        i = j = 0
+
+    else:
+        # get random start pos
+        i = random.randint(0, h - th)
+        j = random.randint(0, w - tw)
+
     return Image.fromarray(arr[i : i + th, j : j + tw])
