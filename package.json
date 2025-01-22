@@ -2,8 +2,10 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "export": "next export",
     "dev": "next dev",
-    "start": "next start"
+    "start": "next start",
+    "deploy": "next build && next export && gh-pages -d out"
   },
   "dependencies": {
     "classnames": "^2.5.1",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3"
   }
