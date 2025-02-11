@@ -99,6 +99,12 @@ def format_numel_str(numel: int) -> str:
         return f"{numel}"
 
 
+def format_numel(numel: int) -> str:
+    B = 1024**3
+    format_numel = round(numel / B, 2)
+    return format_numel
+
+
 def get_timestamp():
     timestamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(time.time()))
     return timestamp

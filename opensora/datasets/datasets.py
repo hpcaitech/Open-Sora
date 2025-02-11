@@ -32,6 +32,8 @@ class VideoTextDataset(torch.utils.data.Dataset):
         frame_interval=1,
         image_size=(256, 256),
         transform_name="center",
+        load_video_features=False,
+        load_text_features=False,
     ):
         self.data_path = data_path
         self.data = read_file(data_path)
@@ -43,6 +45,8 @@ class VideoTextDataset(torch.utils.data.Dataset):
             "image": get_transforms_image(transform_name, image_size),
             "video": get_transforms_video(transform_name, image_size),
         }
+        self.load_video_features = load_video_features
+        self.load_text_features = load_text_features
 
     def _print_data_number(self):
         num_videos = 0
@@ -65,9 +69,21 @@ class VideoTextDataset(torch.utils.data.Dataset):
     def getitem(self, index):
         sample = self.data.iloc[index]
         path = sample["path"]
+        os.path.dirname(path)
+        filename, _ = os.path.splitext(os.path.basename(path))
+        if self.load_video_features == True:
+            video_x = torch.rand(4, self.num_frames // 4, self.image_size[0] // 8, self.image_size[1] // 8)
+        if self.load_text_features == True:
+            text_y = torch.rand(1, 300, 512)
+        num_frames = sample["num_frames"]
+        height = sample["height"]
+        width = sample["width"]
         file_type = self.get_type(path)
 
-        if file_type == "video":
+        if self.load_video_features == True:
+            video = video_x
+            video_fps = 24
+        elif file_type == "video":
             # loading
             vframes, vinfo = read_video(path, backend="av")
             video_fps = vinfo["video_fps"] if "video_fps" in vinfo else 24
@@ -90,10 +106,19 @@ class VideoTextDataset(torch.utils.data.Dataset):
             # repeat
             video = image.unsqueeze(0).repeat(self.num_frames, 1, 1, 1)
 
-        # TCHW -> CTHW
-        video = video.permute(1, 0, 2, 3)
+        if self.load_video_features == False:
+            # TCHW -> CTHW
+            video = video.permute(1, 0, 2, 3)
 
         ret = {"video": video, "fps": video_fps}
+        ret["path"] = path
+        if self.load_video_features == True:
+            ret["video_x"] = video_x
+        if self.load_text_features == True:
+            ret["text_y"] = text_y
+        ret["num_frames"] = num_frames
+        ret["height"] = height
+        ret["width"] = width
         if self.get_text:
             ret["text"] = sample["text"]
         return ret

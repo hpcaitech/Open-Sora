@@ -12,7 +12,11 @@ from timm.models.vision_transformer import Mlp
 from transformers import PretrainedConfig, PreTrainedModel
 
 from opensora.acceleration.checkpoint import auto_grad_checkpoint
-from opensora.acceleration.communications import gather_forward_split_backward, split_forward_gather_backward
+from opensora.acceleration.communications import (
+    all_to_all,
+    gather_forward_split_backward,
+    split_forward_gather_backward,
+)
 from opensora.acceleration.parallel_states import get_sequence_parallel_group
 from opensora.models.layers.blocks import (
     Attention,
@@ -31,6 +35,14 @@ from opensora.models.layers.blocks import (
 )
 from opensora.registry import MODELS
 from opensora.utils.ckpt_utils import load_checkpoint
+
+
+def print_mem(info="base"):
+    return
+    if dist.get_rank() == 0:
+        print(
+            f"DebugMem {info} memory: allocated: {torch.cuda.memory_allocated()/1024**3:.3f} GB, peak mem: {torch.cuda.max_memory_allocated()/1024**3:.3f} GB"
+        )
 
 
 class STDiT3Block(nn.Module):
@@ -405,6 +417,7 @@ class STDiT3(PreTrainedModel):
                 y_lens = y_lens.long().tolist()
         else:
             y, y_lens = self.encode_text(y, mask)
+            y_lens = mask
 
         # === get x embed ===
         x = self.x_embedder(x)  # [B, N, C]
@@ -418,8 +431,11 @@ class STDiT3(PreTrainedModel):
 
         x = rearrange(x, "B T S C -> B (T S) C", T=T, S=S)
 
+        sp_group = get_sequence_parallel_group()
+        sp_size = dist.get_world_size(sp_group)
         # === blocks ===
         for spatial_block, temporal_block in zip(self.spatial_blocks, self.temporal_blocks):
+            x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=1)
             x = auto_grad_checkpoint(spatial_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
             x = auto_grad_checkpoint(temporal_block, x, y, t_mlp, y_lens, x_mask, t0_mlp, T, S)
 

@@ -19,8 +19,8 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-import xformers.ops
 from einops import rearrange
+from flash_attn import flash_attn_func
 from timm.models.vision_transformer import Mlp
 
 from opensora.acceleration.communications import all_to_all, split_forward_gather_backward
@@ -163,7 +163,7 @@ class Attention(nn.Module):
         if rope is not None:
             self.rope = True
             self.rotary_emb = rope
-        
+
         self.is_causal = False
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -209,7 +209,7 @@ class Attention(nn.Module):
             attn = attn.to(torch.float32)
             if self.is_causal:
                 causal_mask = torch.tril(torch.ones_like(attn), diagonal=0)
-                causal_mask = torch.where(causal_mask.bool(), 0, float('-inf'))
+                causal_mask = torch.where(causal_mask.bool(), 0, float("-inf"))
                 attn += causal_mask
             attn = attn.softmax(dim=-1)
             attn = attn.to(dtype)  # cast back attn to original dtype
@@ -462,6 +462,8 @@ class MultiHeadCrossAttention(nn.Module):
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(d_model, d_model)
         self.proj_drop = nn.Dropout(proj_drop)
+        self.is_causal = False
+        self.scale = self.head_dim**-0.5
 
     def forward(self, x, cond, mask=None):
         # query/value: img tokens; key: condition; mask: if padding tokens
@@ -471,12 +473,14 @@ class MultiHeadCrossAttention(nn.Module):
         kv = self.kv_linear(cond).view(1, -1, 2, self.num_heads, self.head_dim)
         k, v = kv.unbind(2)
 
-        attn_bias = None
+        q, k, v = torch.permute(q, (0, 2, 1, 3)), torch.permute(k, (0, 2, 1, 3)), torch.permute(v, (0, 2, 1, 3))
         if mask is not None:
-            attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
-        x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
+            mask = mask.bool()
+            mask = mask.view(B, 1, 1, k.shape[-2]).repeat(1, 1, q.shape[-2], 1)
+        x = F.scaled_dot_product_attention(query=q, key=k, value=v, attn_mask=mask, dropout_p=self.attn_drop.p)
+        x = x.transpose(1, 2)
+        x = x.contiguous().view(B, -1, C)
 
-        x = x.view(B, -1, C)
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
@@ -502,7 +506,7 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         sp_group = get_sequence_parallel_group()
         sp_size = dist.get_world_size(sp_group)
         B, SUB_N, C = x.shape  # [B, TS/p, C]
-        N = SUB_N * sp_size
+        SUB_N * sp_size
 
         # shape:
         # q, k, v: [B, SUB_N, NUM_HEADS, HEAD_DIM]
@@ -512,21 +516,25 @@ class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
         k, v = kv.unbind(2)
 
         # apply all_to_all to gather sequence and split attention heads
-        q = all_to_all(q, sp_group, scatter_dim=2, gather_dim=1)
+        # q = all_to_all(q, sp_group, scatter_dim=2, gather_dim=1)
 
         q = q.view(1, -1, self.num_heads // sp_size, self.head_dim)
         k = k.view(1, -1, self.num_heads // sp_size, self.head_dim)
         v = v.view(1, -1, self.num_heads // sp_size, self.head_dim)
 
         # compute attention
-        attn_bias = None
-        if mask is not None:
-            attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens([N] * B, mask)
-        x = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
+        x = flash_attn_func(
+            q,
+            k,
+            v,
+            dropout_p=self.attn_drop.p if self.training else 0.0,
+            softmax_scale=self.scale,
+            causal=self.is_causal,
+        )
 
         # apply all to all to gather back attention heads and scatter sequence
-        x = x.view(B, -1, self.num_heads // sp_size, self.head_dim)
-        x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
+        x = x.contiguous().view(B, -1, self.num_heads // sp_size, self.head_dim)
+        # x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
 
         # apply output projection
         x = x.view(B, -1, C)

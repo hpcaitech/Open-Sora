@@ -1,3 +1,4 @@
+import functools
 import os
 from contextlib import nullcontext
 from copy import deepcopy
@@ -6,12 +7,13 @@ from pprint import pformat
 
 import torch
 import torch.distributed as dist
+import tqdm
 import wandb
 from colossalai.booster import Booster
 from colossalai.cluster import DistCoordinator
-from colossalai.nn.optimizer import HybridAdam
 from colossalai.utils import get_current_device, set_seed
-from tqdm import tqdm
+from performance_evaluator import PerformanceEvaluator
+from torch.optim import AdamW
 
 from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
@@ -26,6 +28,7 @@ from opensora.utils.misc import (
     all_reduce_mean,
     create_logger,
     create_tensorboard_writer,
+    format_numel,
     format_numel_str,
     get_model_numel,
     requires_grad,
@@ -40,7 +43,7 @@ def main():
     # ======================================================
     # == parse configs ==
     cfg = parse_configs(training=True)
-    record_time = cfg.get("record_time", False)
+    record_time = False
 
     # == device and dtype ==
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
@@ -116,6 +119,7 @@ def main():
         **dataloader_args,
     )
     num_steps_per_epoch = len(dataloader)
+    # num_steps_per_epoch = 10
 
     # ======================================================
     # 3. build model
@@ -157,10 +161,18 @@ def main():
         .train()
     )
     model_numel, model_numel_trainable = get_model_numel(model)
+    # t5_numel, _ = get_model_numel(text_encoder)
+    vae_numel, _ = get_model_numel(vae)
+    t5_numel = model_numel
     logger.info(
         "[Diffusion] Trainable model params: %s, Total model params: %s",
         format_numel_str(model_numel_trainable),
         format_numel_str(model_numel),
+    )
+    logger.info(
+        "[Diffusion] t5 params: %s, vae params: %s",
+        format_numel_str(t5_numel),
+        format_numel_str(vae_numel),
     )
 
     # == build ema for diffusion model ==
@@ -173,12 +185,13 @@ def main():
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
     # == setup optimizer ==
-    optimizer = HybridAdam(
+
+    optimizer = AdamW(
         filter(lambda p: p.requires_grad, model.parameters()),
-        adamw_mode=True,
         lr=cfg.get("lr", 1e-4),
         weight_decay=cfg.get("weight_decay", 0),
         eps=cfg.get("adam_eps", 1e-8),
+        betas=(0.9, 0.999),
     )
 
     warmup_steps = cfg.get("warmup_steps", None)
@@ -193,6 +206,20 @@ def main():
         set_grad_checkpoint(model)
     if cfg.get("mask_ratios", None) is not None:
         mask_generator = MaskGenerator(cfg.mask_ratios)
+
+    Evaluator = functools.partial(
+        PerformanceEvaluator,
+        model_numel=model_numel,
+        num_layers=model.num_heads,
+        hidden_size=model.hidden_size,
+        vocab_size=text_encoder.output_dim,
+        max_seq_length=512,
+        cfg=cfg,
+        num_steps=num_steps_per_epoch,  # epoch * steps
+        use_torch_profiler=True,
+        torch_profiler_path=f"./profiler/{plugin}",
+        ignore_steps=2,
+    )
 
     # =======================================================
     # 4. distributed training preparation with colossalai
@@ -234,6 +261,12 @@ def main():
 
     model_sharding(ema, device=device)
 
+    performance_evaluator = Evaluator(
+        stdit_weight_memory=format_numel(model_numel * 2),
+        total_weight_memory=format_numel((model_numel + t5_numel + vae_numel) * 2),
+    )
+    performance_evaluator.on_fit_start()
+
     # =======================================================
     # 5. training loop
     # =======================================================
@@ -255,29 +288,39 @@ def main():
             timers[key] = Timer(key, coordinator=coordinator)
         else:
             timers[key] = nullcontext()
+
+    def cyclic_iter(dataloader):
+        epoch = 0
+        while True:
+            for batch in dataloader:
+                yield batch
+            epoch += 1
+
+    dataloader_iter = cyclic_iter(dataloader)
+
     for epoch in range(start_epoch, cfg_epochs):
         # == set dataloader to new epoch ==
         sampler.set_epoch(epoch)
-
-        def cyclic_iter(dataloader):
-            epoch = 0
-            while True:
-                for batch in dataloader:
-                    yield batch
-                epoch += 1
-
-        dataloader_iter = cyclic_iter(dataloader)
         logger.info("Beginning epoch %s...", epoch)
 
         # == training loop in an epoch ==
-        with tqdm(
-            enumerate(dataloader_iter, start=start_step),
-            desc=f"Epoch {epoch}",
+        with tqdm.trange(
+            num_steps_per_epoch,
+            desc=f"Step",
             disable=not coordinator.is_master(),
-            initial=start_step,
-            total=num_steps_per_epoch,
         ) as pbar:
-            for step, batch in pbar:
+            for step in pbar:
+                performance_evaluator.start_new_iter()
+                batch = next(dataloader_iter)
+                path = batch.pop("path")
+
+                filename = os.path.basename(path[0])
+                file_name, _ = os.path.splitext(filename)
+                vedio_data_dir = "pre_data/video/"
+                text_data_dir = "pre_data/text/"
+                vedio_file_path = vedio_data_dir + file_name + ".pt"
+                text_file_path = text_data_dir + file_name + ".pt"
+                print("########debug path: ", path, filename, file_name)
                 # if cache_pin_memory:
                 #     print(f"==debug== rank{dist.get_rank()} {dataloader_iter.get_cache_info()}")
                 timer_list = []
@@ -292,11 +335,13 @@ def main():
                 with timers["encode"] as encode_t:
                     with torch.no_grad():
                         # Prepare visual inputs
+                        performance_evaluator.before_video_encode()
                         if cfg.get("load_video_features", False):
                             x = x.to(device, dtype)
                         else:
                             x = vae.encode(x)  # [B, C, T, H/P, W/P]
                         # Prepare text inputs
+                        performance_evaluator.before_text_encode()
                         if cfg.get("load_text_features", False):
                             model_args = {"y": y.to(device, dtype)}
                             mask = batch.pop("mask")
@@ -305,8 +350,12 @@ def main():
                             model_args["mask"] = mask
                         else:
                             model_args = text_encoder.encode(y)
+                print("#########debug model_args: ", x.shape, model_args["y"].shape)
+                torch.save(x.cpu(), vedio_file_path)
+                torch.save(model_args["y"].cpu(), text_file_path)
                 if record_time:
                     timer_list.append(encode_t)
+                continue
 
                 model_args["num_frames"] = batch.pop("num_frames").to(device)
                 model_args["height"] = batch.pop("height").to(device)
@@ -330,17 +379,21 @@ def main():
                 #    dataloader_iter.remove_cache(pinned_video)
 
                 # == diffusion loss computation ==
+                performance_evaluator.before_forward()
                 with timers["diffusion"] as loss_t:
                     loss_dict = scheduler.training_losses(model, x, model_args, mask=mask)
                 if record_time:
                     timer_list.append(loss_t)
 
                 # == backward & update ==
+                performance_evaluator.before_backward()
                 with timers["backward"] as backward_t:
                     loss = loss_dict["loss"].mean()
                     booster.backward(loss=loss, optimizer=optimizer)
                 if record_time:
                     timer_list.append(backward_t)
+
+                performance_evaluator.before_optimizer_update()
 
                 with timers["optim"] as optim_t:
                     optimizer.step()
@@ -443,7 +496,10 @@ def main():
                     for timer in timer_list:
                         log_str += f"{timer.name}: {timer.elapsed_time:.3f}s | "
                     print(log_str)
+                performance_evaluator.end_iter(input_ids=torch.empty(cfg.batch_size, cfg.epochs))
+                performance_evaluator.start_new_iter()
 
+        performance_evaluator.on_fit_end()
         sampler.reset()
         start_step = 0
 

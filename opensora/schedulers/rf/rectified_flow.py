@@ -98,6 +98,18 @@ class RFlowScheduler:
             x_t = torch.where(mask[:, None, :, None, None], x_t, x_t0)
 
         terms = {}
+
+        if 0:
+            model_kwargs["x"] = x_t
+            model_kwargs["timestep"] = t
+            del model_kwargs["mask"]
+            from calflops import calculate_flops
+
+            flops, macs, params = calculate_flops(model=model, kwargs=model_kwargs)
+            print(f"x: {x_t.shape}, t: {t.shape}")
+            print("Stdit3 FLOPs:%s   MACs:%s   Params:%s \n" % (flops, macs, params))
+            exit()
+
         model_output = model(x_t, t, **model_kwargs)
         velocity_pred = model_output.chunk(2, dim=1)[0]
         if weights is None:

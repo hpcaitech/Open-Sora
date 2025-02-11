@@ -11,7 +11,6 @@ from colossalai.booster import Booster
 from colossalai.checkpoint_io import GeneralCheckpointIO
 from colossalai.utils.safetensors import save as async_save
 from safetensors.torch import load_file
-from tensornvme.async_file_io import AsyncFileWriter
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 from torchvision.datasets.utils import download_url
@@ -215,7 +214,7 @@ def record_model_param_shape(model: torch.nn.Module) -> dict:
     return param_shape
 
 
-def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="model", strict=False):
+def load_checkpoint(model, ckpt_path, save_as_pt=False, model_name="", strict=False):
     if ckpt_path.endswith(".pt") or ckpt_path.endswith(".pth"):
         state_dict = find_model(ckpt_path, model=model)
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=strict)
@@ -268,7 +267,7 @@ def _prepare_ema_pinned_state_dict(model: nn.Module, ema_shape_dict: dict):
 class CheckpointIO:
     def __init__(self, n_write_entries: int = 32):
         self.n_write_entries = n_write_entries
-        self.writer: Optional[AsyncFileWriter] = None
+        self.writer = None
         self.pinned_state_dict: Optional[Dict[str, torch.Tensor]] = None
 
     def _sync_io(self):
