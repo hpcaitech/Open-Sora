@@ -20,6 +20,8 @@ Open-Sora not only democratizes access to advanced video generation techniques, 
 streamlined and user-friendly platform that simplifies the complexities of video generation.
 With Open-Sora, our goal is to foster innovation, creativity, and inclusivity within the field of content creation.
 
+🎬 For a professional and better version of the model, please try [Video Ocean](https://video-ocean.com/).
+
 [[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)]
 
 <div align="center">
