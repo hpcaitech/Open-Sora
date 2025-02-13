@@ -23,7 +23,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 🎬 For a professional and better version of the model, please try [Video Ocean](https://video-ocean.com/).
 <div align="center">
    <a href="https://video-ocean.com/">
-   <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/vo.gif" width="850" />
+   <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/3.gif" width="850" />
    </a>
 </div>
 
