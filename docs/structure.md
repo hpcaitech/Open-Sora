@@ -21,24 +21,27 @@ Open-Sora
 │   ├── report_01.md               -> Report for Open-Sora 1.0
 │   ├── report_02.md               -> Report for Open-Sora 1.1
 │   ├── report_03.md               -> Report for Open-Sora 1.2
+│   ├── report_04.md               -> Report for Open-Sora 1.3
 │   ├── vae.md                     -> our VAE report
 │   └── zh_CN                      -> Chinese version of the above
 ├── eval                           -> Evaluation scripts
 │   ├── README.md                  -> Evaluation documentation
 |   ├── human_eval                 -> for human eval
-|   ├── launch.sh                  -> script for launching 8 cards sampling
+|   ├── I2V                        -> for image to video human eval
 |   ├── loss                       -> eval loss
 |   ├── sample.sh                  -> script for quickly launching inference on predefined prompts
 |   ├── vae                        -> for vae eval
 |   ├── vbench                     -> for VBench evaluation
 │   └── vbench_i2v                 -> for VBench i2v evaluation
 ├── gradio                         -> Gradio demo related code
-├── notebooks                      -> Jupyter notebooks for generating commands to run
 ├── scripts
 │   ├── train.py                   -> diffusion training script
+│   ├── train_opensoravae_v1_3.py  -> vae v1.3 training script
 │   ├── train_vae.py               -> vae training script
 │   ├── inference.py               -> diffusion inference script
+│   ├── inference_opensoravae_v1_3.py   -> vae v1.3 training script
 │   ├── inference_vae.py           -> vae inference script
+│   ├── inference_i2v.py           -> image to video inference script
 │   └── misc                       -> misc scripts, including batch size search
 ├── opensora
 │   ├── __init__.py
@@ -49,6 +52,7 @@ Open-Sora
 │   │   ├── dit                    -> DiT
 │   │   ├── layers                 -> Common layers
 │   │   ├── vae                    -> VAE as image encoder
+│   │   ├── vae_v1_3               -> VAE V1.3 as image encoder
 │   │   ├── text_encoder           -> Text encoder
 │   │   │   ├── classes.py         -> Class id encoder (inference only)
 │   │   │   ├── clip.py            -> CLIP encoder
@@ -71,7 +75,7 @@ Our config files follows [MMEgine](https://github.com/open-mmlab/mmengine). MMEn
 
 ```plaintext
 Open-Sora
-└── configs                        -> Configs for training & inference
+└── configs                        -> Configs for training & inferences
     ├── opensora-v1-1              -> STDiT2 related configs
     │   ├── inference
     │   │   ├── sample.py          -> Sample videos and images

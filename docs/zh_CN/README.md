@@ -19,7 +19,7 @@
 [[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)]
 
 ## 📰 资讯
-
+**[2024.01.20]** 🔥 我们发布了 **Open-Sora 1.3**。通过升级的VAE和Transformer架构，我们生成的视频质量得到了大幅提升 🚀。[[模型权重]](#open-sora-13-model-weights) [[技术报告]](/report_v4.md) [[演示]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 * **[2024.12.23]** 🔥[视频生成模型开发成本直降50%，开源解决方案来了，还能白嫖GPU算力](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers)  [[代码]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[代金券]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 * **[2024.06.22]** 🔥我们在[潞晨云](https://cloud.luchentech.com/)上发布了Open-Sora1.2镜像，并在B站上传了详细的[使用教程](https://www.bilibili.com/video/BV1ow4m1e7PX/)
 * **[2024.06.17]** 🔥我们发布了**Open-Sora 1.2**，其中包括**3D-VAE**，**整流流**和**得分条件**。视频质量大大提高。[[模型权重]](#模型权重) [[技术报告]](report_v3.md) [[公众号文章]](https://mp.weixin.qq.com/s/QHq2eItZS9e00BVZnivdjg)
@@ -36,11 +36,22 @@
 
 🔥 您可以在HuggingFace上的 [🤗 Gradio应用程序](https://huggingface.co/spaces/hpcai-tech/open-sora)上体验Open-Sora. 我们的[画廊](https://hpcaitech.github.io/Open-Sora/)中提供了更多示例.
 
+| **5s 720×1280**                                                                                                                                      | **5s 720×1280**                                                                                                                                      | **5s 720×1280**                                                                                                                                      |
+|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [<img src="assets/demo/open_sora_v1.3/demo_tomato.gif" width="">](https://streamable.com/e/r0imrp?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_fisherman.gif" width="">](https://streamable.com/e/hfvjkh?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_girl2.gif" width="">](https://streamable.com/e/kutmma?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_grape.gif" width="">](https://streamable.com/e/osn1la?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_mushroom.gif" width="">](https://streamable.com/e/l1pzws?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_parrot.gif" width="">](https://streamable.com/e/2vqari?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_trans.gif" width="">](https://streamable.com/e/1in7d6?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_bear.gif" width="">](https://streamable.com/e/e9bi4o?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_futureflower.gif" width="">](https://streamable.com/e/09z7xi?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_fire.gif" width="">](https://streamable.com/e/16c3hk?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_man.gif" width="">](https://streamable.com/e/wi250w?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_black.gif" width="">](https://streamable.com/e/vw5b64?quality=highest&amp;autoplay=1) |
+
+<details>
+<summary>OpenSora 1.2 演示</summary>
+
 | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="/assets/demo/v1.2/sample_0013.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/7895aab6-ed23-488c-8486-091480c26327) | [<img src="/assets/demo/v1.2/sample_1718.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/20f07c7b-182b-4562-bbee-f1df74c86c9a) | [<img src="/assets/demo/v1.2/sample_0087.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3d897e0d-dc21-453a-b911-b3bda838acc2) |
 | [<img src="/assets/demo/v1.2/sample_0052.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/644bf938-96ce-44aa-b797-b3c0b513d64c) | [<img src="/assets/demo/v1.2/sample_1719.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/272d88ac-4b4a-484d-a665-8d07431671d0) | [<img src="/assets/demo/v1.2/sample_0002.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ebbac621-c34e-4bb4-9543-1c34f8989764) |
 | [<img src="/assets/demo/v1.2/sample_0011.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/a1e3a1a3-4abd-45f5-8df2-6cced69da4ca) | [<img src="/assets/demo/v1.2/sample_0004.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/d6ce9c13-28e1-4dff-9644-cc01f5f11926) | [<img src="/assets/demo/v1.2/sample_0061.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/561978f8-f1b0-4f4d-ae7b-45bec9001b4a) |
+</details>
 
 <details>
 <summary>OpenSora 1.1 演示</summary>
@@ -76,10 +87,10 @@
 </details>
 
 ## 🔆 新功能/更新
-
+* 📍 **Open-Sora 1.3** 已发布。模型权重可在[此处](#model-weights)获取。更多详细信息请参见我们的**[版本报告 v1.3](report_v4.md)**。
+* ✅ 升级的模型架构，提供更强的性能和效率。
+* ✅ 引入更多高质量训练数据，显著提升整体效果。
 * 📍 **Open-Sora 1.2** 发布。模型权重可在[此处](#model-weights)查看。有关更多详细信息，请参阅我们的**[技术报告 v1.2](docs/report_03.md)** 。
-* ✅ 支持整流流调度。
-* ✅ 训练我们的 3D-VAE 进行时间维度压缩。
 * 📍 **Open-Sora 1.1**发布。模型权重可在[此处](#model-weights)获得。它针对**0s~15s、144p 到 720p、各种宽高比**的视频进行训练。有关更多讨论，请参阅我们的**[技术报告 v1.1](/docs/report_02.md)** 。
 * 🔧 **数据处理流程** v1.1发布，提供从原始视频到（文本，视频片段）对的自动处理流程，包括场景剪切$\rightarrow$过滤（美学、光流、OCR 等）$\rightarrow$字幕$\rightarrow$管理。使用此工具，您可以轻松构建视频数据集。
 * ✅ 改进的 ST-DiT 架构包括 rope 位置编码、qk 范数、更长的文本长度等。
@@ -133,7 +144,7 @@
 
 下面列出了其他有用的文档和链接。
 
-* 报告: [技术报告 v1.2](docs/report_v3.md), [技术报告 v1.1](/docs/report_v2.md), [技术报告 v1.0](/docs/report_v1.md), [训练加速.md](docs/acceleration.md)
+* 报告: [技术报告 v1.3](report_v4.md), [技术报告 v1.2](report_v3.md), [技术报告 v1.1](report_v2.md), [技术报告 v1.0](report_v1.md), [训练加速.md](acceleration.md)
 * Repo 结构: [结构.md](docs/structure.md)
 * 配置文件说明: [config.md](docs/config.md)
 * Useful commands: [commands.md](docs/commands.md)
@@ -193,13 +204,21 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 
 ## 模型权重
 
+### Open-Sora 1.3 模型权重
+| 分辨率 | 模型大小 | 数据 | 迭代次数 | 批次大小 | 网址 |
+| ---------- | ---------- | ---- | ----------- | ---------- | --- |
+| Diffusion | 1.1B       | 30M  | 70k         | 动态大小    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4) |
+| VAE       | 259M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.3) |
+
+请参阅我们的 **[report 1.3](docs/report_v4.md)**以了解更多信息。
+
 ### Open-Sora 1.2 模型权重
 | 分辨率 | 模型大小 | 数据 | 迭代次数 | 批次大小 | 网址 |
 | ---------- | ---------- | ---- | ----------- | ---------- | --- |
 | Diffusion | 1.1B       | 30M  | 70k         | 动态大小    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
 | VAE       | 384M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
-请参阅我们的**[report 1.2](docs/report_v3.md)**以了解更多信息。
+请参阅我们的 **[report 1.2](docs/report_v3.md)**以了解更多信息。
 
 ### Open-Sora 1.1 模型权重
 
@@ -264,13 +283,12 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 生成视频最简单的方式是输入文本提示，然后点击“**生成视频**”按钮（如果找不到，请向下滚动）。生成的视频将显示在右侧面板中。勾选“**使用 GPT4o 增强提示**”将使用 GPT-4o 来细化提示，而“**随机提示**”按钮将由 GPT-4o 为您生成随机提示。由于 OpenAI 的 API 限制，提示细化结果具有一定的随机性。
 
-然后，你可以选择生成视频的**分辨率**、**时长**、**长宽比**。不同的分辨率和视频长度会影响视频生成速度。在 80G H100 GPU 上，生成速度和峰值内存使用量为：
+然后，你可以选择生成视频的**分辨率**、**时长**、**长宽比**。不同的分辨率和视频长度会影响视频生成速度。在 140G H200 GPU 上，生成速度和峰值内存使用量为：
 
-|   分辨率   | 图像   | 2秒       | 4秒        | 8秒        | 16秒       |
-| ---- | ------- | -------- | --------- | --------- | --------- |
-| 360p | 3s, 24G | 18s, 27G | 31s, 27G  | 62s, 28G  | 121s, 33G |
-| 480p | 2s, 24G | 29s, 31G | 55s, 30G  | 108s, 32G | 219s, 36G |
-| 720p | 6s, 27G | 68s, 41G | 130s, 39G | 260s, 45G | 547s, 67G |
+|      | Image    |49 帧 | 65 帧 | 81 帧 | 97 帧 |113 帧 |
+|------|----------|----------|-----------|-----------|-----------|-----------|
+| 360p | 10s, 23G | 16s, 23G | 21s, 24G  | 27s, 24G  | 33s, 25G  | 39s, 25G  |
+| 720p | 13s, 24G | 61s, 28G | 83s, 29G  | 106s, 31G | 130s, 33G | 157s, 35G |
 
 注意，除了文本转视频，你还可以使用图片转视频。你可以上传图片，然后点击“**生成视频**”按钮，生成以图片为第一帧的视频。或者，你可以填写文本提示，然后点击“**生成图片**”按钮，根据文本提示生成图片，然后点击“**生成视频**”按钮，根据同一模型生成的图片生成视频。
 
@@ -278,7 +296,7 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 然后您可以指定更多选项，包括“**运动强度**”、“**美学**”和“**相机运动**”。如果未选中“启用”或选择“无”，则不会将信息传递给模型。否则，模型将生成具有指定运动强度、美学分数和相机运动的视频。
 
-对于**美学分数**，我们建议使用高于 6 的值。对于**运动强度**，较小的值将导致更平滑但动态性较差的视频，而较大的值将导致更动态但可能更模糊的视频。因此，您可以尝试不使用它，然后根据生成的视频进行调整。对于**相机运动**，有时模型无法很好地遵循指令，我们正在努力改进它。
+对于**美学分数**，我们建议使用'excellent'。对于**运动强度**，较小的值将导致更平滑但动态性较差的视频，而较大的值将导致更动态但可能更模糊的视频。因此，您可以尝试不使用它，然后根据生成的视频进行调整。对于**相机运动**，有时模型无法很好地遵循指令，我们正在努力改进它。
 
 您还可以调整“**采样步数**”，这是去噪的次数，与生成速度直接相关。小于 30 的数字通常会导致较差的生成结果，而大于 100 的数字通常不会有明显的改善。“种子”用于可重复性，您可以将其设置为固定数字以生成相同的视频。“**CFG 比例**”控制模型遵循文本提示的程度，较小的值会导致视频更随机，而较大的值会导致视频更遵循文本（建议为 7）。
 
@@ -286,7 +304,53 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 ## 推理
 
+### Open-Sora 1.3 命令行推理
+基础的命令行推理:
+
+```bash
+# text to video
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+您可以向命令行添加更多选项来定制生成。
+
+```bash
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 --num-sample 1 \
+  --aes "very good" --flow "fair" \
+  --prompt "a beautiful waterfall"
+```
+对于图像到视频生成和其他功能，请参阅[此处]](docs/commands.md)了解更多说明。
+
+### 序列并行推理
+```bash
+# text to video
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --aspect-ratio 9:16 \
+  --prompt "a beautiful waterfall"
+```
+
+## GPT-4o 快速细化
+
+我们发现 GPT-4o 可以细化提示并提高生成视频的质量。利用此功能，您还可以使用其他语言（例如中文）作为提示。要启用此功能，您需要在环境中准备您的 openai api 密钥：
+
+```bash
+export OPENAI_API_KEY=YOUR_API_KEY
+```
+
+然后您可以用 `--llm-refine True` 启用GPT-4o进行提示细化以完成推理。
+
+```bash
+python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
+  --num-frames 97 --resolution 720p --llm-refine True \
+  --prompt "a beautiful waterfall"
+```
+
+
 ### Open-Sora 1.2 命令行推理
+<details>
+<summary>View more</summary>
 
 基础的命令行推理:
 
@@ -340,6 +404,7 @@ export OPENAI_API_KEY=YOUR_API_KEY
 ```
 
 然后您可以用 `--llm-refine True` 启用GPT-4o进行提示细化以完成推理。
+</details>
 
 ### Open-Sora 1.1 命令行推理
 <details>
@@ -396,8 +461,20 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 ## 训练
 
-### Open-Sora 1.2 训练
+### Open-Sora 1.3 训练
 
+```bash
+# one node
+torchrun --standalone --nproc_per_node 8 scripts/train.py \
+    configs/opensora-v1-3/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+# multiple nodes
+colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
+    configs/opensora-v1-3/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
+```
+
+### Open-Sora 1.2 训练
+<details>
+<summary>View more</summary>
 训练过程与Open-Sora 1.1相同。
 
 ```bash
@@ -408,6 +485,7 @@ torchrun --standalone --nproc_per_node 8 scripts/train.py \
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
     configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
+</details>
 
 ### Open-Sora 1.1 训练
 
@@ -464,9 +542,26 @@ colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py configs/o
 | -------------- | ----------- | ------------- | -------------- |
 | Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
 | Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
+| Open-Sora V1.3 | ??.??%      | ??.??%        | ??.??%         |
 
 ## VAE 训练与评估
+### Open-Sora 1.3 VAE 训练
+我们实现并训练了一个统一的时空VAE，以更好地压缩视频并保留细节。更多详情，请参阅[Open-Sora 1.3 VAE文档](/docs/vae_v1_3.md)。在运行以下命令之前，请按照我们的安装文档安装VAE和评估所需的依赖项。
 
+``bash
+## Train VAE with 8 GPUs
+colossalai run --hostfile hostfile --nproc_per_node 8 scripts/train_opensoravae_v1_3.py configs/vae_v1_3/train/video_16z.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT --wandb True > logs/train_opensoravae_v1_3.log 2>&1 &
+```
+
+### Open-Sora 1.3 VAE 评估
+您需要先运行VAE推理来生成视频，然后计算生成视频的评分：
+```bash
+VID_PATH=YOUR_CSV_PATH CUDA_VISIBLE_DEVICES=0 bash eval/vae/launch.sh pretrained_models/OpenSoraVAE_V1_3/model.pt
+```
+
+### Open-Sora 1.2 VAE 训练
+<details>
+<summary>View more</summary>
 我们训练一个由空间 VAE 和时间 VAE 组成的 VAE 管道。有关更多详细信息，请参阅[VAE 文档](vae.md)。在运行以下命令之前，请按照我们的[安装文档](installation.md)安装 VAE 和评估所需的依赖项。
 
 如果您想训练自己的 VAE，我们需要按照[数据处理](#data-processing)流程在 csv 中准备数据，然后运行以下命令。请注意，您需要根据自己的 csv 数据大小相应地调整配置文件中的训练`epochs`数量。
@@ -493,7 +588,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=1 scripts/inference_vae.py con
 # score calculation
 python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir YOUR_VIDEO_DIR_ori --generated_video_dir YOUR_VIDEO_DIR_rec --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
 ```
-
+</details>
 
 ## 贡献
 

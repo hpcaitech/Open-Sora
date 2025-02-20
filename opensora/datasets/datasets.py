@@ -3,9 +3,12 @@ from glob import glob
 
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 from PIL import ImageFile
 from torchvision.datasets.folder import IMG_EXTENSIONS, pil_loader
+from torchvision.transforms import Compose, RandomHorizontalFlip
 
+from opensora.datasets.utils import video_transforms
 from opensora.registry import DATASETS
 
 from .read_video import read_video
@@ -18,7 +21,6 @@ IMG_FPS = 120
 @DATASETS.register_module()
 class VideoTextDataset(torch.utils.data.Dataset):
     """load video according to the csv file.
-
     Args:
         target_video_len (int): the number of video frames will be load.
         align_transform (callable): Align different videos in a specified size.
@@ -32,6 +34,9 @@ class VideoTextDataset(torch.utils.data.Dataset):
         frame_interval=1,
         image_size=(256, 256),
         transform_name="center",
+        tokenize_fn=None,
+        bucket_class="Bucket",
+        return_path=False,
     ):
         self.data_path = data_path
         self.data = read_file(data_path)
@@ -43,6 +48,9 @@ class VideoTextDataset(torch.utils.data.Dataset):
             "image": get_transforms_image(transform_name, image_size),
             "video": get_transforms_video(transform_name, image_size),
         }
+        self.tokenize_fn = tokenize_fn
+        self.bucket_class = bucket_class
+        self.return_path = return_path
 
     def _print_data_number(self):
         num_videos = 0
@@ -74,6 +82,8 @@ class VideoTextDataset(torch.utils.data.Dataset):
 
             # Sampling video frames
             video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)
+            video = video.clone()
+            del vframes
 
             # transform
             transform = self.transforms["video"]
@@ -93,9 +103,20 @@ class VideoTextDataset(torch.utils.data.Dataset):
         # TCHW -> CTHW
         video = video.permute(1, 0, 2, 3)
 
-        ret = {"video": video, "fps": video_fps}
+        ret = {
+            "video": video,
+            "num_frames": self.num_frames,
+            "height": self.image_size[0],
+            "width": self.image_size[1],
+            "ar": 1.0,
+            "fps": video_fps,
+        }
         if self.get_text:
             ret["text"] = sample["text"]
+            if self.tokenize_fn is not None:
+                ret.update({k: v.squeeze(0) for k, v in self.tokenize_fn(ret["text"]).items()})
+        if self.return_path:
+            ret["path"] = path
         return ret
 
     def __getitem__(self, index):
@@ -122,8 +143,11 @@ class VariableVideoTextDataset(VideoTextDataset):
         image_size=(None, None),
         transform_name=None,
         dummy_text_feature=False,
+        tokenize_fn=None,
     ):
-        super().__init__(data_path, num_frames, frame_interval, image_size, transform_name=None)
+        super().__init__(
+            data_path, num_frames, frame_interval, image_size, transform_name=None, tokenize_fn=tokenize_fn
+        )
         self.transform_name = transform_name
         self.data["id"] = np.arange(len(self.data))
         self.dummy_text_feature = dummy_text_feature
@@ -133,6 +157,14 @@ class VariableVideoTextDataset(VideoTextDataset):
         H = self.data.iloc[index]["height"]
         W = self.data.iloc[index]["width"]
         return T, H, W
+
+    def get_path(self, index):
+        try:
+            index, num_frames, height, width = [int(val) for val in index.split("-")]
+            return self.data.iloc[index]["path"]
+        except Exception as e:
+            print(f"data {index}: {e}")
+            return index
 
     def getitem(self, index):
         # a hack to pass in the (time, height, width) info from sampler
@@ -180,9 +212,12 @@ class VariableVideoTextDataset(VideoTextDataset):
             "width": width,
             "ar": ar,
             "fps": video_fps,
+            "path": path,
         }
         if self.get_text:
             ret["text"] = sample["text"]
+            if self.tokenize_fn is not None:
+                ret.update({k: v.squeeze(0) for k, v in self.tokenize_fn(ret["text"]).items()})
         if self.dummy_text_feature:
             text_len = 50
             ret["text"] = torch.zeros((1, text_len, 1152))
@@ -192,7 +227,9 @@ class VariableVideoTextDataset(VideoTextDataset):
     def __getitem__(self, index):
         try:
             return self.getitem(index)
-        except:
+        except Exception as e:
+            path = self.get_path(index)
+            print(f"data {path}: {e}")
             return None
 
 
@@ -248,3 +285,101 @@ class BatchFeatureDataset(torch.utils.data.Dataset):
             "num_frames": batch["num_frames"],
         }
         return ret
+
+
+@DATASETS.register_module()
+class VideoClasssificationDataset(torch.utils.data.Dataset):
+    """load video according to the csv file.
+
+    Args:
+        target_video_len (int): the number of video frames will be load.
+        align_transform (callable): Align different videos in a specified size.
+        temporal_sample (callable): Sample the target length of a video.
+    """
+
+    def __init__(
+        self,
+        data_path=None,
+        num_frames=16,
+        frame_interval=1,
+        image_size=(224, 224),
+        data_split="train",
+        label_key="preference_mean",
+        problem_type="regression",
+    ):
+        self.data_path = data_path
+        self.data = read_file(data_path)
+        self.get_text = "text" in self.data.columns
+        self.num_frames = num_frames
+        self.frame_interval = frame_interval
+        self.image_size = image_size
+        self.label_key = label_key
+        self.problem_type = problem_type
+
+        mean = [0.485, 0.456, 0.406]
+        std = [0.229, 0.224, 0.225]
+        if data_split == "train":
+            self.transforms = Compose(
+                [
+                    video_transforms.ToTensorVideo(),  # TCHW
+                    video_transforms.ResizeCrop(image_size),
+                    transforms.Normalize(mean, std, inplace=True),
+                    RandomHorizontalFlip(p=0.5),
+                ]
+            )
+        else:
+            self.transforms = Compose(
+                [
+                    video_transforms.ToTensorVideo(),  # TCHW
+                    video_transforms.ResizeCrop(image_size),
+                    transforms.Normalize(mean, std, inplace=True),
+                ]
+            )
+
+    def getitem(self, index):
+        sample = self.data.iloc[index]
+        path = sample["path"]
+
+        label = None
+        if sample.get(self.label_key):  # # label processing, if test won't have it
+            label = sample[self.label_key]
+            if self.label_key != "label_idx":
+                label = label - 1  # normalize score to 0 - 4
+            if self.problem_type == "single_label_classification":
+                label = round(label)
+
+        # loading
+        vframes, vinfo = read_video(path, backend="av")
+        video_fps = vinfo["video_fps"] if "video_fps" in vinfo else 24
+
+        if (
+            self.frame_interval == -1
+        ):  # instead of random sampling, we use all of the video by uniformly sampling num_frames from the video
+            frame_indices = np.linspace(0, vframes[0] - 1, self.num_frames)
+            video = vframes[frame_indices]
+        else:
+            # Sampling video frames
+            video = temporal_random_crop(vframes, self.num_frames, self.frame_interval)  # Sampling video frames, TCHW
+
+        # transform
+        video = self.transforms(video)  # T C H W
+
+        if label is not None:
+            ret = {"video": video, "label": label, "fps": video_fps, "path": path, "index": index}
+        else:
+            ret = {"video": video, "fps": video_fps, "path": path, "index": index}
+
+        return ret
+
+    def __getitem__(self, index):
+        for _ in range(10):
+            try:
+                return self.getitem(index)
+            except Exception as e:
+                path = self.data.iloc[index]["path"]
+                print(f"data {path}: {e}")
+                index = np.random.randint(len(self))
+        raise RuntimeError("Too many bad data.")
+
+    def __len__(self):
+        return len(self.data)

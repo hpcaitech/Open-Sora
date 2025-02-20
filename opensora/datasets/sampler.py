@@ -10,7 +10,7 @@ from torch.utils.data import Dataset, DistributedSampler
 from opensora.utils.misc import format_numel_str, get_logger
 
 from .aspect import get_num_pixels
-from .bucket import Bucket
+from .bucket import Bucket, Bucket_ar_first
 from .datasets import VariableVideoTextDataset
 
 
@@ -75,7 +75,12 @@ class VariableVideoBatchSampler(DistributedSampler):
             dataset=dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle, seed=seed, drop_last=drop_last
         )
         self.dataset = dataset
-        self.bucket = Bucket(bucket_config)
+        if self.dataset.bucket_class == "Bucket":
+            self.bucket = Bucket(bucket_config)
+        elif self.dataset.bucket_class == "Bucket_ar_first":
+            self.bucket = Bucket_ar_first(bucket_config)
+        else:
+            raise ValueError(f"Invalid bucket class: {self.dataset.bucket_class}")
         self.verbose = verbose
         self.last_micro_batch_access_index = 0
         self.approximate_num_batch = None

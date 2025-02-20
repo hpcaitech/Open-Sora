@@ -1,0 +1,20 @@
+An astronaut transitions from being underwater to floating in space.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/Astronaut_1.jpg"}
+The Eiffel Tower transitions from a daytime scene to a nighttime scene.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/Effiel_1.jpeg"}
+A woman is seamlessly moving through different scenes with a magical effect.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/MorphCharacters_1.jpg"}
+A small kitten is playing in the snow.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/cat1.png"}
+A person is giving water to a dog, and the dog tilts its head back to drink.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/dog1.png"}
+A car is speeding down a narrow country road in a field.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/car1.jpeg"}
+Three daffodils quietly bloom, their delicate petals unfurling in serene harmony.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/flower1.png"}
+A butterfly, attracted by the fragrance of the flowers, flew over and landed on the scent.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/butterfly1.png"}
+A cyclist rides along the waves as they crash against the shore.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/cyclist1.png"}
+The earth is rotating.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/earth1.png"}
+The bread is baking in the oven, slowly expanding as it rises.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/bread1.png"}
+The little boy is celebrating his birthday and blowing out the candles.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/candle1.png"}
+The airplane is landing at dusk.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/airplane1.png"}
+Sharks swim in a circle.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/sea1.png"}
+The man is walking along the path.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/walking1.png"}
+The cat slipped on a pair of sunglasses.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/catwglass1.png"}
+Attractive confident guy happily showing you gesture and winking on camera isolated.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/man1.png"}
+Mother covering sleeping daughter with blanket.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/mother1.png"}
+Pink Chocolate bar exploding midair against blue background.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/chocolate1.png"}
+A guy is freeskate rollerblading.{"reference_path": "/mnt/jfs-hdd2/sora/data/i2v_test_img/freeskate_1.png"}

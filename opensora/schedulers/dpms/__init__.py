@@ -23,11 +23,12 @@ class DPM_SOLVER:
         additional_args=None,
         mask=None,
         progress=True,
+        **kwargs,
     ):
         if mask is not None:
             print("[WARNING] mask is not supported in dpm-solver, it will be ignored")
         n = len(prompts)
-        model_args = text_encoder.encode(prompts)
+        model_args = text_encoder.encode(**text_encoder.tokenize_fn(prompts))
         y = model_args.pop("y")
         null_y = text_encoder.null(n)
         if additional_args is not None:

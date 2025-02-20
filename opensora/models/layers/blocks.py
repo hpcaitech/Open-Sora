@@ -11,7 +11,9 @@
 
 import functools
 import math
-from typing import Optional
+import warnings
+from itertools import chain
+from typing import Optional, Sequence
 
 import numpy as np
 import torch
@@ -69,6 +71,84 @@ def modulate(norm_func, x, shift, scale):
 
 def t2i_modulate(x, shift, scale):
     return x * (1 + scale) + shift
+
+
+def pad_to_multiples(tensor: torch.Tensor, multiples, dims, value=0, extra_pad_on_dims=None):
+    """
+    Pad the input tensor to the multiples of the given values. Right padding
+    """
+    assert len(multiples) == len(dims) and len(multiples) > 0 and len(multiples) <= tensor.dim()
+    if extra_pad_on_dims is not None:
+        assert len(extra_pad_on_dims) == len(multiples) * 2
+    n_pads = [0] * tensor.dim() * 2
+    for i, (dim, multiple) in enumerate(zip(dims, multiples)):
+        n_pads[dim * 2] = (multiple - tensor.size(dim) % multiple) % multiple
+        if extra_pad_on_dims is not None:
+            n_pads[dim * 2 + 1] += extra_pad_on_dims[i * 2]
+            n_pads[dim * 2] += extra_pad_on_dims[i * 2 + 1]
+    n_pads = n_pads[::-1]
+    output_tensor = F.pad(tensor, n_pads, value=value)
+    if output_tensor.shape == tensor.shape:
+        padding_mask = None
+    else:
+        padding_mask = torch.ones_like(tensor, dtype=torch.int)
+        padding_mask = F.pad(padding_mask, n_pads, value=0)
+    return output_tensor, padding_mask
+
+
+def remove_padding_nd(tensor: torch.Tensor, origin_sizes, dims):
+    """
+    Remove padding from the input tensor
+    """
+    assert len(origin_sizes) == len(dims) and len(origin_sizes) > 0 and len(origin_sizes) <= tensor.dim()
+    for size, dim in zip(origin_sizes, dims):
+        tensor = tensor.narrow(dim, 0, size)
+    return tensor
+
+
+def split_seq_cat_batch(tensor: torch.Tensor, split_sizes, dims, batch_dim: int = 0) -> torch.Tensor:
+    """split tensor in sequence dimension and cat in batch dimension
+
+    Args:
+        tensor (torch.Tensor): [B, *N, C]
+        split_sizes (_type_): kernel size
+        dims (_type_): dim index of "N"
+        batch_dim (int, optional): dim of batch. Defaults to 0.
+
+    Returns:
+        torch.Tensor: [MB, *K, C], K is kernel size. Total number of dim is the same as input tensor.
+    """
+    chunks = [tensor]
+    for dim, split_size in zip(dims, split_sizes):
+        new_chunks = []
+        for t in chunks:
+            new_chunks.extend(t.split(split_size, dim))
+        chunks = new_chunks
+    return torch.cat(chunks, batch_dim)
+
+
+def split_batch_cat_seq(tensor: torch.Tensor, batch_size: int, num_splits, dims, batch_dim: int = 0) -> torch.Tensor:
+    """split tensor in batch dimension and cat in sequence dimension
+
+    Args:
+        tensor (torch.Tensor): [MB, *K, C]
+        batch_size (int): original batch size
+        num_splits (_type_): number of splits of each dim
+        dims (_type_): dim index of "K"
+        batch_dim (int, optional): dim of batch. Defaults to 0.
+
+    Returns:
+        torch.Tensor: [B, *N, C]
+    """
+    chunks = tensor.split(batch_size, batch_dim)
+    for dim, num_split in zip(dims[::-1], num_splits[::-1]):
+        new_chunks = []
+        for i in range(0, len(chunks), num_split):
+            group = chunks[i : i + num_split]
+            new_chunks.append(torch.cat(group, dim))
+        chunks = new_chunks
+    assert len(chunks) == 1
+    return chunks[0]
 
 
 # ===============================================
@@ -142,6 +222,8 @@ class Attention(nn.Module):
         enable_flash_attn: bool = False,
         rope=None,
         qk_norm_legacy: bool = False,
+        kernel_size: Optional[Sequence[int]] = None,
+        shift_window: bool = False,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -163,15 +245,69 @@ class Attention(nn.Module):
         if rope is not None:
             self.rope = True
             self.rotary_emb = rope
-        
+
         self.is_causal = False
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        B, N, C = x.shape
-        # flash attn is not memory efficient for small sequences, this is empirical
-        enable_flash_attn = self.enable_flash_attn and (N > B)
+        self.is_causal = False
+        self.kernel_size = kernel_size
+        self.shift_window = shift_window
+        if shift_window and kernel_size is None:
+            warnings.warn(f"shift_window is enabled but kernel_size is not set, this may not work as expected")
+        if kernel_size is not None and shift_window:
+            self.extra_pad_on_dims = tuple(
+                chain.from_iterable((k // 2, k - k // 2) if k >= 0 else (0, 0) for k in kernel_size)
+            )
+        else:
+            self.extra_pad_on_dims = None
+
+    def rotate_3d(self, k, ks1, ks2, scale=None):
+        k_t, k_h, k_w = k.chunk(3, dim=-1)
+        # temporal
+        k_t = rearrange(k_t, "b h (k1 k2 T) d -> b h k1 k2 T d", k1=ks1, k2=ks2)
+        k_t = self.rotary_emb(k_t)
+        k_t = rearrange(k_t, "b h k1 k2 T d -> b h (k1 k2 T) d", k1=ks1, k2=ks2)
+        # height
+        k_h = rearrange(k_h, "b h (k1 k2 T) d -> b h k2 T k1 d", k1=ks1, k2=ks2)
+        k_h = self.rotary_emb(k_h, scale=scale)
+        k_h = rearrange(k_h, "b h k2 T k1 d -> b h (k1 k2 T) d", k1=ks1, k2=ks2)
+        # width
+        k_w = rearrange(k_w, "b h (k1 k2 T) d -> b h T k1 k2 d", k1=ks1, k2=ks2)
+        k_w = self.rotary_emb(k_w, scale=scale)
+        k_w = rearrange(k_w, "b h T k1 k2 d -> b h (k1 k2 T) d", k1=ks1, k2=ks2)
+        # combine
+        k = torch.cat([k_t, k_h, k_w], dim=-1)
+        return k
+
+    def forward(self, x: torch.Tensor, scale=None, H=None, W=None) -> torch.Tensor:
+        attn_mask = None
+        if self.kernel_size is not None:
+            B, *dims, C = x.shape
+            assert len(dims) == len(
+                self.kernel_size
+            ), f"input shape and kernel size mismatch, {dims} vs {self.kernel_size}"
+            kernel_size = [(k if k >= 0 else s) for s, k in zip(dims, self.kernel_size)]
+            N = np.prod(kernel_size)
+            indices = list(range(1, x.dim() - 1))
+
+            x, padding_mask = pad_to_multiples(x, kernel_size, indices, extra_pad_on_dims=self.extra_pad_on_dims)
+            num_splits = [x.size(dim) // k for dim, k in zip(indices, kernel_size)]
+            x = split_seq_cat_batch(x, kernel_size, indices)
+            qkv_b = x.shape[0]
+            if padding_mask is not None:
+                attn_mask = padding_mask.narrow(-1, 0, 1).squeeze(-1)
+                attn_mask = 1.0 - split_seq_cat_batch(attn_mask, kernel_size, indices).to(x.dtype)
+                attn_mask.masked_fill_(attn_mask.bool(), float("-inf"))
+                attn_mask = attn_mask.view(qkv_b, N)
+                attn_mask = attn_mask[:, None, :].expand(qkv_b, N, N).unsqueeze(1)
+        else:
+            B, N, C = x.shape
+            qkv_b = B
+
         qkv = self.qkv(x)
-        qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
+        # flash attn is not memory efficient for small sequences, this is empirical
+        enable_flash_attn = self.enable_flash_attn and (N > 128) and self.kernel_size is None
+        enable_sdpa = self.enable_flash_attn and (N > 128) and self.kernel_size is not None
+        qkv_shape = (qkv_b, N, 3, self.num_heads, self.head_dim)
 
         qkv = qkv.view(qkv_shape).permute(2, 0, 3, 1, 4)
         q, k, v = qkv.unbind(0)
@@ -184,8 +320,15 @@ class Attention(nn.Module):
         else:
             q, k = self.q_norm(q), self.k_norm(k)
             if self.rope:
-                q = self.rotary_emb(q)
-                k = self.rotary_emb(k)
+                if self.kernel_size is not None:
+                    q = self.rotate_3d(q, self.kernel_size[0], self.kernel_size[1], scale=scale)
+                    k = self.rotate_3d(k, self.kernel_size[0], self.kernel_size[1], scale=scale)
+                elif H is not None and W is not None:
+                    q = self.rotate_3d(q, H, W, scale=scale)
+                    k = self.rotate_3d(k, H, W, scale=scale)
+                else:
+                    q = self.rotary_emb(q)
+                    k = self.rotary_emb(k)
 
         if enable_flash_attn:
             from flash_attn import flash_attn_func
@@ -202,6 +345,16 @@ class Attention(nn.Module):
                 softmax_scale=self.scale,
                 causal=self.is_causal,
             )
+        elif enable_sdpa:
+            x = F.scaled_dot_product_attention(
+                q,
+                k,
+                v,
+                attn_mask=attn_mask,
+                dropout_p=self.attn_drop.p if self.training else 0.0,
+                scale=self.scale,
+                is_causal=self.is_causal,
+            )
         else:
             dtype = q.dtype
             q = q * self.scale
@@ -209,19 +362,28 @@ class Attention(nn.Module):
             attn = attn.to(torch.float32)
             if self.is_causal:
                 causal_mask = torch.tril(torch.ones_like(attn), diagonal=0)
-                causal_mask = torch.where(causal_mask.bool(), 0, float('-inf'))
+                causal_mask = torch.where(causal_mask.bool(), 0, float("-inf"))
                 attn += causal_mask
+            if attn_mask is not None:
+                attn += attn_mask
             attn = attn.softmax(dim=-1)
             attn = attn.to(dtype)  # cast back attn to original dtype
             attn = self.attn_drop(attn)
             x = attn @ v
 
-        x_output_shape = (B, N, C)
+        x_output_shape = (qkv_b, N, C)
         if not enable_flash_attn:
             x = x.transpose(1, 2)
         x = x.reshape(x_output_shape)
+
         x = self.proj(x)
         x = self.proj_drop(x)
+
+        if self.kernel_size is not None:
+            x = x.reshape(qkv_b, *kernel_size, C)
+            x = split_batch_cat_seq(x, B, num_splits, indices)
+            x = remove_padding_nd(x, dims, indices)
+            assert x.shape == (B, *dims, C)
         return x
 
 
@@ -367,8 +529,11 @@ class SeqParallelAttention(Attention):
         norm_layer: nn.Module = LlamaRMSNorm,
         enable_flash_attn: bool = False,
         rope=None,
+        qk_norm_legacy: bool = False,
+        kernel_size: Optional[Sequence[int]] = None,
+        shift_window: bool = False,
+        temporal: bool = False,
     ) -> None:
-        assert rope is None, "Rope is not supported in SeqParallelAttention"
         super().__init__(
             dim=dim,
             num_heads=num_heads,
@@ -378,71 +543,164 @@ class SeqParallelAttention(Attention):
             proj_drop=proj_drop,
             norm_layer=norm_layer,
             enable_flash_attn=enable_flash_attn,
+            rope=rope,
+            qk_norm_legacy=qk_norm_legacy,
+            kernel_size=kernel_size,
+            shift_window=shift_window,
         )
+        self.temporal = temporal
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        B, N, C = x.shape  # for sequence parallel here, the N is a local sequence length
-        qkv = self.qkv(x)
-        qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
-        qkv = qkv.view(qkv_shape)
-
+    def forward(self, x: torch.Tensor, scale=None, H=None, W=None) -> torch.Tensor:
         sp_group = get_sequence_parallel_group()
+        sp_size = dist.get_world_size(sp_group)
+        qkv = self.qkv(x)
 
-        # apply all_to_all to gather sequence and split attention heads
-        # [B, SUB_N, 3, NUM_HEAD, HEAD_DIM] -> [B, N, 3, NUM_HEAD_PER_DEVICE, HEAD_DIM]
-        qkv = all_to_all(qkv, sp_group, scatter_dim=3, gather_dim=1)
+        if self.kernel_size is not None:
+            B, *dims, C = x.shape
+            N = np.prod(dims)
+            qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
+            qkv = qkv.view(qkv_shape)
 
-        if self.enable_flash_attn:
-            qkv_permute_shape = (
-                2,
-                0,
-                1,
-                3,
-                4,
-            )  # [3, B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]
+            # apply all_to_all to gather sequence and split attention heads
+            # [B, SUB_N, 3, NUM_HEAD, HEAD_DIM] -> [B, N, 3, NUM_HEAD_PER_DEVICE, HEAD_DIM]
+            qkv = all_to_all(qkv, sp_group, scatter_dim=3, gather_dim=1)
+
+            dims_sp = [dims[0] * sp_size, *dims[1:]]
+            C_sp = C // sp_size
+            qkv = qkv.view([qkv.shape[0], *dims_sp, 3 * C_sp])
+
+            assert len(dims_sp) == len(
+                self.kernel_size
+            ), f"input shape and kernel size mismatch, {dims_sp} vs {self.kernel_size}"
+            kernel_size = [(k if k >= 0 else s) for s, k in zip(dims_sp, self.kernel_size)]
+
+            indices = list(range(1, x.dim() - 1))
+            qkv, qkv_padding_mask = pad_to_multiples(
+                qkv, kernel_size, indices, extra_pad_on_dims=self.extra_pad_on_dims
+            )
+            num_splits = [qkv.size(dim) // k for dim, k in zip(indices, kernel_size)]
+
+            qkv = split_seq_cat_batch(qkv, kernel_size, indices)
+            qkv_b = qkv.shape[0]
+            qkv_n = np.prod(kernel_size)
+
+            if qkv_padding_mask is not None:
+                qkv_padding_mask = qkv_padding_mask.narrow(-1, 0, 1).squeeze(-1)
+                qkv_padding_mask = split_seq_cat_batch(qkv_padding_mask, kernel_size, indices).to(qkv.dtype)
+                qkv_padding_mask.masked_fill_(qkv_padding_mask.logical_not(), float("-inf"))
+                qkv_padding_mask = qkv_padding_mask.view(qkv_b, qkv_n)
+                qkv_padding_mask = qkv_padding_mask[:, None, :].expand(qkv_b, qkv_n, qkv_n).unsqueeze(1)
+
+            qkv_shape = (qkv_b, qkv_n, 3, self.num_heads // sp_size, self.head_dim)
+            qkv = qkv.view(qkv_shape)
         else:
-            qkv_permute_shape = (
-                2,
-                0,
-                3,
-                1,
-                4,
-            )  # [3, B, NUM_HEAD_PER_DEVICE, N, HEAD_DIM]
-        qkv = qkv.permute(qkv_permute_shape)
+            B, N, C = x.shape
+            qkv_shape = (B, N, 3, self.num_heads, self.head_dim)
+            qkv = qkv.view(qkv_shape)
+            if not self.temporal:
+                # apply all_to_all to gather sequence and split attention heads
+                # [B, SUB_N, 3, NUM_HEAD, HEAD_DIM] -> [B, N, 3, NUM_HEAD_PER_DEVICE, HEAD_DIM]
+                qkv = all_to_all(qkv, sp_group, scatter_dim=3, gather_dim=1)
+            else:
+                sp_size = 1
+            qkv_b, qkv_n = qkv.shape[0], qkv.shape[1]
+            qkv_padding_mask = None
 
+        # flash attn is not memory efficient for small sequences, this is empirical
+        enable_flash_attn = self.enable_flash_attn and (N > qkv_b) and self.kernel_size is None
+        enable_sdpa = self.enable_flash_attn and (N > qkv_b) and self.kernel_size is not None
+
+        qkv = qkv.permute(2, 0, 3, 1, 4)
         # ERROR: Should qk_norm first
         q, k, v = qkv.unbind(0)
-        q, k = self.q_norm(q), self.k_norm(k)
-        if self.enable_flash_attn:
+        if self.qk_norm_legacy:
+            # WARNING: this may be a bug
+            if self.rope:
+                q = self.rotary_emb(q)
+                k = self.rotary_emb(k)
+            q, k = self.q_norm(q), self.k_norm(k)
+        else:
+            q, k = self.q_norm(q), self.k_norm(k)
+            if self.rope:
+                if self.kernel_size is not None:
+                    q = self.rotate_3d(q, self.kernel_size[0], self.kernel_size[1], scale=scale)
+                    k = self.rotate_3d(k, self.kernel_size[0], self.kernel_size[1], scale=scale)
+                elif H is not None and W is not None:
+                    if self.temporal is False and self.kernel_size is None:
+                        H = H * sp_size
+                    q = self.rotate_3d(q, H, W, scale=scale)
+                    k = self.rotate_3d(k, H, W, scale=scale)
+                else:
+                    q = self.rotary_emb(q)
+                    k = self.rotary_emb(k)
+
+        if enable_flash_attn:
             from flash_attn import flash_attn_func
 
+            # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
+            q = q.permute(0, 2, 1, 3)
+            k = k.permute(0, 2, 1, 3)
+            v = v.permute(0, 2, 1, 3)
             x = flash_attn_func(
                 q,
                 k,
                 v,
                 dropout_p=self.attn_drop.p if self.training else 0.0,
                 softmax_scale=self.scale,
+                causal=self.is_causal,
+            )
+        elif enable_sdpa:
+            x = F.scaled_dot_product_attention(
+                q,
+                k,
+                v,
+                attn_mask=qkv_padding_mask,
+                dropout_p=self.attn_drop.p if self.training else 0.0,
+                scale=self.scale,
+                is_causal=self.is_causal,
             )
         else:
             dtype = q.dtype
             q = q * self.scale
             attn = q @ k.transpose(-2, -1)  # translate attn to float32
             attn = attn.to(torch.float32)
+            if self.is_causal:
+                causal_mask = torch.tril(torch.ones_like(attn), diagonal=0)
+                causal_mask = torch.where(causal_mask.bool(), 0, float("-inf"))
+                attn += causal_mask
+            if qkv_padding_mask is not None:
+                attn += qkv_padding_mask
             attn = attn.softmax(dim=-1)
             attn = attn.to(dtype)  # cast back attn to original dtype
             attn = self.attn_drop(attn)
             x = attn @ v
 
-        if not self.enable_flash_attn:
-            x = x.transpose(1, 2)
+        if not enable_flash_attn:
+            x = x.transpose(1, 2)  # (B, #heads, N, #dim) -> (B, N, #heads, #dim)
 
-        # apply all to all to gather back attention heads and split sequence
-        # [B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]  -> [B, SUB_N, NUM_HEAD, HEAD_DIM]
-        x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
+        if self.kernel_size is not None:
+            x = x.reshape(qkv_b, *kernel_size, C_sp)
+            x = split_batch_cat_seq(x, B, num_splits, indices)
+            x = remove_padding_nd(x, dims_sp, indices)
 
-        # reshape outputs back to [B, N, C]
-        x_output_shape = (B, N, C)
-        x = x.reshape(x_output_shape)
+            x_shape = (B, N * sp_size, self.num_heads // sp_size, self.head_dim)
+            x = x.reshape(x_shape)
+            # apply all to all to gather back attention heads and split sequence
+            # [B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]  -> [B, SUB_N, NUM_HEAD, HEAD_DIM]
+            x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
+
+            x = x.view(B, *dims, C)
+
+            assert x.shape == (B, *dims, C)
+        else:
+            if not self.temporal:
+                # apply all to all to gather back attention heads and split sequence
+                # [B, N, NUM_HEAD_PER_DEVICE, HEAD_DIM]  -> [B, SUB_N, NUM_HEAD, HEAD_DIM]
+                x = all_to_all(x, sp_group, scatter_dim=1, gather_dim=2)
+
+            x_output_shape = (B, N, C)
+            x = x.reshape(x_output_shape)
+
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
@@ -485,6 +743,40 @@ class MultiHeadCrossAttention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+
+
+class MultiHeadCrossAttentionForCondition(nn.Module):
+    def __init__(self, d_model, num_heads, attn_drop=0.0, proj_drop=0.0):
+        super().__init__()
+        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
+
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+
+        self.q_linear = nn.Linear(d_model, d_model)
+        self.kv_linear = nn.Linear(d_model, d_model * 2)
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(d_model, d_model)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+    def forward(self, x, cond, mask=None):
+        # query/value: img tokens; key: condition; mask: if padding tokens
+        B, N, C = x.shape
+
+        q = self.q_linear(cond).view(1, -1, self.num_heads, self.head_dim)
+        kv = self.kv_linear(x).view(1, -1, 2, self.num_heads, self.head_dim)
+        k, v = kv.unbind(2)
+
+        attn_bias = None
+        if mask is not None:
+            attn_bias = xformers.ops.fmha.BlockDiagonalMask.from_seqlens(mask, [N] * B)
+        cond = xformers.ops.memory_efficient_attention(q, k, v, p=self.attn_drop.p, attn_bias=attn_bias)
+
+        cond = cond.view(1, -1, C)
+        cond = self.proj(cond)
+        cond = self.proj_drop(cond)
+        return cond
 
 
 class SeqParallelMultiHeadCrossAttention(MultiHeadCrossAttention):
@@ -740,23 +1032,25 @@ class CaptionEmbedder(nn.Module):
         )
         self.uncond_prob = uncond_prob
 
-    def token_drop(self, caption, force_drop_ids=None):
+    def token_drop(self, caption, force_drop_ids=None, uncond_prob=None):
         """
         Drops labels to enable classifier-free guidance.
         """
+        uncond_prob = uncond_prob if uncond_prob is not None else self.uncond_prob
         if force_drop_ids is None:
-            drop_ids = torch.rand(caption.shape[0]).cuda() < self.uncond_prob
+            drop_ids = torch.rand(caption.shape[0]).cuda() < uncond_prob
         else:
             drop_ids = force_drop_ids == 1
         caption = torch.where(drop_ids[:, None, None, None], self.y_embedding, caption)
         return caption
 
-    def forward(self, caption, train, force_drop_ids=None):
+    def forward(self, caption, train, force_drop_ids=None, uncond_prob=None):
         if train:
             assert caption.shape[2:] == self.y_embedding.shape
-        use_dropout = self.uncond_prob > 0
+        uncond_prob = uncond_prob if uncond_prob is not None else self.uncond_prob
+        use_dropout = uncond_prob > 0
         if (train and use_dropout) or (force_drop_ids is not None):
-            caption = self.token_drop(caption, force_drop_ids)
+            caption = self.token_drop(caption, force_drop_ids=force_drop_ids, uncond_prob=uncond_prob)
         caption = self.y_proj(caption)
         return caption
 

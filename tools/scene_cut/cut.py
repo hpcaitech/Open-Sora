@@ -35,12 +35,14 @@ def process_single_row(row, args):
             if not (timestamp.startswith("[") and timestamp.endswith("]")):
                 return False
             scene_list = eval(timestamp)
-            scene_list = [(FrameTimecode(s, fps=100), FrameTimecode(t, fps=100)) for s, t in scene_list]
+            # Jul 19 quick fix Tom: remove 0.1s from the end of each scene to avoid the last frame issue
+            # scene_list = [(FrameTimecode(s, fps=1000), FrameTimecode(t, fps=1000) - FrameTimecode('00:00:00.100', fps=1000)) for s, t in scene_list]
+            scene_list = [(FrameTimecode(s, fps=1000), FrameTimecode(t, fps=1000)) for s, t in scene_list]
         else:
             scene_list = [None]
         if args.drop_invalid_timestamps:
             return True
-    except Exception as e:
+    except Exception:
         if args.drop_invalid_timestamps:
             return False
 
@@ -52,6 +54,7 @@ def process_single_row(row, args):
 
     shorter_size = args.shorter_size
     if (shorter_size is not None) and ("height" in row) and ("width" in row):
+        # Jul 13 Tom: this is skipped cause we are not doing info before cut atm
         min_size = min(row["height"], row["width"])
         if min_size <= shorter_size:
             shorter_size = None
@@ -67,6 +70,7 @@ def process_single_row(row, args):
         logger=logger,
     )
     return True
+
 
 def split_video(
     video_path,
@@ -115,7 +119,7 @@ def split_video(
         if os.path.exists(save_path):
             # print_log(f"File '{save_path}' already exists. Skip.", logger=logger)
             continue
-        
+
         # ffmpeg cmd
         cmd = [FFMPEG_PATH]
 
@@ -137,11 +141,10 @@ def split_video(
 
         # aspect ratio
         if shorter_size is not None:
-            cmd += ["-vf", f"scale='if(gt(iw,ih),-2,{shorter_size})':'if(gt(iw,ih),{shorter_size},-2)'"]
+            cmd += ["-vf", f"scale='if(gt(iw,ih),-2,min({shorter_size},iw))':'if(gt(iw,ih),min({shorter_size},ih),-2)'"]
             # cmd += ['-vf', f"scale='if(gt(iw,ih),{shorter_size},trunc(ow/a/2)*2)':-2"]
 
         cmd += ["-map", "0:v", save_path]
-        # print(cmd)
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, stderr = proc.communicate()
         # stdout = stdout.decode("utf-8")
@@ -204,5 +207,8 @@ def main():
         assert args.meta_path.endswith("timestamp.csv"), "Only support *timestamp.csv"
         meta.to_csv(args.meta_path.replace("timestamp.csv", "correct_timestamp.csv"), index=False)
         print(f"Corrected timestamp file saved to '{args.meta_path.replace('timestamp.csv', 'correct_timestamp.csv')}'")
+
+
 if __name__ == "__main__":
     main()
+    print("cut.py finished successfully.")

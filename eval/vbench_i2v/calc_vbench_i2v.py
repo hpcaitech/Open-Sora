@@ -3,6 +3,7 @@ import os
 import time
 
 import torch
+
 from vbench import VBench
 from vbench2_beta_i2v import VBenchI2V
 

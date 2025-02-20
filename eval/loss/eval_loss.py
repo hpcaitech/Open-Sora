@@ -47,6 +47,14 @@ def main():
     logger.info("Building models...")
     # == build text-encoder and vae ==
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
+    if text_encoder is not None:
+        text_encoder_output_dim = text_encoder.output_dim
+        text_encoder_model_max_length = text_encoder.model_max_length
+        cfg.dataset.tokenize_fn = text_encoder.tokenize_fn
+    else:
+        text_encoder_output_dim = cfg.get("text_encoder_output_dim", 4096)
+        text_encoder_model_max_length = cfg.get("text_encoder_model_max_length", 300)
+
     vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
 
     # == build diffusion model ==
@@ -58,8 +66,9 @@ def main():
             MODELS,
             input_size=latent_size,
             in_channels=vae.out_channels,
-            caption_channels=text_encoder.output_dim,
-            model_max_length=text_encoder.model_max_length,
+            caption_channels=text_encoder_output_dim,
+            model_max_length=text_encoder_model_max_length,
+            enable_sequence_parallelism=cfg.get("sp_size", 1) > 1,
         )
         .to(device, dtype)
         .eval()
@@ -103,13 +112,22 @@ def main():
     start = cfg.start_index if "start_index" in cfg else 0
     end = cfg.end_index if "end_index" in cfg else len(bucket_config)
     for i, res in enumerate(bucket_config):
-        if i < start or i >= end:  # skip task
+        if len(bucket_config) > 1 and (i < start or i >= end):  # skip task
+            print("skipping:", bucket_config[res])
             continue
 
         t_bucket = bucket_config[res]
+        num_frames_index = 0
         for num_frames, (_, batch_size) in t_bucket.items():
             if batch_size is None:
                 continue
+
+            if len(bucket_config) == 1 and (num_frames_index < start or num_frames_index >= end):  # skip task
+                print("skipping:", num_frames)
+                num_frames_index += 1
+                continue
+            else:
+                num_frames_index += 1
             logger.info("Evaluating resolution: %s, num_frames: %s", res, num_frames)
             dataloader, num_steps_per_epoch, num_batch = build_dataset(res, num_frames, batch_size)
             if num_batch == 0:
@@ -124,9 +142,11 @@ def main():
                 for _ in tqdm(range(num_steps_per_epoch), desc=f"res: {res}, num_frames: {num_frames}, t: {t:.2f}"):
                     batch = next(dataloader_iter)
                     x = batch.pop("video").to(device, dtype)
-                    y = batch.pop("text")
+                    batch.pop("text")
                     x = vae.encode(x)
-                    model_args = text_encoder.encode(y)
+                    input_ids = batch.pop("input_ids")
+                    attention_mask = batch.pop("attention_mask")
+                    model_args = text_encoder.encode(input_ids, attention_mask=attention_mask)
 
                     # == mask ==
                     mask = None

@@ -1,6 +1,7 @@
 image_size = (256, 256)
-num_frames = 51
+num_frames = 17
 
+fps = 24
 dtype = "bf16"
 batch_size = 1
 seed = 42
@@ -14,6 +15,7 @@ dataset = dict(
     data_path=None,
     num_frames=num_frames,
     image_size=image_size,
+    transform_name="resize_crop",
 )
 num_samples = 100
 num_workers = 4

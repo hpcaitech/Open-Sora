@@ -205,7 +205,7 @@ class PixArt(nn.Module):
         y: (N, 1, 120, C) tensor of class labels
         """
         dtype = self.x_embedder.proj.weight.dtype
-        B = x.size(0)
+        x.size(0)
         x = x.to(dtype)
         timestep = timestep.to(dtype)
         y = y.to(dtype)

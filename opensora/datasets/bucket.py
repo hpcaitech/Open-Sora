@@ -1,3 +1,4 @@
+import bisect
 from collections import OrderedDict
 
 import numpy as np
@@ -140,3 +141,83 @@ def closet_smaller_bucket(value, bucket):
         if value < bucket[i]:
             return bucket[i - 1]
     return bucket[-1]
+
+
+def merge_dicts(dict_list, maps):
+    result = {}
+    for index, d in enumerate(dict_list):
+        for key, value in d.items():
+            # Create the key with an empty set if it doesn't exist
+            if key not in result:
+                result[key] = []
+            # Add the value and the tuple (value, index) to the set
+            if value not in result[key]:
+                result[key].append((value, maps[index]))
+    return result
+
+
+def find_proper_res(x1, y1, points):
+    result_point = []
+    points = sorted(points, key=lambda x: -x[0][0])
+    for k, res in points:
+        x2 = k[0]
+        y2 = k[1]
+        if x2 <= x1 and y2 <= y1:
+            result_point.append(res)
+    return result_point
+
+
+class Bucket_ar_first(Bucket):
+    def __init__(self, bucket_config):
+        super(Bucket_ar_first, self).__init__(bucket_config)
+        all_aspects = []
+        maps = []
+        for x in bucket_config.keys():
+            maps.append(x)
+            all_aspects.append(ASPECT_RATIOS[x][1])
+        all_aspects = merge_dicts(all_aspects, maps)
+        all_ars = [float(i) for i in all_aspects.keys()]
+
+        self.all_aspects = all_aspects
+        self.all_ars = sorted(all_ars)
+
+    def get_bucket_id(self, T, H, W, frame_interval=1, seed=None):
+        ar = H / W
+
+        # binary search
+        ind = bisect.bisect_left(self.all_ars, ar)
+        if ind == 0:
+            ar_id = str(self.all_ars[0])
+        if ind == len(self.all_ars):
+            ar_id = str(self.all_ars[-1])
+        else:
+            before = self.all_ars[ind - 1]
+            after = self.all_ars[ind]
+            ar_id = f"{before:.2f}" if abs(ar - before) < abs(ar - after) else f"{after:.2f}"
+
+        # find proper hw_id
+        hw_ids = find_proper_res(H, W, self.all_aspects[ar_id])
+        fail = True
+        for hw_id in hw_ids:
+            t_fail = True
+            for t_id, prob in self.bucket_probs[hw_id].items():
+                if isinstance(prob, tuple):
+                    rng = np.random.default_rng(seed + self.bucket_id[hw_id][t_id])
+                    prob_t = prob[1]
+                    if rng.random() > prob_t:
+                        continue
+                if T > t_id * frame_interval and t_id != 1:
+                    t_fail = False
+                    break
+            if t_fail:
+                continue
+
+            if isinstance(prob, tuple):
+                prob = prob[0]
+            if prob >= 1 or rng.random() < prob:
+                fail = False
+                break
+        if fail:
+            return None
+
+        return hw_id, t_id, ar_id
