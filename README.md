@@ -36,7 +36,8 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 </div>
 
 ## 📰 News
-- **[2024.01.20]** 🔥 We released **Open-Sora 1.3**. With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
+
+- **[2024.02.20]** 🔥 We released **Open-Sora 1.3**. With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** 🔥 [The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** 🔥 We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md)   [[blog]](https://hpc-ai.com/blog/open-sora-from-hpc-ai-tech-team-continues-open-source-generate-any-16-second-720p-hd-video-with-one-click-model-weights-ready-to-use)
 - **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
@@ -61,7 +62,6 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 | [<img src="assets/demo/open_sora_v1.3/demo_trans.gif" width="">](https://streamable.com/e/1in7d6?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_bear.gif" width="">](https://streamable.com/e/e9bi4o?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_futureflower.gif" width="">](https://streamable.com/e/09z7xi?quality=highest&amp;autoplay=1) |
 | [<img src="assets/demo/open_sora_v1.3/demo_fire.gif" width="">](https://streamable.com/e/16c3hk?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_man.gif" width="">](https://streamable.com/e/wi250w?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_black.gif" width="">](https://streamable.com/e/vw5b64?quality=highest&amp;autoplay=1) |
 
-
 <details>
 <summary>OpenSora 1.2 Demo</summary>
 
@@ -70,6 +70,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 | [<img src="assets/demo/v1.2/sample_0013.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/7895aab6-ed23-488c-8486-091480c26327) | [<img src="assets/demo/v1.2/sample_1718.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/20f07c7b-182b-4562-bbee-f1df74c86c9a) | [<img src="assets/demo/v1.2/sample_0087.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3d897e0d-dc21-453a-b911-b3bda838acc2) |
 | [<img src="assets/demo/v1.2/sample_0052.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/644bf938-96ce-44aa-b797-b3c0b513d64c) | [<img src="assets/demo/v1.2/sample_1719.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/272d88ac-4b4a-484d-a665-8d07431671d0) | [<img src="assets/demo/v1.2/sample_0002.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ebbac621-c34e-4bb4-9543-1c34f8989764) |
 | [<img src="assets/demo/v1.2/sample_0011.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/a1e3a1a3-4abd-45f5-8df2-6cced69da4ca) | [<img src="assets/demo/v1.2/sample_0004.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/d6ce9c13-28e1-4dff-9644-cc01f5f11926) | [<img src="assets/demo/v1.2/sample_0061.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/561978f8-f1b0-4f4d-ae7b-45bec9001b4a) |
+
 </details>
 
 <details>
@@ -106,6 +107,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 </details>
 
 ## 🔆 New Features/Updates
+
 - 📍 **Open-Sora 1.3** released. Model weights are available [here](#model-weights). See our **[report 1.3](docs/report_04.md)** for more infomation.
   - ✅ Upgraded model architecture, delivering enhanced performance and efficiency.
   - ✅ Incorporated more high-quality training data, significantly improving overall results.
@@ -145,6 +147,8 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
   config files.
 
 </details>
+
+Since Open-Sora is under active development, we remain different branchs for different versions. The latest version is [main](https://github.com/hpcaitech/Open-Sora). Old versions include: [v1.0](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.0), [v1.1](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.1), [v1.2](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.2).
 
 ### TODO list sorted by priority
 
@@ -366,6 +370,7 @@ For more advanced usage, you can refer to [Gradio README](./gradio/README.md#adv
 ## Inference
 
 ### Open-Sora 1.3 Command Line Inference
+
 The basic command line inference is as follows:
 
 ```bash
@@ -414,6 +419,7 @@ python scripts/inference.py configs/opensora-v1-3/inference/t2v.py \
 ```
 
 ### Open-Sora 1.2 Command Line Inference
+
 <details>
 <summary>View more</summary>
 
@@ -565,6 +571,7 @@ torchrun --standalone --nproc_per_node 8 scripts/train.py \
 colossalai run --nproc_per_node 8 --hostfile hostfile scripts/train.py \
     configs/opensora-v1-2/train/stage1.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT
 ```
+
 </details>
 
 ### Open-Sora 1.1 Training
@@ -630,14 +637,18 @@ All the evaluation code is released in `eval` folder. Check the [README](/eval/R
 ## VAE Training & Evaluation
 
 ### Open-Sora 1.3 VAE Training
+
 We implement and train a unified spatial-temporal VAE for better compress videos as well as preserve details. For more detailes, refer to [Open-Sora 1.3 VAE Documentation](docs/vae_v1_3.md). Before you run the following commands, follow our [Installation Documentation](docs/installation.md) to install the required dependencies for VAE and Evaluation.
+
 ```bash
 ## Train VAE with 8 GPUs
 colossalai run --hostfile hostfile --nproc_per_node 8 scripts/train_opensoravae_v1_3.py configs/vae_v1_3/train/video_16z.py --data-path YOUR_CSV_PATH --ckpt-path YOUR_PRETRAINED_CKPT --wandb True > logs/train_opensoravae_v1_3.log 2>&1 &
 ```
 
 ### Evaluate VAE performance
+
 You need to run VAE inference first to generate the videos, then calculate scores on the generated videos:
+
 ```bash
 VID_PATH=YOUR_CSV_PATH CUDA_VISIBLE_DEVICES=0 bash eval/vae/launch.sh pretrained_models/OpenSoraVAE_V1_3/model.pt
 ```
