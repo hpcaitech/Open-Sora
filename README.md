@@ -150,6 +150,8 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 </details>
 
+Since Open-Sora is under active development, we remain different branchs for different versions. The latest version is [main](https://github.com/hpcaitech/Open-Sora). Old versions include: [v1.0](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.0), [v1.1](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.1), [v1.2](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.2).
+
 ### TODO list sorted by priority
 
 <details>
