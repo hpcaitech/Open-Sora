@@ -3,7 +3,7 @@ Adapted from SDXL VAE (https://huggingface.co/stabilityai/sdxl-vae/blob/main/con
 All default values of kwargs are the same as SDXL
 """
 
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -16,20 +16,21 @@ def video_to_image(func):
     def wrapper(self, x, *args, **kwargs):
         if x.ndim == 5:
             B = x.shape[0]
-            x = rearrange(x, 'B C T H W -> (B T) C H W')
+            x = rearrange(x, "B C T H W -> (B T) C H W")
 
-            if hasattr(self, 'micro_batch_size') and self.micro_batch_size is None:
+            if hasattr(self, "micro_batch_size") and self.micro_batch_size is None:
                 x = func(self, x, *args, **kwargs)
             else:
                 bs = self.micro_batch_size
                 x_out = []
                 for i in range(0, x.shape[0], bs):
-                    x_i = func(self, x[i:i + bs], *args, **kwargs)
+                    x_i = func(self, x[i : i + bs], *args, **kwargs)
                     x_out.append(x_i)
                 x = torch.cat(x_out, dim=0)
 
-            x = rearrange(x, '(B T) C H W -> B C T H W', B=B)
+            x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
         return x
+
     return wrapper
 
 
@@ -45,11 +46,12 @@ class VideoConv2d(nn.Conv2d):
 
 class ResnetBlock2D(nn.Module):
     """
-        Use nn.Conv2d
-        Default activation is nn.SiLU()
-        Make sure input tensor is of shape [B, C, T, H, W] or [B, C, H, W]
-        Support micro_batch_size
+    Use nn.Conv2d
+    Default activation is nn.SiLU()
+    Make sure input tensor is of shape [B, C, T, H, W] or [B, C, H, W]
+    Support micro_batch_size
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -104,10 +106,11 @@ class ResnetBlock2D(nn.Module):
 
 class ResnetBlock3D(nn.Module):
     """
-        Use nn.Conv3d
-        Default activation is nn.SiLU()
-        Make sure input tensor is of shape [B, C, T, H, W]
+    Use nn.Conv3d
+    Default activation is nn.SiLU()
+    Make sure input tensor is of shape [B, C, T, H, W]
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -140,7 +143,7 @@ class ResnetBlock3D(nn.Module):
                 stride=1,
                 padding=0,
             )
-        
+
     def forward(self, x):
         res = self.norm1(x)
         res = self.act(res)
@@ -159,10 +162,11 @@ class ResnetBlock3D(nn.Module):
 
 class SpatialDownsample2x(nn.Module):
     """
-        Default downsample is Conv2d(stride=2)
-        Make sure input tensor is of shape [B, C, T, H, W]
-        Support micro_batch_size
+    Default downsample is Conv2d(stride=2)
+    Make sure input tensor is of shape [B, C, T, H, W]
+    Support micro_batch_size
     """
+
     def __init__(
         self,
         channels: int,
@@ -176,7 +180,11 @@ class SpatialDownsample2x(nn.Module):
 
         if use_conv:
             self.downsample = nn.Conv2d(
-                self.channels, self.channels, kernel_size=3, stride=2, padding=0,
+                self.channels,
+                self.channels,
+                kernel_size=3,
+                stride=2,
+                padding=0,
             )
         else:
             self.downsample = nn.AvgPool2d(kernel_size=2, stride=2)
@@ -193,10 +201,11 @@ class SpatialDownsample2x(nn.Module):
 
 class SpatialUpsample2x(nn.Module):
     """
-        Default upsample is F.interpolate(scale_factor=2) + Conv2d(stride=1)
-        Make sure input tensor is of shape [B, C, T, H, W]
-        Support micro_batch_size
+    Default upsample is F.interpolate(scale_factor=2) + Conv2d(stride=1)
+    Make sure input tensor is of shape [B, C, T, H, W]
+    Support micro_batch_size
     """
+
     def __init__(
         self,
         channels: int,
@@ -213,10 +222,10 @@ class SpatialUpsample2x(nn.Module):
         else:
             raise NotImplementedError
             self.upsample = nn.ConvTranspose2d(channels, self.channels, kernel_size=4, stride=2, padding=1)
-    
+
     def forward(self, x):
         B = x.shape[0]
-        x = rearrange(x, 'B C T H W -> (B T) C H W')
+        x = rearrange(x, "B C T H W -> (B T) C H W")
 
         if self.micro_batch_size is None:
             x = self.forward_BCHW(x)
@@ -224,11 +233,11 @@ class SpatialUpsample2x(nn.Module):
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
-                x_i = self.forward_BCHW(x[i:i + bs])
+                x_i = self.forward_BCHW(x[i : i + bs])
                 x_out.append(x_i)
             x = torch.cat(x_out, dim=0)
 
-        x = rearrange(x, '(B T) C H W -> B C T H W', B=B)
+        x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
         return x
 
     def forward_BCHW(self, x):
@@ -248,9 +257,10 @@ class SpatialUpsample2x(nn.Module):
 
 class TemporalDownsample2x(nn.Module):
     """
-        Default downsample is Conv3d(stride=(2, 1, 1))
-        Make sure input tensor is of shape [B, C, T, H, W]
+    Default downsample is Conv3d(stride=(2, 1, 1))
+    Make sure input tensor is of shape [B, C, T, H, W]
     """
+
     def __init__(
         self,
         channels: int,
@@ -262,8 +272,12 @@ class TemporalDownsample2x(nn.Module):
 
         if use_conv:
             self.downsample = nn.Conv3d(
-                self.channels, self.channels, kernel_size=(3, 3, 3), stride=(2, 1, 1), padding=(1, 1, 1),
-           )
+                self.channels,
+                self.channels,
+                kernel_size=(3, 3, 3),
+                stride=(2, 1, 1),
+                padding=(1, 1, 1),
+            )
         else:
             self.downsample = nn.AvgPool3d(kernel_size=(3, 1, 1), stride=(2, 1, 1))
 
@@ -274,10 +288,11 @@ class TemporalDownsample2x(nn.Module):
 
 class TemporalUpsample2x(nn.Module):
     """
-        Default upsample is F.interpolate(scale_factor=(2, 1, 1)) + Conv3d(stride=1)
-        Make sure input tensor is of shape [B, C, T, H, W]
-        Support micro_batch_size
+    Default upsample is F.interpolate(scale_factor=(2, 1, 1)) + Conv3d(stride=1)
+    Make sure input tensor is of shape [B, C, T, H, W]
+    Support micro_batch_size
     """
+
     def __init__(
         self,
         channels,
@@ -296,9 +311,10 @@ class TemporalUpsample2x(nn.Module):
 
 class UNetMidBlock2D(nn.Module):
     """
-        default is ResnetBlock2D + Spatial Attention + ResnetBlock2D
-        Make sure input tensor is of shape [B, C, T, H, W] or [B, C, H, W]
+    default is ResnetBlock2D + Spatial Attention + ResnetBlock2D
+    Make sure input tensor is of shape [B, C, T, H, W] or [B, C, H, W]
     """
+
     def __init__(
         self,
         in_channels: int,
@@ -364,7 +380,7 @@ class UNetMidBlock2D(nn.Module):
         has_T = x.ndim == 5
         if has_T:
             B = x.shape[0]
-            x = rearrange(x, 'B C T H W -> (B T) C H W')
+            x = rearrange(x, "B C T H W -> (B T) C H W")
 
         x = self.res_blocks[0](x)
         for attn, res_block in zip(self.attn_blocks, self.res_blocks[1:]):
@@ -373,15 +389,16 @@ class UNetMidBlock2D(nn.Module):
             x = res_block(x)
 
         if has_T:
-            x = rearrange(x, '(B T) C H W -> B C T H W', B=B)
+            x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
         return x
 
 
 class Encoder(nn.Module):
     """
-        default arch is conv_in + blocks + mid_block + out_block
-        Make sure input tensor is of shape [B, C, T, H, W]
+    default arch is conv_in + blocks + mid_block + out_block
+    Make sure input tensor is of shape [B, C, T, H, W]
     """
+
     def __init__(
         self,
         in_channels=3,
@@ -431,7 +448,7 @@ class Encoder(nn.Module):
                 SpatialDownsample2x(
                     channels=out_channels,
                     use_conv=True,
-                    micro_batch_size=micro_batch_size, 
+                    micro_batch_size=micro_batch_size,
                 ),
             )
         )
@@ -458,12 +475,12 @@ class Encoder(nn.Module):
                 SpatialDownsample2x(
                     channels=out_channels,
                     use_conv=True,
-                    micro_batch_size=micro_batch_size, 
+                    micro_batch_size=micro_batch_size,
                 ),
                 TemporalDownsample2x(
                     channels=out_channels,
                     use_conv=True,
-                )
+                ),
             )
         )
 
@@ -491,7 +508,7 @@ class Encoder(nn.Module):
                 TemporalDownsample2x(
                     channels=out_channels,
                     use_conv=True,
-                )
+                ),
             )
         )
 
@@ -517,7 +534,6 @@ class Encoder(nn.Module):
 
         self.blocks = nn.ModuleList(blocks)
 
-
         # mid_block
         in_channels = block_out_channels[-1]
         self.mid_block = UNetMidBlock2D(
@@ -537,7 +553,7 @@ class Encoder(nn.Module):
             nn.SiLU(),
             nn.Conv3d(in_channels, out_channels, kernel_size=3, padding=1),
         )
-    
+
     def forward(self, x):
         x = self.conv_in(x)
 
@@ -552,9 +568,10 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     """
-        default arch is conv_in + mid_block + blocks + out_block
-        Make sure input tensor is of shape [B, C, T, H, W]
+    default arch is conv_in + mid_block + blocks + out_block
+    Make sure input tensor is of shape [B, C, T, H, W]
     """
+
     def __init__(
         self,
         in_channels=4,
@@ -596,7 +613,7 @@ class Decoder(nn.Module):
         out_channels = block_out_channels[0]
         seq = [
             ResnetBlock3D(
-                in_channels=in_channels if idx ==0 else out_channels,
+                in_channels=in_channels if idx == 0 else out_channels,
                 out_channels=out_channels,
                 norm_groups=norm_groups,
                 norm_eps=norm_eps,
@@ -618,7 +635,7 @@ class Decoder(nn.Module):
         out_channels = block_out_channels[1]
         seq = [
             ResnetBlock3D(
-                in_channels=in_channels if idx ==0 else out_channels,
+                in_channels=in_channels if idx == 0 else out_channels,
                 out_channels=out_channels,
                 norm_groups=norm_groups,
                 norm_eps=norm_eps,
@@ -640,7 +657,7 @@ class Decoder(nn.Module):
         out_channels = block_out_channels[2]
         seq = [
             ResnetBlock3D(
-                in_channels=in_channels if idx ==0 else out_channels,
+                in_channels=in_channels if idx == 0 else out_channels,
                 out_channels=out_channels,
                 norm_groups=norm_groups,
                 norm_eps=norm_eps,
@@ -659,7 +676,7 @@ class Decoder(nn.Module):
         out_channels = block_out_channels[3]
         seq = [
             ResnetBlock2D(
-                in_channels=in_channels if idx ==0 else out_channels,
+                in_channels=in_channels if idx == 0 else out_channels,
                 out_channels=out_channels,
                 norm_groups=norm_groups,
                 norm_eps=norm_eps,
@@ -681,44 +698,56 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x = self.conv_in(x)
-        print(torch.cuda.memory_allocated() /  1024 ** 3)
+        print(torch.cuda.memory_allocated() / 1024**3)
 
         x = self.mid_block(x)
-        print(torch.cuda.memory_allocated() /  1024 ** 3)
+        print(torch.cuda.memory_allocated() / 1024**3)
 
         for block in self.blocks:
             x = block(x)
-        print(torch.cuda.memory_allocated() /  1024 ** 3)
+        print(torch.cuda.memory_allocated() / 1024**3)
 
         x = self.out_block(x)
-        print(torch.cuda.memory_allocated() /  1024 ** 3)
+        print(torch.cuda.memory_allocated() / 1024**3)
         return x
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     from opensora.utils.misc import count_params
-    device = 'cuda'
+
+    device = "cuda"
     dtype = torch.bfloat16
 
-    encoder = Encoder(
-        in_channels=3,
-        out_channels=4,
-        double_z=False,
-        micro_batch_size=4,
-    ).to(torch.bfloat16).to(device, dtype).eval()
+    encoder = (
+        Encoder(
+            in_channels=3,
+            out_channels=4,
+            double_z=False,
+            micro_batch_size=4,
+        )
+        .to(torch.bfloat16)
+        .to(device, dtype)
+        .eval()
+    )
 
-    decoder = Decoder(
-        in_channels=4,
-        out_channels=3,
-    ).to(torch.bfloat16).to(device, dtype).eval()
+    decoder = (
+        Decoder(
+            in_channels=4,
+            out_channels=3,
+        )
+        .to(torch.bfloat16)
+        .to(device, dtype)
+        .eval()
+    )
     num_params_enc = count_params(encoder)
     num_params_dec = count_params(decoder)
-    print(f'Encoder #params: {num_params_enc}')
-    print(f'Decoder #params: {num_params_dec}')
+    print(f"Encoder #params: {num_params_enc}")
+    print(f"Decoder #params: {num_params_dec}")
 
     # inference
     x = torch.rand(1, 3, 51, 720, 1080).to(device, dtype)
     with torch.inference_mode():
         x_enc = encoder(x)
         x_dec = decoder(x_enc)
-    print(torch.cuda.memory_allocated() /  1024 ** 3)
+    print(torch.cuda.memory_allocated() / 1024**3)
     breakpoint()

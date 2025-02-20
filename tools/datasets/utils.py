@@ -49,7 +49,7 @@ def extract_frames(
             if idx >= total_frames:
                 idx = total_frames - 1
             target_timestamp = int(idx * av.time_base / container.streams.video[0].average_rate)
-            container.seek(target_timestamp)
+            container.seek(target_timestamp)  # return the nearest key frame, not the precise timestamp!!!
             frame = next(container.decode(video=0)).to_image()
             frames.append(frame)
 

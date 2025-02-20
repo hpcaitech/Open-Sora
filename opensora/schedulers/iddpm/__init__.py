@@ -62,10 +62,11 @@ class IDDPM(SpacedDiffusion):
         additional_args=None,
         mask=None,
         progress=True,
+        **kwargs,
     ):
         n = len(prompts)
         z = torch.cat([z, z], 0)
-        model_args = text_encoder.encode(prompts)
+        model_args = text_encoder.encode(**text_encoder.tokenize_fn(prompts))
         y_null = text_encoder.null(n)
         model_args["y"] = torch.cat([model_args["y"], y_null], 0)
         if additional_args is not None:

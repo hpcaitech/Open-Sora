@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.# Modified from Latte
 
-# - This file is adapted from https://github.com/Vchitect/Latte/blob/main/datasets/video_transforms.py
-
-
 import numbers
+
+# - This file is adapted from https://github.com/Vchitect/Latte/blob/main/datasets/video_transforms.py
 import random
 
 import numpy as np
@@ -53,7 +52,8 @@ def resize_scale(clip, target_size, interpolation_mode):
         raise ValueError(f"target size should be tuple (height, width), instead got {target_size}")
     H, W = clip.size(-2), clip.size(-1)
     scale_ = target_size[0] / min(H, W)
-    return torch.nn.functional.interpolate(clip, scale_factor=scale_, mode=interpolation_mode, align_corners=False)
+    th, tw = int(round(H * scale_)), int(round(W * scale_))
+    return torch.nn.functional.interpolate(clip, size=(th, tw), mode=interpolation_mode, align_corners=False)
 
 
 def resized_crop(clip, i, j, h, w, size, interpolation_mode="bilinear"):
@@ -122,6 +122,40 @@ def resize_crop_to_fill(clip, target_size):
         j = 0
     assert i + th <= clip.size(-2) and j + tw <= clip.size(-1)
     return crop(clip, i, j, th, tw)
+
+
+# def rand_crop_h_w(clip, target_size_range, multiples_of: int = 8):
+#     # NOTE: for some reason, if don't re-import, gives same randint results
+#     import sys
+
+#     del sys.modules["random"]
+#     import random
+
+#     if not _is_tensor_video_clip(clip):
+#         raise ValueError("clip should be a 4D torch.tensor")
+#     h, w = clip.size(-2), clip.size(-1)
+
+#     # get random target h w
+#     th = random.randint(target_size_range[0], target_size_range[1])
+#     tw = random.randint(target_size_range[0], target_size_range[1])
+
+#     # ensure that h w are factors of 8
+#     th = th - th % multiples_of
+#     tw = tw - tw % multiples_of
+
+#     # get random start pos
+#     i = random.randint(0, h-th) if h > th else 0
+#     j = random.randint(0, w-tw) if w > tw else 0
+
+#     th = th if th < h else h
+#     tw = tw if tw < w else w
+
+#     # print("target size range:",target_size_range)
+#     # print("original size:", h, w)
+#     # print("crop size:", th, tw)
+#     # print(f"crop:{i}-{i+th}, {j}-{j+tw}")
+
+#     return (crop(clip, i, j, th, tw), th, tw)
 
 
 def random_shift_crop(clip):
@@ -205,6 +239,47 @@ class ResizeCrop:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(size={self.size})"
+
+
+class RandomSizedCrop:
+    def __init__(self, size):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+
+    def __call__(self, clip):
+        i, j, h, w = self.get_params(clip)
+        # self.size = (h, w)
+        return crop(clip, i, j, h, w)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(size={self.size})"
+
+    def get_params(self, clip, multiples_of=8):
+        h, w = clip.shape[-2:]
+
+        # get random target h w
+        th = random.randint(self.size[0], self.size[1])
+        tw = random.randint(self.size[0], self.size[1])
+        # ensure that h w are factors of 8
+        th = th - th % multiples_of
+        tw = tw - tw % multiples_of
+
+        if h < th:
+            th = h - h % multiples_of
+        if w < tw:
+            tw = w - w % multiples_of
+
+        if w == tw and h == th:
+            return 0, 0, h, w
+
+        else:
+            # get random start pos
+            i = random.randint(0, h - th)
+            j = random.randint(0, w - tw)
+
+        return i, j, th, tw
 
 
 class RandomCropVideo:

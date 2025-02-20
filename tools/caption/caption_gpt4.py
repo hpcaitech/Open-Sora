@@ -4,10 +4,12 @@ import csv
 import os
 from io import BytesIO
 
-import requests
 import tqdm
+from openai import OpenAI
 
 from .utils import IMG_EXTENSIONS, PROMPTS, VID_EXTENSIONS, VideoTextDataset
+
+client = OpenAI()
 
 
 def to_base64(image):
@@ -16,29 +18,26 @@ def to_base64(image):
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
-def get_caption(frame, prompt, api_key):
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    payload = {
-        "model": "gpt-4-vision-preview",
-        "messages": [
+def get_caption(frame, prompt):
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "system", "content": prompt},
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    },
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame[0]}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame[1]}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame[2]}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame[0]}", "detail": "low"}},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame[1]}", "detail": "low"}},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{frame[2]}", "detail": "low"}},
                 ],
-            }
+            },
         ],
-        "max_tokens": 300,
-    }
-    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload, timeout=60)
-    caption = response.json()["choices"][0]["message"]["content"]
+        max_tokens=300,
+        top_p=0.1,
+    )
+    caption = response.choices[0].message.content
     caption = caption.replace("\n", " ")
+
     return caption
 
 
@@ -46,7 +45,7 @@ def main(args):
     # ======================================================
     # 1. read video list
     # ======================================================
-    dataset = VideoTextDataset(args.input)
+    dataset = VideoTextDataset(args.input, resize=360)
     output_file = os.path.splitext(args.input)[0] + "_caption.csv"
     f = open(output_file, "w")
     writer = csv.writer(f)
@@ -75,7 +74,7 @@ def main(args):
             prompt = prompt.format(sample["text"])
         frames = sample["image"]
         frames = [to_base64(frame) for frame in frames]
-        caption = get_caption(frames, prompt, args.key)
+        caption = get_caption(frames, prompt)
 
         writer.writerow((sample["path"], caption))
     f.close()
@@ -84,8 +83,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Path to the input CSV file")
-    parser.add_argument("--prompt", type=str, default="video-f3-detail-3ex")
-    parser.add_argument("--key", type=str)
+    parser.add_argument("--prompt", type=str, default="video-template")  # 1k/1h
     args = parser.parse_args()
 
     main(args)

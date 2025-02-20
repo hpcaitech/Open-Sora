@@ -64,6 +64,7 @@ def main():
     logger.info("Building models...")
     # == build text-encoder and vae ==
     text_encoder = build_module(cfg.text_encoder, MODELS, device=device)
+    cfg.dataset.tokenize_fn = text_encoder.tokenize_fn
     vae = build_module(cfg.vae, MODELS).to(device, dtype).eval()
 
     # == build diffusion model ==
@@ -132,15 +133,6 @@ def main():
 
     def reset_optimizer():
         # this is essential for the first iteration after OOM
-        optimizer._grad_store.reset_all_gradients()
-        optimizer._bucket_store.reset_num_elements_in_bucket()
-        optimizer._bucket_store.grad_to_param_mapping = dict()
-        optimizer._bucket_store._grad_in_bucket = dict()
-        optimizer._bucket_store._param_list = []
-        optimizer._bucket_store._padding_size = []
-        for rank in range(optimizer._bucket_store._world_size):
-            optimizer._bucket_store._grad_in_bucket[rank] = []
-        optimizer._bucket_store.offset_list = [0]
         optimizer.zero_grad()
 
     def build_dataset(resolution, num_frames, batch_size):
@@ -196,14 +188,16 @@ def main():
                 start = time.time()
 
             x = batch.pop("video").to(device, dtype)  # [B, C, T, H, W]
-            y = batch.pop("text")
+            batch.pop("text")
+            input_ids = batch.pop("input_ids")
+            attention_mask = batch.pop("attention_mask")
 
             # == visual and text encoding ==
             with torch.no_grad():
                 # Prepare visual inputs
                 x = vae.encode(x)  # [B, C, T, H/P, W/P]
                 # Prepare text inputs
-                model_args = text_encoder.encode(y)
+                model_args = text_encoder.encode(input_ids, attention_mask=attention_mask)
 
             # == mask ==
             mask = None

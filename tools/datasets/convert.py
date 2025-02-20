@@ -98,7 +98,8 @@ def process_general_images(root, output):
         return
     path_list = get_filelist(root, IMG_EXTENSIONS)
     fname_list = [os.path.splitext(os.path.basename(x))[0] for x in path_list]
-    df = pd.DataFrame(dict(id=fname_list, path=path_list))
+    relpath_list = [os.path.relpath(x, root) for x in path_list]
+    df = pd.DataFrame(dict(path=path_list, id=fname_list, relpath=relpath_list))
 
     os.makedirs(os.path.dirname(output), exist_ok=True)
     df.to_csv(output, index=False)

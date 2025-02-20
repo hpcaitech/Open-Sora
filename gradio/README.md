@@ -9,8 +9,8 @@ app_file: app.py
 pinned: false
 license: apache-2.0
 preload_from_hub:
-    - hpcai-tech/OpenSora-STDiT-v3
-    - hpcai-tech/OpenSora-VAE-v1.2
+    - hpcai-tech/OpenSora-STDiT-v4
+    - hpcai-tech/OpenSora-VAE-v1.3
     - DeepFloyd/t5-v1_1-xxl
 ---
 

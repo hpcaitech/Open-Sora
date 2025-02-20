@@ -23,6 +23,8 @@
 # --------------------------------------------------------
 
 
+from functools import partial
+
 import torch
 import torch.nn as nn
 import transformers
@@ -51,15 +53,8 @@ class FrozenCLIPEmbedder(AbstractEncoder):
         self.device = device
         self.max_length = max_length
         self._freeze()
-
-    def _freeze(self):
-        self.transformer = self.transformer.eval()
-        for param in self.parameters():
-            param.requires_grad = False
-
-    def forward(self, text):
-        batch_encoding = self.tokenizer(
-            text,
+        self.tokenize_fn = partial(
+            self.tokenizer,
             truncation=True,
             max_length=self.max_length,
             return_length=True,
@@ -67,7 +62,14 @@ class FrozenCLIPEmbedder(AbstractEncoder):
             padding="max_length",
             return_tensors="pt",
         )
-        tokens = batch_encoding["input_ids"].to(self.device)
+
+    def _freeze(self):
+        self.transformer = self.transformer.eval()
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def forward(self, input_ids):
+        tokens = input_ids.to(self.device)
         outputs = self.transformer(input_ids=tokens)
 
         z = outputs.last_hidden_state
@@ -100,8 +102,12 @@ class ClipEncoder:
         self.model_max_length = model_max_length
         self.output_dim = self.text_encoder.transformer.config.hidden_size
 
-    def encode(self, text):
-        _, pooled_embeddings = self.text_encoder.encode(text)
+    @property
+    def tokenize_fn(self):
+        return self.text_encoder.tokenize_fn
+
+    def encode(self, input_ids, attention_mask=None):
+        _, pooled_embeddings = self.text_encoder.encode(input_ids)
         y = pooled_embeddings.unsqueeze(1).unsqueeze(1)
         return dict(y=y)
 

@@ -16,7 +16,9 @@ if [[ $CKPT == *"ema"* ]]; then
 else
     CKPT_BASE=$(basename $CKPT)
 fi
-LOG_BASE=$(dirname $CKPT)/eval
+# LOG_BASE=$(dirname $CKPT)/eval
+LOG_BASE=./sample/eval
+
 echo "Logging to $LOG_BASE"
 
 GPUS=(0 1 2 3 4 5 6 7)

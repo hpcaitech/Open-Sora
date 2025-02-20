@@ -11,14 +11,66 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 from einops import rearrange
+from PIL import Image
 from torch.utils.data import DataLoader, DistributedSampler
 from torchvision.transforms.functional import pil_to_tensor
 from tqdm import tqdm
 
-from tools.datasets.utils import extract_frames
+# from tools.datasets.utils import extract_frames
 from tools.scoring.optical_flow.unimatch import UniMatch
 
 # torch.backends.cudnn.enabled = False # This line enables large batch, but the speed is similar
+
+
+def extract_frames(
+    video_path,
+    frame_inds=None,
+    points=None,
+    backend="opencv",
+    return_length=False,
+    num_frames=None,
+):
+    """
+    Args:
+        video_path (str): path to video
+        frame_inds (List[int]): indices of frames to extract
+        points (List[float]): values within [0, 1); multiply #frames to get frame indices
+    Return:
+        List[PIL.Image]
+    """
+    assert backend in ["av", "opencv", "decord"]
+    assert (frame_inds is None) or (points is None)
+    assert backend == "opencv"
+
+    cap = cv2.VideoCapture(video_path)
+    if num_frames is not None:
+        total_frames = num_frames
+    else:
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    if points is not None:
+        frame_inds = [int(p * total_frames) for p in points]
+
+    frames = []
+    for idx in frame_inds:
+        if idx >= total_frames:
+            idx = total_frames - 1
+
+        success = cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        if not success:
+            break
+
+        try:
+            ret, frame = cap.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = Image.fromarray(frame)
+            frames.append(frame)
+        except Exception:
+            continue
+
+    if return_length:
+        return frames, total_frames
+    return frames
 
 
 def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
@@ -45,7 +97,7 @@ def merge_scores(gathered_list: list, meta: pd.DataFrame, column):
 
 
 class VideoTextDataset(torch.utils.data.Dataset):
-    def __init__(self, meta_path, frame_inds=[0, 10, 20, 30]):
+    def __init__(self, meta_path, frame_inds=None):
         self.meta_path = meta_path
         self.meta = pd.read_csv(meta_path)
         self.frame_inds = frame_inds
@@ -78,13 +130,14 @@ class VideoTextDataset(torch.utils.data.Dataset):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("meta_path", type=str, help="Path to the input CSV file")
-    parser.add_argument("--bs", type=int, default=4, help="Batch size")  # don't use too large bs for unimatch
+    parser.add_argument("--bs", type=int, default=1, help="Batch size")  # don't use too large bs for unimatch
     parser.add_argument("--num_workers", type=int, default=16, help="Number of workers")
     parser.add_argument("--skip_if_existing", action="store_true")
     args = parser.parse_args()
     return args
 
 
+@torch.no_grad()
 def main():
     args = parse_args()
 
@@ -121,7 +174,9 @@ def main():
     model = model.to(device)
 
     # build dataset
-    dataset = VideoTextDataset(meta_path=meta_path, frame_inds=[0, 10, 20, 30])
+    NUM_FRAMES = 10
+    frames_inds = [15 * i for i in range(0, NUM_FRAMES)]
+    dataset = VideoTextDataset(meta_path=meta_path, frame_inds=frames_inds)
     dataloader = DataLoader(
         dataset,
         batch_size=args.bs,
@@ -141,31 +196,29 @@ def main():
     model.eval()
     for batch in tqdm(dataloader, disable=dist.get_rank() != 0):
         indices = batch["index"]
-        images = batch["images"].to(device, non_blocking=True)
+        images = batch["images"].to(device)
 
         B = images.shape[0]
         batch_0 = rearrange(images[:, :-1], "B N C H W -> (B N) C H W").contiguous()
         batch_1 = rearrange(images[:, 1:], "B N C H W -> (B N) C H W").contiguous()
 
-        with torch.no_grad():
-            res = model(
-                batch_0,
-                batch_1,
-                attn_type="swin",
-                attn_splits_list=[2, 8],
-                corr_radius_list=[-1, 4],
-                prop_radius_list=[-1, 1],
-                num_reg_refine=6,
-                task="flow",
-                pred_bidir_flow=False,
-            )
-            flow_maps = res["flow_preds"][-1].cpu()  # [B * (N-1), 2, H, W]
-            flow_maps = rearrange(flow_maps, "(B N) C H W -> B N H W C", B=B)
-            flow_scores = flow_maps.abs().mean(dim=[1, 2, 3, 4])
-            flow_scores = flow_scores.tolist()
+        res = model(
+            batch_0,
+            batch_1,
+            attn_type="swin",
+            attn_splits_list=[2, 8],
+            corr_radius_list=[-1, 4],
+            prop_radius_list=[-1, 1],
+            num_reg_refine=6,
+            task="flow",
+            pred_bidir_flow=False,
+        )
+        flow_maps = res["flow_preds"][-1]  # [B * (N-1), 2, H, W]
+        flow_maps = rearrange(flow_maps, "(B N) C H W -> B N H W C", B=B)
+        flow_scores = flow_maps.norm(dim=-1).mean(dim=[1, 2, 3]).cpu()
 
         indices_list.extend(indices.tolist())
-        scores_list.extend(flow_scores)
+        scores_list.extend(flow_scores.tolist())
 
     # save local results
     meta_local = merge_scores([(indices_list, scores_list)], dataset.meta, column="flow")

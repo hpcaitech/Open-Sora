@@ -19,13 +19,13 @@ Evaluate the rectified flow loss with the following commands.
 
 ```bash
 # image
-torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /path/to/img.csv --ckpt-path /path/to/ckpt
+torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-3/misc/eval_loss.py --data-path /path/to/img.csv --ckpt-path /path/to/ckpt
 
 # video
-torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /path/to/vid.csv --ckpt-path /path/to/ckpt
+torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-3/misc/eval_loss.py --data-path /path/to/vid.csv --ckpt-path /path/to/ckpt
 
 # select resolution
-torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-2/misc/eval_loss.py --data-path /path/to/vid.csv --ckpt-path /path/to/ckpt --resolution 720p
+torchrun --standalone --nproc_per_node 1 eval/loss/eval_loss.py configs/opensora-v1-3/misc/eval_loss.py --data-path /path/to/vid.csv --ckpt-path /path/to/ckpt --resolution 720p
 ```
 
 To launch multiple jobs at once, use the following script.
@@ -47,7 +47,7 @@ First, generate the relevant videos with the following commands:
 
 ```bash
 # vbench task, if evaluation all set start_index to 0, end_index to 2000
-bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log  -4 start_index end_index
+bash eval/sample.sh /path/to/ckpt num_frames model_name_for_log -4 start_index end_index
 
 # Alternatively, launch 8 jobs at once (you must read the script to understand the details)
 bash eval/vbench/launch.sh /path/to/ckpt num_frames model_name
@@ -100,7 +100,7 @@ Similarly as VBench, you can specify resolution, aspect ratio, sampling steps, f
 ```bash
 bash eval/vbench_i2v/launch.sh /path/to/ckpt num_frames model_name_for_log res_value aspect_ratio_value steps_value flow_value llm_refine_value
 # for example
-# bash eval/vbench_i2v/launch.sh /mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200_llm_refine/ema.pt 51 042-STDiT3-XL-2 240p 9:16 30 2 True
+# bash eval/vbench_i2v/launch.sh /mnt/jfs-hdd/sora/checkpoints/outputs/042-STDiT3-XL-2/epoch1-global_step16200_llm_refine/ema.pt 51 042-STDiT3-XL-2 360p 9:16 30 2 True
 # if no flow control, use "None" instead
 ```
 
@@ -110,5 +110,5 @@ Install the dependencies package following our [installation](../docs/installati
 
 ```bash
 # metric can any one or list of: ssim, psnr, lpips, flolpips
-python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir path/to/original/videos --generated_video_dir path/to/generated/videos --device cuda --sample_fps 24 --crop_size 256 --resolution 256 --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
+python eval/vae/eval_common_metric.py --batch_size 2 --real_video_dir path/to/original/videos --generated_video_dir path/to/generated/videos --device cuda --sample_fps 24 --crop_size 360 --resolution 360p --num_frames 17 --sample_rate 1 --metric ssim psnr lpips flolpips
 ```

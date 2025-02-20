@@ -10,8 +10,7 @@ import torch.distributed as dist
 from torch.utils.data import Dataset
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from .utils import read_file
+from utils import read_file
 
 os.system(f"cp {__file__} ~/backup/")  # optionally backup the script
 warnings.filterwarnings("ignore")
@@ -96,10 +95,26 @@ def main(args):
         ptvsd.enable_attach(address=("localhost", int(os.getenv("DEBUG_ADDRESS"))), redirect_output=True)
         ptvsd.wait_for_attach()
 
-    output_file = args.output_prefix + f"_rank{dist.get_rank()}" + f"_{args.key}.csv"
+    # output_file = output_prefix + f"_rank{dist.get_rank()}" + f"_{args.key}.csv"
+    # 假设你已经有了 output_prefix 和 parts
+    output_prefix = os.path.splitext(args.input)[0]
+    parts = "parts"
+
+    # 找到最后一个 '/'
+    last_slash_index = output_prefix.rfind("/")
+
+    # 如果找到了 '/', 在其后插入 parts
+    if last_slash_index != -1:
+        output_prefix_total = output_prefix[: last_slash_index + 1] + "/" + output_prefix[last_slash_index + 1 :]
+        output_prefix = output_prefix[: last_slash_index + 1] + parts + "/" + output_prefix[last_slash_index + 1 :]
+
+    output_file = output_prefix + f"_rank{dist.get_rank()}" + f"_objects_actions.csv"
+    # 确保目录存在
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     output_file_handle = open(output_file, "w")
     writer = csv.writer(output_file_handle)
-    columns = list(dataframe.columns) + [args.key]
+    # columns = list(dataframe.columns) + [args.key]
+    columns = list(dataframe.columns) + ["objects"] + ["actions"]
 
     writer.writerow(columns)
 
@@ -185,62 +200,77 @@ def main(args):
         return responses
 
     print("Processing starting...")
-    if args.prompt == "" and args.key == "objects":
-        prompt = (
-            "You are a AI assistant to extract objects from user's text. "
-            "For example: user: 'In this video a dog is running around. In addition, a person is laughing at the dog.', you produce a list of objects separated by ',' and wrapped by '[' and ']': '[dog, person]' "
-        )
-    elif args.prompt == "" and args.key == "actions":
-        prompt = (
-            "You are a AI assistant to extract actions from user's text. "
-            "For example: user: 'In this video a dog is running around. In addition, a person is laughing at the dog.', you produce a list of actions separated by ',' and wrapped by '[' and ']': '[run, laugh]' "
-        )
-    else:
-        prompt = args.prompt
+    # prompt_objects = args.prompt_objects
+    # prompt_actions = args.prompt_actions
+    # if args.prompt_objects == "":
+    prompt_objects = (
+        "You are a AI assistant to extract objects from user's text. "
+        "For example: user: 'In this video a dog is running around. In addition, a person is laughing at the dog.', you produce a list of objects separated by ',' and wrapped by '[' and ']': '[dog, person]' "
+    )
+    # if args.prompt_actions == "":
+    prompt_actions = (
+        "You are a AI assistant to extract actions from user's text. "
+        "For example: user: 'In this video a dog is running around. In addition, a person is laughing at the dog.', you produce a list of actions separated by ',' and wrapped by '[' and ']': '[run, laugh]' "
+    )
 
-    print("Prompt: {}".format(prompt))
+    print("prompt_objects: {}".format(prompt_objects))
+    print("prompt_actions: {}".format(prompt_actions))
 
     args.batch_size
     # for i in tqdm(range(0, len(dataframe), batch_size)):
     for _, batch in enumerate(tqdm(dataloader)):
         # get the text column from the batch
         texts = [batch[i]["text"] for i in range(len(batch))]
-        list_keywords = extract_batch(texts, prompt)
+        # Extract keywords using both prompts
+        list_actions = extract_batch(texts, prompt_actions)
+        list_objects = extract_batch(texts, prompt_objects)
 
-        for idx, keywords in enumerate(list_keywords):
+        for idx, (actions, objects) in enumerate(zip(list_actions, list_objects)):
             try:
-                keywords_start = keywords.find("[")
-                keywords_end = keywords.find("]")
-                keywords = keywords[keywords_start + 1 : keywords_end]
-                if (
-                    "\n" in keywords or len(keywords.strip()) == 0
-                ):  # we empirically observe that it produces newlines when no keywords are found
-                    keywords = "NONE_FOUND"
+                # Process actions
+                if actions.startswith("'") and actions.endswith("'"):
+                    actions = actions[1:-1]
+                actions_start = actions.find("[")
+                actions_end = actions.find("]")
+                actions = actions[actions_start + 1 : actions_end]
+                actions = [act.strip() for act in actions.split(",") if act.strip()]
+
+                # Process objects
+                if objects.startswith("'") and objects.endswith("'"):
+                    objects = objects[1:-1]
+                objects_start = objects.find("[")
+                objects_end = objects.find("]")
+                objects = objects[objects_start + 1 : objects_end]
+                objects = [obj.strip() for obj in objects.split(",") if obj.strip()]
             except:
-                keywords = "NONE_FOUND"
-            row = batch[idx]
-            writer.writerow([*row, keywords])
+                actions = "NONE_FOUND"
+                objects = "NONE_FOUND"
+
+        row = batch[idx]
+        writer.writerow([*row, objects, actions])  # Adjusted to include both objects and actions
 
     output_file_handle.close()
     dist.barrier()
 
     if dist.get_rank() == 0:
-        collated_file = args.output_prefix + f"_{args.key}.csv"
+        # collated_file = output_prefix + f"_{args.key}.csv"
+        collated_file = output_prefix_total + f"_objects_actions.csv"
         print("All ranks are finished. Collating the processed data to {}".format(collated_file))
         import pandas as pd
 
-        csv_files = [args.output_prefix + f"_rank{i}" + f"_{args.key}.csv" for i in range(dist.get_world_size())]
+        csv_files = [output_prefix + f"_rank{i}" + f"_objects_actions.csv" for i in range(dist.get_world_size())]
         # List to hold DataFrames
         dataframes = []
         # Read each CSV into a DataFrame and append to list
         for file in csv_files:
             df = pd.read_csv(file)
             # scan each line in the df, if the ``key`` column is NaN, replace it with "NONE_FOUND"
-            df[args.key] = df[args.key].fillna("NONE_FOUND")
+            # df[args.key] = df[args.key].fillna("NONE_FOUND")
+            df["objects"] = df["objects"].fillna("NONE_FOUND")
+            df["actions"] = df["actions"].fillna("NONE_FOUND")
             dataframes.append(df)
         # Concatenate all DataFrames
         combined_df = pd.concat(dataframes, ignore_index=True)
-
         # Save the combined DataFrame to a new CSV file
         combined_df.to_csv(collated_file, index=False)
         print("Collated data saved to {}".format(collated_file))
@@ -252,10 +282,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-id", default="meta-llama/Meta-Llama-3-8B-Instruct")
     parser.add_argument("input", type=str, help="Path to the input CSV file")
-    parser.add_argument("--output_prefix", type=str, help="Path to the output CSV file")
-    parser.add_argument("--prompt", type=str, default="")
+    # parser.add_argument("--output_prefix", type=str, help="Path to the output CSV file")
+    # parser.add_argument("--prompt_objects", type=str, default="")
+    # parser.add_argument("--prompt_actions", type=str, default="")
     parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--key", type=str)
+    # parser.add_argument("--key", type=str)
     args = parser.parse_args()
 
     main(args)

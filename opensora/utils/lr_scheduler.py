@@ -11,12 +11,13 @@ class LinearWarmupLR(_LRScheduler):
             the schedule is started from the beginning or When last_step=-1, sets initial lr as lr.
     """
 
-    def __init__(self, optimizer, warmup_steps: int = 0, last_epoch: int = -1):
+    def __init__(self, optimizer, initial_lr=0, warmup_steps: int = 0, last_epoch: int = -1):
+        self.initial_lr = initial_lr
         self.warmup_steps = warmup_steps
         super().__init__(optimizer, last_epoch=last_epoch)
 
     def get_lr(self):
         if self.last_epoch < self.warmup_steps:
-            return [(self.last_epoch + 1) / (self.warmup_steps + 1) * lr for lr in self.base_lrs]
+            return [self.initial_lr + (self.last_epoch + 1) / (self.warmup_steps + 1) * lr for lr in self.base_lrs]
         else:
             return self.base_lrs

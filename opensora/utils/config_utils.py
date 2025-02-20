@@ -22,6 +22,12 @@ def parse_args(training=False):
         type=str,
         help="path to model ckpt; will overwrite cfg.model.from_pretrained if specified",
     )
+    parser.add_argument(
+        "--ckpt-path-lora",
+        default=None,
+        type=str,
+        help="path to lora model ckpt; will overwrite cfg.from_pretrained_lora if specified",
+    )
     parser.add_argument("--batch-size", default=None, type=int, help="batch size")
     parser.add_argument("--outputs", default=None, type=str, help="the dir to save model weights")
     parser.add_argument("--flash-attn", default=None, type=str2bool, help="enable flash attention")
@@ -29,6 +35,12 @@ def parse_args(training=False):
     parser.add_argument("--resolution", default=None, type=str, help="multi resolution")
     parser.add_argument("--data-path", default=None, type=str, help="path to data csv")
     parser.add_argument("--dtype", default=None, type=str, help="data type")
+    parser.add_argument(
+        "--force-huggingface",
+        default=None,
+        type=str2bool,
+        help="set to true for huggingface format model, if local, set to false",
+    )
 
     # ======================================================
     # Inference
@@ -46,8 +58,17 @@ def parse_args(training=False):
         # prompt
         parser.add_argument("--prompt-path", default=None, type=str, help="path to prompt txt file")
         parser.add_argument("--prompt", default=None, type=str, nargs="+", help="prompt list")
+        parser.add_argument("--image-prompt-path", default=None, type=str, help="path to image prompt txt file")
+        parser.add_argument("--image-prompt", default=None, type=str, nargs="+", help="image prompt list")
+        parser.add_argument(
+            "--csv-reference-column-name",
+            default=None,
+            type=str,
+            help="column name of the reference path if prompt path is an csv",
+        )
         parser.add_argument("--llm-refine", default=None, type=str2bool, help="enable LLM refine")
         parser.add_argument("--prompt-generator", default=None, type=str, help="prompt generator")
+        parser.add_argument("--num-prompt-generator", default=None, type=int, help="number of prompts to generate")
 
         # image/video
         parser.add_argument("--num-frames", default=None, type=str, help="number of frames")
@@ -61,22 +82,51 @@ def parse_args(training=False):
         # hyperparameters
         parser.add_argument("--num-sampling-steps", default=None, type=int, help="sampling steps")
         parser.add_argument("--cfg-scale", default=None, type=float, help="balance between cond & uncond")
+        parser.add_argument(
+            "--image-cfg-scale", default=None, type=float, help="balance between cond & uncond for image and video"
+        )
 
         # reference
         parser.add_argument("--loop", default=None, type=int, help="loop")
+        parser.add_argument(
+            "--cond-type",
+            default=None,
+            type=str,
+            choices=["v2v_head", "i2v_head", "i2v_loop", "i2v_tail"],
+            help="how to condition on the reference",
+        )
+        parser.add_argument("--use-sdedit", default=None, type=str2bool, help="whether use sdeit during inference")
+        parser.add_argument(
+            "--use-oscillation-guidance-for-text",
+            default=None,
+            type=str2bool,
+            help="whether use oscillated weights for text cfg guidance",
+        )
+        parser.add_argument(
+            "--use-oscillation-guidance-for-image",
+            default=None,
+            type=str2bool,
+            help="whether use oscillated weights for image cfg guidance",
+        )
+
         parser.add_argument("--condition-frame-length", default=None, type=int, help="condition frame length")
         parser.add_argument("--reference-path", default=None, type=str, nargs="+", help="reference path")
+        parser.add_argument("--reference-txt-path", default=None, type=str, help="path to reference txt file")
         parser.add_argument("--mask-strategy", default=None, type=str, nargs="+", help="mask strategy")
-        parser.add_argument("--aes", default=None, type=float, help="aesthetic score")
-        parser.add_argument("--flow", default=None, type=float, help="flow score")
+        parser.add_argument("--neg-prompt", default=None, type=str, nargs="+", help="negative prompt")
+        parser.add_argument("--aes", default=None, type=str, help="aesthetic score")
+        parser.add_argument("--flow", default=None, type=str, help="flow score")
         parser.add_argument("--camera-motion", default=None, type=str, help="camera motion")
+        parser.add_argument("--super-resolution", default=None, type=float, help="super resolution")
+        parser.add_argument("--deflicker", default=None, type=str2bool, help="deflicker")
     # ======================================================
     # Training
     # ======================================================
     else:
         parser.add_argument("--lr", default=None, type=float, help="learning rate")
-        parser.add_argument("--wandb", default=None, type=bool, help="enable wandb")
+        parser.add_argument("--wandb", default=None, type=str2bool, help="enable wandb")
         parser.add_argument("--load", default=None, type=str, help="path to continue training")
+        parser.add_argument("--load-lora", default=None, type=str, help="path to continue training LoRA")
         parser.add_argument("--start-from-scratch", action="store_true", help="start training from scratch")
         parser.add_argument("--warmup-steps", default=None, type=int, help="warmup steps")
         parser.add_argument("--record-time", default=False, action="store_true", help="record time of each part")
@@ -90,6 +140,11 @@ def merge_args(cfg, args, training=False):
         if cfg.get("discriminator") is not None:
             cfg.discriminator["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
+    if args.ckpt_path_lora is not None:
+        cfg.from_pretrained_lora = args.ckpt_path_lora
+        args.ckpt_path_lora = None
+    if args.force_huggingface is not None:
+        cfg.model["force_huggingface"] = args.force_huggingface
     if args.flash_attn is not None:
         cfg.model["enable_flash_attn"] = args.flash_attn
         args.enable_flash_attn = None
@@ -112,6 +167,8 @@ def merge_args(cfg, args, training=False):
         if args.num_sampling_steps is not None:
             cfg.scheduler["num_sampling_steps"] = args.num_sampling_steps
             args.num_sampling_steps = None
+        if args.num_frames is not None and args.num_frames.isdigit():
+            assert int(args.num_frames) in [49, 65, 81, 97, 113], f"--num-frames must be any of [49, 65, 81, 97, 113]"
 
     for k, v in vars(args).items():
         if v is not None:
@@ -150,7 +207,7 @@ def define_experiment_workspace(cfg, get_last_workspace=False):
 
     # Create an experiment folder
     model_name = cfg.model["type"].replace("/", "-")
-    exp_name = f"{experiment_index:03d}-{model_name}"
+    exp_name = f"{experiment_index:04d}-{model_name}"
     exp_dir = f"{cfg.outputs}/{exp_name}"
     return exp_name, exp_dir
 
