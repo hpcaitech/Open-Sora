@@ -51,22 +51,24 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 - **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
   [[blog]](https://hpc-ai.com/blog/open-sora)
 
+Since Open-Sora is under active development, we remain different branchs for different versions. The latest version is [main](https://github.com/hpcaitech/Open-Sora). Old versions include: [v1.0](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.0), [v1.1](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.1), [v1.2](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.2).
+
 ## 🎥 Latest Demo
 
 🔥 You can experience Open-Sora on our [🤗 Gradio application on Hugging Face](https://huggingface.co/spaces/hpcai-tech/open-sora). More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
-| **5s 720×1280**                                                                                                                                      | **5s 720×1280**                                                                                                                                      | **5s 720×1280**                                                                                                                                      |
-|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [<img src="assets/demo/open_sora_v1.3/demo_tomato.gif" width="">](https://streamable.com/e/r0imrp?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_fisherman.gif" width="">](https://streamable.com/e/hfvjkh?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_girl2.gif" width="">](https://streamable.com/e/kutmma?quality=highest&amp;autoplay=1) |
-| [<img src="assets/demo/open_sora_v1.3/demo_grape.gif" width="">](https://streamable.com/e/osn1la?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_mushroom.gif" width="">](https://streamable.com/e/l1pzws?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_parrot.gif" width="">](https://streamable.com/e/2vqari?quality=highest&amp;autoplay=1) |
-| [<img src="assets/demo/open_sora_v1.3/demo_trans.gif" width="">](https://streamable.com/e/1in7d6?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_bear.gif" width="">](https://streamable.com/e/e9bi4o?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_futureflower.gif" width="">](https://streamable.com/e/09z7xi?quality=highest&amp;autoplay=1) |
-| [<img src="assets/demo/open_sora_v1.3/demo_fire.gif" width="">](https://streamable.com/e/16c3hk?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_man.gif" width="">](https://streamable.com/e/wi250w?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_black.gif" width="">](https://streamable.com/e/vw5b64?quality=highest&amp;autoplay=1) |
+| **5s 720×1280**                                                                                                                   | **5s 720×1280**                                                                                                                      | **5s 720×1280**                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="assets/demo/open_sora_v1.3/demo_tomato.gif" width="">](https://streamable.com/e/r0imrp?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_fisherman.gif" width="">](https://streamable.com/e/hfvjkh?quality=highest&amp;autoplay=1) | [<img src="assets/demo/open_sora_v1.3/demo_girl2.gif" width="">](https://streamable.com/e/kutmma?quality=highest&amp;autoplay=1)        |
+| [<img src="assets/demo/open_sora_v1.3/demo_grape.gif" width="">](https://streamable.com/e/osn1la?quality=highest&amp;autoplay=1)  | [<img src="assets/demo/open_sora_v1.3/demo_mushroom.gif" width="">](https://streamable.com/e/l1pzws?quality=highest&amp;autoplay=1)  | [<img src="assets/demo/open_sora_v1.3/demo_parrot.gif" width="">](https://streamable.com/e/2vqari?quality=highest&amp;autoplay=1)       |
+| [<img src="assets/demo/open_sora_v1.3/demo_trans.gif" width="">](https://streamable.com/e/1in7d6?quality=highest&amp;autoplay=1)  | [<img src="assets/demo/open_sora_v1.3/demo_bear.gif" width="">](https://streamable.com/e/e9bi4o?quality=highest&amp;autoplay=1)      | [<img src="assets/demo/open_sora_v1.3/demo_futureflower.gif" width="">](https://streamable.com/e/09z7xi?quality=highest&amp;autoplay=1) |
+| [<img src="assets/demo/open_sora_v1.3/demo_fire.gif" width="">](https://streamable.com/e/16c3hk?quality=highest&amp;autoplay=1)   | [<img src="assets/demo/open_sora_v1.3/demo_man.gif" width="">](https://streamable.com/e/wi250w?quality=highest&amp;autoplay=1)       | [<img src="assets/demo/open_sora_v1.3/demo_black.gif" width="">](https://streamable.com/e/vw5b64?quality=highest&amp;autoplay=1)        |
 
 <details>
 <summary>OpenSora 1.2 Demo</summary>
 
 | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      | **4s 720×1280**                                                                                                                                      |
-|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/v1.2/sample_0013.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/7895aab6-ed23-488c-8486-091480c26327) | [<img src="assets/demo/v1.2/sample_1718.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/20f07c7b-182b-4562-bbee-f1df74c86c9a) | [<img src="assets/demo/v1.2/sample_0087.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3d897e0d-dc21-453a-b911-b3bda838acc2) |
 | [<img src="assets/demo/v1.2/sample_0052.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/644bf938-96ce-44aa-b797-b3c0b513d64c) | [<img src="assets/demo/v1.2/sample_1719.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/272d88ac-4b4a-484d-a665-8d07431671d0) | [<img src="assets/demo/v1.2/sample_0002.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ebbac621-c34e-4bb4-9543-1c34f8989764) |
 | [<img src="assets/demo/v1.2/sample_0011.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/a1e3a1a3-4abd-45f5-8df2-6cced69da4ca) | [<img src="assets/demo/v1.2/sample_0004.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/d6ce9c13-28e1-4dff-9644-cc01f5f11926) | [<img src="assets/demo/v1.2/sample_0061.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/561978f8-f1b0-4f4d-ae7b-45bec9001b4a) |
@@ -77,16 +79,16 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 <summary>OpenSora 1.1 Demo</summary>
 
 | **2s 240×426**                                                                                                                                              | **2s 240×426**                                                                                                                                             |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16x240x426_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) | [<img src="assets/demo/sora_16x240x426_26.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c31ebc52-de39-4a4e-9b1e-9211d45e05b2) |
 | [<img src="assets/demo/sora_16x240x426_27.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/f7ce4aaa-528f-40a8-be7a-72e61eaacbbd)  | [<img src="assets/demo/sora_16x240x426_40.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/5d58d71e-1fda-4d90-9ad3-5f2f7b75c6a9) |
 
 | **2s 426×240**                                                                                                                                             | **4s 480×854**                                                                                                                                              |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sora_16x426x240_24.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/34ecb4a0-4eef-4286-ad4c-8e3a87e5a9fd) | [<img src="assets/demo/sample_32x480x854_9.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/c1619333-25d7-42ba-a91c-18dbc1870b18) |
 
 | **16s 320×320**                                                                                                                                        | **16s 224×448**                                                                                                                                        | **2s 426×240**                                                                                                                                            |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/demo/sample_16s_320x320.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/3cab536e-9b43-4b33-8da8-a0f9cf842ff2) | [<img src="assets/demo/sample_16s_224x448.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/9fb0b9e0-c6f4-4935-b29e-4cac10b373c4) | [<img src="assets/demo/sora_16x426x240_3.gif" width="">](https://github.com/hpcaitech/Open-Sora-dev/assets/99191637/3e892ad2-9543-4049-b005-643a4c1bf3bf) |
 
 </details>
@@ -95,7 +97,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 <summary>OpenSora 1.0 Demo</summary>
 
 | **2s 512×512**                                                                                                                                                                 | **2s 512×512**                                                                                                                                                              | **2s 512×512**                                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [<img src="assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
 | A serene night scene in a forested area. [...] The video is a time-lapse, capturing the transition from day to night, with the lake and forest serving as a constant backdrop. | A soaring drone footage captures the majestic beauty of a coastal cliff, [...] The water gently laps at the rock base and the greenery that clings to the top of the cliff. | The majestic beauty of a waterfall cascading down a cliff into a serene lake. [...] The camera angle provides a bird's eye view of the waterfall. |
 | [<img src="assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
@@ -147,8 +149,6 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
   config files.
 
 </details>
-
-Since Open-Sora is under active development, we remain different branchs for different versions. The latest version is [main](https://github.com/hpcaitech/Open-Sora). Old versions include: [v1.0](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.0), [v1.1](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.1), [v1.2](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.2).
 
 ### TODO list sorted by priority
 
@@ -254,12 +254,12 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 
 ### Open-Sora 1.3 Model Weights
 
-| Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
-|-----------|------------|------|-------------|------------|---------------------------------------------------------------|
-| Diffusion | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4) |
-| Diffusion-360p | 1.1B  | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4-360p) |
-| Diffusion-i2v | 1.1B   | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3-i2v) |
-| VAE       | 259M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.3) |
+| Model          | Model Size | Data | #iterations | Batch Size | URL                                                                |
+| -------------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------------ |
+| Diffusion      | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4)      |
+| Diffusion-360p | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4-360p) |
+| Diffusion-i2v  | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3-i2v)  |
+| VAE            | 259M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.3)      |
 
 See our **[report 1.3](docs/report_04.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
 
@@ -271,7 +271,7 @@ See our **[report 1.3](docs/report_04.md)** for more infomation. Weight will be 
 <summary>View more</summary>
 
 | Model     | Model Size | Data | #iterations | Batch Size | URL                                                           |
-|-----------|------------|------|-------------|------------|---------------------------------------------------------------|
+| --------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------- |
 | Diffusion | 1.1B       | 30M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3) |
 | VAE       | 384M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.2) |
 
@@ -286,7 +286,7 @@ See our **[report 1.2](docs/report_03.md)** for more information. Weight will be
 <summary>View more</summary>
 
 | Resolution         | Model Size | Data                       | #iterations | Batch Size                                        | URL                                                                  |
-|--------------------|------------|----------------------------|-------------|---------------------------------------------------|----------------------------------------------------------------------|
+| ------------------ | ---------- | -------------------------- | ----------- | ------------------------------------------------- | -------------------------------------------------------------------- |
 | mainly 144p & 240p | 700M       | 10M videos + 2M images     | 100k        | [dynamic](/configs/opensora-v1-1/train/stage2.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage2) |
 | 144p to 720p       | 700M       | 500K HQ videos + 1M images | 4k          | [dynamic](/configs/opensora-v1-1/train/stage3.py) | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v2-stage3) |
 
@@ -302,7 +302,7 @@ See our **[report 1.1](docs/report_02.md)** for more information.
 <summary>View more</summary>
 
 | Resolution | Model Size | Data   | #iterations | Batch Size | GPU days (H800) | URL                                                                                           |
-|------------|------------|--------|-------------|------------|-----------------|-----------------------------------------------------------------------------------------------|
+| ---------- | ---------- | ------ | ----------- | ---------- | --------------- | --------------------------------------------------------------------------------------------- |
 | 16×512×512 | 700M       | 20K HQ | 20k         | 2×64       | 35              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x512x512.pth) |
 | 16×256×256 | 700M       | 20K HQ | 24k         | 8×64       | 45              | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-HQ-16x256x256.pth) |
 | 16×256×256 | 700M       | 366K   | 80k         | 8×64       | 117             | [:link:](https://huggingface.co/hpcai-tech/Open-Sora/blob/main/OpenSora-v1-16x256x256.pth)    |
@@ -350,10 +350,10 @@ The easiest way to generate a video is to input a text prompt and click the "**G
 
 Then, you can choose the **resolution**, **duration**, and **aspect ratio** of the generated video. Different resolution and video length will affect the video generation speed. On a 140G H200 GPU, the generation speed (with `num_sampling_step=30`) and peak memory usage is:
 
-|      | Image    |49 Frames | 65 Frames | 81 Frames | 97 Frames |113 Frames |
-|------|----------|----------|-----------|-----------|-----------|-----------|
-| 360p | 10s, 23G | 16s, 23G | 21s, 24G  | 27s, 24G  | 33s, 25G  | 39s, 25G  |
-| 720p | 13s, 24G | 61s, 28G | 83s, 29G  | 106s, 31G | 130s, 33G | 157s, 35G |
+|      | Image    | 49 Frames | 65 Frames | 81 Frames | 97 Frames | 113 Frames |
+| ---- | -------- | --------- | --------- | --------- | --------- | ---------- |
+| 360p | 10s, 23G | 16s, 23G  | 21s, 24G  | 27s, 24G  | 33s, 25G  | 39s, 25G   |
+| 720p | 13s, 24G | 61s, 28G  | 83s, 29G  | 106s, 31G | 130s, 33G | 157s, 35G  |
 
 Note that besides text to video, you can also use **image to video generation**. You can upload an image and then click the "**Generate video**" button to generate a video with the image as the first frame. Or you can fill in the text prompt and click the "**Generate image**" button to generate an image with the text prompt, and then click the "**Generate video**" button to generate a video with the image generated with the same model.
 
@@ -630,7 +630,7 @@ We support evaluation based on:
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details. Our [report](/docs/report_04.md#evaluation) also provides more information about the evaluation during training. The following table shows Open-Sora 1.3 greatly improves Open-Sora 1.2.
 
 | Model          | Total Score | Quality Score | Semantic Score |
-|----------------|-------------|---------------|----------------|
+| -------------- | ----------- | ------------- | -------------- |
 | Open-Sora V1.0 | 75.91%      | 78.81%        | 64.28%         |
 | Open-Sora V1.2 | 79.23%      | 80.71%        | 73.30%         |
 
