@@ -264,7 +264,6 @@ def load_checkpoint(
         missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=strict)
         get_logger().info("Missing keys: %s", missing_keys)
         get_logger().info("Unexpected keys: %s", unexpected_keys)
-
     else:
         assert os.path.isdir(ckpt_path), f"Invalid checkpoint path: {ckpt_path}"
         load_from_sharded_state_dict(model, ckpt_path, model_name, strict=strict)
