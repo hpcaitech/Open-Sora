@@ -260,7 +260,7 @@ docker run -ti --gpus all -v .:/workspace/Open-Sora opensora
 | -------------- | ---------- | ---- | ----------- | ---------- | ------------------------------------------------------------------ |
 | Diffusion      | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4)      |
 | Diffusion-360p | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4-360p) |
-| Diffusion-i2v  | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v3-i2v)  |
+| Diffusion-i2v  | 1.1B       | 60M  | 70k         | Dynamic    | [:link:](https://huggingface.co/hpcai-tech/OpenSora-STDiT-v4-i2v)  |
 | VAE            | 259M       | 3M   | 1M          | 8          | [:link:](https://huggingface.co/hpcai-tech/OpenSora-VAE-v1.3)      |
 
 See our **[report 1.3](docs/report_04.md)** for more infomation. Weight will be automatically downloaded when you run the inference script.
