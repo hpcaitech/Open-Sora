@@ -34,7 +34,7 @@ For Open-Sora 1.0 & 1.1, we used stability-ai's 83M 2D VAE, which compress the v
 
 Considering the high computational cost of training a 3D VAE, we hope to re-use the knowledge learnt in the 2D VAE. We notice that after 2D VAE's compression, the features adjacent in the temporal dimension are still highly correlated. Thus, we propose a simple video compression network, which first compress the video in the spatial dimension by 8x8 times, then compress the video in the temporal dimension by 4x times. The network is shown below:
 
-![video_compression_network](/assets/readme/report_3d_vae.png)
+![video_compression_network](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_3d_vae.png)
 
 We initialize the 2D VAE with [SDXL's VAE](https://huggingface.co/stabilityai/sdxl-vae), which is better than our previously used one. For the 3D VAE, we adopt the structure of VAE in [Magvit-v2](https://magvit.cs.cmu.edu/v2/), which contains 300M parameters. Along with 83M 2D VAE, the total parameters of the video compression network is 384M. We train the 3D VAE for 1.2M steps with local batch size 1. The training data is videos from pixels and pixabay, and the training video size is mainly 17 frames, 256x256 resolution. Causal convolutions are used in the 3D VAE to make the image reconstruction more accurate.
 
@@ -108,9 +108,9 @@ While MiraData and Vript have captions from GPT, we use [PLLaVA](https://github.
 
 Some statistics of the video data used in this stage are shown below. We present basic statistics of duration and resolution, as well as aesthetic score and optical flow score distribution.
 We also extract tags for objects and actions from video captions and count their frequencies.
-![stats](/assets/readme/report-03_video_stats.png)
-![object_count](/assets/readme/report-03_objects_count.png)
-![object_count](/assets/readme/report-03_actions_count.png)
+![stats](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report-03_video_stats.png)
+![object_count](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report-03_objects_count.png)
+![object_count](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report-03_actions_count.png)
 
 We mainly train 720p and 1080p videos in this stage, aiming to extend the model's ability to larger resolutions. We use a mask ratio of 25% during training. The training config locates in [stage3.py](/configs/opensora-v1-2/train/stage3.py). We train the model for 15k steps, which is approximately 2 epochs.
 
@@ -132,12 +132,12 @@ Previously, we monitor the training process only by human evaluation, as DDPM tr
 
 We sampled 1k videos from pixabay as validation dataset. We calculate the evaluation loss for image and different lengths of videos (2s, 4s, 8s, 16s) for different resolution (144p, 240p, 360p, 480p, 720p). For each setting, we equidistantly sample 10 timesteps. Then all the losses are averaged. We also provide a [video](https://streamable.com/oqkkf1) showing the sampled videos with a fixed prompt for different steps.
 
-![Evaluation Loss](/assets/readme/report_val_loss.png)
-![Video Evaluation Loss](/assets/readme/report_vid_val_loss.png)
+![Evaluation Loss](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_val_loss.png)
+![Video Evaluation Loss](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_vid_val_loss.png)
 
 In addition, we also keep track of [VBench](https://vchitect.github.io/VBench-project/) scores during training. VBench is an automatic video evaluation benchmark for short video generation. We calcuate the vbench score with 240p 2s videos. The two metrics verify that our model continues to improve during training.
 
-![VBench](/assets/readme/report_vbench_score.png)
+![VBench](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_vbench_score.png)
 
 All the evaluation code is released in `eval` folder. Check the [README](/eval/README.md) for more details.
 
@@ -150,7 +150,7 @@ All the evaluation code is released in `eval` folder. Check the [README](/eval/R
 
 We use sequence parallelism to support long-sequence training and inference. Our implementation is based on Ulysses and the workflow is shown below. When sequence parallelism is enabled, we only need to apply the `all-to-all` communication to the spatial block in STDiT as only spatial computation is dependent on the sequence dimension.
 
-![SP](../assets/readme/sequence_parallelism.jpeg)
+![SP](..https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sequence_parallelism.jpeg)
 
 Currently, we have not used sequence parallelism for training as data resolution is small and we plan to do so in the next release. As for inference, we can use sequence parallelism in case your GPU goes out of memory. A simple benchmark shows that sequence parallelism can achieve speedup
 

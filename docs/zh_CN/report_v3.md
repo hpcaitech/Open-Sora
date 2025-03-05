@@ -33,7 +33,7 @@
 
 考虑到训练 3D VAE 的计算成本很高，我们希望重新利用在 2D VAE 中学到的知识。我们注意到，经过 2D VAE 压缩后，时间维度上相邻的特征仍然高度相关。因此，我们提出了一个简单的视频压缩网络，首先将视频在空间维度上压缩 8x8 倍，然后将视频在时间维度上压缩 4 倍。网络如下所示：
 
-![video_compression_network](/assets/readme/report_3d_vae.png)
+![video_compression_network](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_3d_vae.png)
 
 我们用[SDXL 的 VAE](https://huggingface.co/stabilityai/sdxl-vae)初始化 2D VAE ，它比我们以前使用的更好。对于 3D VAE，我们采用[Magvit-v2](https://magvit.cs.cmu.edu/v2/)中的 VAE 结构，它包含 300M 个参数。加上 83M 的 2D VAE，视频压缩网络的总参数为 384M。我们设定batch size 为 1， 对 3D VAE 进行了 1.2M 步的训练。训练数据是来自 pixels 和 pixabay 的视频，训练视频大小主要是 17 帧，256x256 分辨率。3D VAE 中使用causal convolotions使图像重建更加准确。
 
@@ -106,9 +106,9 @@ Open-Sora 1.2 从[PixArt-Σ 2K](https://github.com/PixArt-alpha/PixArt-sigma) �
 MiraData 和 Vript 有来自 GPT 的字幕，而我们使用[PLLaVA](https://github.com/magic-research/PLLaVA)为其余字幕添加字幕。与只能进行单帧/图像字幕的 LLaVA 相比，PLLaVA 是专门为视频字幕设计和训练的。[加速版PLLaVA](/tools/caption/README.md#pllava-captioning)已在我们的`tools/`中发布。在实践中，我们使用预训练的 PLLaVA 13B 模型，并从每个视频中选择 4 帧生成字幕，空间池化形状为 2*2。
 
 下面显示了此阶段使用的视频数据的一些统计数据。我们提供了持续时间和分辨率的基本统计数据，以及美学分数和光流分数分布。我们还从视频字幕中提取了对象和动作的标签并计算了它们的频率。
-![stats](/assets/readme/report-03_video_stats.png)
-![object_count](/assets/readme/report-03_objects_count.png)
-![object_count](/assets/readme/report-03_actions_count.png)
+![stats](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report-03_video_stats.png)
+![object_count](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report-03_objects_count.png)
+![object_count](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report-03_actions_count.png)
 
 此阶段我们主要在 720p 和 1080p 上进行训练，以提高模型在高清视频上的表现力。在训练中，我们使用的掩码率为25%。训练配置位于[stage3.py](/configs/opensora-v1-2/train/stage3.py)中。我们对模型进行 15k 步训练，大约为 2 个 epoch。
 
@@ -130,12 +130,12 @@ MiraData 和 Vript 有来自 GPT 的字幕，而我们使用[PLLaVA](https://git
 
 我们从 pixabay 中抽样了 1k 个视频作为验证数据集。我们计算了不同分辨率（144p、240p、360p、480p、720p）下图像和不同长度的视频（2s、4s、8s、16s）的评估损失。对于每个设置，我们等距采样 10 个时间步长。然后对所有损失取平均值。
 
-![Evaluation Loss](/assets/readme/report_val_loss.png)
-![Video Evaluation Loss](/assets/readme/report_vid_val_loss.png)
+![Evaluation Loss](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_val_loss.png)
+![Video Evaluation Loss](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_vid_val_loss.png)
 
 此外，我们还会在训练过程中跟踪[VBench](https://vchitect.github.io/VBench-project/)得分。VBench 是用于短视频生成的自动视频评估基准。我们用 240p 2s 视频计算 vbench 得分。这两个指标验证了我们的模型在训练过程中持续改进。
 
-![VBench](/assets/readme/report_vbench_score.png)
+![VBench](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_vbench_score.png)
 
 所有评估代码均发布在`eval`文件夹中。查看[评估指南](/eval/README.md)了解更多详细信息。
 
@@ -148,7 +148,7 @@ MiraData 和 Vript 有来自 GPT 的字幕，而我们使用[PLLaVA](https://git
 
 我们使用序列并行来支持长序列训练和推理。我们的实现基于Ulysses，工作流程如下所示。启用序列并行后，我们只需要将 `all-to-all` 通信应用于STDiT中的空间模块（spatial block），因为在序列维度上，只有对空间信息的计算是相互依赖的。
 
-![SP](/assets/readme/sequence_parallelism.jpeg)
+![SP](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sequence_parallelism.jpeg)
 
 目前，由于训练数据分辨率较小，我们尚未使用序列并行进行训练，我们计划在下一个版本中使用。至于推理，我们可以使用序列并行，以防您的 GPU 内存不足。下表显示，序列并行可以实现加速：
 

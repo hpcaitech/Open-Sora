@@ -63,10 +63,10 @@ nohup torchrun --nproc_per_node 8 --standalone caption_pllava.py \
 ### PLLaVA vs. LLaVA
 In our previous releases, we used [LLaVA](#llava-captioning) for video captioning.
 Qualitatively speaking, we observe that PLLaVA has a somewhat higher chance of accurately capture the details in the video than LLaVA. See below for their comparison on a video sample.
-<!-- <img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA"> -->
+<!-- <img src="../..https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA"> -->
 
 <figure>
-    <img src="../../assets/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA">
+    <img src="../..https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/llava_vs_pllava_sample.gif" width="300" height="200" alt="LLaVA vs PLLaVA">
 </figure>
 
 

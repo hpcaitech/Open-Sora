@@ -45,7 +45,7 @@
 
 </details>
 
-![bucket](/assets/readme/report_bucket.png)
+![bucket](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_bucket.png)
 
 如图所示，桶是（分辨率，帧数量，宽高比）的三元组。我们为不同的分辨率提供预定义的宽高比，涵盖了大多数常见的视频宽高比。在每个epoch之前，我们打乱数据集并将样本分配到不同的桶中，如图所示。我们将样本放入最大分辨率和帧长度小于视频的桶中。
 
@@ -57,7 +57,7 @@
 
 Transformer可以很容易地扩展到支持图生图和视频生视频的任务。我们提出了一种蒙版策略来支持图像和视频的调节。蒙版策略如下图所示。
 
-![mask strategy](/assets/readme/report_mask.png)
+![mask strategy](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_mask.png)
 
 在将图像或视频转换成另一个视频的过程中，我们通常会选择出需要作为条件的帧并取消其掩码（unmask）。在使用ST-DiT模型进行前向传播时，被选择取消掩码（unmask）的帧将被赋予时间步长0，而其他帧则保持它们原有的时间步长t。我们发现，如果直接将这种策略应用到训练好的模型上，会得到较差的结果，因为扩散模型在训练过程中并未学会如何处理一个样本中具有不同时间步长的帧。
 
@@ -65,7 +65,7 @@ Transformer可以很容易地扩展到支持图生图和视频生视频的任务
 
 下图给出了用于推理的掩码策略配置的说明。五数字元组在定义掩码策略方面提供了极大的灵活性。
 
-![mask strategy config](/assets/readme/report_mask_config.png)
+![mask strategy config](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_mask_config.png)
 
 掩码策略用法的详细说明可在[配置文件](/docs/config.md#advanced-inference-config)中查看.
 
@@ -74,18 +74,18 @@ Transformer可以很容易地扩展到支持图生图和视频生视频的任务
 
 正如我们在Sora1.0版本中看见的那样，数据数量和质量对于训练一个好的模型至关重要，因此，我们努力扩展数据集。首先，我们创建了一个遵循[SVD](https://arxiv.org/abs/2311.15127)的自动流水线，包括场景切割、字幕、各种评分和过滤以及数据集管理脚本和通用惯例。
 
-![pipeline](/assets/readme/report_data_pipeline.png)
+![pipeline](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_data_pipeline.png)
 
 我们计划使用[panda-70M](https://snap-research.github.io/Panda-70M/)和其他数据来训练模型，大约包含3000万条数据。然而，我们发现磁盘输入输出（disk IO）在同时进行训练和数据处理时成为了一个瓶颈。因此，我们只能准备一个包含1000万条数据的数据集，并且没有完成我们构建的所有处理流程。最终，我们使用了包含970万视频和260万图像的数据集进行预训练，以及560,000视频和160万图像的数据集进行微调。预训练数据集的统计信息如下所示。
 
 图像文本标记 (使用T5分词器)：
-![image text tokens](/assets/readme/report_image_textlen.png)
+![image text tokens](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_image_textlen.png)
 
 视频文本标记 (使用T5分词器)。我们直接使用Panda的短视频描述进行训练，并自己给其他数据集加视频描述。生成的字幕通常少于200个token。
-![video text tokens](/assets/readme/report_video_textlen.png)
+![video text tokens](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_video_textlen.png)
 
 视频时长：
-![video duration](/assets/readme/report_video_duration.png)
+![video duration](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_video_duration.png)
 
 ## 训练详情
 

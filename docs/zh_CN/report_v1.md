@@ -11,11 +11,11 @@ OpenAI的Sora在生成一分钟高质量视频方面非常出色。然而，它�
 如图中所示，在STDiT（ST代表时空）中，我们在每个空间注意力之后立即插入一个时间注意力。这类似于Latte论文中的变种3。然而，我们并没有控制这些变体的相似数量的参数。虽然Latte的论文声称他们的变体比变种3更好，但我们在16x256x256视频上的实验表明，相同数量的迭代次数下，性能排名为：DiT（完整）> STDiT（顺序）> STDiT（并行）≈ Latte。因此，我们出于效率考虑选择了STDiT（顺序）。[这里](/docs/acceleration.md#efficient-stdit)提供了速度基准测试。
 
 
-![Architecture Comparison](/assets/readme/report_arch_comp.png)
+![Architecture Comparison](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_arch_comp.png)
 
 为了专注于视频生成，我们希望基于一个强大的图像生成模型来训练我们的模型。PixArt-α是一个经过高效训练的高质量图像生成模型，具有T5条件化的DiT结构。我们使用[PixArt-α](https://github.com/PixArt-alpha/PixArt-alpha)初始化我们的模型，并将插入的时间注意力的投影层初始化为零。这种初始化在开始时保留了模型的图像生成能力，而Latte的架构则不能。插入的注意力将参数数量从5.8亿增加到7.24亿。
 
-![Architecture](/assets/readme/report_arch.jpg)
+![Architecture](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_arch.jpg)
 
 借鉴PixArt-α和Stable Video Diffusion的成功，我们还采用了渐进式训练策略：在366K预训练数据集上进行16x256x256的训练，然后在20K数据集上进行16x256x256、16x512x512和64x512x512的训练。通过扩展位置嵌入，这一策略极大地降低了计算成本。
 
@@ -26,7 +26,7 @@ OpenAI的Sora在生成一分钟高质量视频方面非常出色。然而，它�
 
 我们发现数据的数量和质量对生成视频的质量有很大的影响，甚至比模型架构和训练策略的影响还要大。目前，我们只从[HD-VG-130M](https://github.com/daooshee/HD-VG-130M)准备了第一批分割（366K个视频片段）。这些视频的质量参差不齐，而且字幕也不够准确。因此，我们进一步从提供免费许可视频的[Pexels](https://www.pexels.com/)收集了20k相对高质量的视频。我们使用LLaVA，一个图像字幕模型，通过三个帧和一个设计好的提示来标记视频。有了设计好的提示，LLaVA能够生成高质量的字幕。
 
-![Caption](/assets/readme/report_caption.png)
+![Caption](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_caption.png)
 
 由于我们更加注重数据质量，我们准备收集更多数据，并在下一版本中构建一个视频预处理流程。
 
@@ -38,12 +38,12 @@ OpenAI的Sora在生成一分钟高质量视频方面非常出色。然而，它�
 
 16x256x256 预训练损失曲线
 
-![16x256x256 Pretraining Loss Curve](/assets/readme/report_loss_curve_1.png)
+![16x256x256 Pretraining Loss Curve](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_loss_curve_1.png)
 
 16x256x256 高质量训练损失曲线
 
-![16x256x256 HQ Training Loss Curve](/assets/readme/report_loss_curve_2.png)
+![16x256x256 HQ Training Loss Curve](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_loss_curve_2.png)
 
 16x512x512 高质量训练损失曲线
 
-![16x512x512 HQ Training Loss Curve](/assets/readme/report_loss_curve_3.png)
+![16x512x512 HQ Training Loss Curve](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_loss_curve_3.png)
