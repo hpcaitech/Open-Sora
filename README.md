@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/readme/icon_new.png" width="250"/>
+    <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon_new.png" width="250"/>
 <p>
 
 </p>
@@ -10,9 +10,10 @@
 </div>
 
 ## Open-Sora: Democratizing Efficient Video Production for All
-We present **Open-Sora**, an initiative dedicated to **efficiently** produce high-quality video and make the model, 
-tools and contents accessible to all. By embracing **open-source** principles, 
-Open-Sora not only democratizes access to advanced video generation techniques, but also offers a 
+
+We present **Open-Sora**, an initiative dedicated to **efficiently** produce high-quality video and make the model,
+tools and contents accessible to all. By embracing **open-source** principles,
+Open-Sora not only democratizes access to advanced video generation techniques, but also offers a
 streamlined and user-friendly platform that simplifies the complexities of video production.
 With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the realm of content creation. [[中文]](/docs/README_zh.md)
 
@@ -20,7 +21,7 @@ With Open-Sora, we aim to inspire innovation, creativity, and inclusivity in the
 
 * **[2024.03.18]** 🔥 We release **Open-Sora 1.0**, a fully open-source project for video generation.
 Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
-<a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a> acceleration,
+<a href="https://github.com/hpcaitech/ColossalAI"><img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/colossal_ai.png" width="8%" ></a> acceleration,
 inference, and more. Our provided [checkpoints](#model-weights) can produce 2~5s 512x512 videos with only 3 days training.
 * **[2024.03.04]** Open-Sora provides training with 46% cost reduction.
 
