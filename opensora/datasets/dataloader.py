@@ -221,9 +221,10 @@ class DataloaderForVideo(DataLoader):
 def get_seed_worker(seed):
     def seed_worker(worker_id):
         worker_seed = seed
-        np.random.seed(worker_seed)
-        torch.manual_seed(worker_seed)
-        random.seed(worker_seed)
+        if seed is not None:
+            np.random.seed(worker_seed)
+            torch.manual_seed(worker_seed)
+            random.seed(worker_seed)
 
     return seed_worker
 

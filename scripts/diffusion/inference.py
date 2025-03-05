@@ -52,7 +52,9 @@ def main():
     # == device and dtype ==
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = to_torch_dtype(cfg.get("dtype", "bf16"))
-    set_seed(cfg.get("seed", 1024))
+    seed = cfg.get("seed", 1024)
+    if seed is not None:
+        set_seed(seed)
 
     # == init distributed env ==
     init_inference_environment()

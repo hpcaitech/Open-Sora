@@ -4,6 +4,8 @@
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
     <a href="https://hpcaitech.github.io/Open-Sora/"><img src="https://img.shields.io/badge/Gallery-View-orange?logo=&amp"></a>
+    <a href=""><img src="https://img.shields.io/static/v1?label=Tech Report v2.0&message=Arxiv&color=red"></a>
+    <a href="https://arxiv.org/abs/2412.20404"><img src="https://img.shields.io/static/v1?label=Tech Report v1.2&message=Arxiv&color=red"></a>
     <a href="https://discord.gg/kZakZzrSUT"><img src="https://img.shields.io/badge/Discord-join-blueviolet?logo=discord&amp"></a>
     <a href="https://join.slack.com/t/colossalaiworkspace/shared_invite/zt-247ipg9fk-KRRYmUl~u2ll2637WRURVA"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
     <a href="https://twitter.com/yangyou1991/status/1769411544083996787?s=61&t=jT0Dsx2d-MS5vS9rNM5e5g"><img src="https://img.shields.io/badge/Twitter-Discuss-blue?logo=twitter&amp"></a>
@@ -37,7 +39,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B).
+- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). with MMDiT structure and optimized for image-to-video generation, the model generates high quality of videos (t2v, i2v, t2i2v) with 256x256 and 768x768 resolution. An attempt to adapt for a high-compression autoencoder is also presented. 😚 All training codes are released!
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md)   [[blog]](https://hpc-ai.com/blog/open-sora-from-hpc-ai-tech-team-continues-open-source-generate-any-16-second-720p-hd-video-with-one-click-model-weights-ready-to-use)
@@ -119,12 +121,12 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 - **[Tech Report of Open-Sora 2.0]()**
 - **[Step by step to train or finetune your own model](docs/train.md)**
 - **[Step by step to train and evaluate an video autoencoder](docs/ae.md)**
+- **[Visit the high compression video autoencoder](docs/hc-ae.md)**
 - Reports of previous version (better see in according branch):
   - Open-Sora 1.3: [report 1.3](docs/report_04.md): shift-window attention, unified spatial-temporal VAE, etc.
   - Open-Sora 1.2: [Tech Report](https://arxiv.org/abs/2412.20404), [report 1.2](docs/report_03.md): rectified flow, 3d-VAE, score condition, evaluation, etc.
   - Open-Sora 1.1: [report 1.1](docs/report_02.md): multi-resolution/length/aspect-ratio, image/video conditioning/editing, data preprocessing, etc.
   - Open-Sora 1.0: [report 1.0](docs/report_01.md): architecture, captioning, etc.
-- Gallery: [gallery](https://hpcaitech.github.io/Open-Sora/)
 
 📍 Since Open-Sora is under active development, we remain different branchs for different versions. The latest version is [main](https://github.com/hpcaitech/Open-Sora). Old versions include: [v1.0](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.0), [v1.1](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.1), [v1.2](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.2), [v1.3](https://github.com/hpcaitech/Open-Sora/tree/opensora/v1.3).
 
@@ -173,6 +175,86 @@ pip install modelscope
 modelscope download hpcai-tech/Open-Sora-v2 --local_dir ./ckpts
 ```
 
+### Text-to-Video Generation
+
+Our model is optimized for image-to-video generation, but it can also be used for text-to-video generation. To generate high quality videos, with the help of flux text-to-image model, we build a text-to-image-to-video pipeline. For 256x256 resolution:
+
+```bash
+# Generate one given prompt
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea"
+
+# Generation with csv
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --dataset.data-path assets/texts/example.csv
+```
+
+For 768x768 resolution:
+
+```bash
+# One GPU
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_768px.py --save-dir samples --prompt "raining, sea"
+
+# Multi-GPU with colossalai sp
+torchrun --nproc_per_node 8 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_768px.py --save-dir samples --prompt "raining, sea"
+```
+
+You can adjust the generation aspect ratio by `--aspect_ratio` and the generation length by `--num_frames`. Candidate values for aspect_ratio includes `16:9`, `9:16`, `1:1`, `2.39:1`. Candidate values for num_frames should be `4k+1` and less than 129.
+
+You can also run direct text-to-video by:
+
+```bash
+# One GPU for 256px
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/256px.py --prompt "raining, sea"
+# Multi-GPU for 768px
+torchrun --nproc_per_node 8 --standalone scripts/diffusion/inference.py configs/diffusion/inference/768px.py --prompt "raining, sea"
+```
+
+### Image-to-Video Generation
+
+Given a prompt and a reference image, you can generate a video with the following command:
+
+```bash
+# 256px
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/256px.py --cond_type i2v_head --prompt "A plump pig wallows in a muddy pond on a rustic farm, its pink snout poking out as it snorts contentedly. The camera captures the pig's playful splashes, sending ripples through the water under the midday sun. Wooden fences and a red barn stand in the background, framed by rolling green hills. The pig's muddy coat glistens in the sunlight, showcasing the simple pleasures of its carefree life." --ref assets/texts/i2v.png
+
+# 256px with csv
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/256px.py --cond_type i2v_head --dataset.data-path assets/texts/i2v.csv
+
+# Multi-GPU 768px
+torchrun --nproc_per_node 8 --standalone scripts/diffusion/inference.py configs/diffusion/inference/768px.py --cond_type i2v_head --dataset.data-path assets/texts/i2v.csv
+```
+
+## Advanced Usage
+
+### Motion Score
+
+### Prompt Refine
+
+We take advantage of ChatGPT to refine the prompt. You can use the following command to refine the prompt. The function is available for both text-to-video and image-to-video generation.
+
+```bash
+export OPENAI_API_KEY=sk-xxxx
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --refine-prompt True
+```
+
+### Reproductivity
+
+To make the results reproducible, you can set the random seed by:
+
+```bash
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --sampling_option.seed 42 --seed 42
+```
+
+## Computational Efficiency
+
+We test the computational efficiency on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism. For 768x768, we use colossalai's sequence parallelism. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
+
+| Resolution | 1x GPU                                 | 2x GPUs                               | 4x GPUs                               | 8x GPUs                               |
+| ---------- | -------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- |
+| 256x256    | $\color{blue}{60}/\color{red}{52.5}$   | $\color{blue}{40}/\color{red}{44.3}$  | $\color{blue}{34}/\color{red}{44.3}$  |                                       |
+| 768x768    | $\color{blue}{1656}/\color{red}{60.3}$ | $\color{blue}{863}/\color{red}{48.3}$ | $\color{blue}{466}/\color{red}{44.3}$ | $\color{blue}{276}/\color{red}{44.3}$ |
+
+## Evaluation
+
 ## Contribution
 
 Thanks goes to these wonderful contributors:
@@ -182,10 +264,6 @@ Thanks goes to these wonderful contributors:
 </a>
 
 If you wish to contribute to this project, please refer to the [Contribution Guideline](./CONTRIBUTING.md).
-
-### Text-to-Video Generation
-
-Our model is optimi
 
 ## Acknowledgement
 
@@ -207,8 +285,6 @@ Here we only list a few of the projects. For other works and datasets, please re
 - [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).
 - [PLLaVA](https://github.com/magic-research/PLLaVA): A powerful video captioning model.
 - [MiraData](https://github.com/mira-space/MiraData): A large-scale video dataset with long durations and structured caption.
-
-We are grateful for their exceptional work and generous contribution to open source. Special thanks go to the authors of [MiraData](https://github.com/mira-space/MiraData) and [Rectified Flow](https://github.com/gnobitab/RectifiedFlow) for their valuable advice and help. We wish to express gratitude towards AK for sharing this project on social media and Hugging Face for providing free GPU resources for our online Gradio demo.
 
 ## Citation
 

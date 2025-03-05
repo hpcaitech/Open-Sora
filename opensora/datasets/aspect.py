@@ -2,10 +2,10 @@ import math
 import os
 
 D = int(os.environ.get("VO_ASPECT_DIV", 16))
-ASPECT_RATIO_LD_LIST = [  # height:width
+ASPECT_RATIO_LD_LIST = [  # width:height
     "2.39:1",  # cinemascope, 2.39
     "2:1",  # rare, 2
-    "17:9",  # rare, 1.89
+    "16:9",  # rare, 1.89
     "1.85:1",  # american widescreen, 1.85
     "9:16",  # popular, 1.78
     "5:8",  # rare, 1.6
@@ -16,7 +16,7 @@ ASPECT_RATIO_LD_LIST = [  # height:width
 
 
 def get_ratio(name: str) -> float:
-    height, width = map(float, name.split(":"))
+    width, height = map(float, name.split(":"))
     return height / width
 
 
@@ -24,7 +24,7 @@ def get_aspect_ratios_dict(total_pixels: int = 256 * 256, training: bool = True)
     aspect_ratios_dict = {}
     aspect_ratios_vertical_dict = {}
     for ratio in ASPECT_RATIO_LD_LIST:
-        height_ratio, width_ratio = map(float, ratio.split(":"))
+        width_ratio, height_ratio = map(float, ratio.split(":"))
         width = int(math.sqrt(total_pixels * (width_ratio / height_ratio)) // D) * D
         height = int((total_pixels / width) // D) * D
 

@@ -198,6 +198,8 @@ def parse_alias(cfg: Config) -> Config:
         cfg.sampling_option.num_steps = int(cfg.num_steps)
     if cfg.get("num_frames", None) is not None:
         cfg.sampling_option.num_frames = int(cfg.num_frames)
+    if cfg.get("aspect_ratio", None) is not None:
+        cfg.sampling_option.aspect_ratio = cfg.aspect_ratio
     if cfg.get("ckpt_path", None) is not None:
         cfg.model.from_pretrained = cfg.ckpt_path
     return cfg

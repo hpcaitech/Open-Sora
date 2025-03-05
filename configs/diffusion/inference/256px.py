@@ -15,7 +15,7 @@ cond_type = "t2v"
 dataset = dict(type="text")
 sampling_option = dict(
     resolution="256px",  # 256px or 768px
-    aspect_ratio="9:16",  # 9:16 or 16:9 or 1:1
+    aspect_ratio="16:9",  # 9:16 or 16:9 or 1:1
     num_frames=129,  # number of frames
     num_steps=50,  # number of steps
     shift=True,
