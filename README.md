@@ -10,8 +10,6 @@
     <a href="https://join.slack.com/t/colossalaiworkspace/shared_invite/zt-247ipg9fk-KRRYmUl~u2ll2637WRURVA"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
     <a href="https://twitter.com/yangyou1991/status/1769411544083996787?s=61&t=jT0Dsx2d-MS5vS9rNM5e5g"><img src="https://img.shields.io/badge/Twitter-Discuss-blue?logo=twitter&amp"></a>
     <a href="https://raw.githubusercontent.com/hpcaitech/public_assets/main/colossalai/img/WeChat.png"><img src="https://img.shields.io/badge/微信-小助手加群-green?logo=wechat&amp"></a>
-    <a href="https://hpc-ai.com/blog/open-sora-v1.0"><img src="https://img.shields.io/badge/Open_Sora-Blog-blue"></a>
-    <a href="https://huggingface.co/spaces/hpcai-tech/open-sora"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Gradio Demo-blue"></a>
 </div>
 
 ## Open-Sora: Democratizing Efficient Video Production for All
@@ -29,20 +27,20 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
    </a>
 </div>
 
-[[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)]
-
 <div align="center">
    <a href="https://hpc-ai.com/?utm_source=github&utm_medium=social&utm_campaign=promotion-opensora">
    <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/1.gif" width="850" />
    </a>
 </div>
 
+<!-- [[中文文档](/docs/zh_CN/README.md)] [[潞晨云](https://cloud.luchentech.com/)|[OpenSora镜像](https://cloud.luchentech.com/doc/docs/image/open-sora/)|[视频教程](https://www.bilibili.com/video/BV1ow4m1e7PX/?vd_source=c6b752764cd36ff0e535a768e35d98d2)] -->
+
 ## 📰 News
 
-- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). with MMDiT structure and optimized for image-to-video generation, the model generates high quality of videos (t2v, i2v, t2i2v) with 256x256 and 768x768 resolution. An attempt to adapt for a high-compression autoencoder is also presented. 😚 All training codes are released!
+- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). with MMDiT structure and optimized for image-to-video generation, the model generates high quality of videos (t2v, i2v, t2i2v) with 256x256 and 768x768 resolution. An attempt to adapt for a high-compression autoencoder is also presented. 😚 All training codes are released! [[report]]()
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
-- **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md)   [[blog]](https://hpc-ai.com/blog/open-sora-from-hpc-ai-tech-team-continues-open-source-generate-any-16-second-720p-hd-video-with-one-click-model-weights-ready-to-use)
+- **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md) [[arxiv]](https://arxiv.org/abs/2412.20404)
 - **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
 - **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]](#open-sora-11-model-weights) [[report]](/docs/report_02.md)
 - **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
@@ -152,7 +150,7 @@ pip install flash-attn --no-build-isolation
 Optionally, you can install flash attention 3 for faster speed.
 
 ```bash
-git clone https://github.com/Dao-AILab/flash-attention
+git clone https://github.com/Dao-AILab/flash-attention # 4f0640d5
 cd flash-attention/hopper
 python setup.py install
 ```
@@ -246,7 +244,7 @@ torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/
 
 ## Computational Efficiency
 
-We test the computational efficiency on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism. For 768x768, we use colossalai's sequence parallelism. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
+We test the computational efficiency on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism. For 768x768, we use colossalai's sequence parallelism. All use number of steps 50. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
 
 | Resolution | 1x GPU                                 | 2x GPUs                               | 4x GPUs                               | 8x GPUs                               |
 | ---------- | -------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- |
