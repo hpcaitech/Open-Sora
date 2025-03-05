@@ -111,24 +111,44 @@ def _fa_forward(
     q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, dropout_p: float = 0.0, softmax_scale: Optional[float] = None
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     if SUPPORT_FA3:
-        out, _, _, _, _, softmax_lse, *_ = _flash_attn_forward_v3(
+        out, softmax_lse, *_ = _flash_attn_forward_v3(
             q,
             k,
             v,
+            None,
+            None,
+            None,
+            None,  # k_new, q_new, qv, out
+            None,
+            None,
+            None,  # cu_seqlens_q, cu_seqlens_k, cu_seqlens_k_new
+            None,
+            None,
+            None,
+            None,  # seqused_q, seqused_k, max_seqlen_q, max_seqlen_k
+            None,
+            None,
+            None,  # page_table, kv_batch_idx, leftpad_k
+            None,
+            None,  # rotary_cos/sin
+            None,
+            None,
+            None,  # q_descale, k_descale, v_descale
             softmax_scale,
             False,  # causal
             (-1, -1),
         )
         rng_state = None
     else:
-        out, _, _, _, _, softmax_lse, _, rng_state = _flash_attn_forward(
+        out, softmax_lse, _, rng_state = _flash_attn_forward(
             q,
             k,
             v,
             dropout_p,
             softmax_scale,
             causal=False,
-            window_size=(-1, -1),
+            window_size_left=-1,
+            window_size_right=-1,
             softcap=0.0,
             alibi_slopes=None,
             return_softmax=False,
