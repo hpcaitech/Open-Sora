@@ -599,7 +599,7 @@ def main():
                     """
                 <div style='text-align: center;'>
                     <p align="center">
-                        <img src="https://github.com/hpcaitech/Open-Sora/raw/mainhttps://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon.png" width="250"/>
+                        <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon.png" width="250"/>
                     </p>
                     <div style="display: flex; gap: 10px; justify-content: center;">
                         <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
