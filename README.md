@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/readme/icon.png" width="250"/>
+    <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon.png" width="250"/>
 </p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
@@ -30,7 +30,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 * **[2024.04.25]** 🔥 We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]]() [[report]](/docs/report_02.md)
 * **[2024.03.18]** We released **Open-Sora 1.0**, a fully open-source project for video generation.
   Open-Sora 1.0 supports a full pipeline of video data preprocessing, training with
-  <a href="https://github.com/hpcaitech/ColossalAI"><img src="assets/readme/colossal_ai.png" width="8%" ></a>
+  <a href="https://github.com/hpcaitech/ColossalAI"><img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/colossal_ai.png" width="8%" ></a>
   acceleration,
   inference, and more. Our model can produce 2s 512x512 videos with only 3 days training. [[checkpoints]](#open-sora-10-model-weights)
   [[blog]](https://hpc-ai.com/blog/open-sora-v1.0) [[report]](docs/report_01.md)
@@ -289,7 +289,7 @@ To this end, we establish a complete pipeline for data processing, which could s
 The pipeline is shown below. For detailed information, please refer to [data processing](docs/data_processing.md).
 Also check out the [datasets](docs/datasets.md) we use.
 
-![Data Processing Pipeline](assets/readme/report_data_pipeline.png)
+![Data Processing Pipeline](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_data_pipeline.png)
 
 ## Training
 

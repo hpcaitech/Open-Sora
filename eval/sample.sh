@@ -120,14 +120,14 @@ function run_video_h() { # 23min
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 16 --image-size 240 426 \
     --loop 5 --condition-frame-length 4 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --reference-path https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/wave.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   eval $CMD_REF --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L10C4_64x240x426 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 64 --image-size 240 426 \
     --loop 5 --condition-frame-length 16 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --reference-path https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/wave.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   # 3.2
@@ -135,7 +135,7 @@ function run_video_h() { # 23min
     --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
     --num-frames 128 --image-size 240 426 \
     --loop 1 \
-    --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
+    --reference-path https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png "https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cactus-sad.png\;https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
     --mask-strategy "0\;0,0,0,-1,1" "0\;0,1,0,-1,1" "0,0,0,0,64,0.5" --batch-size $DEFAULT_BS
 }
 

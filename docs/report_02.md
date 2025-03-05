@@ -45,7 +45,7 @@ For the simplicity of implementation, we choose the bucket method. We pre-define
 
 </details>
 
-![bucket](/assets/readme/report_bucket.png)
+![bucket](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_bucket.png)
 
 As shown in the figure, a bucket is a triplet of `(resolution, num_frame, aspect_ratio)`. We provide pre-defined aspect ratios for different resolution that covers most of the common video aspect ratios. Before each epoch, we shuffle the dataset and allocate the samples to different buckets as shown in the figure. We put a sample into a bucket with largest resolution and frame length that is smaller than the video's.
 
@@ -57,7 +57,7 @@ A detailed explanation of the bucket usage in training is available in [docs/con
 
 Transformers can be easily extended to support image-to-image and video-to-video tasks. We propose a mask strategy to support image and video conditioning. The mask strategy is shown in the figure below.
 
-![mask strategy](/assets/readme/report_mask.png)
+![mask strategy](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_mask.png)
 
 Typically, we unmask the frames to be conditioned on for image/video-to-video condition. During the ST-DiT forward, unmasked frames will have timestep 0, while others remain the same (t). We find directly apply the strategy to trained model yield poor results as the diffusion model did not learn to handle different timesteps in one sample during training.
 
@@ -65,7 +65,7 @@ Inspired by [UL2](https://arxiv.org/abs/2205.05131), we introduce random mask st
 
 An illustration of masking strategy config to use in inference is given as follow. A five number tuple provides great flexibility in defining the mask strategy. By conditioning on generated frames, we can autogressively generate infinite frames (although error propagates).
 
-![mask strategy config](/assets/readme/report_mask_config.png)
+![mask strategy config](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_mask_config.png)
 
 A detailed explanation of the mask strategy usage is available in [docs/config.md](/docs/config.md#advanced-inference-config).
 
@@ -73,21 +73,21 @@ A detailed explanation of the mask strategy usage is available in [docs/config.m
 
 As we found in Open-Sora 1.0, the data number and quality are crucial for training a good model, we work hard on scaling the dataset. First, we create an automatic pipeline following [SVD](https://arxiv.org/abs/2311.15127), inlcuding scene cutting, captioning, various scoring and filtering, and dataset management scripts and conventions. More infomation can be found in [docs/data_processing.md](/docs/data_processing.md).
 
-![pipeline](/assets/readme/report_data_pipeline.png)
+![pipeline](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_data_pipeline.png)
 
 We plan to use [panda-70M](https://snap-research.github.io/Panda-70M/) and other data to traing the model, which is approximately 30M+ data. However, we find disk IO a botteleneck for training and data processing at the same time. Thus, we can only prepare a 10M dataset and did not go through all processing pipeline that we built. Finally, we use a dataset with 9.7M videos + 2.6M images for pre-training, and 560k videos + 1.6M images for fine-tuning. The pretraining dataset statistics are shown below. More information about the dataset can be found in [docs/datasets.md](/docs/datasets.md).
 
 Image text tokens (by T5 tokenizer):
 
-![image text tokens](/assets/readme/report_image_textlen.png)
+![image text tokens](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_image_textlen.png)
 
 Video text tokens (by T5 tokenizer). We directly use panda's short caption for training, and caption other datasets by ourselves. The generated caption is usually less than 200 tokens.
 
-![video text tokens](/assets/readme/report_video_textlen.png)
+![video text tokens](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_video_textlen.png)
 
 Video duration:
 
-![video duration](/assets/readme/report_video_duration.png)
+![video duration](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_video_duration.png)
 
 ## Training Details
 

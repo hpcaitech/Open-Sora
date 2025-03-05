@@ -54,7 +54,7 @@ You can adjust the `--num-frames` and `--image-size` to generate different resul
 # image condition
 python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
   --num-frames 32 --image-size 240 426 --sample-name image-cond \
-  --prompt 'A breathtaking sunrise scene.{"reference_path": "assets/images/condition/wave.png","mask_strategy": "0"}'
+  --prompt 'A breathtaking sunrise scene.{"reference_path": "https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/wave.png","mask_strategy": "0"}'
 
 # video extending
 python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
@@ -69,7 +69,7 @@ python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckp
 # video connecting
 python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \
   --num-frames 32 --image-size 240 426 --sample-name connect \
-  --prompt 'A breathtaking sunrise scene.{"reference_path": "assets/images/condition/sunset1.png;assets/images/condition/sunset2.png","mask_strategy": "0;0,1,0,-1,1"}'
+  --prompt 'A breathtaking sunrise scene.{"reference_path": "https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/sunset1.png;https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/sunset2.png","mask_strategy": "0;0,1,0,-1,1"}'
 
 # video editing
 python scripts/inference-long.py configs/opensora-v1-1/inference/sample.py --ckpt-path CKPT_PATH \

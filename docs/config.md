@@ -69,7 +69,7 @@ condition_frame_length = 4
 reference_path = [
     "https://cdn.openai.com/tmp/s/interp/d0.mp4",
     None,
-    "assets/images/condition/wave.png",
+    "https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/wave.png",
 ]
 mask_strategy = [
     "0,0,0,0,8,0.3",
@@ -80,7 +80,7 @@ mask_strategy = [
 
 The following figure provides an illustration of the `mask_strategy`:
 
-![mask_strategy](/assets/readme/report_mask_config.png)
+![mask_strategy](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_mask_config.png)
 
 To generate a long video of infinite time, our strategy is to generate a video with a fixed length first, and then use the last `condition_frame_length` number of frames for the next video generation. This will loop for `loop` times. Thus, the total length of the video is `loop * (num_frames - condition_frame_length) + condition_frame_length`.
 
@@ -96,7 +96,7 @@ To condition the generation on images or videos, we introduce the `mask_strategy
 To facilitate usage, we also accept passing the reference path and mask strategy as a json appended to the prompt. For example,
 
 ```plaintext
-'Drone view of waves crashing against the rugged cliffs along Big Sur\'s garay point beach. The crashing blue waters create white-tipped waves, while the golden light of the setting sun illuminates the rocky shore. A small island with a lighthouse sits in the distance, and green shrubbery covers the cliff\'s edge. The steep drop from the road down to the beach is a dramatic feat, with the cliff\'s edges jutting out over the sea. This is a view that captures the raw beauty of the coast and the rugged landscape of the Pacific Coast Highway.{"reference_path": "assets/images/condition/cliff.png", "mask_strategy": "0"}'
+'Drone view of waves crashing against the rugged cliffs along Big Sur\'s garay point beach. The crashing blue waters create white-tipped waves, while the golden light of the setting sun illuminates the rocky shore. A small island with a lighthouse sits in the distance, and green shrubbery covers the cliff\'s edge. The steep drop from the road down to the beach is a dramatic feat, with the cliff\'s edges jutting out over the sea. This is a view that captures the raw beauty of the coast and the rugged landscape of the Pacific Coast Highway.{"reference_path": "https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png", "mask_strategy": "0"}'
 ```
 
 ## Inference Args
@@ -244,7 +244,7 @@ This looks a bit difficult to understand at the first glance. Let's understand t
 
 ### Three-level bucket
 
-![bucket](/assets/readme/report_bucket.png)
+![bucket](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_bucket.png)
 
 We design a three-level bucket: `(resolution, num_frames, aspect_ratios)`. The resolution and aspect ratios is predefined in [aspect.py](/opensora/datasets/aspect.py). Commonly used resolutions (e.g., 240p, 1080p) are supported, and the name represents the number of pixels (e.g., 240p is 240x426, however, we define 240p to represent any size with HxW approximately 240x426=102240 pixels). The aspect ratios are defined for each resolution. You do not need to define the aspect ratios in the `bucket_config`.
 

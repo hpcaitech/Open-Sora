@@ -7,22 +7,20 @@ Usage:
 """
 
 import argparse
+import datetime
 import importlib
-import os
-import subprocess
-import sys
-import re
 import json
 import math
+import os
+import re
+import subprocess
+import sys
+from tempfile import NamedTemporaryFile
 
 import spaces
 import torch
 
 import gradio as gr
-from tempfile import NamedTemporaryFile
-import datetime
-
-
 
 MODEL_TYPES = ["v1.1-stage2", "v1.1-stage3"]
 CONFIG_MAP = {
@@ -499,7 +497,7 @@ def main():
                     """
                 <div style='text-align: center;'>
                     <p align="center">
-                        <img src="https://github.com/hpcaitech/Open-Sora/raw/main/assets/readme/icon.png" width="250"/>
+                        <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon.png" width="250"/>
                     </p>
                     <div style="display: flex; gap: 10px; justify-content: center;">
                         <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
