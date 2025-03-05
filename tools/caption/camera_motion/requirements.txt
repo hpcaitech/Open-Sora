@@ -1,3 +1,0 @@
-decord
-ptvsd
-imageio-ffmpeg

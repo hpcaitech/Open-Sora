@@ -17,3 +17,11 @@ def set_sequence_parallel_group(group: dist.ProcessGroup):
 
 def get_sequence_parallel_group():
     return _GLOBAL_PARALLEL_GROUPS.get("sequence", None)
+
+
+def set_tensor_parallel_group(group: dist.ProcessGroup):
+    _GLOBAL_PARALLEL_GROUPS["tensor"] = group
+
+
+def get_tensor_parallel_group():
+    return _GLOBAL_PARALLEL_GROUPS.get("tensor", None)

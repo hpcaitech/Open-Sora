@@ -711,8 +711,11 @@ Here we only list a few of the projects. For other works and datasets, please re
 - [OpenDiT](https://github.com/NUS-HPC-AI-Lab/OpenDiT): An acceleration for DiT training. We adopt valuable acceleration
   strategies for training progress from OpenDiT.
 - [PixArt](https://github.com/PixArt-alpha/PixArt-alpha): An open-source DiT-based text-to-image model.
+- [Flux](https://github.com/black-forest-labs/flux): A powerful text-to-image generation model.
 - [Latte](https://github.com/Vchitect/Latte): An attempt to efficiently train DiT for video.
+- [HunyuanVideo](https://github.com/Tencent/HunyuanVideo/tree/main?tab=readme-ov-file): Open-Source text-to-video model.
 - [StabilityAI VAE](https://huggingface.co/stabilityai/sd-vae-ft-mse-original): A powerful image VAE model.
+- [DC-AE](https://github.com/mit-han-lab/efficientvit): Deep Compression AutoEncoder for image compression.
 - [CLIP](https://github.com/openai/CLIP): A powerful text-image embedding model.
 - [T5](https://github.com/google-research/text-to-text-transfer-transformer): A powerful text encoder.
 - [LLaVA](https://github.com/haotian-liu/LLaVA): A powerful image captioning model based on [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1) and [Yi-34B](https://huggingface.co/01-ai/Yi-34B).

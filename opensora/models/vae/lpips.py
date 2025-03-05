@@ -8,6 +8,8 @@ import torch.nn as nn
 from torchvision import models
 from tqdm import tqdm
 
+from opensora.acceleration.checkpoint import checkpoint
+
 URL_MAP = {"vgg_lpips": "https://heibox.uni-heidelberg.de/f/607503859c864bc1b30b/?dl=1"}
 
 CKPT_MAP = {"vgg_lpips": "vgg.pth"}
@@ -33,7 +35,7 @@ def download(url, local_path, chunk_size=1024):
                         pbar.update(chunk_size)
 
 
-def get_ckpt_path(name, root, check=False):
+def get_ckpt_path(name, root=".", check=False):
     assert name in URL_MAP
     path = os.path.join(root, CKPT_MAP[name])
     if not os.path.exists(path) or (check and not md5_hash(path) == MD5_MAP[name]):
@@ -56,14 +58,15 @@ class LPIPS(nn.Module):
         self.lin2 = NetLinLayer(self.chns[2], use_dropout=use_dropout)
         self.lin3 = NetLinLayer(self.chns[3], use_dropout=use_dropout)
         self.lin4 = NetLinLayer(self.chns[4], use_dropout=use_dropout)
+        self.lins = [self.lin0, self.lin1, self.lin2, self.lin3, self.lin4]
         self.load_from_pretrained()
         for param in self.parameters():
             param.requires_grad = False
 
     def load_from_pretrained(self, name="vgg_lpips"):
-        ckpt = get_ckpt_path(name, "pretrained_models/taming/modules/autoencoder/lpips")
+        path = os.path.expanduser("~/.cache/opensora/taming/modules/autoencoder/lpips")
+        ckpt = get_ckpt_path(name, path)
         self.load_state_dict(torch.load(ckpt, map_location=torch.device("cpu")), strict=False)
-        # print("loaded pretrained LPIPS loss from {}".format(ckpt))
 
     @classmethod
     def from_pretrained(cls, name="vgg_lpips"):
@@ -74,7 +77,7 @@ class LPIPS(nn.Module):
         model.load_state_dict(torch.load(ckpt, map_location=torch.device("cpu")), strict=False)
         return model
 
-    def forward(self, input, target):
+    def forward_old(self, input, target):
         in0_input, in1_input = (self.scaling_layer(input), self.scaling_layer(target))
         outs0, outs1 = self.net(in0_input), self.net(in1_input)
         feats0, feats1, diffs = {}, {}, {}
@@ -87,6 +90,22 @@ class LPIPS(nn.Module):
         val = res[0]
         for l in range(1, len(self.chns)):
             val += res[l]
+        return val
+
+    def get_layer_loss(self, input, target, i):
+        input, target = getattr(self.net, f"slice{i+1}")(input), getattr(self.net, f"slice{i+1}")(target)
+        feats0, feats1 = normalize_tensor(input), normalize_tensor(target)
+        diff = (feats0 - feats1) ** 2
+        avg = spatial_average(self.lins[i].model(diff), keepdim=True)
+        return avg, input, target
+
+    def forward(self, input, target):
+        input, target = (self.scaling_layer(input), self.scaling_layer(target))
+
+        val = None
+        for i in range(len(self.chns)):
+            avg, input, target = checkpoint(self.get_layer_loss, input, target, i, use_reentrant=False)
+            val = avg if val is None else val + avg
         return val
 
 

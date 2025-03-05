@@ -4,16 +4,16 @@ import torch.nn as nn
 from mmengine.registry import Registry
 
 
-def build_module(module, builder, **kwargs):
+def build_module(module: dict | nn.Module, builder: Registry, **kwargs) -> nn.Module | None:
     """Build module from config or return the module itself.
 
     Args:
-        module (Union[dict, nn.Module]): The module to build.
+        module (dict | nn.Module): The module to build.
         builder (Registry): The registry to build module.
         *args, **kwargs: Arguments passed to build function.
 
     Returns:
-        Any: The built module.
+        (None | nn.Module): The created model.
     """
     if module is None:
         return None
@@ -33,11 +33,6 @@ def build_module(module, builder, **kwargs):
 MODELS = Registry(
     "model",
     locations=["opensora.models"],
-)
-
-SCHEDULERS = Registry(
-    "scheduler",
-    locations=["opensora.schedulers"],
 )
 
 DATASETS = Registry(

@@ -1,4 +1,3 @@
-Copyright 2024 HPC-AI Technology Inc. All rights reserved.
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -204,9 +203,9 @@ Copyright 2024 HPC-AI Technology Inc. All rights reserved.
    =========================================================================
    This project is inspired by the listed projects and is subject to the following licenses:
 
-   1. Latte (https://github.com/Vchitect/Latte/blob/main/LICENSE)
+   10. [T5: Text-To-Text Transfer Transformer](https://github.com/google-research/text-to-text-transfer-transformer)
 
-   Copyright 2024 Latte
+   Copyright 2019 Google
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -220,28 +219,11 @@ Copyright 2024 HPC-AI Technology Inc. All rights reserved.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   2. PixArt-alpha (https://github.com/PixArt-alpha/PixArt-alpha/blob/master/LICENSE)
-
-   Copyright (C) 2024 PixArt-alpha/PixArt-alpha
-
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU Affero General Public License as published
-   by the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Affero General Public License for more details.
-
-   You should have received a copy of the GNU Affero General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-   3. dpm-solver (https://github.com/LuChengTHU/dpm-solver/blob/main/LICENSE)
+   11. [CLIP](https://github.com/openai/CLIP/tree/main)
 
    MIT License
 
-   Copyright (c) 2022 Cheng Lu
+   Copyright (c) 2021 OpenAI
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -253,419 +235,9 @@ Copyright 2024 HPC-AI Technology Inc. All rights reserved.
    The above copyright notice and this permission notice shall be included in all
    copies or substantial portions of the Software.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
+   12. [FLUX](https://github.com/black-forest-labs/flux)
 
-   4. DiT (https://github.com/facebookresearch/DiT/blob/main/LICENSE.txt)
-
-   Attribution-NonCommercial 4.0 International
-
-   =======================================================================
-
-   Creative Commons Corporation ("Creative Commons") is not a law firm and
-   does not provide legal services or legal advice. Distribution of
-   Creative Commons public licenses does not create a lawyer-client or
-   other relationship. Creative Commons makes its licenses and related
-   information available on an "as-is" basis. Creative Commons gives no
-   warranties regarding its licenses, any material licensed under their
-   terms and conditions, or any related information. Creative Commons
-   disclaims all liability for damages resulting from their use to the
-   fullest extent possible.
-
-   Using Creative Commons Public Licenses
-
-   Creative Commons public licenses provide a standard set of terms and
-   conditions that creators and other rights holders may use to share
-   original works of authorship and other material subject to copyright
-   and certain other rights specified in the public license below. The
-   following considerations are for informational purposes only, are not
-   exhaustive, and do not form part of our licenses.
-
-      Considerations for licensors: Our public licenses are
-      intended for use by those authorized to give the public
-      permission to use material in ways otherwise restricted by
-      copyright and certain other rights. Our licenses are
-      irrevocable. Licensors should read and understand the terms
-      and conditions of the license they choose before applying it.
-      Licensors should also secure all rights necessary before
-      applying our licenses so that the public can reuse the
-      material as expected. Licensors should clearly mark any
-      material not subject to the license. This includes other CC-
-      licensed material, or material used under an exception or
-      limitation to copyright. More considerations for licensors:
-      wiki.creativecommons.org/Considerations_for_licensors
-
-      Considerations for the public: By using one of our public
-      licenses, a licensor grants the public permission to use the
-      licensed material under specified terms and conditions. If
-      the licensor's permission is not necessary for any reason--for
-      example, because of any applicable exception or limitation to
-      copyright--then that use is not regulated by the license. Our
-      licenses grant only permissions under copyright and certain
-      other rights that a licensor has authority to grant. Use of
-      the licensed material may still be restricted for other
-      reasons, including because others have copyright or other
-      rights in the material. A licensor may make special requests,
-      such as asking that all changes be marked or described.
-      Although not required by our licenses, you are encouraged to
-      respect those requests where reasonable. More_considerations
-      for the public:
-      wiki.creativecommons.org/Considerations_for_licensees
-
-   =======================================================================
-
-   Creative Commons Attribution-NonCommercial 4.0 International Public
-   License
-
-   By exercising the Licensed Rights (defined below), You accept and agree
-   to be bound by the terms and conditions of this Creative Commons
-   Attribution-NonCommercial 4.0 International Public License ("Public
-   License"). To the extent this Public License may be interpreted as a
-   contract, You are granted the Licensed Rights in consideration of Your
-   acceptance of these terms and conditions, and the Licensor grants You
-   such rights in consideration of benefits the Licensor receives from
-   making the Licensed Material available under these terms and
-   conditions.
-
-   Section 1 -- Definitions.
-
-   a. Adapted Material means material subject to Copyright and Similar
-      Rights that is derived from or based upon the Licensed Material
-      and in which the Licensed Material is translated, altered,
-      arranged, transformed, or otherwise modified in a manner requiring
-      permission under the Copyright and Similar Rights held by the
-      Licensor. For purposes of this Public License, where the Licensed
-      Material is a musical work, performance, or sound recording,
-      Adapted Material is always produced where the Licensed Material is
-      synched in timed relation with a moving image.
-
-   b. Adapter's License means the license You apply to Your Copyright
-      and Similar Rights in Your contributions to Adapted Material in
-      accordance with the terms and conditions of this Public License.
-
-   c. Copyright and Similar Rights means copyright and/or similar rights
-      closely related to copyright including, without limitation,
-      performance, broadcast, sound recording, and Sui Generis Database
-      Rights, without regard to how the rights are labeled or
-      categorized. For purposes of this Public License, the rights
-      specified in Section 2(b)(1)-(2) are not Copyright and Similar
-      Rights.
-   d. Effective Technological Measures means those measures that, in the
-      absence of proper authority, may not be circumvented under laws
-      fulfilling obligations under Article 11 of the WIPO Copyright
-      Treaty adopted on December 20, 1996, and/or similar international
-      agreements.
-
-   e. Exceptions and Limitations means fair use, fair dealing, and/or
-      any other exception or limitation to Copyright and Similar Rights
-      that applies to Your use of the Licensed Material.
-
-   f. Licensed Material means the artistic or literary work, database,
-      or other material to which the Licensor applied this Public
-      License.
-
-   g. Licensed Rights means the rights granted to You subject to the
-      terms and conditions of this Public License, which are limited to
-      all Copyright and Similar Rights that apply to Your use of the
-      Licensed Material and that the Licensor has authority to license.
-
-   h. Licensor means the individual(s) or entity(ies) granting rights
-      under this Public License.
-
-   i. NonCommercial means not primarily intended for or directed towards
-      commercial advantage or monetary compensation. For purposes of
-      this Public License, the exchange of the Licensed Material for
-      other material subject to Copyright and Similar Rights by digital
-      file-sharing or similar means is NonCommercial provided there is
-      no payment of monetary compensation in connection with the
-      exchange.
-
-   j. Share means to provide material to the public by any means or
-      process that requires permission under the Licensed Rights, such
-      as reproduction, public display, public performance, distribution,
-      dissemination, communication, or importation, and to make material
-      available to the public including in ways that members of the
-      public may access the material from a place and at a time
-      individually chosen by them.
-
-   k. Sui Generis Database Rights means rights other than copyright
-      resulting from Directive 96/9/EC of the European Parliament and of
-      the Council of 11 March 1996 on the legal protection of databases,
-      as amended and/or succeeded, as well as other essentially
-      equivalent rights anywhere in the world.
-
-   l. You means the individual or entity exercising the Licensed Rights
-      under this Public License. Your has a corresponding meaning.
-
-   Section 2 -- Scope.
-
-   a. License grant.
-
-         1. Subject to the terms and conditions of this Public License,
-            the Licensor hereby grants You a worldwide, royalty-free,
-            non-sublicensable, non-exclusive, irrevocable license to
-            exercise the Licensed Rights in the Licensed Material to:
-
-               a. reproduce and Share the Licensed Material, in whole or
-                  in part, for NonCommercial purposes only; and
-
-               b. produce, reproduce, and Share Adapted Material for
-                  NonCommercial purposes only.
-
-         2. Exceptions and Limitations. For the avoidance of doubt, where
-            Exceptions and Limitations apply to Your use, this Public
-            License does not apply, and You do not need to comply with
-            its terms and conditions.
-
-         3. Term. The term of this Public License is specified in Section
-            6(a).
-
-         4. Media and formats; technical modifications allowed. The
-            Licensor authorizes You to exercise the Licensed Rights in
-            all media and formats whether now known or hereafter created,
-            and to make technical modifications necessary to do so. The
-            Licensor waives and/or agrees not to assert any right or
-            authority to forbid You from making technical modifications
-            necessary to exercise the Licensed Rights, including
-            technical modifications necessary to circumvent Effective
-            Technological Measures. For purposes of this Public License,
-            simply making modifications authorized by this Section 2(a)
-            (4) never produces Adapted Material.
-
-         5. Downstream recipients.
-
-               a. Offer from the Licensor -- Licensed Material. Every
-                  recipient of the Licensed Material automatically
-                  receives an offer from the Licensor to exercise the
-                  Licensed Rights under the terms and conditions of this
-                  Public License.
-
-               b. No downstream restrictions. You may not offer or impose
-                  any additional or different terms or conditions on, or
-                  apply any Effective Technological Measures to, the
-                  Licensed Material if doing so restricts exercise of the
-                  Licensed Rights by any recipient of the Licensed
-                  Material.
-
-         6. No endorsement. Nothing in this Public License constitutes or
-            may be construed as permission to assert or imply that You
-            are, or that Your use of the Licensed Material is, connected
-            with, or sponsored, endorsed, or granted official status by,
-            the Licensor or others designated to receive attribution as
-            provided in Section 3(a)(1)(A)(i).
-
-   b. Other rights.
-
-         1. Moral rights, such as the right of integrity, are not
-            licensed under this Public License, nor are publicity,
-            privacy, and/or other similar personality rights; however, to
-            the extent possible, the Licensor waives and/or agrees not to
-            assert any such rights held by the Licensor to the limited
-            extent necessary to allow You to exercise the Licensed
-            Rights, but not otherwise.
-
-         2. Patent and trademark rights are not licensed under this
-            Public License.
-
-         3. To the extent possible, the Licensor waives any right to
-            collect royalties from You for the exercise of the Licensed
-            Rights, whether directly or through a collecting society
-            under any voluntary or waivable statutory or compulsory
-            licensing scheme. In all other cases the Licensor expressly
-            reserves any right to collect such royalties, including when
-            the Licensed Material is used other than for NonCommercial
-            purposes.
-
-   Section 3 -- License Conditions.
-
-   Your exercise of the Licensed Rights is expressly made subject to the
-   following conditions.
-
-   a. Attribution.
-
-         1. If You Share the Licensed Material (including in modified
-            form), You must:
-
-               a. retain the following if it is supplied by the Licensor
-                  with the Licensed Material:
-
-                  i. identification of the creator(s) of the Licensed
-                     Material and any others designated to receive
-                     attribution, in any reasonable manner requested by
-                     the Licensor (including by pseudonym if
-                     designated);
-
-                  ii. a copyright notice;
-
-                  iii. a notice that refers to this Public License;
-
-                  iv. a notice that refers to the disclaimer of
-                     warranties;
-
-                  v. a URI or hyperlink to the Licensed Material to the
-                     extent reasonably practicable;
-
-               b. indicate if You modified the Licensed Material and
-                  retain an indication of any previous modifications; and
-
-               c. indicate the Licensed Material is licensed under this
-                  Public License, and include the text of, or the URI or
-                  hyperlink to, this Public License.
-
-         2. You may satisfy the conditions in Section 3(a)(1) in any
-            reasonable manner based on the medium, means, and context in
-            which You Share the Licensed Material. For example, it may be
-            reasonable to satisfy the conditions by providing a URI or
-            hyperlink to a resource that includes the required
-            information.
-
-         3. If requested by the Licensor, You must remove any of the
-            information required by Section 3(a)(1)(A) to the extent
-            reasonably practicable.
-
-         4. If You Share Adapted Material You produce, the Adapter's
-            License You apply must not prevent recipients of the Adapted
-            Material from complying with this Public License.
-
-   Section 4 -- Sui Generis Database Rights.
-
-   Where the Licensed Rights include Sui Generis Database Rights that
-   apply to Your use of the Licensed Material:
-
-   a. for the avoidance of doubt, Section 2(a)(1) grants You the right
-      to extract, reuse, reproduce, and Share all or a substantial
-      portion of the contents of the database for NonCommercial purposes
-      only;
-
-   b. if You include all or a substantial portion of the database
-      contents in a database in which You have Sui Generis Database
-      Rights, then the database in which You have Sui Generis Database
-      Rights (but not its individual contents) is Adapted Material; and
-
-   c. You must comply with the conditions in Section 3(a) if You Share
-      all or a substantial portion of the contents of the database.
-
-   For the avoidance of doubt, this Section 4 supplements and does not
-   replace Your obligations under this Public License where the Licensed
-   Rights include other Copyright and Similar Rights.
-
-   Section 5 -- Disclaimer of Warranties and Limitation of Liability.
-
-   a. UNLESS OTHERWISE SEPARATELY UNDERTAKEN BY THE LICENSOR, TO THE
-      EXTENT POSSIBLE, THE LICENSOR OFFERS THE LICENSED MATERIAL AS-IS
-      AND AS-AVAILABLE, AND MAKES NO REPRESENTATIONS OR WARRANTIES OF
-      ANY KIND CONCERNING THE LICENSED MATERIAL, WHETHER EXPRESS,
-      IMPLIED, STATUTORY, OR OTHER. THIS INCLUDES, WITHOUT LIMITATION,
-      WARRANTIES OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR
-      PURPOSE, NON-INFRINGEMENT, ABSENCE OF LATENT OR OTHER DEFECTS,
-      ACCURACY, OR THE PRESENCE OR ABSENCE OF ERRORS, WHETHER OR NOT
-      KNOWN OR DISCOVERABLE. WHERE DISCLAIMERS OF WARRANTIES ARE NOT
-      ALLOWED IN FULL OR IN PART, THIS DISCLAIMER MAY NOT APPLY TO YOU.
-
-   b. TO THE EXTENT POSSIBLE, IN NO EVENT WILL THE LICENSOR BE LIABLE
-      TO YOU ON ANY LEGAL THEORY (INCLUDING, WITHOUT LIMITATION,
-      NEGLIGENCE) OR OTHERWISE FOR ANY DIRECT, SPECIAL, INDIRECT,
-      INCIDENTAL, CONSEQUENTIAL, PUNITIVE, EXEMPLARY, OR OTHER LOSSES,
-      COSTS, EXPENSES, OR DAMAGES ARISING OUT OF THIS PUBLIC LICENSE OR
-      USE OF THE LICENSED MATERIAL, EVEN IF THE LICENSOR HAS BEEN
-      ADVISED OF THE POSSIBILITY OF SUCH LOSSES, COSTS, EXPENSES, OR
-      DAMAGES. WHERE A LIMITATION OF LIABILITY IS NOT ALLOWED IN FULL OR
-      IN PART, THIS LIMITATION MAY NOT APPLY TO YOU.
-
-   c. The disclaimer of warranties and limitation of liability provided
-      above shall be interpreted in a manner that, to the extent
-      possible, most closely approximates an absolute disclaimer and
-      waiver of all liability.
-
-   Section 6 -- Term and Termination.
-
-   a. This Public License applies for the term of the Copyright and
-      Similar Rights licensed here. However, if You fail to comply with
-      this Public License, then Your rights under this Public License
-      terminate automatically.
-
-   b. Where Your right to use the Licensed Material has terminated under
-      Section 6(a), it reinstates:
-
-         1. automatically as of the date the violation is cured, provided
-            it is cured within 30 days of Your discovery of the
-            violation; or
-
-         2. upon express reinstatement by the Licensor.
-
-      For the avoidance of doubt, this Section 6(b) does not affect any
-      right the Licensor may have to seek remedies for Your violations
-      of this Public License.
-
-   c. For the avoidance of doubt, the Licensor may also offer the
-      Licensed Material under separate terms or conditions or stop
-      distributing the Licensed Material at any time; however, doing so
-      will not terminate this Public License.
-
-   d. Sections 1, 5, 6, 7, and 8 survive termination of this Public
-      License.
-
-   Section 7 -- Other Terms and Conditions.
-
-   a. The Licensor shall not be bound by any additional or different
-      terms or conditions communicated by You unless expressly agreed.
-
-   b. Any arrangements, understandings, or agreements regarding the
-      Licensed Material not stated herein are separate from and
-      independent of the terms and conditions of this Public License.
-
-   Section 8 -- Interpretation.
-
-   a. For the avoidance of doubt, this Public License does not, and
-      shall not be interpreted to, reduce, limit, restrict, or impose
-      conditions on any use of the Licensed Material that could lawfully
-      be made without permission under this Public License.
-
-   b. To the extent possible, if any provision of this Public License is
-      deemed unenforceable, it shall be automatically reformed to the
-      minimum extent necessary to make it enforceable. If the provision
-      cannot be reformed, it shall be severed from this Public License
-      without affecting the enforceability of the remaining terms and
-      conditions.
-
-   c. No term or condition of this Public License will be waived and no
-      failure to comply consented to unless expressly agreed to by the
-      Licensor.
-
-   d. Nothing in this Public License constitutes or may be interpreted
-      as a limitation upon, or waiver of, any privileges and immunities
-      that apply to the Licensor or You, including from the legal
-      processes of any jurisdiction or authority.
-
-   =======================================================================
-
-   Creative Commons is not a party to its public
-   licenses. Notwithstanding, Creative Commons may elect to apply one of
-   its public licenses to material it publishes and in those instances
-   will be considered the “Licensor.” The text of the Creative Commons
-   public licenses is dedicated to the public domain under the CC0 Public
-   Domain Dedication. Except for the limited purpose of indicating that
-   material is shared under a Creative Commons public license or as
-   otherwise permitted by the Creative Commons policies published at
-   creativecommons.org/policies, Creative Commons does not authorize the
-   use of the trademark "Creative Commons" or any other trademark or logo
-   of Creative Commons without its prior written consent including,
-   without limitation, in connection with any unauthorized modifications
-   to any of its public licenses or any other arrangements,
-   understandings, or agreements concerning use of licensed material. For
-   the avoidance of doubt, this paragraph does not form part of the
-   public licenses.
-
-   Creative Commons may be contacted at creativecommons.org.
-
-   5. OpenDiT (https://github.com/NUS-HPC-AI-Lab/OpenDiT/blob/master/LICENSE)
-
-   Copyright OpenDiT
+   Copyright 2024 Black Forest Labs
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -679,28 +251,100 @@ Copyright 2024 HPC-AI Technology Inc. All rights reserved.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   6. Asymmetric_magvitv2 (https://github.com/bornfly-detachment/asymmetric_magvitv2/blob/main/LICENSE)
+   13. [EfficientViT](https://github.com/mit-han-lab/efficientvit)
 
-   MIT License
+   Copyright [2023] [Han Cai]
 
-   Copyright (c) 2024 bornfly-detachment
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
+       http://www.apache.org/licenses/LICENSE-2.0
 
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
+   14. [HunyuanVideo](https://github.com/Tencent/HunyuanVideo/tree/main)
 
+   TENCENT HUNYUAN COMMUNITY LICENSE AGREEMENT
+   Tencent HunyuanVideo Release Date: December 3, 2024
+   THIS LICENSE AGREEMENT DOES NOT APPLY IN THE EUROPEAN UNION, UNITED KINGDOM AND SOUTH KOREA AND IS EXPRESSLY LIMITED TO THE TERRITORY, AS DEFINED BELOW.
+   By clicking to agree or by using, reproducing, modifying, distributing, performing or displaying any portion or element of the Tencent Hunyuan Works, including via any Hosted Service, You will be deemed to have recognized and accepted the content of this Agreement, which is effective immediately.
 
+   1. DEFINITIONS.
+   a. “Acceptable Use Policy” shall mean the policy made available by Tencent as set forth in the Exhibit A.
+   b. “Agreement” shall mean the terms and conditions for use, reproduction, distribution, modification, performance and displaying of Tencent Hunyuan Works or any portion or element thereof set forth herein.
+   c. “Documentation” shall mean the specifications, manuals and documentation for Tencent Hunyuan made publicly available by Tencent.
+   d. “Hosted Service” shall mean a hosted service offered via an application programming interface (API), web access, or any other electronic or remote means.
+   e. “Licensee,” “You” or “Your” shall mean a natural person or legal entity exercising the rights granted by this Agreement and/or using the Tencent Hunyuan Works for any purpose and in any field of use.
+   f. “Materials” shall mean, collectively, Tencent’s proprietary Tencent Hunyuan and Documentation (and any portion thereof) as made available by Tencent under this Agreement.
+   g. “Model Derivatives” shall mean all: (i) modifications to Tencent Hunyuan or any Model Derivative of Tencent Hunyuan; (ii) works based on Tencent Hunyuan or any Model Derivative of Tencent Hunyuan; or (iii) any other machine learning model which is created by transfer of patterns of the weights, parameters, operations, or Output of Tencent Hunyuan or any Model Derivative of Tencent Hunyuan, to that model in order to cause that model to perform similarly to Tencent Hunyuan or a Model Derivative of Tencent Hunyuan, including distillation methods, methods that use intermediate data representations, or methods based on the generation of synthetic data Outputs by Tencent Hunyuan or a Model Derivative of Tencent Hunyuan for training that model. For clarity, Outputs by themselves are not deemed Model Derivatives.
+   h. “Output” shall mean the information and/or content output of Tencent Hunyuan or a Model Derivative that results from operating or otherwise using Tencent Hunyuan or a Model Derivative, including via a Hosted Service.
+   i. “Tencent,” “We” or “Us” shall mean THL A29 Limited.
+   j. “Tencent Hunyuan” shall mean the large language models, text/image/video/audio/3D generation models, and multimodal large language models and their software and algorithms, including trained model weights, parameters (including optimizer states), machine-learning model code, inference-enabling code, training-enabling code, fine-tuning enabling code and other elements of the foregoing made publicly available by Us, including, without limitation to, Tencent HunyuanVideo released at [https://github.com/Tencent/HunyuanVideo].
+   k. “Tencent Hunyuan Works” shall mean: (i) the Materials; (ii) Model Derivatives; and (iii) all derivative works thereof.
+   l. “Territory” shall mean the worldwide territory, excluding the territory of the European Union, United Kingdom and South Korea.
+   m. “Third Party” or “Third Parties” shall mean individuals or legal entities that are not under common control with Us or You.
+   n. “including” shall mean including but not limited to.
+   2. GRANT OF RIGHTS.
+   We grant You, for the Territory only, a non-exclusive, non-transferable and royalty-free limited license under Tencent’s intellectual property or other rights owned by Us embodied in or utilized by the Materials to use, reproduce, distribute, create derivative works of (including Model Derivatives), and make modifications to the Materials, only in accordance with the terms of this Agreement and the Acceptable Use Policy, and You must not violate (or encourage or permit anyone else to violate) any term of this Agreement or the Acceptable Use Policy.
+   3. DISTRIBUTION.
+   You may, subject to Your compliance with this Agreement, distribute or make available to Third Parties the Tencent Hunyuan Works, exclusively in the Territory, provided that You meet all of the following conditions:
+   a. You must provide all such Third Party recipients of the Tencent Hunyuan Works or products or services using them a copy of this Agreement;
+   b. You must cause any modified files to carry prominent notices stating that You changed the files;
+   c. You are encouraged to: (i) publish at least one technology introduction blogpost or one public statement expressing Your experience of using the Tencent Hunyuan Works; and (ii) mark the products or services developed by using the Tencent Hunyuan Works to indicate that the product/service is “Powered by Tencent Hunyuan”; and
+   d. All distributions to Third Parties (other than through a Hosted Service) must be accompanied by a “Notice” text file that contains the following notice: “Tencent Hunyuan is licensed under the Tencent Hunyuan Community License Agreement, Copyright © 2024 Tencent. All Rights Reserved. The trademark rights of “Tencent Hunyuan” are owned by Tencent or its affiliate.”
+   You may add Your own copyright statement to Your modifications and, except as set forth in this Section and in Section 5, may provide additional or different license terms and conditions for use, reproduction, or distribution of Your modifications, or for any such Model Derivatives as a whole, provided Your use, reproduction, modification, distribution, performance and display of the work otherwise complies with the terms and conditions of this Agreement (including as regards the Territory). If You receive Tencent Hunyuan Works from a Licensee as part of an integrated end user product, then this Section 3 of this Agreement will not apply to You.
+   4. ADDITIONAL COMMERCIAL TERMS.
+   If, on the Tencent Hunyuan version release date, the monthly active users of all products or services made available by or for Licensee is greater than 100 million monthly active users in the preceding calendar month, You must request a license from Tencent, which Tencent may grant to You in its sole discretion, and You are not authorized to exercise any of the rights under this Agreement unless or until Tencent otherwise expressly grants You such rights.
+   5. RULES OF USE.
+   a. Your use of the Tencent Hunyuan Works must comply with applicable laws and regulations (including trade compliance laws and regulations) and adhere to the Acceptable Use Policy for the Tencent Hunyuan Works, which is hereby incorporated by reference into this Agreement. You must include the use restrictions referenced in these Sections 5(a) and 5(b) as an enforceable provision in any agreement (e.g., license agreement, terms of use, etc.) governing the use and/or distribution of Tencent Hunyuan Works and You must provide notice to subsequent users to whom You distribute that Tencent Hunyuan Works are subject to the use restrictions in these Sections 5(a) and 5(b).
+   b. You must not use the Tencent Hunyuan Works or any Output or results of the Tencent Hunyuan Works to improve any other AI model (other than Tencent Hunyuan or Model Derivatives thereof).
+   c. You must not use, reproduce, modify, distribute, or display the Tencent Hunyuan Works, Output or results of the Tencent Hunyuan Works outside the Territory. Any such use outside the Territory is unlicensed and unauthorized under this Agreement.
+   6. INTELLECTUAL PROPERTY.
+   a. Subject to Tencent’s ownership of Tencent Hunyuan Works made by or for Tencent and intellectual property rights therein, conditioned upon Your compliance with the terms and conditions of this Agreement, as between You and Tencent, You will be the owner of any derivative works and modifications of the Materials and any Model Derivatives that are made by or for You.
+   b. No trademark licenses are granted under this Agreement, and in connection with the Tencent Hunyuan Works, Licensee may not use any name or mark owned by or associated with Tencent or any of its affiliates, except as required for reasonable and customary use in describing and distributing the Tencent Hunyuan Works. Tencent hereby grants You a license to use “Tencent Hunyuan” (the “Mark”) in the Territory solely as required to comply with the provisions of Section 3(c), provided that You comply with any applicable laws related to trademark protection. All goodwill arising out of Your use of the Mark will inure to the benefit of Tencent.
+   c. If You commence a lawsuit or other proceedings (including a cross-claim or counterclaim in a lawsuit) against Us or any person or entity alleging that the Materials or any Output, or any portion of any of the foregoing, infringe any intellectual property or other right owned or licensable by You, then all licenses granted to You under this Agreement shall terminate as of the date such lawsuit or other proceeding is filed. You will defend, indemnify and hold harmless Us from and against any claim by any Third Party arising out of or related to Your or the Third Party’s use or distribution of the Tencent Hunyuan Works.
+   d. Tencent claims no rights in Outputs You generate. You and Your users are solely responsible for Outputs and their subsequent uses.
+   7. DISCLAIMERS OF WARRANTY AND LIMITATIONS OF LIABILITY.
+   a. We are not obligated to support, update, provide training for, or develop any further version of the Tencent Hunyuan Works or to grant any license thereto.
+   b. UNLESS AND ONLY TO THE EXTENT REQUIRED BY APPLICABLE LAW, THE TENCENT HUNYUAN WORKS AND ANY OUTPUT AND RESULTS THEREFROM ARE PROVIDED “AS IS” WITHOUT ANY EXPRESS OR IMPLIED WARRANTIES OF ANY KIND INCLUDING ANY WARRANTIES OF TITLE, MERCHANTABILITY, NONINFRINGEMENT, COURSE OF DEALING, USAGE OF TRADE, OR FITNESS FOR A PARTICULAR PURPOSE. YOU ARE SOLELY RESPONSIBLE FOR DETERMINING THE APPROPRIATENESS OF USING, REPRODUCING, MODIFYING, PERFORMING, DISPLAYING OR DISTRIBUTING ANY OF THE TENCENT HUNYUAN WORKS OR OUTPUTS AND ASSUME ANY AND ALL RISKS ASSOCIATED WITH YOUR OR A THIRD PARTY’S USE OR DISTRIBUTION OF ANY OF THE TENCENT HUNYUAN WORKS OR OUTPUTS AND YOUR EXERCISE OF RIGHTS AND PERMISSIONS UNDER THIS AGREEMENT.
+   c. TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL TENCENT OR ITS AFFILIATES BE LIABLE UNDER ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, TORT, NEGLIGENCE, PRODUCTS LIABILITY, OR OTHERWISE, FOR ANY DAMAGES, INCLUDING ANY DIRECT, INDIRECT, SPECIAL, INCIDENTAL, EXEMPLARY, CONSEQUENTIAL OR PUNITIVE DAMAGES, OR LOST PROFITS OF ANY KIND ARISING FROM THIS AGREEMENT OR RELATED TO ANY OF THE TENCENT HUNYUAN WORKS OR OUTPUTS, EVEN IF TENCENT OR ITS AFFILIATES HAVE BEEN ADVISED OF THE POSSIBILITY OF ANY OF THE FOREGOING.
+   8. SURVIVAL AND TERMINATION.
+   a. The term of this Agreement shall commence upon Your acceptance of this Agreement or access to the Materials and will continue in full force and effect until terminated in accordance with the terms and conditions herein.
+   b. We may terminate this Agreement if You breach any of the terms or conditions of this Agreement. Upon termination of this Agreement, You must promptly delete and cease use of the Tencent Hunyuan Works. Sections 6(a), 6(c), 7 and 9 shall survive the termination of this Agreement.
+   9. GOVERNING LAW AND JURISDICTION.
+   a. This Agreement and any dispute arising out of or relating to it will be governed by the laws of the Hong Kong Special Administrative Region of the People’s Republic of China, without regard to conflict of law principles, and the UN Convention on Contracts for the International Sale of Goods does not apply to this Agreement.
+   b. Exclusive jurisdiction and venue for any dispute arising out of or relating to this Agreement will be a court of competent jurisdiction in the Hong Kong Special Administrative Region of the People’s Republic of China, and Tencent and Licensee consent to the exclusive jurisdiction of such court with respect to any such dispute.
+
+   EXHIBIT A
+   ACCEPTABLE USE POLICY
+
+   Tencent reserves the right to update this Acceptable Use Policy from time to time.
+   Last modified: November 5, 2024
+
+   Tencent endeavors to promote safe and fair use of its tools and features, including Tencent Hunyuan. You agree not to use Tencent Hunyuan or Model Derivatives:
+
+   1. Outside the Territory;
+   2. In any way that violates any applicable national, federal, state, local, international or any other law or regulation;
+   3. To harm Yourself or others;
+   4. To repurpose or distribute output from Tencent Hunyuan or any Model Derivatives to harm Yourself or others;
+   5. To override or circumvent the safety guardrails and safeguards We have put in place;
+   6. For the purpose of exploiting, harming or attempting to exploit or harm minors in any way;
+   7. To generate or disseminate verifiably false information and/or content with the purpose of harming others or influencing elections;
+   8. To generate or facilitate false online engagement, including fake reviews and other means of fake online engagement;
+   9. To intentionally defame, disparage or otherwise harass others;
+   10. To generate and/or disseminate malware (including ransomware) or any other content to be used for the purpose of harming electronic systems;
+   11. To generate or disseminate personal identifiable information with the purpose of harming others;
+   12. To generate or disseminate information (including images, code, posts, articles), and place the information in any public context (including –through the use of bot generated tweets), without expressly and conspicuously identifying that the information and/or content is machine generated;
+   13. To impersonate another individual without consent, authorization, or legal right;
+   14. To make high-stakes automated decisions in domains that affect an individual’s safety, rights or wellbeing (e.g., law enforcement, migration, medicine/health, management of critical infrastructure, safety components of products, essential services, credit, employment, housing, education, social scoring, or insurance);
+   15. In a manner that violates or disrespects the social ethics and moral standards of other countries or regions;
+   16. To perform, facilitate, threaten, incite, plan, promote or encourage violent extremism or terrorism;
+   17. For any use intended to discriminate against or harm individuals or groups based on protected characteristics or categories, online or offline social behavior or known or predicted personal or personality characteristics;
+   18. To intentionally exploit any of the vulnerabilities of a specific group of persons based on their age, social, physical or mental characteristics, in order to materially distort the behavior of a person pertaining to that group in a manner that causes or is likely to cause that person or another person physical or psychological harm;
+   19. For military purposes;
+   20. To engage in the unauthorized or unlicensed practice of any profession including, but not limited to, financial, legal, medical/health, or other professional practices.
