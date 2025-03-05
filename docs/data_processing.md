@@ -3,7 +3,7 @@
 
 We establish a complete pipeline for video/image data processing. The pipeline is shown below.
 
-![pipeline](/assets/readme/report_data_pipeline.png)
+![pipeline](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_data_pipeline.png)
 
 First, raw videos,
 either from the  Internet or public datasets, are split into shorter clips based on scene detection.

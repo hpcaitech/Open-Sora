@@ -206,14 +206,14 @@ function run_video_h() { # 61min
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 2s --resolution 360p --aspect-ratio 9:16 \
     --loop 5 --condition-frame-length 5 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --reference-path https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/wave.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   eval $CMD --ckpt-path $CKPT --save-dir $OUTPUT --sample-name ref_L5C10_16s_360p_9_16 \
     --prompt-path assets/texts/t2v_ref.txt --start-index 0 --end-index 3 \
     --num-frames 16s --resolution 360p --aspect-ratio 9:16 \
     --loop 5 --condition-frame-length 10 \
-    --reference-path assets/images/condition/cliff.png assets/images/condition/wave.png assets/images/condition/ship.png \
+    --reference-path https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/wave.png https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/ship.png \
     --mask-strategy "0" "0" "0" --batch-size $DEFAULT_BS
 
   # 3.2
@@ -221,7 +221,7 @@ function run_video_h() { # 61min
     --prompt-path assets/texts/t2v_ref.txt --start-index 3 --end-index 6 \
     --num-frames 16s --resolution 360p --aspect-ratio 9:16 \
     --loop 1 \
-    --reference-path assets/images/condition/cliff.png "assets/images/condition/cactus-sad.png\;assets/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
+    --reference-path https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cliff.png "https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cactus-sad.png\;https://github.com/hpcaitech/Open-Sora-Demo/blob/main/images/condition/cactus-happy.png" https://cdn.openai.com/tmp/s/interp/d0.mp4 \
     --mask-strategy "0" "0\;0,1,0,-1,1" "0,0,0,0,${QUAD_FRAMES},0.5" --batch-size $DEFAULT_BS
 }
 

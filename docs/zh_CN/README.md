@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="../../assets/readme/icon.png" width="250"/>
+    <img src="../..https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon.png" width="250"/>
 </p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
@@ -59,9 +59,9 @@
 
 | **2秒 512×512**                                                                                                                                                                 | **2秒 512×512**                                                                                                                                                              | **2秒 512×512**                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="/assets/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="/assets/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="/assets/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sample_0.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/de1963d3-b43b-4e68-a670-bb821ebb6f80)                                 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sample_1.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/13f8338f-3d42-4b71-8142-d234fbd746cc)                              | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sample_2.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/fa6a65a6-e32a-4d64-9a9e-eabb0ebb8c16)    |
 |森林地区宁静的夜景。 [...] 该视频是一段延时摄影，捕捉了白天到夜晚的转变，湖泊和森林始终作为背景。 | 无人机拍摄的镜头捕捉到了海岸悬崖的壮丽美景，[...] 海水轻轻地拍打着岩石底部和紧贴悬崖顶部的绿色植物。| 瀑布从悬崖上倾泻而下，流入宁静的湖泊，气势磅礴。[...] 摄像机角度提供了瀑布的鸟瞰图。 |
-| [<img src="/assets/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="/assets/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="/assets/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sample_3.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/64232f84-1b36-4750-a6c0-3e610fa9aa94)                                 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sample_4.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/983a1965-a374-41a7-a76b-c07941a6c1e9)                              | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/sample_5.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/ec10c879-9767-4c31-865f-2e8d6cf11e65)    |
 | 夜晚繁华的城市街道，充满了汽车前灯的光芒和路灯的氛围光。 [...]                                                           | 向日葵田的生机勃勃，美不胜收。向日葵整齐排列，给人一种秩序感和对称感。 [...]                                            |宁静的水下场景，一只海龟在珊瑚礁中游动。这只海龟的壳呈绿褐色 [...]                   |
 
 视频经过降采样以.gif用于显示。单击查看原始视频。提示经过修剪以用于显示，请参阅[此处](/assets/texts/t2v_samples.txt)查看完整提示。
@@ -252,7 +252,7 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 在 Gradio 应用程序中，基本选项如下：
 
-![Gradio Demo](/assets/readme/gradio_basic.png)
+![Gradio Demo](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/gradio_basic.png)
 
 生成视频最简单的方式是输入文本提示，然后点击“**生成视频**”按钮（如果找不到，请向下滚动）。生成的视频将显示在右侧面板中。勾选“**使用 GPT4o 增强提示**”将使用 GPT-4o 来细化提示，而“**随机提示**”按钮将由 GPT-4o 为您生成随机提示。由于 OpenAI 的 API 限制，提示细化结果具有一定的随机性。
 
@@ -266,7 +266,7 @@ export OPENAI_API_KEY=YOUR_API_KEY
 
 注意，除了文本转视频，你还可以使用图片转视频。你可以上传图片，然后点击“**生成视频**”按钮，生成以图片为第一帧的视频。或者，你可以填写文本提示，然后点击“**生成图片**”按钮，根据文本提示生成图片，然后点击“**生成视频**”按钮，根据同一模型生成的图片生成视频。
 
-![Gradio Demo](/assets/readme/gradio_option.png)
+![Gradio Demo](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/gradio_option.png)
 
 然后您可以指定更多选项，包括“**运动强度**”、“**美学**”和“**相机运动**”。如果未选中“启用”或选择“无”，则不会将信息传递给模型。否则，模型将生成具有指定运动强度、美学分数和相机运动的视频。
 
@@ -341,7 +341,7 @@ torchrun --standalone --nproc_per_node 2 scripts/inference.py configs/opensora/i
 
 高质量的数据对于训练良好的生成模型至关重要。为此，我们建立了完整的数据处理流程，可以将原始视频无缝转换为高质量的视频-文本对。流程如下所示。有关详细信息，请参阅[数据处理](docs/data_processing.md)。另请查看我们使用的[数据集](docs/datasets.md)。
 
-![Data Processing Pipeline](/assets/readme/report_data_pipeline.png)
+![Data Processing Pipeline](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/report_data_pipeline.png)
 
 ## 训练
 

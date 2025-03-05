@@ -183,7 +183,6 @@ from opensora.utils.inference_utils import (
     prepare_multi_resolution_info,
     refine_prompts_by_openai,
     split_prompt,
-    has_openai_key
 )
 from opensora.utils.misc import to_torch_dtype
 
@@ -494,7 +493,7 @@ def main():
                     """
                 <div style='text-align: center;'>
                     <p align="center">
-                        <img src="https://github.com/hpcaitech/Open-Sora/raw/main/assets/readme/icon.png" width="250"/>
+                        <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/icon.png" width="250"/>
                     </p>
                     <div style="display: flex; gap: 10px; justify-content: center;">
                         <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>

@@ -71,7 +71,7 @@ We have also tested this Gradio app on Hugging Face Spaces. You can follow the s
 
 ## Advanced Usage
 
-![Gradio Demo](../assets/readme/gradio_advanced.png)
+![Gradio Demo](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/gradio_advanced.png)
 
 For the "**FPS**" option, as now we fix the output video's FPS to 24, this option will not affect the output video's length. Thus, for a smaller FPS, the video is supposed to be longer but accelerated due to 24 FPS. Thus, the video will be less smooth but faster. For a larger FPS, the video will be smoother but slower.
 
