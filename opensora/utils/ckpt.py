@@ -16,7 +16,6 @@ from colossalai.utils.safetensors import save as async_save
 from colossalai.zero.low_level import LowLevelZeroOptimizer
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
-from tensornvme.async_file_io import AsyncFileWriter
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
@@ -318,10 +317,10 @@ def load_master_weights(model: torch.nn.Module, optimizer: LowLevelZeroOptimizer
 class CheckpointIO:
     def __init__(self, n_write_entries: int = 32):
         self.n_write_entries = n_write_entries
-        self.writer: Optional[AsyncFileWriter] = None
+        self.writer
         self.pinned_state_dict: Optional[Dict[str, torch.Tensor]] = None
         self.master_pinned_state_dict: Optional[Dict[str, torch.Tensor]] = None
-        self.master_writer: Optional[AsyncFileWriter] = None
+        self.master_writer
 
     def _sync_io(self):
         if self.writer is not None:

@@ -4,7 +4,6 @@ import random
 import re
 from typing import Any
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import requests
@@ -19,6 +18,13 @@ from torchvision.utils import save_image
 
 from . import video_transforms
 from .read_video import read_video
+
+try:
+    import dask.dataframe as dd
+
+    SUPPORT_DASK = True
+except:
+    SUPPORT_DASK = False
 
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")
 
@@ -55,7 +61,11 @@ def read_file(input_path, memory_efficient=False):
         columns = None
         if memory_efficient:
             columns = ["path", "num_frames", "height", "width", "aspect_ratio", "fps", "resolution"]
-        return dd.read_parquet(input_path, columns=columns).compute()
+        if SUPPORT_DASK:
+            ret = dd.read_parquet(input_path, columns=columns).compute()
+        else:
+            ret = pd.read_parquet(input_path, columns=columns)
+        return ret
     else:
         raise NotImplementedError(f"Unsupported file format: {input_path}")
 

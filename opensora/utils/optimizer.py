@@ -1,7 +1,6 @@
 import torch
 from colossalai.nn.lr_scheduler import CosineAnnealingWarmupLR
 from colossalai.nn.optimizer import HybridAdam
-from pytorch_optimizer import StableAdamW
 from torch.optim.lr_scheduler import _LRScheduler
 
 
@@ -22,8 +21,6 @@ def create_optimizer(
     optimizer_name = optimizer_config.pop("cls", "HybridAdam")
     if optimizer_name == "HybridAdam":
         optimizer_cls = HybridAdam
-    elif optimizer_name == "StableAdamW":
-        optimizer_cls = StableAdamW
     else:
         raise ValueError(f"Unknown optimizer: {optimizer_name}")
     optimizer = optimizer_cls(

@@ -106,6 +106,7 @@ def process_and_save(
     generate_sampling_option,
     epoch: int,
     start_index: int,
+    saving: bool = True,
 ):
     """
     Process the generated samples and save them to disk.
@@ -139,24 +140,25 @@ def process_and_save(
         ret_name = get_names_from_path(save_path)
         ret_names.append(ret_name)
 
-        # == write txt to disk ==
-        with open(save_path + ".txt", "w", encoding="utf-8") as f:
-            f.write(prompt)
+        if saving:
+            # == write txt to disk ==
+            with open(save_path + ".txt", "w", encoding="utf-8") as f:
+                f.write(prompt)
 
-        # == save samples ==
-        save_sample(img, save_path=save_path, fps=fps_save)
+            # == save samples ==
+            save_sample(img, save_path=save_path, fps=fps_save)
 
-        # == resize image for t2i2v ==
-        if (
-            cfg.get("use_t2i2v", False)
-            and is_image
-            and generate_sampling_option.resolution != generate_sampling_option.resized_resolution
-        ):
-            log_message("Rescaling image to %s...", generate_sampling_option.resized_resolution)
-            height, width = get_image_size(
-                generate_sampling_option.resized_resolution, generate_sampling_option.aspect_ratio
-            )
-            rescale_image_by_path(save_path + ".png", width, height)
+            # == resize image for t2i2v ==
+            if (
+                cfg.get("use_t2i2v", False)
+                and is_image
+                and generate_sampling_option.resolution != generate_sampling_option.resized_resolution
+            ):
+                log_message("Rescaling image to %s...", generate_sampling_option.resized_resolution)
+                height, width = get_image_size(
+                    generate_sampling_option.resized_resolution, generate_sampling_option.aspect_ratio
+                )
+                rescale_image_by_path(save_path + ".png", width, height)
 
     return ret_names
 

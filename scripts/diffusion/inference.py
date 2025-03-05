@@ -14,7 +14,11 @@ from tqdm import tqdm
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.registry import DATASETS, build_module
-from opensora.utils.cai import get_booster, get_is_saving_process, init_inference_environment
+from opensora.utils.cai import (
+    get_booster,
+    get_is_saving_process,
+    init_inference_environment,
+)
 from opensora.utils.config import parse_alias, parse_configs
 from opensora.utils.inference import (
     add_fps_info_to_text,
@@ -26,7 +30,12 @@ from opensora.utils.inference import (
 from opensora.utils.logger import create_logger, is_main_process
 from opensora.utils.misc import log_cuda_max_memory, to_torch_dtype
 from opensora.utils.prompt_refine import refine_prompts
-from opensora.utils.sampling import SamplingOption, prepare_api, prepare_models, sanitize_sampling_option
+from opensora.utils.sampling import (
+    SamplingOption,
+    prepare_api,
+    prepare_models,
+    sanitize_sampling_option,
+)
 
 
 @torch.inference_mode()
@@ -175,10 +184,16 @@ def main():
                     ).cpu()
 
                     # save image to disk
-                    if is_saving_process:
-                        batch["name"] = process_and_save(
-                            x_cond, batch, cfg, img_sub_dir, sampling_option_t2i, epoch, start_index
-                        )
+                    batch["name"] = process_and_save(
+                        x_cond,
+                        batch,
+                        cfg,
+                        img_sub_dir,
+                        sampling_option_t2i,
+                        epoch,
+                        start_index,
+                        saving=is_saving_process,
+                    )
                     dist.barrier()
 
                     if cfg.get("offload_model", False):
