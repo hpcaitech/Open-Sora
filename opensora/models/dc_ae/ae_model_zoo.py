@@ -24,7 +24,7 @@ from torch import nn
 from opensora.registry import MODELS
 from opensora.utils.ckpt import load_checkpoint
 
-from .models.efficientvit.dc_ae import DCAE, DCAEConfig, dc_ae_f32, dc_ae_f64c128, dc_ae_f128c512
+from .models.dc_ae import DCAE, DCAEConfig, dc_ae_f32, dc_ae_f64c128, dc_ae_f64t4c256, dc_ae_f128c512
 
 __all__ = ["create_dc_ae_model_cfg", "DCAE_HF", "AutoencoderKL", "DC_AE"]
 
@@ -44,6 +44,8 @@ REGISTERED_DCAE_MODEL: dict[str, tuple[Callable, Optional[str]]] = {
     "dc-ae-f32t4c256": (dc_ae_f32, None),
     "dc-ae-f32t4c128": (dc_ae_f32, None),
     "dc-ae-f32t4c64": (dc_ae_f32, None),
+    "dc-ae-f64t4c128": (dc_ae_f64c128, None),
+    "dc-ae-f64t4c256": (dc_ae_f64t4c256, None),
 }
 
 
@@ -68,7 +70,16 @@ def DC_AE(
     torch_dtype: torch.dtype = torch.bfloat16,
     from_scratch: bool = False,
     from_pretrained: str | None = None,
+    is_training: bool = False,
+    rename_keys: dict = None,
+    use_spatial_tiling: bool = False,
+    use_temporal_tiling: bool = False,
+    spatial_tile_size: int = 256,
+    temporal_tile_size: int = 32,
+    tile_overlap_factor: float = 0.25,
     tune_channel_proj: bool = False,
+    train_decoder_only: bool = False,
+    scaling_factor: float = None,
 ) -> DCAE_HF:
     if not from_scratch:
         model = DCAE_HF.from_pretrained(model_name).to(device_map, torch_dtype)
@@ -76,17 +87,28 @@ def DC_AE(
         model = DCAE_HF(model_name).to(device_map, torch_dtype)
 
     if from_pretrained is not None:
-        model = load_checkpoint(model, from_pretrained, device_map=device_map)
+        model = load_checkpoint(model, from_pretrained, device_map=device_map, rename_keys=rename_keys)
         print(f"loaded dc_ae from ckpt path: {from_pretrained}")
+
+    if train_decoder_only:
+        print("freezing all encoder weights!")
     # tune the channel projection layer only
     if tune_channel_proj:
+        model.cfg.tune_channel_proj = True
         print("freezing all weights except the channel projection!")
         for _, param in model.named_parameters():
             param.requires_grad = False
-        for _, param in model.encoder.project_out.named_parameters():
+        for _, param in model.decoder.named_parameters():
             param.requires_grad = True
-        for _, param in model.decoder.project_in.named_parameters():
-            param.requires_grad = True
+
+    model.cfg.is_training = is_training
+    model.use_spatial_tiling = use_spatial_tiling
+    model.use_temporal_tiling = use_temporal_tiling
+    model.spatial_tile_size = spatial_tile_size
+    model.temporal_tile_size = temporal_tile_size
+    model.tile_overlap_factor = tile_overlap_factor
+    if scaling_factor is not None:
+        model.scaling_factor = scaling_factor
     return model
 
 

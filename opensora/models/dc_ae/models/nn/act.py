@@ -19,7 +19,8 @@ from typing import Optional
 
 import torch.nn as nn
 
-from ...models.utils import build_kwargs_from_config
+from ..nn.vo_ops import build_kwargs_from_config
+
 
 __all__ = ["build_act"]
 
