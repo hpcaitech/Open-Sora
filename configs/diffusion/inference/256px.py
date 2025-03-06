@@ -29,7 +29,7 @@ sampling_option = dict(
     method="i2v",  # hard-coded for now
     seed=None,  # random seed for z
 )
-motion_score = 4  # motion score for video generation
+motion_score = "4"  # motion score for video generation
 fps_save = 24  # fps for video generation and saving
 
 # Define model components

@@ -225,6 +225,18 @@ torchrun --nproc_per_node 8 --standalone scripts/diffusion/inference.py configs/
 
 ### Motion Score
 
+During training, we provide motion score into the text prompt. During inference, you can use the following command to generate videos with motion score (the default score is 4):
+
+```bash
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --motion-score 4
+```
+
+We also provide a dynamic motion score evaluator. After setting your OpenAI API key, you can use the following command to evaluate the motion score of a video:
+
+```bash
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --motion-score dynamic
+```
+
 ### Prompt Refine
 
 We take advantage of ChatGPT to refine the prompt. You can use the following command to refine the prompt. The function is available for both text-to-video and image-to-video generation.
@@ -244,7 +256,7 @@ torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/
 
 ## Computational Efficiency
 
-We test the computational efficiency on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism. For 768x768, we use colossalai's sequence parallelism. All use number of steps 50. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
+We test the computational efficiency of text-to-video on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism. For 768x768, we use colossalai's sequence parallelism. All use number of steps 50. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
 
 | Resolution | 1x GPU                                 | 2x GPUs                               | 4x GPUs                               | 8x GPUs                               |
 | ---------- | -------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- |

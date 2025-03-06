@@ -95,7 +95,7 @@ We provide the following configs, the batch size is searched on H200 GPUs with 1
 
 - `image.py`: train on images only.
 - `stage1.py`: train on videos with 256px resolution.
-- `stage2.py`: train on videos with 768px resolution.
+- `stage2.py`: train on videos with 768px resolution with sequence parallelism (default 4).
 - `stage1_i2v.py`: train t2v and i2v with 256px resolution.
 - `stage2_i2v.py`: train t2v and i2v with 768px resolution.
 
@@ -133,6 +133,22 @@ zzz.zzz.zzz.zzz
 
 use `--wandb True` to log the training process to [wandb](https://wandb.ai/).
 
+### Resume training
+
+To resume training, use `--load`. It will load the optimizer state and dataloader state.
+
+```bash
+torchrun --nproc_per_node 8 scripts/diffusion/train.py configs/diffusion/train/stage1.py --dataset.data-path datasets/pexels_45k_necessary.csv --load outputs/your_experiment/epoch*-global_step*
+```
+
+If you want to load optimzer state but not dataloader state, use:
+
+```bash
+torchrun --nproc_per_node 8 scripts/diffusion/train.py configs/diffusion/train/stage1.py --dataset.data-path datasets/pexels_45k_necessary.csv --load outputs/your_experiment/epoch*-global_step* --start-step 0 --start-epoch 0
+```
+
+> Note if dataset, batch size, and number of GPUs are changed, the dataloader state will not be meaningful.
+
 ## Inference
 
 The inference is the same as described in the main page. The command format is as follows:
@@ -141,4 +157,45 @@ The inference is the same as described in the main page. The command format is a
 torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --model.from_pretrained outputs/your_experiment/epoch*-global_step*
 ```
 
-## Advanced usage
+## Advanced Usage
+
+More details are provided in the tech report. If explanation for some techiques is needed, feel free to open an issue.
+
+- Tensor parallelism and sequence parallelism
+- Zero 2
+- Pin memory organization
+- Garbage collection organization
+- Data prefetching
+- Communication bucket optimization
+- Shardformer for T5
+
+### Gradient Checkpointing
+
+We support selective gradient checkpointing to save memory. The `grad_ckpt_setting` is a tuple, the first element is the number of dual layers to apply gradient checkpointing, the second element is the number of single layers to apply full gradient. A very large number will apply full gradient to all layers.
+
+```python
+grad_ckpt_setting = (100, 100)
+model = dict(
+    grad_ckpt_setting=grad_ckpt_setting,
+)
+```
+
+To further save memory, you can offload gradient checkpointing to CPU by:
+
+```python
+grad_ckpt_buffer_size = 25 * 1024**3 # 25GB
+```
+
+### Asynchronous Checkpoint Saving
+
+With `--async-io True`, the checkpoint will be saved asynchronously with the support of ColossalAI. This will save time for checkpoint saving.
+
+### Dataset
+
+With a very large dataset, the `csv` file or even `parquet` file may be too large to fit in memory. We provide a script to split the dataset into smaller chunks:
+
+```bash
+python scripts/cnv/shard.py /path/to/dataset.parquet
+```
+
+Then a folder with shards will be created. You can use the `--dataset.memory_efficient True` to load the dataset shard by shard.
