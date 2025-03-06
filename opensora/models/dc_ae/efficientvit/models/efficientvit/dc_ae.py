@@ -39,7 +39,7 @@ from ...models.nn.ops import (
     ResidualBlock,
 )
 
-__all__ = ["DCAE", "dc_ae_f32"]
+__all__ = ["DCAE", "dc_ae_f32", "dc_ae_f64c128", "dc_ae_f128c512"]
 
 
 @dataclass
@@ -607,7 +607,32 @@ class DCAE(nn.Module):
 
 
 def dc_ae_f32(name: str, pretrained_path: str) -> DCAEConfig:
-    if name in ["dc-ae-f32t4c128"]:
+    if name in ["dc-ae-f32c32-in-1.0", "dc-ae-f32c32-mix-1.0"]:
+        cfg_str = (
+            "latent_channels=32 "
+            "time_compression_ratio=1 "
+            "spatial_compression_ratio=32 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024] encoder.depth_list=[0,4,8,2,2,2] "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024] decoder.depth_list=[0,5,10,2,2,2] "
+            "decoder.norm=[bn2d,bn2d,bn2d,trms2d,trms2d,trms2d] decoder.act=[relu,relu,relu,silu,silu,silu]"
+        )
+    elif name in ["dc-ae-f32c32-sana-1.0"]:
+        cfg_str = (
+            "latent_channels=32 "
+            "time_compression_ratio=1 "
+            "spatial_compression_ratio=32 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024] encoder.depth_list=[2,2,2,3,3,3] "
+            "encoder.downsample_block_type=Conv "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024] decoder.depth_list=[3,3,3,3,3,3] "
+            "decoder.upsample_block_type=InterpolateConv "
+            "decoder.norm=rms2d decoder.act=silu "
+            "scaling_factor=0.41407"
+        )
+    elif name in ["dc-ae-f32c32-sana-1.0-video", "dc-ae-f32t4c256", "dc-ae-f32t4c128", "dc-ae-f32t4c64"]:
         cfg_str = (
             "time_compression_ratio=4 "
             "spatial_compression_ratio=32 "
@@ -621,10 +646,68 @@ def dc_ae_f32(name: str, pretrained_path: str) -> DCAEConfig:
             "decoder.upsample_block_type=InterpolateConv "
             "decoder.norm=rms3d decoder.act=silu decoder.out_norm=rms3d "
             "decoder.is_video=True "
-            "encoder.temporal_downsample=[False,False,False,True,True,False] "
-            "decoder.temporal_upsample=[False,False,False,True,True,False] "
-            "latent_channels=128"
         )  # make sure there is no trailing blankspace in the last line
+        if name in ["dc-ae-f32t4c256", "dc-ae-f32t4c128", "dc-ae-f32t4c64"]:
+            cfg_str += (
+                "encoder.temporal_downsample=[False,False,False,True,True,False] "
+                "decoder.temporal_upsample=[False,False,False,True,True,False]"
+            )  # make sure there is preceding blankspace in the first line
+        if name in ["dc-ae-f32t4c256"]:
+            cfg_str += " latent_channels=256 " "scaling_factor=0.46505"
+        elif name in ["dc-ae-f32t4c128"]:
+            cfg_str += " latent_channels=128"
+        elif name in ["dc-ae-f32t4c64"]:
+            cfg_str += " latent_channels=64"
+        elif name in ["dc-ae-f32c32-sana-1.0-video"]:
+            cfg_str += " latent_channels=32"
+    else:
+        raise NotImplementedError
+    cfg = OmegaConf.from_dotlist(cfg_str.split(" "))
+    cfg: DCAEConfig = OmegaConf.to_object(OmegaConf.merge(OmegaConf.structured(DCAEConfig), cfg))
+    cfg.pretrained_path = pretrained_path
+    return cfg
+
+
+def dc_ae_f64c128(name: str, pretrained_path: Optional[str] = None) -> DCAEConfig:
+    if name in ["dc-ae-f64c128-in-1.0", "dc-ae-f64c128-mix-1.0"]:
+        cfg_str = (
+            "latent_channels=128 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024,2048] encoder.depth_list=[0,4,8,2,2,2,2] "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024,2048] decoder.depth_list=[0,5,10,2,2,2,2] "
+            "decoder.norm=[bn2d,bn2d,bn2d,trms2d,trms2d,trms2d,trms2d] decoder.act=[relu,relu,relu,silu,silu,silu,silu]"
+        )
+    else:
+        raise NotImplementedError
+    cfg = OmegaConf.from_dotlist(cfg_str.split(" "))
+    cfg: DCAEConfig = OmegaConf.to_object(OmegaConf.merge(OmegaConf.structured(DCAEConfig), cfg))
+    cfg.pretrained_path = pretrained_path
+    return cfg
+
+
+def dc_ae_f128c512(name: str, pretrained_path: Optional[str] = None) -> DCAEConfig:
+    if name in ["dc-ae-f128c512-in-1.0", "dc-ae-f128c512-mix-1.0"]:
+        cfg_str = (
+            "latent_channels=512 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024,2048,2048] encoder.depth_list=[0,4,8,2,2,2,2,2] "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024,2048,2048] decoder.depth_list=[0,5,10,2,2,2,2,2] "
+            "decoder.norm=[bn2d,bn2d,bn2d,trms2d,trms2d,trms2d,trms2d,trms2d] decoder.act=[relu,relu,relu,silu,silu,silu,silu,silu]"
+        )
+    elif name in ["dc-ae-f128c512-sana-1.0"]:
+        cfg_str = (
+            "latent_channels=512 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024,2048,2048] encoder.depth_list=[2,2,2,3,3,3,3,3] "
+            "encoder.downsample_block_type=Conv "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024,2048,2048] decoder.depth_list=[3,3,3,3,3,3,3,3] "
+            "decoder.upsample_block_type=InterpolateConv "
+            "decoder.norm=rms2d decoder.act=silu "
+            "scaling_factor=0.722656"
+        )
     else:
         raise NotImplementedError
     cfg = OmegaConf.from_dotlist(cfg_str.split(" "))
