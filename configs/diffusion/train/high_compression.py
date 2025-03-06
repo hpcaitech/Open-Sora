@@ -2,31 +2,67 @@ _base_ = ["image.py"]
 
 bucket_config = {
     "_delete_": True,
-    "1024px_ar1:1": {16: (1.0, 16)},
+    "768px": {
+        1: (1.0, 20),
+        16: (1.0, 8),
+        20: (1.0, 8),
+        24: (1.0, 8),
+        28: (1.0, 8),
+        32: (1.0, 8),
+        36: (1.0, 4),
+        40: (1.0, 4),
+        44: (1.0, 4),
+        48: (1.0, 4),
+        52: (1.0, 4),
+        56: (1.0, 4),
+        60: (1.0, 4),
+        64: (1.0, 4),
+        68: (1.0, 3),
+        72: (1.0, 3),
+        76: (1.0, 3),
+        80: (1.0, 3),
+        84: (1.0, 3),
+        88: (1.0, 3),
+        92: (1.0, 3),
+        96: (1.0, 3),
+        100: (1.0, 2),
+        104: (1.0, 2),
+        108: (1.0, 2),
+        112: (1.0, 2),
+        116: (1.0, 2),
+        120: (1.0, 2),
+        124: (1.0, 2),
+        128: (1.0, 2),  # 30s
+    },
 }
+
+condition_config = dict(
+    t2v=1,
+    i2v_head=7,
+)
 
 patch_size = 1
 model = dict(
-    from_pretrained="/mnt/ddn/sora/tmp_load/vo2_1_768px_t2v_adapt.pt",
+    from_pretrained=None,
     grad_ckpt_settings=None,
-    in_channels=512,
+    in_channels=128,
+    cond_embed=True,
+    patch_size=patch_size,
 )
 ae = dict(
     _delete_=True,
     type="dc_ae",
-    model_name="dc-ae-f128c512-sana-1.0",
+    model_name="dc-ae-f32t4c128",
+    from_pretrained="/mnt/jfs-hdd/sora/checkpoints/shenchenhui/video_sana_128c/250221_102256-vae_train_video_dc_ae_tempcompress_disc/epoch0-global_step459000",
     from_scratch=True,
-    from_pretrained="/home/chenli/luchen/Open-Sora-Dev/outputs/250210_125346-vae_train_sana_2d_256channel/epoch0-global_step15500",
+    scaling_factor=0.493,
+    use_spatial_tiling=True,
+    use_temporal_tiling=True,
+    spatial_tile_size=256,
+    temporal_tile_size=32,
+    tile_overlap_factor=0.25,
 )
 
-pin_memory_cache_pre_alloc_numels = [(260 + 20) * 1024 * 1024] * 24 + [
-    (34 + 20) * 1024 * 1024
-] * 4
-lr = 5e-5
-optim = dict(
-    lr=lr,
-)
-ema_decay = None
-ckpt_every = 500  # save every 4 hours
-keep_n_latest = 20
-wandb_project = "dcae-adapt"
+ckpt_every = 500
+lr = 3e-5
+optim = dict(lr=lr)

@@ -105,6 +105,9 @@ ckpt_every = 100
 keep_n_latest = 20
 wandb_project = "mmdit"
 
+save_master_weights = True
+load_master_weights = True
+
 # For debugging
 # record_time = True
 # record_barrier = True

@@ -57,6 +57,7 @@ class MMDiTConfig:
     fused_qkv: bool = True
     grad_ckpt_settings: tuple[int, int] | None = None
     use_liger_rope: bool = False
+    patch_size: int = 2
 
     def get(self, attribute_name, default=None):
         return getattr(self, attribute_name, default)
@@ -74,28 +75,41 @@ class MMDiTModel(nn.Module):
         self.config = config
         self.in_channels = config.in_channels
         self.out_channels = self.in_channels
+        self.patch_size = config.patch_size
 
         if config.hidden_size % config.num_heads != 0:
-            raise ValueError(f"Hidden size {config.hidden_size} must be divisible by num_heads {config.num_heads}")
+            raise ValueError(
+                f"Hidden size {config.hidden_size} must be divisible by num_heads {config.num_heads}"
+            )
 
         pe_dim = config.hidden_size // config.num_heads
         if sum(config.axes_dim) != pe_dim:
-            raise ValueError(f"Got {config.axes_dim} but expected positional dim {pe_dim}")
+            raise ValueError(
+                f"Got {config.axes_dim} but expected positional dim {pe_dim}"
+            )
 
         self.hidden_size = config.hidden_size
         self.num_heads = config.num_heads
         pe_embedder_cls = LigerEmbedND if config.use_liger_rope else EmbedND
-        self.pe_embedder = pe_embedder_cls(dim=pe_dim, theta=config.theta, axes_dim=config.axes_dim)
+        self.pe_embedder = pe_embedder_cls(
+            dim=pe_dim, theta=config.theta, axes_dim=config.axes_dim
+        )
 
         self.img_in = nn.Linear(self.in_channels, self.hidden_size, bias=True)
         self.time_in = MLPEmbedder(in_dim=256, hidden_dim=self.hidden_size)
         self.vector_in = MLPEmbedder(config.vec_in_dim, self.hidden_size)
         self.guidance_in = (
-            MLPEmbedder(in_dim=256, hidden_dim=self.hidden_size) if config.guidance_embed else nn.Identity()
+            MLPEmbedder(in_dim=256, hidden_dim=self.hidden_size)
+            if config.guidance_embed
+            else nn.Identity()
         )
         self.cond_in = (
-            nn.Linear(self.in_channels + 4, self.hidden_size, bias=True) if config.cond_embed else nn.Identity()
-        )  # +4 is due to the 4 channels of the mask
+            nn.Linear(
+                self.in_channels + self.patch_size**2, self.hidden_size, bias=True
+            )
+            if config.cond_embed
+            else nn.Identity()
+        )
         self.txt_in = nn.Linear(config.context_in_dim, self.hidden_size)
 
         self.double_blocks = nn.ModuleList(
@@ -114,7 +128,10 @@ class MMDiTModel(nn.Module):
         self.single_blocks = nn.ModuleList(
             [
                 SingleStreamBlock(
-                    self.hidden_size, self.num_heads, mlp_ratio=config.mlp_ratio, fused_qkv=config.fused_qkv
+                    self.hidden_size,
+                    self.num_heads,
+                    mlp_ratio=config.mlp_ratio,
+                    fused_qkv=config.fused_qkv,
                 )
                 for _ in range(config.depth_single_blocks)
             ]
@@ -165,7 +182,9 @@ class MMDiTModel(nn.Module):
         vec = self.time_in(timestep_embedding(timesteps, 256))
         if self.config.guidance_embed:
             if guidance is None:
-                raise ValueError("Didn't get guidance strength for guidance distilled model.")
+                raise ValueError(
+                    "Didn't get guidance strength for guidance distilled model."
+                )
             vec = vec + self.guidance_in(timestep_embedding(guidance, 256))
         vec = vec + self.vector_in(y_vec)
 
@@ -198,7 +217,9 @@ class MMDiTModel(nn.Module):
         guidance: Tensor | None = None,
         **kwargs,
     ) -> Tensor:
-        img, txt, vec, pe = self.prepare_block_inputs(img, img_ids, txt, txt_ids, timesteps, y_vec, cond, guidance)
+        img, txt, vec, pe = self.prepare_block_inputs(
+            img, img_ids, txt, txt_ids, timesteps, y_vec, cond, guidance
+        )
 
         for block in self.double_blocks:
             img, txt = auto_grad_checkpoint(block, img, txt, vec, pe)
@@ -223,7 +244,9 @@ class MMDiTModel(nn.Module):
         guidance: Tensor | None = None,
         **kwargs,
     ) -> Tensor:
-        img, txt, vec, pe = self.prepare_block_inputs(img, img_ids, txt, txt_ids, timesteps, y_vec, cond, guidance)
+        img, txt, vec, pe = self.prepare_block_inputs(
+            img, img_ids, txt, txt_ids, timesteps, y_vec, cond, guidance
+        )
 
         ckpt_depth_double = self.config.grad_ckpt_settings[0]
         for block in self.double_blocks[:ckpt_depth_double]:
@@ -270,5 +293,11 @@ def Flux(
     else:
         model = model.to(torch_dtype)
     if from_pretrained:
-        model = load_checkpoint(model, from_pretrained, cache_dir=cache_dir, device_map=device_map, strict=strict_load)
+        model = load_checkpoint(
+            model,
+            from_pretrained,
+            cache_dir=cache_dir,
+            device_map=device_map,
+            strict=strict_load,
+        )
     return model

@@ -1,7 +1,6 @@
 import math
 import os
 
-D = int(os.environ.get("VO_ASPECT_DIV", 16))
 ASPECT_RATIO_LD_LIST = [  # width:height
     "2.39:1",  # cinemascope, 2.39
     "2:1",  # rare, 2
@@ -20,7 +19,10 @@ def get_ratio(name: str) -> float:
     return height / width
 
 
-def get_aspect_ratios_dict(total_pixels: int = 256 * 256, training: bool = True) -> dict[str, tuple[int, int]]:
+def get_aspect_ratios_dict(
+    total_pixels: int = 256 * 256, training: bool = True
+) -> dict[str, tuple[int, int]]:
+    D = int(os.environ.get("AE_SPATIAL_COMPRESSION", 16))
     aspect_ratios_dict = {}
     aspect_ratios_vertical_dict = {}
     for ratio in ASPECT_RATIO_LD_LIST:
@@ -58,6 +60,7 @@ def get_num_pexels(aspect_ratios_dict: dict[str, tuple[int, int]]) -> dict[str, 
 
 
 def get_num_tokens(aspect_ratios_dict: dict[str, tuple[int, int]]) -> dict[str, int]:
+    D = int(os.environ.get("AE_SPATIAL_COMPRESSION", 16))
     return {ratio: h * w // D // D for ratio, (h, w) in aspect_ratios_dict.items()}
 
 
@@ -74,7 +77,9 @@ def get_num_pexels_from_name(resolution: str) -> int:
     return num_pexels
 
 
-def get_resolution_with_aspect_ratio(resolution: str) -> tuple[int, dict[str, tuple[int, int]]]:
+def get_resolution_with_aspect_ratio(
+    resolution: str,
+) -> tuple[int, dict[str, tuple[int, int]]]:
     """Get resolution with aspect ratio
 
     Args:
@@ -90,7 +95,9 @@ def get_resolution_with_aspect_ratio(resolution: str) -> tuple[int, dict[str, tu
         setting = ""
     else:
         resolution, setting = keys
-        assert setting == "max" or setting.startswith("ar"), f"Invalid setting {setting}"
+        assert setting == "max" or setting.startswith(
+            "ar"
+        ), f"Invalid setting {setting}"
 
     # get resolution
     num_pexels = get_num_pexels_from_name(resolution)
@@ -100,11 +107,16 @@ def get_resolution_with_aspect_ratio(resolution: str) -> tuple[int, dict[str, tu
 
     # handle setting
     if setting == "max":
-        aspect_ratio = max(aspect_ratio_dict, key=lambda x: aspect_ratio_dict[x][0] * aspect_ratio_dict[x][1])
+        aspect_ratio = max(
+            aspect_ratio_dict,
+            key=lambda x: aspect_ratio_dict[x][0] * aspect_ratio_dict[x][1],
+        )
         aspect_ratio_dict = {aspect_ratio: aspect_ratio_dict[aspect_ratio]}
     elif setting.startswith("ar"):
         aspect_ratio = setting[2:]
-        assert aspect_ratio in aspect_ratio_dict, f"Aspect ratio {aspect_ratio} not found"
+        assert (
+            aspect_ratio in aspect_ratio_dict
+        ), f"Aspect ratio {aspect_ratio} not found"
         aspect_ratio_dict = {aspect_ratio: aspect_ratio_dict[aspect_ratio]}
 
     return num_pexels, aspect_ratio_dict
@@ -112,11 +124,15 @@ def get_resolution_with_aspect_ratio(resolution: str) -> tuple[int, dict[str, tu
 
 def get_closest_ratio(height: float, width: float, ratios: dict) -> str:
     aspect_ratio = height / width
-    closest_ratio = min(ratios.keys(), key=lambda ratio: abs(aspect_ratio - get_ratio(ratio)))
+    closest_ratio = min(
+        ratios.keys(), key=lambda ratio: abs(aspect_ratio - get_ratio(ratio))
+    )
     return closest_ratio
 
 
-def get_image_size(resolution: str, ar_ratio: str, training: bool = True) -> tuple[int, int]:
+def get_image_size(
+    resolution: str, ar_ratio: str, training: bool = True
+) -> tuple[int, int]:
     num_pexels = get_num_pexels_from_name(resolution)
     ar_dict = get_aspect_ratios_dict(num_pexels, training)
     assert ar_ratio in ar_dict, f"Aspect ratio {ar_ratio} not found"
