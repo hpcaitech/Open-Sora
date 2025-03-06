@@ -2,34 +2,20 @@
 dataset = dict(
     type="video_text",
     transform_name="resize_crop",
-    fps_max=24,
-    vmaf=True,
+    fps_max=24,  # the desired fps for training
+    vmaf=True,  # load vmaf scores into text
 )
 
-# new config
-grad_ckpt_settings = (8, 100)
+grad_ckpt_settings = (8, 100)  # set the grad checkpoint settings
 bucket_config = {
-    "256px": {
-        1: (1.0, 50),
-    },
-    "768px": {
-        1: (0.5, 11),
-    },
-    "1024px": {
-        1: (0.5, 7),
-    },
+    "256px": {1: (1.0, 50)},
+    "768px": {1: (0.5, 11)},
+    "1024px": {1: (0.5, 7)},
 }
-# 6s/it (4x8 GPUs)
-
-# record_time = True
-# record_barrier = True
-warmup_ae = False
-pin_memory_cache_pre_alloc_numels = None
 
 # Define model components
 model = dict(
     type="flux",
-    # from_pretrained="/mnt/ddn/sora/tmp_load/flux1-dev-fused-rope.safetensors",‘
     from_pretrained=None,
     strict_load=False,
     guidance_embed=False,
@@ -49,13 +35,13 @@ model = dict(
     theta=10_000,
     qkv_bias=True,
 )
-dropout_ratio = {
+dropout_ratio = {  # probability for dropout text embedding
     "t5": 0.31622777,
     "clip": 0.31622777,
 }
 ae = dict(
     type="hunyuan_vae",
-    from_pretrained="/mnt/jfs-hdd/sora/checkpoints/pretrained_models/hunyuan-video-t2v-720p/vae/pytorch_model.pt",
+    from_pretrained="./ckpts/hunyuan_vae.safetensors",
     in_channels=3,
     out_channels=3,
     layers_per_block=2,
@@ -77,9 +63,9 @@ clip = dict(
     max_length=77,
 )
 
-lr = 1e-5  # this will updated optim again after it finishes loading, important
-eps = 1e-15  # this will updated optim again after it finishes loading, important
 # Optimization settings
+lr = 1e-5
+eps = 1e-15
 optim = dict(
     cls="HybridAdam",
     lr=lr,
@@ -92,7 +78,7 @@ update_warmup_steps = True
 
 grad_clip = 1.0
 accumulation_steps = 1
-ema_decay = 0.99
+ema_decay = None
 
 # Acceleration settings
 prefetch_factor = 2
@@ -105,6 +91,10 @@ plugin_config = dict(
     reduce_bucket_size_in_m=128,
     overlap_allgather=False,
 )
+pin_memory_cache_pre_alloc_numels = [(260 + 20) * 1024 * 1024] * 24 + [
+    (34 + 20) * 1024 * 1024
+] * 4
+async_io = False
 
 # Other settings
 seed = 42
@@ -114,3 +104,7 @@ log_every = 10
 ckpt_every = 100
 keep_n_latest = 20
 wandb_project = "mmdit"
+
+# For debugging
+# record_time = True
+# record_barrier = True

@@ -1,15 +1,13 @@
 _base_ = ["image.py"]
 
-dataset = dict(
-    memory_efficient=True,
-)
+dataset = dict(memory_efficient=False)
 
 # new config
 grad_ckpt_settings = (8, 100)
 bucket_config = {
     "_delete_": True,
     "256px": {
-        1: (1.0, 45),  # 6.22 s
+        1: (1.0, 45),
         5: (1.0, 12),
         9: (1.0, 12),
         13: (1.0, 12),
@@ -17,7 +15,7 @@ bucket_config = {
         21: (1.0, 12),
         25: (1.0, 12),
         29: (1.0, 12),
-        33: (1.0, 12),  # 7.02 s
+        33: (1.0, 12),
         37: (1.0, 6),
         41: (1.0, 6),
         45: (1.0, 6),
@@ -25,7 +23,7 @@ bucket_config = {
         53: (1.0, 6),
         57: (1.0, 6),
         61: (1.0, 6),
-        65: (1.0, 6),  # 6.79 s
+        65: (1.0, 6),
         69: (1.0, 4),
         73: (1.0, 4),
         77: (1.0, 4),
@@ -33,7 +31,7 @@ bucket_config = {
         85: (1.0, 4),
         89: (1.0, 4),
         93: (1.0, 4),
-        97: (1.0, 4),  # 6.84 s
+        97: (1.0, 4),
         101: (1.0, 3),
         105: (1.0, 3),
         109: (1.0, 3),
@@ -41,7 +39,7 @@ bucket_config = {
         117: (1.0, 3),
         121: (1.0, 3),
         125: (1.0, 3),
-        129: (1.0, 3),  # 7.48 s
+        129: (1.0, 3),
     },
     "768px": {
         1: (0.5, 13),
@@ -50,18 +48,9 @@ bucket_config = {
         1: (0.5, 7),
     },
 }
-pin_memory_cache_pre_alloc_numels = [(260 + 20) * 1024 * 1024] * 24 + [(34 + 20) * 1024 * 1024] * 4
 
-model = dict(
-    from_pretrained=None,
-    grad_ckpt_settings=grad_ckpt_settings,
-)
+model = dict(grad_ckpt_settings=grad_ckpt_settings)
 lr = 5e-5
-optim = dict(
-    lr=lr,
-)
-ema_decay = 0.999
-ckpt_every = 2000  # save every 4 hours
+optim = dict(lr=lr)
+ckpt_every = 2000
 keep_n_latest = 20
-wandb_project = "mmdit-vo3"
-async_io = False

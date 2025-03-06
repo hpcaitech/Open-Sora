@@ -1,19 +1,14 @@
-_base_ = ["stage2_v1.py"]
+_base_ = ["stage2.py"]
 
 # Define model components
-model = dict(
-    cond_embed=True,
-)
+model = dict(cond_embed=True)
+grad_ckpt_buffer_size = 25 * 1024**3
 
 condition_config = dict(
     t2v=1,
     i2v_head=5,
     i2v_loop=1,
     i2v_tail=1,
-    # v2v_head=1,  # 32
-    # v2v_tail=0.5,  # 32
-    # v2v_head_easy=1,  # 64
-    # v2v_tail_easy=0.5,  # 64
 )
 is_causal_vae = True
 
@@ -21,8 +16,6 @@ bucket_config = {
     "_delete_": True,
     "256px": {
         1: (1.0, 195),
-        # old: bs = 130, speed = 19s/it
-        # new: bs = 195, speed = 28s/it
         5: (1.0, 80),
         9: (1.0, 80),
         13: (1.0, 80),
@@ -31,8 +24,6 @@ bucket_config = {
         25: (1.0, 80),
         29: (1.0, 80),
         33: (1.0, 80),
-        # old: bs = 14, speed = 6.8s/it
-        # new: bs = 80, speed = 36.62s/it
         37: (1.0, 40),
         41: (1.0, 40),
         45: (1.0, 40),
@@ -41,8 +32,6 @@ bucket_config = {
         57: (1.0, 40),
         61: (1.0, 40),
         65: (1.0, 40),
-        # old: bs = 10 , speed = 10s/it
-        # new: bs = 40, speed = 39.49s/it
         69: (1.0, 28),
         73: (1.0, 28),
         77: (1.0, 28),
@@ -51,8 +40,6 @@ bucket_config = {
         89: (1.0, 28),
         93: (1.0, 28),
         97: (1.0, 28),
-        # old: bs = 7, speed = 10s/it
-        # new: bs = 28, speed = 35.39s/it
         101: (1.0, 23),
         105: (1.0, 23),
         109: (1.0, 23),
@@ -61,8 +48,6 @@ bucket_config = {
         121: (1.0, 23),
         125: (1.0, 23),
         129: (1.0, 23),
-        # old: bs = 6, speed = 11s/it
-        # new: bs = 23, speed = 40.6s/it
     },
     "768px": {
         1: (0.5, 38),
@@ -74,7 +59,6 @@ bucket_config = {
         25: (0.5, 10),
         29: (0.5, 10),
         33: (0.5, 10),
-        # speed = 60.20s/it
         37: (0.5, 5),
         41: (0.5, 5),
         45: (0.5, 5),
@@ -83,7 +67,6 @@ bucket_config = {
         57: (0.5, 5),
         61: (0.5, 5),
         65: (0.5, 5),
-        # speed = 49.25s/it
         69: (0.5, 3),
         73: (0.5, 3),
         77: (0.5, 3),
@@ -92,7 +75,6 @@ bucket_config = {
         89: (0.5, 3),
         93: (0.5, 3),
         97: (0.5, 3),
-        # speed = 50.69s/it
         101: (0.5, 2),
         105: (0.5, 2),
         109: (0.5, 2),
@@ -101,14 +83,5 @@ bucket_config = {
         121: (0.5, 2),
         125: (0.5, 2),
         129: (0.5, 2),
-        # speed = 47.24s/it
     },
 }
-
-
-lr = 1e-5
-optim = dict(
-    lr=lr,
-)
-ckpt_every = 200
-async_io = False

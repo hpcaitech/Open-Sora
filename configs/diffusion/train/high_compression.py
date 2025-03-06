@@ -19,7 +19,9 @@ ae = dict(
     from_pretrained="/home/chenli/luchen/Open-Sora-Dev/outputs/250210_125346-vae_train_sana_2d_256channel/epoch0-global_step15500",
 )
 
-pin_memory_cache_pre_alloc_numels = [(260 + 20) * 1024 * 1024] * 24 + [(34 + 20) * 1024 * 1024] * 4
+pin_memory_cache_pre_alloc_numels = [(260 + 20) * 1024 * 1024] * 24 + [
+    (34 + 20) * 1024 * 1024
+] * 4
 lr = 5e-5
 optim = dict(
     lr=lr,

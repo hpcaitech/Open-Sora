@@ -1,8 +1,8 @@
 _base_ = ["image.py"]
 
 # new config
-grad_ckpt_settings = (100, 100)  # one GPU
-# grad_ckpt_buffer_size = 20 * 1024**3
+grad_ckpt_settings = (100, 100)
+
 plugin = "hybrid"
 plugin_config = dict(
     tp_size=1,
@@ -25,10 +25,7 @@ bucket_config = {
         21: (1.0, 14),
         25: (1.0, 14),
         29: (1.0, 14),
-        33: (
-            1.0,
-            14,
-        ),  # 7.02 s iter: 4.17 s | encode_video: 1.42 s | encode_text: 0.29 s | forward: 0.53 s | backward: 1.67 s | 135GB
+        33: (1.0, 14),
         37: (1.0, 10),
         41: (1.0, 10),
         45: (1.0, 10),
@@ -36,21 +33,14 @@ bucket_config = {
         53: (1.0, 10),
         57: (1.0, 10),
         61: (1.0, 10),
-        65: (
-            1.0,
-            10,
-        ),  # 6.79 s iter: 10.42 s | encode_video: 4.02 s | encode_text: 0.43 s | forward: 1.31 s | backward: 4.21 s ｜ 125GB
-        69: (1.0, 7),
+        65: (1.0, 10),
         73: (1.0, 7),
         77: (1.0, 7),
         81: (1.0, 7),
         85: (1.0, 7),
         89: (1.0, 7),
         93: (1.0, 7),
-        97: (
-            1.0,
-            7,
-        ),  # 6.84 s iter: 5.26 s | encode_video: 2.16 s | encode_text: 0.16 s | forward: 0.64 s | backward: 2.08 s | 127GB
+        97: (1.0, 7),
         101: (1.0, 6),
         105: (1.0, 6),
         109: (1.0, 6),
@@ -58,10 +48,7 @@ bucket_config = {
         117: (1.0, 6),
         121: (1.0, 6),
         125: (1.0, 6),
-        129: (
-            1.0,
-            6,
-        ),  # 7.48 s iter: 9.67 s | encode_video: 3.78 s | encode_text: 0.21 s | forward: 1.36 s | backward: 2.78 s | 130.3GB
+        129: (1.0, 6),
     },
     "768px": {
         1: (1.0, 38),
@@ -99,17 +86,9 @@ bucket_config = {
         129: (1.0, 2),
     },
 }
-pin_memory_cache_pre_alloc_numels = [(260 + 20) * 1024 * 1024] * 24 + [(34 + 20) * 1024 * 1024] * 4
 
-model = dict(
-    from_pretrained=None,
-    grad_ckpt_settings=grad_ckpt_settings,
-)
+model = dict(grad_ckpt_settings=grad_ckpt_settings)
 lr = 5e-5
-optim = dict(
-    lr=lr,
-)
-ema_decay = 0.99
+optim = dict(lr=lr)
 ckpt_every = 200
 keep_n_latest = 20
-wandb_project = "mmdit-vo3"

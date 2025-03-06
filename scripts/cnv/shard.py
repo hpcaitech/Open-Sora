@@ -1,7 +1,14 @@
 import os
 
-import dask.dataframe as dd
+import pandas as pd
 from tqdm import tqdm
+
+try:
+    import dask.dataframe as dd
+
+    SUPPORT_DASK = True
+except:
+    SUPPORT_DASK = False
 
 
 def shard_parquet(input_path, k):
@@ -10,10 +17,20 @@ def shard_parquet(input_path, k):
         raise FileNotFoundError(f"Input file {input_path} does not exist.")
 
     # 读取 Parquet 文件为 Pandas DataFrame
-    df = dd.read_parquet(input_path).compute()
+    if SUPPORT_DASK:
+        df = dd.read_parquet(input_path).compute()
+    else:
+        df = pd.read_parquet(input_path)
 
     # 去除指定的列
-    columns_to_remove = ["num_frames", "height", "width", "aspect_ratio", "fps", "resolution"]
+    columns_to_remove = [
+        "num_frames",
+        "height",
+        "width",
+        "aspect_ratio",
+        "fps",
+        "resolution",
+    ]
     df = df.drop(columns=[col for col in columns_to_remove if col in df.columns])
 
     # 计算每个分片的大小
@@ -48,7 +65,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Shard a Parquet file.")
     parser.add_argument("input_path", type=str, help="Path to the input Parquet file.")
-    parser.add_argument("k", type=int, help="Number of shards to create.", default=10000)
+    parser.add_argument(
+        "k", type=int, help="Number of shards to create.", default=10000
+    )
 
     args = parser.parse_args()
 
