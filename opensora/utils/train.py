@@ -184,7 +184,7 @@ def dropout_condition(prob: float, txt: torch.Tensor, null_txt: torch.Tensor) ->
 
 
 def prepare_visual_condition_uncausal(
-    x: torch.Tensor, condition_config: dict, model_ae: torch.nn.Module
+    x: torch.Tensor, condition_config: dict, model_ae: torch.nn.Module, pad: bool = False
 ) -> torch.Tensor:
     """
     Prepare the visual condition for the model.
@@ -199,7 +199,7 @@ def prepare_visual_condition_uncausal(
     """
     # x has shape [b, c, t, h, w], where b is the batch size
     B = x.shape[0]
-    C = model_ae.z_channels
+    C = model_ae.cfg.latent_channels
     T, H, W = model_ae.get_latent_size(x.shape[-3:])
 
     # Initialize masks tensor to match the shape of x, but only the time dimension will be masked
@@ -211,12 +211,12 @@ def prepare_visual_condition_uncausal(
     x_0 = torch.zeros(B, C, T, H, W).to(x.device, x.dtype)
     if T > 1:  # video
         # certain v2v conditions not are applicable for short videos
-        if T <= 32 // model_ae.compression[0]:
+        if T <= 32 // model_ae.time_compression_ratio:
             condition_config.pop("v2v_head", None)  # given first 32 frames
             condition_config.pop("v2v_tail", None)  # given last 32 frames
             condition_config.pop("v2v_head_easy", None)  # given first 64 frames
             condition_config.pop("v2v_tail_easy", None)  # given last 64 frames
-        if T <= 64 // model_ae.compression[0]:
+        if T <= 64 // model_ae.time_compression_ratio:
             condition_config.pop("v2v_head_easy", None)  # given first 64 frames
             condition_config.pop("v2v_tail_easy", None)  # given last 64 frames
 
@@ -230,9 +230,12 @@ def prepare_visual_condition_uncausal(
             if mask_cond == "i2v_head":  # NOTE: modify video, mask first latent frame
                 # padded video such that the first latent frame correspond to image only
                 masks[i, :, 0, :, :] = 1
-                pad_num = model_ae.compression[0] - 1  # 32 --> new video: 7 + (1+31-7)
-                padded_x = torch.cat([x[i, :, :1]] * pad_num + [x[i, :, :-pad_num]], dim=1).unsqueeze(0)
-                x_0[i] = model_ae.encode(padded_x)[0]
+                if pad:
+                    pad_num = model_ae.time_compression_ratio - 1  # 32 --> new video: 7 + (1+31-7)
+                    padded_x = torch.cat([x[i, :, :1]] * pad_num + [x[i, :, :-pad_num]], dim=1).unsqueeze(0)
+                    x_0[i] = model_ae.encode(padded_x)[0]
+                else:
+                    x_0[i] = model_ae.encode(x[i : i + 1])[0]
                 # condition: encode the image only
                 latent[i, :, :1, :, :] = model_ae.encode(
                     x[i, :, :1, :, :].unsqueeze(0)
@@ -241,47 +244,55 @@ def prepare_visual_condition_uncausal(
                 # pad video such that first and last latent frame correspond to image only
                 masks[i, :, 0, :, :] = 1
                 masks[i, :, -1, :, :] = 1
-                pad_num = model_ae.compression[0] - 1
-                padded_x = torch.cat(
-                    [x[i, :, :1]] * pad_num
-                    + [x[i, :, : -pad_num * 2]]
-                    + [x[i, :, -pad_num * 2 - 1].unsqueeze(1)] * pad_num,
-                    dim=1,
-                ).unsqueeze(
-                    0
-                )  # remove the last pad_num * 2 frames from the end of the video
-                x_0[i] = model_ae.encode(padded_x)[0]
-                # condition: encode the image only
-                latent[i, :, :1, :, :] = model_ae.encode(x[i, :, :1, :, :].unsqueeze(0))
-                latent[i, :, -1:, :, :] = model_ae.encode(x[i, :, -pad_num * 2 - 1, :, :].unsqueeze(1).unsqueeze(0))
+                if pad:
+                    pad_num = model_ae.time_compression_ratio - 1
+                    padded_x = torch.cat(
+                        [x[i, :, :1]] * pad_num
+                        + [x[i, :, : -pad_num * 2]]
+                        + [x[i, :, -pad_num * 2 - 1].unsqueeze(1)] * pad_num,
+                        dim=1,
+                    ).unsqueeze(
+                        0
+                    )  # remove the last pad_num * 2 frames from the end of the video
+                    x_0[i] = model_ae.encode(padded_x)[0]
+                    # condition: encode the image only
+                    latent[i, :, :1, :, :] = model_ae.encode(x[i, :, :1, :, :].unsqueeze(0))
+                    latent[i, :, -1:, :, :] = model_ae.encode(x[i, :, -pad_num * 2 - 1, :, :].unsqueeze(1).unsqueeze(0))
+                else:
+                    x_0[i] = model_ae.encode(x[i : i + 1])[0]
+                    latent[i, :, :1, :, :] = model_ae.encode(x[i, :, :1, :, :].unsqueeze(0))
+                    latent[i, :, -1:, :, :] = model_ae.encode(x[i, :, -1:, :, :].unsqueeze(0))
             elif mask_cond == "i2v_tail":  # mask the last latent frame
                 masks[i, :, -1, :, :] = 1
-                pad_num = model_ae.compression[0] - 1
-                padded_x = torch.cat([x[i, :, pad_num:]] + [x[i, :, -1:]] * pad_num, dim=1).unsqueeze(0)
-                x_0[i] = model_ae.encode(padded_x)[0]
-                # condition: encode the image only
-                latent[i, :, -1:, :, :] = model_ae.encode(x[i, :, -1:, :, :].unsqueeze(0))
+                if pad:
+                    pad_num = model_ae.time_compression_ratio - 1
+                    padded_x = torch.cat([x[i, :, pad_num:]] + [x[i, :, -1:]] * pad_num, dim=1).unsqueeze(0)
+                    x_0[i] = model_ae.encode(padded_x)[0]
+                    latent[i, :, -1:, :, :] = model_ae.encode(x[i, :, -pad_num * 2 - 1, :, :].unsqueeze(1).unsqueeze(0))
+                else:
+                    x_0[i] = model_ae.encode(x[i : i + 1])[0]
+                    latent[i, :, -1:, :, :] = model_ae.encode(x[i, :, -1:, :, :].unsqueeze(0))
             elif mask_cond == "v2v_head":  # mask the first 32 video frames
-                assert T > 32 // model_ae.compression[0]
-                conditioned_t = 32 // model_ae.compression[0]
+                assert T > 32 // model_ae.time_compression_ratio
+                conditioned_t = 32 // model_ae.time_compression_ratio
                 masks[i, :, :conditioned_t, :, :] = 1
                 x_0[i] = model_ae.encode(x[i].unsqueeze(0))[0]
                 latent[i, :, :conditioned_t, :, :] = x_0[i, :, :conditioned_t, :, :]
             elif mask_cond == "v2v_tail":  # mask the last 32 video frames
-                assert T > 32 // model_ae.compression[0]
-                conditioned_t = 32 // model_ae.compression[0]
+                assert T > 32 // model_ae.time_compression_ratio
+                conditioned_t = 32 // model_ae.time_compression_ratio
                 masks[i, :, -conditioned_t:, :, :] = 1
                 x_0[i] = model_ae.encode(x[i].unsqueeze(0))[0]
                 latent[i, :, -conditioned_t:, :, :] = x_0[i, :, -conditioned_t:, :, :]
             elif mask_cond == "v2v_head_easy":  # mask the first 64 video frames
-                assert T > 64 // model_ae.compression[0]
-                conditioned_t = 64 // model_ae.compression[0]
+                assert T > 64 // model_ae.time_compression_ratio
+                conditioned_t = 64 // model_ae.time_compression_ratio
                 masks[i, :, :conditioned_t, :, :] = 1
                 x_0[i] = model_ae.encode(x[i].unsqueeze(0))[0]
                 latent[i, :, :conditioned_t, :, :] = x_0[i, :, :conditioned_t, :, :]
             elif mask_cond == "v2v_tail_easy":  # mask the last 64 video frames
-                assert T > 64 // model_ae.compression[0]
-                conditioned_t = 64 // model_ae.compression[0]
+                assert T > 64 // model_ae.time_compression_ratio
+                conditioned_t = 64 // model_ae.time_compression_ratio
                 masks[i, :, -conditioned_t:, :, :] = 1
                 x_0[i] = model_ae.encode(x[i].unsqueeze(0))[0]
                 latent[i, :, -conditioned_t:, :, :] = x_0[i, :, -conditioned_t:, :, :]
@@ -300,7 +311,6 @@ def prepare_visual_condition_uncausal(
     # merge the masks and the masked_x into a single tensor
     cond = torch.cat((masks, latent), dim=1)
     return x_0, cond
-    # return x_0, cond, masks[:, 0, :, 0, 0] # if we want to disregard padded part in loss calc, need the masks
 
 
 def prepare_visual_condition_causal(x: torch.Tensor, condition_config: dict, model_ae: torch.nn.Module) -> torch.Tensor:
@@ -317,7 +327,7 @@ def prepare_visual_condition_causal(x: torch.Tensor, condition_config: dict, mod
     """
     # x has shape [b, c, t, h, w], where b is the batch size
     B = x.shape[0]
-    C = model_ae.z_channels
+    C = model_ae.cfg.latent_channels
     T, H, W = model_ae.get_latent_size(x.shape[-3:])
 
     # Initialize masks tensor to match the shape of x, but only the time dimension will be masked
@@ -395,7 +405,6 @@ def prepare_visual_condition_causal(x: torch.Tensor, condition_config: dict, mod
     # merge the masks and the masked_x into a single tensor
     cond = torch.cat((masks, latent), dim=1)
     return x_0, cond
-    # return x_0, cond, masks[:, 0, :, 0, 0] # if we want to disregard padded part in loss calc, need the masks
 
 
 def get_batch_loss(model_pred, v_t, masks=None):

@@ -9,7 +9,6 @@ condition_config = dict(
     i2v_loop=1,  # train image connection with weight 1
     i2v_tail=1,  # train i2v (image as last frame) with weight 1
 )
-is_causal_vae = True
 
 lr = 1e-5
 optim = dict(lr=lr)

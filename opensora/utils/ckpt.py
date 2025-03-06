@@ -16,6 +16,7 @@ from colossalai.utils.safetensors import save as async_save
 from colossalai.zero.low_level import LowLevelZeroOptimizer
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
+from tensornvme.async_file_io import AsyncFileWriter
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
@@ -42,15 +43,11 @@ def load_from_hf_hub(repo_path: str, cache_dir: str = None) -> str:
     """
     repo_id = "/".join(repo_path.split("/")[:-1])
     repo_file = repo_path.split("/")[-1]
-    ckpt_path = hf_hub_download(
-        repo_id=repo_id, filename=repo_file, cache_dir=cache_dir
-    )
+    ckpt_path = hf_hub_download(repo_id=repo_id, filename=repo_file, cache_dir=cache_dir)
     return ckpt_path
 
 
-def load_from_sharded_state_dict(
-    model: nn.Module, ckpt_path: str, model_name: str = "model", strict=False
-):
+def load_from_sharded_state_dict(model: nn.Module, ckpt_path: str, model_name: str = "model", strict=False):
     """
     Loads a model from a sharded checkpoint.
 
@@ -75,15 +72,11 @@ def print_load_warning(missing: list[str], unexpected: list[str]) -> None:
     if len(missing) > 0 and len(unexpected) > 0:
         log_message(f"Got {len(missing)} missing keys:\n\t" + "\n\t".join(missing))
         log_message("\n" + "-" * 79 + "\n")
-        log_message(
-            f"Got {len(unexpected)} unexpected keys:\n\t" + "\n\t".join(unexpected)
-        )
+        log_message(f"Got {len(unexpected)} unexpected keys:\n\t" + "\n\t".join(unexpected))
     elif len(missing) > 0:
         log_message(f"Got {len(missing)} missing keys:\n\t" + "\n\t".join(missing))
     elif len(unexpected) > 0:
-        log_message(
-            f"Got {len(unexpected)} unexpected keys:\n\t" + "\n\t".join(unexpected)
-        )
+        log_message(f"Got {len(unexpected)} unexpected keys:\n\t" + "\n\t".join(unexpected))
     else:
         log_message("Model loaded successfully")
 
@@ -95,6 +88,7 @@ def load_checkpoint(
     device_map: torch.device | str = "cpu",
     cai_model_name: str = "model",
     strict: bool = False,
+    rename_keys: dict = None,  # rename keys in the checkpoint to support fine-tuning with a different model architecture; map old_key_prefix to new_key_prefix
 ) -> nn.Module:
     """
     Loads a checkpoint into model from a path. Support three types of checkpoints:
@@ -113,26 +107,37 @@ def load_checkpoint(
         nn.Module: The model with the loaded checkpoint.
     """
     if not os.path.exists(path):
-        log_message(
-            f"Checkpoint not found at {path}, trying to download from Hugging Face Hub"
-        )
+        log_message(f"Checkpoint not found at {path}, trying to download from Hugging Face Hub")
         path = load_from_hf_hub(path, cache_dir)
     assert os.path.exists(path), f"Could not find checkpoint at {path}"
 
     log_message(f"Loading checkpoint from {path}")
     if path.endswith(".safetensors"):
-        ckpt = load_file(path, device="cpu")
+        # ckpt = load_file(path, device=str(device_map))
+        ckpt = load_file(path, device=torch.cuda.current_device())
+
+        if rename_keys is not None:
+            # rename keys in the loaded state_dict with old_key_prefix to with new_key_prefix.
+            renamed_ckpt = {}
+            for old_key, v in ckpt.items():
+                new_key = old_key
+                for old_key_prefix, new_key_prefix in rename_keys.items():
+                    if old_key_prefix in old_key:
+                        new_key = old_key.replace(old_key_prefix, new_key_prefix)
+                        print(f"Renamed {old_key} to {new_key} in the loaded state_dict")
+                        break
+                renamed_ckpt[new_key] = v
+            ckpt = renamed_ckpt
+
         missing, unexpected = model.load_state_dict(ckpt, strict=strict)
         print_load_warning(missing, unexpected)
     elif path.endswith(".pt") or path.endswith(".pth"):
-        ckpt = torch.load(path, map_location="cpu")
+        ckpt = torch.load(path, map_location=device_map)
         missing, unexpected = model.load_state_dict(ckpt, strict=strict)
         print_load_warning(missing, unexpected)
     else:
         assert os.path.isdir(path), f"Invalid checkpoint path: {path}"
-        load_from_sharded_state_dict(
-            model, path, model_name=cai_model_name, strict=strict
-        )
+        load_from_sharded_state_dict(model, path, model_name=cai_model_name, strict=strict)
     return model
 
 
@@ -151,11 +156,7 @@ def rm_checkpoints(
         return
     files = glob(os.path.join(save_dir, "epoch*-global_step*"))
     files = sorted(
-        files,
-        key=lambda s: tuple(
-            map(int, re.search(r"epoch(\d+)-global_step(\d+)", s).groups())
-        ),
-        reverse=True,
+        files, key=lambda s: tuple(map(int, re.search(r"epoch(\d+)-global_step(\d+)", s).groups())), reverse=True
     )
     to_remove = files[keep_n_latest:]
     for f in to_remove:
@@ -184,9 +185,7 @@ def model_sharding(model: torch.nn.Module, device: torch.device = None):
             device = param.device
         padding_size = (world_size - param.numel() % world_size) % world_size
         if padding_size > 0:
-            padding_param = torch.nn.functional.pad(
-                param.data.view(-1), [0, padding_size]
-            )
+            padding_param = torch.nn.functional.pad(param.data.view(-1), [0, padding_size])
         else:
             padding_param = param.data.view(-1)
         splited_params = padding_param.split(padding_param.numel() // world_size)
@@ -194,9 +193,7 @@ def model_sharding(model: torch.nn.Module, device: torch.device = None):
         param.data = splited_params.to(device)
 
 
-def model_gathering(
-    model: torch.nn.Module, model_shape_dict: dict, pinned_state_dict: dict
-) -> None:
+def model_gathering(model: torch.nn.Module, model_shape_dict: dict, pinned_state_dict: dict) -> None:
     """
     Gather the model parameters from multiple GPUs.
 
@@ -214,9 +211,7 @@ def model_gathering(
         dist.all_gather(all_params, param.data, group=dist.group.WORLD)
         if int(global_rank) == 0:
             all_params = torch.cat(all_params)
-            gathered_param = remove_padding(all_params, model_shape_dict[name]).view(
-                model_shape_dict[name]
-            )
+            gathered_param = remove_padding(all_params, model_shape_dict[name]).view(model_shape_dict[name])
             pinned_state_dict[name].copy_(gathered_param)
     if int(global_rank) == 0:
         for k, v in model.state_dict(keep_vars=True).items():
@@ -282,16 +277,12 @@ def save_json(data, file_path: str):
 def _prepare_ema_pinned_state_dict(model: nn.Module, ema_shape_dict: dict):
     ema_pinned_state_dict = dict()
     for name, p in model.named_parameters():
-        ema_pinned_state_dict[name] = torch.empty(
-            ema_shape_dict[name], pin_memory=True, device="cpu", dtype=p.dtype
-        )
+        ema_pinned_state_dict[name] = torch.empty(ema_shape_dict[name], pin_memory=True, device="cpu", dtype=p.dtype)
     sd = model.state_dict(keep_vars=True)
     # handle buffers
     for k, v in sd.items():
         if k not in ema_pinned_state_dict:
-            ema_pinned_state_dict[k] = torch.empty(
-                v.shape, pin_memory=True, device="cpu", dtype=v.dtype
-            )
+            ema_pinned_state_dict[k] = torch.empty(v.shape, pin_memory=True, device="cpu", dtype=v.dtype)
 
     return ema_pinned_state_dict
 
@@ -304,9 +295,7 @@ def _search_valid_path(path: str) -> str:
     return path
 
 
-def master_weights_gathering(
-    model: torch.nn.Module, optimizer: LowLevelZeroOptimizer, pinned_state_dict: dict
-) -> None:
+def master_weights_gathering(model: torch.nn.Module, optimizer: LowLevelZeroOptimizer, pinned_state_dict: dict) -> None:
     """
     Gather the model parameters from multiple GPUs.
 
@@ -315,7 +304,7 @@ def master_weights_gathering(
         model_shape_dict (dict): The shape of the model parameters.
         device (torch.device): The device to gather the model to.
     """
-    pg = get_data_parallel_group()
+    pg = get_data_parallel_group(get_mixed_dp_pg=True)
     world_size = dist.get_world_size(pg)
     w2m = optimizer.get_working_to_master_map()
     for name, param in model.named_parameters():
@@ -330,32 +319,34 @@ def master_weights_gathering(
     dist.barrier()
 
 
-def load_master_weights(
-    model: torch.nn.Module, optimizer: LowLevelZeroOptimizer, state_dict: dict
-) -> None:
-    pg = get_data_parallel_group()
+def load_master_weights(model: torch.nn.Module, optimizer: LowLevelZeroOptimizer, state_dict: dict) -> None:
+    pg = get_data_parallel_group(get_mixed_dp_pg=True)
     world_size = dist.get_world_size(pg)
     rank = dist.get_rank(pg)
     w2m = optimizer.get_working_to_master_map()
     for name, param in model.named_parameters():
         master_p = w2m[id(param)]
-        assert param.numel() == len(master_p)
-        target_chunk = state_dict[name].chunk(world_size)[rank]
+        state = state_dict[name].view(-1)
+        padding_size = len(master_p) * world_size - len(state)
+        state = torch.nn.functional.pad(state, [0, padding_size])
+        target_chunk = state.chunk(world_size)[rank].to(master_p.dtype)
         master_p[: len(target_chunk)].copy_(target_chunk)
 
 
 class CheckpointIO:
     def __init__(self, n_write_entries: int = 32):
         self.n_write_entries = n_write_entries
-        self.writer = None
+        self.writer: Optional[AsyncFileWriter] = None
         self.pinned_state_dict: Optional[Dict[str, torch.Tensor]] = None
         self.master_pinned_state_dict: Optional[Dict[str, torch.Tensor]] = None
-        self.master_writer = None
+        self.master_writer: Optional[AsyncFileWriter] = None
 
     def _sync_io(self):
         if self.writer is not None:
+            self.writer.synchronize()
             self.writer = None
         if self.master_writer is not None:
+            self.master_writer.synchronize()
             self.master_writer = None
 
     def __del__(self):
@@ -365,17 +356,13 @@ class CheckpointIO:
         if self.pinned_state_dict is None and dist.get_rank() == 0:
             self.pinned_state_dict = _prepare_ema_pinned_state_dict(ema, ema_shape_dict)
 
-    def _prepare_master_pinned_state_dict(
-        self, model: nn.Module, optimizer: LowLevelZeroOptimizer
-    ):
+    def _prepare_master_pinned_state_dict(self, model: nn.Module, optimizer: LowLevelZeroOptimizer):
         if self.master_pinned_state_dict is None and dist.get_rank() == 0:
             sd = {}
             w2m = optimizer.get_working_to_master_map()
             for n, p in model.named_parameters():
                 master_p = w2m[id(p)]
-                sd[n] = torch.empty(
-                    p.shape, dtype=master_p.dtype, pin_memory=True, device="cpu"
-                )
+                sd[n] = torch.empty(p.shape, dtype=master_p.dtype, pin_memory=True, device="cpu")
             self.master_pinned_state_dict = sd
 
     def save(
@@ -418,9 +405,7 @@ class CheckpointIO:
             str: The path to the saved checkpoint
         """
         self._sync_io()
-        save_dir = os.path.join(
-            save_dir, f"epoch{epoch}-global_step{actual_update_step}"
-        )
+        save_dir = os.path.join(save_dir, f"epoch{epoch}-global_step{actual_update_step}")
         os.environ["TENSORNVME_DEBUG_LOG"] = os.path.join(save_dir, "async_file_io.log")
         if model is not None:
             if not lora:
@@ -438,21 +423,13 @@ class CheckpointIO:
                 booster.save_lora_as_pretrained(model, os.path.join(save_dir, "lora"))
         if optimizer is not None:
             booster.save_optimizer(
-                optimizer,
-                os.path.join(save_dir, "optimizer"),
-                shard=True,
-                size_per_shard=4096,
-                use_async=async_io,
+                optimizer, os.path.join(save_dir, "optimizer"), shard=True, size_per_shard=4096, use_async=async_io
             )
             if include_master_weights:
                 self._prepare_master_pinned_state_dict(model, optimizer)
-                master_weights_gathering(
-                    model, optimizer, self.master_pinned_state_dict
-                )
+                master_weights_gathering(model, optimizer, self.master_pinned_state_dict)
         if lr_scheduler is not None:
-            booster.save_lr_scheduler(
-                lr_scheduler, os.path.join(save_dir, "lr_scheduler")
-            )
+            booster.save_lr_scheduler(lr_scheduler, os.path.join(save_dir, "lr_scheduler"))
         if ema is not None:
             self._prepare_pinned_state_dict(ema, ema_shape_dict)
             model_gathering(ema, ema_shape_dict, self.pinned_state_dict)
@@ -468,10 +445,7 @@ class CheckpointIO:
 
             if ema is not None:
                 if async_io:
-                    self.writer = async_save(
-                        os.path.join(save_dir, "ema.safetensors"),
-                        self.pinned_state_dict,
-                    )
+                    self.writer = async_save(os.path.join(save_dir, "ema.safetensors"), self.pinned_state_dict)
                 else:
                     torch.save(ema.state_dict(), os.path.join(save_dir, "ema.pt"))
 
@@ -481,8 +455,7 @@ class CheckpointIO:
 
             if optimizer is not None and include_master_weights:
                 self.master_writer = async_save(
-                    os.path.join(save_dir, "master.safetensors"),
-                    self.master_pinned_state_dict,
+                    os.path.join(save_dir, "master.safetensors"), self.master_pinned_state_dict
                 )
 
         dist.barrier()
@@ -515,12 +488,8 @@ class CheckpointIO:
         Returns:
             tuple[int, int]: The epoch and step of the checkpoint.
         """
-        assert os.path.exists(
-            load_dir
-        ), f"Checkpoint directory {load_dir} does not exist"
-        assert os.path.exists(
-            os.path.join(load_dir, "running_states.json")
-        ), "running_states.json does not exist"
+        assert os.path.exists(load_dir), f"Checkpoint directory {load_dir} does not exist"
+        assert os.path.exists(os.path.join(load_dir, "running_states.json")), "running_states.json does not exist"
 
         running_states = load_json(os.path.join(load_dir, "running_states.json"))
         if model is not None:
@@ -535,28 +504,19 @@ class CheckpointIO:
             if os.path.exists(os.path.join(load_dir, "ema.safetensors")):
                 ema_state_dict = load_file(os.path.join(load_dir, "ema.safetensors"))
             else:
-                ema_state_dict = torch.load(
-                    os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu")
-                )
+                ema_state_dict = torch.load(os.path.join(load_dir, "ema.pt"), map_location=torch.device("cpu"))
             # ema is not boosted, so we don't use booster.load_model
             ema.load_state_dict(ema_state_dict, strict=strict, assign=True)
 
         if optimizer is not None:
             booster.load_optimizer(
-                optimizer,
-                os.path.join(load_dir, "optimizer"),
-                low_cpu_mem_mode=False,
-                num_threads=32,
+                optimizer, os.path.join(load_dir, "optimizer"), low_cpu_mem_mode=False, num_threads=32
             )
             if include_master_weights:
-                master_state_dict = load_file(
-                    os.path.join(load_dir, "master.safetensors")
-                )
+                master_state_dict = load_file(os.path.join(load_dir, "master.safetensors"))
                 load_master_weights(model, optimizer, master_state_dict)
         if lr_scheduler is not None:
-            booster.load_lr_scheduler(
-                lr_scheduler, os.path.join(load_dir, "lr_scheduler")
-            )
+            booster.load_lr_scheduler(lr_scheduler, os.path.join(load_dir, "lr_scheduler"))
         if sampler is not None:
             sampler.load_state_dict(torch.load(os.path.join(load_dir, "sampler")))
 

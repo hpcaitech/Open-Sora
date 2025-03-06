@@ -53,7 +53,7 @@ ae = dict(
     _delete_=True,
     type="dc_ae",
     model_name="dc-ae-f32t4c128",
-    from_pretrained="/mnt/jfs-hdd/sora/checkpoints/shenchenhui/video_sana_128c/250221_102256-vae_train_video_dc_ae_tempcompress_disc/epoch0-global_step459000",
+    from_pretrained="./ckpts/F32T4C128_AE.safetensors",
     from_scratch=True,
     scaling_factor=0.493,
     use_spatial_tiling=True,
@@ -62,7 +62,9 @@ ae = dict(
     temporal_tile_size=32,
     tile_overlap_factor=0.25,
 )
+is_causal_vae = False
+ae_spatial_compression = 32
 
-ckpt_every = 500
+ckpt_every = 250
 lr = 3e-5
 optim = dict(lr=lr)

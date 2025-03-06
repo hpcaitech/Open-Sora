@@ -172,6 +172,9 @@ class I2VDenoiser(Denoiser):
         image_osci = kwargs.pop("image_osci", False)
         scale_temporal_osci = kwargs.pop("scale_temporal_osci", False)
 
+        # patch size
+        patch_size = kwargs.pop("patch_size", 2)
+
         guidance_vec = torch.full(
             (img.shape[0],), guidance, device=img.device, dtype=img.dtype
         )
@@ -182,7 +185,7 @@ class I2VDenoiser(Denoiser):
             )
             b, c, t, w, h = masked_ref.size()
             cond = torch.cat((masks, masked_ref), dim=1)
-            cond = pack(cond)
+            cond = pack(cond, patch_size=patch_size)
             kwargs["cond"] = torch.cat([cond, cond, torch.zeros_like(cond)], dim=0)
 
             # forward preparation
@@ -210,7 +213,7 @@ class I2VDenoiser(Denoiser):
                 image_gs = torch.linspace(1.0, step_upper_image_gs, t)[
                     None, None, :, None, None
                 ].repeat(b, c, 1, h, w)
-                image_gs = pack(image_gs).to(cond.device, cond.dtype)
+                image_gs = pack(image_gs, patch_size=patch_size).to(cond.device, cond.dtype)
 
             # update
             pred = uncond_2 + image_gs * (uncond - uncond_2) + text_gs * (cond - uncond)
@@ -689,6 +692,7 @@ def prepare_api(
                 opt.scale_temporal_osci and "i2v" in cond_type
             ),  # don't use temporal osci for v2v or t2v
             flow_shift=opt.flow_shift,
+            patch_size=patch_size,
         )
 
         x = unpack(x, opt.height, opt.width, num_frames, patch_size=patch_size)

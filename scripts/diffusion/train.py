@@ -15,21 +15,33 @@ gc.disable()
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
+import wandb
 from colossalai.booster import Booster
 from colossalai.utils import set_seed
 from peft import LoraConfig
 from tqdm import tqdm
 
-import wandb
-from opensora.acceleration.checkpoint import GLOBAL_ACTIVATION_MANAGER, set_grad_checkpoint
+from opensora.acceleration.checkpoint import (
+    GLOBAL_ACTIVATION_MANAGER,
+    set_grad_checkpoint,
+)
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.aspect import bucket_to_shapes
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.datasets.pin_memory_cache import PinMemoryCache
 from opensora.models.mmdit.distributed import MMDiTPolicy
 from opensora.registry import DATASETS, MODELS, build_module
-from opensora.utils.ckpt import CheckpointIO, model_sharding, record_model_param_shape, rm_checkpoints
-from opensora.utils.config import config_to_name, create_experiment_workspace, parse_configs
+from opensora.utils.ckpt import (
+    CheckpointIO,
+    model_sharding,
+    record_model_param_shape,
+    rm_checkpoints,
+)
+from opensora.utils.config import (
+    config_to_name,
+    create_experiment_workspace,
+    parse_configs,
+)
 from opensora.utils.logger import create_logger
 from opensora.utils.misc import (
     NsysProfiler,
@@ -45,7 +57,13 @@ from opensora.utils.misc import (
     to_torch_dtype,
 )
 from opensora.utils.optimizer import create_lr_scheduler, create_optimizer
-from opensora.utils.sampling import get_res_lin_function, pack, prepare, prepare_ids, time_shift
+from opensora.utils.sampling import (
+    get_res_lin_function,
+    pack,
+    prepare,
+    prepare_ids,
+    time_shift,
+)
 from opensora.utils.train import (
     create_colossalai_plugin,
     dropout_condition,
@@ -357,11 +375,7 @@ def main():
             if cfg.get("condition_config", None) is not None:
                 # condition for i2v & v2v
                 x_0, cond = prepare_visual_condition(x, cfg.condition_config, model_ae)
-                if cfg.get("no_i2v_ref_loss", False):
-                    inp["masks"] = cond[
-                        :, 0, :, :, :
-                    ]  # record the padded frames in I2V, so they can be ignored in loss calculation
-                cond = pack(cond)
+                cond = pack(cond, patch_size=cfg.get("patch_size", 2))
                 inp["cond"] = cond
             else:
                 if cfg.get("cached_video", False):
@@ -384,7 +398,7 @@ def main():
             with nsys.range("encode_text"), timers["encode_text"]:
                 inp_ = prepare_ids(x_0, t5_embedding, clip_embedding)
                 inp.update(inp_)
-                x_0 = pack(x_0)
+                x_0 = pack(x_0, patch_size=cfg.get("patch_size", 2))
         else:
             # == encode text ==
             with nsys.range("encode_text"), timers["encode_text"]:
