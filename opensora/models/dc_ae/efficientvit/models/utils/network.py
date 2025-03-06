@@ -28,8 +28,8 @@ __all__ = [
     "get_same_padding",
     "resize",
     "build_kwargs_from_config",
-    "load_state_dict_from_file",
-    "get_submodule_weights",
+    # "load_state_dict_from_file",
+    # "get_submodule_weights",
 ]
 
 
@@ -83,20 +83,20 @@ def load_state_dict_from_file(file: str, only_state_dict=True) -> dict[str, torc
     return checkpoint
 
 
-def get_submodule_weights(weights: collections.OrderedDict, prefix: str):
-    submodule_weights = collections.OrderedDict()
-    len_prefix = len(prefix)
-    for key, weight in weights.items():
-        if key.startswith(prefix):
-            submodule_weights[key[len_prefix:]] = weight
-    return submodule_weights
+# def get_submodule_weights(weights: collections.OrderedDict, prefix: str):
+#     submodule_weights = collections.OrderedDict()
+#     len_prefix = len(prefix)
+#     for key, weight in weights.items():
+#         if key.startswith(prefix):
+#             submodule_weights[key[len_prefix:]] = weight
+#     return submodule_weights
 
 
-def get_dtype_from_str(dtype: str) -> torch.dtype:
-    if dtype == "fp32":
-        return torch.float32
-    if dtype == "fp16":
-        return torch.float16
-    if dtype == "bf16":
-        return torch.bfloat16
-    raise NotImplementedError(f"dtype {dtype} is not supported")
+# def get_dtype_from_str(dtype: str) -> torch.dtype:
+#     if dtype == "fp32":
+#         return torch.float32
+#     if dtype == "fp16":
+#         return torch.float16
+#     if dtype == "bf16":
+#         return torch.bfloat16
+#     raise NotImplementedError(f"dtype {dtype} is not supported")
