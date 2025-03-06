@@ -16,6 +16,7 @@ import torch
 import torch.distributed as dist
 from colossalai.booster import Booster
 from colossalai.utils import set_seed
+from torch.profiler import ProfilerActivity, profile, schedule
 from tqdm import tqdm
 
 import wandb
@@ -23,13 +24,13 @@ from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.datasets.pin_memory_cache import PinMemoryCache
-from opensora.models.hunyuan_vae.policy import HunyuanVaePolicy
 from opensora.models.vae.losses import DiscriminatorLoss, GeneratorLoss, VAELoss, cal_opl_loss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt import CheckpointIO, model_sharding, record_model_param_shape, rm_checkpoints
 from opensora.utils.config import config_to_name, create_experiment_workspace, parse_configs
 from opensora.utils.logger import create_logger
 from opensora.utils.misc import (
+    Timer,
     all_reduce_sum,
     create_tensorboard_writer,
     is_log_process,
@@ -41,7 +42,15 @@ from opensora.utils.train import create_colossalai_plugin, set_lr, set_warmup_st
 
 torch.backends.cudnn.benchmark = True
 
-from opensora.acceleration.checkpoint import GLOBAL_ACTIVATION_MANAGER
+WAIT = 1
+WARMUP = 10
+ACTIVE = 20
+
+my_schedule = schedule(
+    wait=WAIT,  # number of warmup steps
+    warmup=WARMUP,  # number of warmup steps with profiling
+    active=ACTIVE,  # number of active steps with profiling
+)
 
 
 def main():
@@ -54,9 +63,6 @@ def main():
     # == get dtype & device ==
     dtype = to_torch_dtype(cfg.get("dtype", "bf16"))
     device, coordinator = setup_device()
-    grad_ckpt_buffer_size = cfg.get("grad_checkpoint_buffer_size", 0)
-    if grad_ckpt_buffer_size > 0:
-        GLOBAL_ACTIVATION_MANAGER.setup_buffer(grad_ckpt_buffer_size, dtype=dtype)
     checkpoint_io = CheckpointIO()
     set_seed(cfg.get("seed", 1024))
     PinMemoryCache.force_dtype = dtype
@@ -66,15 +72,15 @@ def main():
     # == init ColossalAI booster ==
     plugin_type = cfg.get("plugin", "zero2")
     plugin_config = cfg.get("plugin_config", {})
-    plugin_kwargs = {}
-    if plugin_type == "hybrid":
-        plugin_kwargs["custom_policy"] = HunyuanVaePolicy
-    plugin = create_colossalai_plugin(
-        plugin=plugin_type,
-        dtype=cfg.get("dtype", "bf16"),
-        grad_clip=cfg.get("grad_clip", 0),
-        **plugin_config,
-        **plugin_kwargs,
+    plugin = (
+        create_colossalai_plugin(
+            plugin=plugin_type,
+            dtype=cfg.get("dtype", "bf16"),
+            grad_clip=cfg.get("grad_clip", 0),
+            **plugin_config,
+        )
+        if plugin_type != "none"
+        else None
     )
     booster = Booster(plugin=plugin)
 
@@ -161,17 +167,6 @@ def main():
         generator_loss_fn = GeneratorLoss(**cfg.gen_loss_config)
         discriminator_loss_fn = DiscriminatorLoss(**cfg.disc_loss_config)
 
-        disc_plugin_type = cfg.get("disc_plugin", "zero2")
-        disc_plugin_config = cfg.get("disc_plugin_config", {})
-        disc_plugin = create_colossalai_plugin(
-            plugin=disc_plugin_type,
-            dtype=cfg.get("dtype", "bf16"),
-            grad_clip=cfg.get("grad_clip", 0),
-            **disc_plugin_config,
-        )
-        disc_booster = Booster(plugin=disc_plugin)
-    booster = Booster(plugin=plugin)
-
     # == setup optimizer ==
     optimizer = create_optimizer(model, cfg.optim)
 
@@ -204,7 +199,7 @@ def main():
     )
 
     if use_discriminator:
-        discriminator, disc_optimizer, _, _, disc_lr_scheduler = disc_booster.boost(
+        discriminator, disc_optimizer, _, _, disc_lr_scheduler = booster.boost(
             model=discriminator,
             optimizer=disc_optimizer,
             lr_scheduler=disc_lr_scheduler,
@@ -216,7 +211,6 @@ def main():
     cfg_epochs = cfg.get("epochs", 1000)
     mixed_strategy = cfg.get("mixed_strategy", None)
     mixed_image_ratio = cfg.get("mixed_image_ratio", 0.0)
-    alter_train_gen_disc = bool(cfg.get("alter_train_gen_disc", False))
     # modulate mixed image ratio since we force rank 0 to be video
     num_ranks = dist.get_world_size()
     modulated_mixed_image_ratio = (
@@ -225,9 +219,8 @@ def main():
     if is_log_process(plugin_type, plugin_config):
         print("modulated mixed image ratio:", modulated_mixed_image_ratio)
 
-    start_epoch = start_step = log_gen_step = log_disc_step = 0  # log_step = acc_step = 0
-
-    running_loss = dict(
+    start_epoch = start_step = log_step = acc_step = 0
+    running_loss = dict(  # loss accumulated over config.log_every steps
         all=0.0,
         nll=0.0,
         nll_rec=0.0,
@@ -263,8 +256,8 @@ def main():
             cfg.load,
             model=model,
             ema=ema,
-            optimizer=optimizer if not cfg.get("reset_optimizer", False) else None,
-            lr_scheduler=lr_scheduler if not cfg.get("reset_optimizer", False) else None,
+            optimizer=optimizer,
+            lr_scheduler=lr_scheduler,
             sampler=(
                 None if start_step is not None else sampler
             ),  # if specify start step, set last_micro_batch_access_index of a new sampler instead
@@ -288,7 +281,6 @@ def main():
             and os.path.exists(os.path.join(cfg.load, "discriminator"))
             and not cfg.get("restart_disc", False)
         ):
-            logger.info("loading discriminator...")
             booster.load_model(discriminator, os.path.join(cfg.load, "discriminator"))
             if cfg.get("load_optimizer", True):
                 booster.load_optimizer(disc_optimizer, os.path.join(cfg.load, "disc_optimizer"))
@@ -318,6 +310,12 @@ def main():
         model_sharding(ema)
         ema = ema.to(device)
 
+    if cfg.get("freeze_layers", None) == "all":
+        for param in model.module.parameters():
+            param.requires_grad = False
+        print("all layers frozen")
+
+    # model.module.requires_grad_(False)
     # =======================================================
     # 5. training loop
     # =======================================================
@@ -328,7 +326,7 @@ def main():
         sampler.set_epoch(epoch)
         dataiter = iter(dataloader)
         logger.info("Beginning epoch %s...", epoch)
-        random.seed(1024 + dist.get_rank(get_data_parallel_group()))  # load vid/img for each rank
+        random.seed(1024 + dist.get_rank())  # load vid/img for each rank
 
         # == training loop in an epoch ==
         with tqdm(
@@ -348,111 +346,122 @@ def main():
 
             batch_, step_, pinned_video_ = fetch_data()
 
-            for _ in range(start_step, num_steps_per_epoch):
-                # == load data ===
-                batch, step, pinned_video = batch_, step_, pinned_video_
-                if step + 1 < num_steps_per_epoch:
-                    batch_, step_, pinned_video_ = fetch_data()
+            profiler_ctxt = (
+                profile(
+                    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                    schedule=my_schedule,
+                    on_trace_ready=torch.profiler.tensorboard_trace_handler("./log/profile"),
+                    record_shapes=True,
+                    profile_memory=True,
+                    with_stack=True,
+                )
+                if cfg.get("profile", False)
+                else nullcontext()
+            )
 
-                # == log config ==
-                global_step = epoch * num_steps_per_epoch + step
-                # actual_update_step = (global_step + 1) // accumulation_steps
-                # log_step += 1
-                # acc_step += 1
+            with profiler_ctxt:
+                for _ in range(start_step, num_steps_per_epoch):
+                    if cfg.get("profile", False) and _ == WARMUP + ACTIVE + WAIT + 3:
+                        break
 
-                # === whether to train generator and discriminator in alternative steps
-                if alter_train_gen_disc:
-                    train_gen = (global_step + 1) % 2 == 1
-                    train_disc = (global_step + 1) % 2 == 0
-                    gen_step = global_step // 2 + 1
-                    disc_step = (global_step + 1) // 2
-                    actual_gen_update_step = gen_step // accumulation_steps
-                    actual_disc_update_step = disc_step // accumulation_steps
-                else:
-                    gen_step = disc_step = global_step + 1
-                    train_gen = train_disc = True
-                    actual_gen_update_step = actual_disc_update_step = (global_step + 1) // accumulation_steps
+                    # == load data ===
+                    batch, step, pinned_video = batch_, step_, pinned_video_
+                    if step + 1 < num_steps_per_epoch:
+                        batch_, step_, pinned_video_ = fetch_data()
 
-                # == mixed strategy ==
-                x = batch["video"]
-                t_length = x.size(2)
-                use_video = 1
-                if mixed_strategy == "mixed_video_image":
-                    if random.random() < modulated_mixed_image_ratio and dist.get_rank() != 0:
-                        # NOTE: enable the first rank to use video
-                        t_length = 1
-                        use_video = 0
-                elif mixed_strategy == "mixed_video_random":
-                    t_length = random.randint(1, x.size(2))
-                x = x[:, :, :t_length, :, :]
+                    # == log config ==
+                    global_step = epoch * num_steps_per_epoch + step
+                    actual_update_step = (global_step + 1) // accumulation_steps
+                    log_step += 1
+                    acc_step += 1
 
-                if train_gen:
-                    # == forward pass ==
-                    x_rec, posterior, z = model(x)
-                    if cache_pin_memory:
-                        dataiter.remove_cache(pinned_video)
+                    # == mixed strategy ==
+                    x = batch["video"]
+                    t_length = x.size(2)
+                    use_video = 1
+                    if mixed_strategy == "mixed_video_image":
+                        if random.random() < modulated_mixed_image_ratio and dist.get_rank() != 0:
+                            # NOTE: enable the first rank to use video
+                            t_length = 1
+                            use_video = 0
+                    elif mixed_strategy == "mixed_video_random":
+                        t_length = random.randint(1, x.size(2))
+                    x = x[:, :, :t_length, :, :]
 
-                    log_gen_step += 1
+                    with Timer("model", log=True) if cfg.get("profile", False) else nullcontext():
+                        # == forward pass ==
+                        x_rec, posterior, z = model(x)
 
-                    # == loss initialization ==
-                    vae_loss = torch.tensor(0.0, device=device, dtype=dtype)
-                    loss_dict = {}
+                        if cfg.get("profile", False):
+                            profiler_ctxt.step()
 
-                    # == opl loss ==
-                    opl_loss_weight = cfg.get("opl_loss_weight", 0)
-                    if opl_loss_weight > 0:
-                        opl_loss = cal_opl_loss(z, opl_loss_weight)
-                        vae_loss += opl_loss
+                        if cache_pin_memory:
+                            dataiter.remove_cache(pinned_video)
 
-                    # == reconstruction loss ==
-                    ret = vae_loss_fn(x, x_rec, posterior)
-                    nll_loss = ret["nll_loss"]
-                    kl_loss = ret["kl_loss"]
-                    recon_loss = ret["recon_loss"]
-                    perceptual_loss = ret["perceptual_loss"]
-                    vae_loss += nll_loss + kl_loss
+                        # == loss initialization ==
+                        vae_loss = torch.tensor(0.0, device=device, dtype=dtype)
+                        loss_dict = {}  # loss at every step
 
-                    # == generator loss ==
-                    if use_discriminator:
-                        # turn off grad update for disc
-                        discriminator.requires_grad_(False)
-                        fake_logits = discriminator(x_rec.contiguous())
+                        # == opl loss ==
+                        opl_loss_weight = cfg.get("opl_loss_weight", 0)
+                        if opl_loss_weight > 0:
+                            opl_loss = cal_opl_loss(z, opl_loss_weight)
+                            vae_loss += opl_loss
 
-                        generator_loss, g_loss = generator_loss_fn(
-                            fake_logits,
-                            nll_loss,
-                            model.unwrap().get_last_layer(),
-                            actual_gen_update_step,
-                            is_training=model.training,
+                        # == reconstruction loss ==
+                        ret = vae_loss_fn(x, x_rec, posterior)
+                        nll_loss = ret["nll_loss"]
+                        kl_loss = ret["kl_loss"]
+                        recon_loss = ret["recon_loss"]
+                        perceptual_loss = ret["perceptual_loss"]
+                        vae_loss += nll_loss + kl_loss
+
+                        # == generator loss ==
+                        if use_discriminator:
+                            # turn off grad update for disc
+                            discriminator.requires_grad_(False)
+                            fake_logits = discriminator(x_rec.contiguous())
+
+                            generator_loss, g_loss = generator_loss_fn(
+                                fake_logits,
+                                nll_loss,
+                                model.module.get_last_layer(),
+                                actual_update_step,
+                                is_training=model.training,
+                            )
+                            # print(f"generator_loss: {generator_loss}, recon_loss: {recon_loss}, perceptual_loss: {perceptual_loss}")
+
+                            vae_loss += generator_loss
+                            # turn on disc training
+                            discriminator.requires_grad_(True)
+
+                        # == generator backward & update ==
+                        ctx = (
+                            booster.no_sync(model, optimizer)
+                            if cfg.get("plugin", "zero2") in ("zero1", "zero1-seq")
+                            and (step + 1) % accumulation_steps != 0
+                            else nullcontext()
                         )
+                        with Timer("backward", log=True) if cfg.get("profile", False) else nullcontext():
+                            with ctx:
+                                booster.backward(loss=vae_loss / accumulation_steps, optimizer=optimizer)
 
-                        vae_loss += generator_loss
-                        # turn on disc training
-                        discriminator.requires_grad_(True)
-
-                    # == generator backward & update ==
-                    ctx = (
-                        booster.no_sync(model, optimizer)
-                        if cfg.get("plugin", "zero2") in ("zero1", "zero1-seq") and (step + 1) % accumulation_steps != 0
-                        else nullcontext()
-                    )
-                    with ctx:
-                        booster.backward(loss=vae_loss / accumulation_steps, optimizer=optimizer)
-                    if (gen_step + 1) % accumulation_steps == 0:
-                        optimizer.step()
-                        optimizer.zero_grad()
-                        if lr_scheduler is not None:
-                            lr_scheduler.step(
-                                actual_gen_update_step,
-                            )
-                        # == update EMA ==
-                        if ema is not None:
-                            update_ema(
-                                ema,
-                                model.unwrap(),
-                                optimizer=optimizer,
-                                decay=cfg.get("ema_decay", 0.9999),
-                            )
+                        with Timer("optimizer", log=True) if cfg.get("profile", False) else nullcontext():
+                            if (step + 1) % accumulation_steps == 0:
+                                optimizer.step()
+                                optimizer.zero_grad()
+                                if lr_scheduler is not None:
+                                    lr_scheduler.step(
+                                        actual_update_step,
+                                    )
+                                # == update EMA ==
+                                if ema is not None:
+                                    update_ema(
+                                        ema,
+                                        model.unwrap(),
+                                        optimizer=optimizer,
+                                        decay=cfg.get("ema_decay", 0.9999),
+                                    )
 
                     # == logging ==
                     log_loss("all", vae_loss, loss_dict, use_video)
@@ -466,129 +475,128 @@ def main():
                         log_loss("gen_w", generator_loss, loss_dict, use_video)
                         log_loss("gen", g_loss, loss_dict, use_video)
 
-                # == loss: discriminator adversarial ==
-                if train_disc and use_discriminator:
-                    # need to calc x_rec without accumulating compuation graph to avoid OOM
-                    if not train_gen:
-                        with torch.no_grad():
-                            x_rec, posterior, z = model(x)
-                            if cache_pin_memory:
-                                dataiter.remove_cache(pinned_video)
-
-                    log_disc_step += 1
-                    real_logits = discriminator(x.detach().contiguous())
-                    fake_logits = discriminator(x_rec.detach().contiguous())
-                    disc_loss = discriminator_loss_fn(
-                        real_logits,
-                        fake_logits,
-                        actual_disc_update_step,
-                    )
-
-                    # == discriminator backward & update ==
-                    ctx = (
-                        booster.no_sync(discriminator, disc_optimizer)
-                        if cfg.get("plugin", "zero2") in ("zero1", "zero1-seq") and (step + 1) % accumulation_steps != 0
-                        else nullcontext()
-                    )
-                    with ctx:
-                        booster.backward(loss=disc_loss / accumulation_steps, optimizer=disc_optimizer)
-                    if (disc_step + 1) % accumulation_steps == 0:
-                        disc_optimizer.step()
-                        disc_optimizer.zero_grad()
-                        if disc_lr_scheduler is not None:
-                            disc_lr_scheduler.step(actual_disc_update_step)
-
-                    # log
-                    log_loss("disc", disc_loss, loss_dict, use_video)
-
-                # == logging ==
-                if (gen_step + 1) % accumulation_steps == 0 and actual_gen_update_step == actual_disc_update_step:
-                    if coordinator.is_master() and actual_gen_update_step % cfg.get("log_every", 1) == 0:
-                        avg_loss = {k: v / log_gen_step for k, v in running_loss.items()}
-                        # progress bar
-                        pbar.set_postfix(
-                            {
-                                # "step": step,
-                                # "global_step": global_step,
-                                # "actual_update_step": actual_gen_update_step,
-                                # "lr": optimizer.param_groups[0]["lr"],
-                                **{k: f"{v:.2f}" for k, v in avg_loss.items()},
-                            }
-                        )
-                        # tensorboard
-                        tb_writer.add_scalar("loss", vae_loss.item(), actual_gen_update_step)
-                        # wandb
-                        if cfg.get("wandb", False):
-                            wandb.log(
-                                {
-                                    "iter": global_step,
-                                    "epoch": epoch,
-                                    "lr": optimizer.param_groups[0]["lr"],
-                                    "avg_loss_": avg_loss,
-                                    "avg_loss": avg_loss["all"],
-                                    "loss_": loss_dict,
-                                    "loss": vae_loss.item(),
-                                },
-                                step=actual_gen_update_step,
-                            )
-
-                        running_loss = {k: 0.0 for k in running_loss}
-                        log_gen_step = 0
-
-                    # == checkpoint saving ==
-                    ckpt_every = cfg.get("ckpt_every", 0)
-                    if ckpt_every > 0 and actual_gen_update_step % ckpt_every == 0 and coordinator.is_master():
-                        subprocess.run("sudo drop_cache", shell=True)
-
-                    if ckpt_every > 0 and actual_gen_update_step % ckpt_every == 0:
-                        # mannually garbage collection
-                        gc.collect()
-
-                        save_dir = checkpoint_io.save(
-                            booster,
-                            exp_dir,
-                            model=model,
-                            ema=ema,
-                            optimizer=optimizer,
-                            lr_scheduler=lr_scheduler,
-                            sampler=sampler,
-                            epoch=epoch,
-                            step=step + 1,
-                            global_step=global_step + 1,
-                            batch_size=cfg.get("batch_size", None),
-                            actual_update_step=actual_gen_update_step,
-                            ema_shape_dict=ema_shape_dict,
-                            async_io=True,
+                    # == loss: discriminator adversarial ==
+                    if use_discriminator:
+                        real_logits = discriminator(x.detach().contiguous())
+                        fake_logits = discriminator(x_rec.detach().contiguous())
+                        disc_loss = discriminator_loss_fn(
+                            real_logits,
+                            fake_logits,
+                            actual_update_step,
                         )
 
-                        if is_log_process(plugin_type, plugin_config):
-                            os.system(f"chgrp -R share {save_dir}")
-
-                        if use_discriminator:
-                            disc_booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
-                            disc_booster.save_optimizer(
-                                disc_optimizer,
-                                os.path.join(save_dir, "disc_optimizer"),
-                                shard=True,
-                                size_per_shard=4096,
-                            )
+                        # == discriminator backward & update ==
+                        ctx = (
+                            booster.no_sync(discriminator, disc_optimizer)
+                            if cfg.get("plugin", "zero2") in ("zero1", "zero1-seq")
+                            and (step + 1) % accumulation_steps != 0
+                            else nullcontext()
+                        )
+                        with ctx:
+                            booster.backward(loss=disc_loss / accumulation_steps, optimizer=disc_optimizer)
+                        if (step + 1) % accumulation_steps == 0:
+                            disc_optimizer.step()
+                            disc_optimizer.zero_grad()
                             if disc_lr_scheduler is not None:
-                                disc_booster.save_lr_scheduler(
-                                    disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler")
+                                disc_lr_scheduler.step(actual_update_step)
+
+                        # log
+                        log_loss("disc", disc_loss, loss_dict, use_video)
+
+                    # == logging ==
+                    if (global_step + 1) % accumulation_steps == 0:
+                        if coordinator.is_master() and actual_update_step % cfg.get("log_every", 1) == 0:
+                            avg_loss = {k: v / log_step for k, v in running_loss.items()}
+                            # progress bar
+                            pbar.set_postfix(
+                                {
+                                    # "step": step,
+                                    # "global_step": global_step,
+                                    # "actual_update_step": actual_update_step,
+                                    # "lr": optimizer.param_groups[0]["lr"],
+                                    **{k: f"{v:.2f}" for k, v in avg_loss.items()},
+                                }
+                            )
+                            # tensorboard
+                            tb_writer.add_scalar("loss", vae_loss.item(), actual_update_step)
+                            # wandb
+                            if cfg.get("wandb", False):
+                                wandb.log(
+                                    {
+                                        "iter": global_step,
+                                        "epoch": epoch,
+                                        "lr": optimizer.param_groups[0]["lr"],
+                                        "avg_loss_": avg_loss,
+                                        "avg_loss": avg_loss["all"],
+                                        "loss_": loss_dict,
+                                        "loss": vae_loss.item(),
+                                        "global_grad_norm": optimizer.get_grad_norm(),
+                                    },
+                                    step=actual_update_step,
                                 )
-                        dist.barrier()
 
-                        logger.info(
-                            "Saved checkpoint at epoch %s, step %s, global_step %s to %s",
-                            epoch,
-                            step + 1,
-                            actual_gen_update_step,
-                            save_dir,
-                        )
+                            running_loss = {k: 0.0 for k in running_loss}
+                            log_step = 0
 
-                        # remove old checkpoints
-                        rm_checkpoints(exp_dir, keep_n_latest=cfg.get("keep_n_latest", -1))
-                        logger.info("Removed old checkpoints and kept %s latest ones.", cfg.get("keep_n_latest", -1))
+                        # == checkpoint saving ==
+                        ckpt_every = cfg.get("ckpt_every", 0)
+                        if ckpt_every > 0 and actual_update_step % ckpt_every == 0 and coordinator.is_master():
+                            subprocess.run("sudo drop_cache", shell=True)
+
+                        if ckpt_every > 0 and actual_update_step % ckpt_every == 0:
+                            # mannually garbage collection
+                            gc.collect()
+
+                            save_dir = checkpoint_io.save(
+                                booster,
+                                exp_dir,
+                                model=model,
+                                ema=ema,
+                                optimizer=optimizer,
+                                lr_scheduler=lr_scheduler,
+                                sampler=sampler,
+                                epoch=epoch,
+                                step=step + 1,
+                                global_step=global_step + 1,
+                                batch_size=cfg.get("batch_size", None),
+                                actual_update_step=actual_update_step,
+                                ema_shape_dict=ema_shape_dict,
+                                async_io=True,
+                            )
+
+                            if is_log_process(plugin_type, plugin_config):
+                                os.system(f"chgrp -R share {save_dir}")
+
+                            if use_discriminator:
+                                booster.save_model(discriminator, os.path.join(save_dir, "discriminator"), shard=True)
+                                booster.save_optimizer(
+                                    disc_optimizer,
+                                    os.path.join(save_dir, "disc_optimizer"),
+                                    shard=True,
+                                    size_per_shard=4096,
+                                )
+                                if disc_lr_scheduler is not None:
+                                    booster.save_lr_scheduler(
+                                        disc_lr_scheduler, os.path.join(save_dir, "disc_lr_scheduler")
+                                    )
+                            dist.barrier()
+
+                            logger.info(
+                                "Saved checkpoint at epoch %s, step %s, global_step %s to %s",
+                                epoch,
+                                step + 1,
+                                actual_update_step,
+                                save_dir,
+                            )
+
+                            # remove old checkpoints
+                            rm_checkpoints(exp_dir, keep_n_latest=cfg.get("keep_n_latest", -1))
+                            logger.info(
+                                "Removed old checkpoints and kept %s latest ones.", cfg.get("keep_n_latest", -1)
+                            )
+
+            if cfg.get("profile", False):
+                profiler_ctxt.export_chrome_trace("./log/profile/trace.json")
 
         sampler.reset()
         start_step = 0

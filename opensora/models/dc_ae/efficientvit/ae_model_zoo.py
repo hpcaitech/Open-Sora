@@ -24,22 +24,13 @@ from torch import nn
 from opensora.registry import MODELS
 from opensora.utils.ckpt import load_checkpoint
 
-from .models.efficientvit.dc_ae import DCAE, DCAEConfig, dc_ae_f32c32, dc_ae_f64c128, dc_ae_f128c512
+from .models.efficientvit.dc_ae import DCAE, DCAEConfig, dc_ae_f32
 
-__all__ = ["create_dc_ae_model_cfg", "DCAE_HF", "AutoencoderKL", "DC_AE"]
+__all__ = ["create_dc_ae_model_cfg", "DCAE_HF", "DC_AE"]
 
 
 REGISTERED_DCAE_MODEL: dict[str, tuple[Callable, Optional[str]]] = {
-    "dc-ae-f32c32-in-1.0": (dc_ae_f32c32, None),
-    "dc-ae-f64c128-in-1.0": (dc_ae_f64c128, None),
-    "dc-ae-f128c512-in-1.0": (dc_ae_f128c512, None),
-    #################################################################################################
-    "dc-ae-f32c32-mix-1.0": (dc_ae_f32c32, None),
-    "dc-ae-f64c128-mix-1.0": (dc_ae_f64c128, None),
-    "dc-ae-f128c512-mix-1.0": (dc_ae_f128c512, None),
-    #################################################################################################
-    "dc-ae-f32c32-sana-1.0": (dc_ae_f32c32, None),
-    "dc-ae-f128c512-sana-1.0": (dc_ae_f128c512, None),
+    "dc-ae-f32t4c128": (dc_ae_f32, None),
 }
 
 
@@ -72,33 +63,6 @@ def DC_AE(
 
     if from_pretrained is not None:
         model = load_checkpoint(model, from_pretrained, device_map=device_map)
+        print(f"loaded dc_ae from ckpt path: {from_pretrained}")
+
     return model
-
-
-class AutoencoderKL(nn.Module):
-    def __init__(self, model_name: str):
-        super().__init__()
-        self.model_name = model_name
-        if self.model_name in ["stabilityai/sd-vae-ft-ema"]:
-            self.model = diffusers.models.AutoencoderKL.from_pretrained(self.model_name)
-            self.spatial_compression_ratio = 8
-        elif self.model_name == "flux-vae":
-            from diffusers import FluxPipeline
-
-            pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=torch.bfloat16)
-            self.model = diffusers.models.AutoencoderKL.from_pretrained(pipe.vae.config._name_or_path)
-            self.spatial_compression_ratio = 8
-        else:
-            raise ValueError(f"{self.model_name} is not supported for AutoencoderKL")
-
-    def encode(self, x: torch.Tensor) -> torch.Tensor:
-        if self.model_name in ["stabilityai/sd-vae-ft-ema", "flux-vae"]:
-            return self.model.encode(x).latent_dist.sample()
-        else:
-            raise ValueError(f"{self.model_name} is not supported for AutoencoderKL")
-
-    def decode(self, latent: torch.Tensor) -> torch.Tensor:
-        if self.model_name in ["stabilityai/sd-vae-ft-ema", "flux-vae"]:
-            return self.model.decode(latent).sample
-        else:
-            raise ValueError(f"{self.model_name} is not supported for AutoencoderKL")

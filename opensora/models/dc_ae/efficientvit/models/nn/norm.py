@@ -65,6 +65,14 @@ class RMSNorm2d(nn.Module):
         return x
 
 
+class RMSNorm3d(RMSNorm2d):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = (x / torch.sqrt(torch.square(x.float()).mean(dim=1, keepdim=True) + self.eps)).to(x.dtype)
+        if self.elementwise_affine:
+            x = x * self.weight.view(1, -1, 1, 1, 1) + self.bias.view(1, -1, 1, 1, 1)
+        return x
+
+
 # register normalization function here
 REGISTERED_NORM_DICT: dict[str, type] = {
     "bn2d": nn.BatchNorm2d,
@@ -72,6 +80,7 @@ REGISTERED_NORM_DICT: dict[str, type] = {
     "ln2d": LayerNorm2d,
     "trms2d": TritonRMSNorm2d,
     "rms2d": RMSNorm2d,
+    "rms3d": RMSNorm3d,
 }
 
 

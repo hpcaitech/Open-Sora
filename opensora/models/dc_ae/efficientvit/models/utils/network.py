@@ -24,7 +24,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 __all__ = [
-    "is_parallel",
     "get_device",
     "get_same_padding",
     "resize",
@@ -34,16 +33,8 @@ __all__ = [
 ]
 
 
-def is_parallel(model: nn.Module) -> bool:
-    return isinstance(model, (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel))
-
-
 def get_device(model: nn.Module) -> torch.device:
     return model.parameters().__next__().device
-
-
-def get_dtype(model: nn.Module) -> torch.dtype:
-    return model.parameters().__next__().dtype
 
 
 def get_same_padding(kernel_size: Union[int, tuple[int, ...]]) -> Union[int, tuple[int, ...]]:
