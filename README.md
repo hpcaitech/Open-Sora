@@ -37,7 +37,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). with MMDiT structure and optimized for image-to-video generation, the model generates high quality of videos (t2v, i2v, t2i2v) with 256x256 and 768x768 resolution. An attempt to adapt for a high-compression autoencoder is also presented. 😚 All training codes are released! [[report]]()
+- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). With MMDiT structure and optimized for image-to-video generation, the model generates high quality of videos (t2v, i2v, t2i2v) with 256x256 and 768x768 resolution. An attempt to adapt for a high-compression autoencoder is also presented. 😚 All training codes are released! [[report]]()
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md) [[arxiv]](https://arxiv.org/abs/2412.20404)
@@ -59,7 +59,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
 <details>
-<summary>OpenSora 1.2 Demo</summary>
+<summary>OpenSora 1.4 Demo</summary>
 
 | **5s 720×1280**                                                                                                                                                        | **5s 720×1280**                                                                                                                                                           | **5s 720×1280**                                                                                                                                                              |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -237,6 +237,10 @@ We also provide a dynamic motion score evaluator. After setting your OpenAI API 
 torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --motion-score dynamic
 ```
 
+| Score | 1                                                                                                       | 4                                                                                                       | 7                                                                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+|       | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/motion_score_1.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/motion_score_4.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/motion_score_7.gif" width=""> |
+
 ### Prompt Refine
 
 We take advantage of ChatGPT to refine the prompt. You can use the following command to refine the prompt. The function is available for both text-to-video and image-to-video generation.
@@ -253,6 +257,8 @@ To make the results reproducible, you can set the random seed by:
 ```bash
 torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --sampling_option.seed 42 --seed 42
 ```
+
+Use `--num-sample k` to generate `k` samples for each prompt.
 
 ## Computational Efficiency
 
