@@ -22,10 +22,12 @@ import torch.nn as nn
 from omegaconf import MISSING, OmegaConf
 from torch import Tensor
 
-from ...apps.setup import init_model
-from ...models.nn.act import build_act
-from ...models.nn.norm import build_norm
-from ...models.nn.ops import (
+from opensora.acceleration.checkpoint import auto_grad_checkpoint
+
+from ..utils import init_modules
+from .nn.act import build_act
+from .nn.norm import build_norm
+from .nn.ops import (
     ChannelDuplicatingPixelShuffleUpSampleLayer,
     ConvLayer,
     ConvPixelShuffleUpSampleLayer,
@@ -39,7 +41,7 @@ from ...models.nn.ops import (
     ResidualBlock,
 )
 
-__all__ = ["DCAE", "dc_ae_f32", "dc_ae_f64c128", "dc_ae_f128c512"]
+__all__ = ["DCAE", "dc_ae_f32", "dc_ae_f64c128", "dc_ae_f128c512", "dc_ae_f64t4c256"]
 
 
 @dataclass
@@ -60,6 +62,7 @@ class EncoderConfig:
     double_latent: bool = False
     is_video: bool = False
     temporal_downsample: tuple[bool, ...] = ()
+    tune_channel_proj: bool = False
 
 
 @dataclass
@@ -79,6 +82,7 @@ class DecoderConfig:
     out_act: str = "relu"
     is_video: bool = False
     temporal_upsample: tuple[bool, ...] = ()
+    tune_channel_proj: bool = False
 
 
 @dataclass
@@ -99,8 +103,17 @@ class DCAEConfig:
     pretrained_source: str = "dc-ae"
 
     scaling_factor: Optional[float] = None
+    is_image_model: bool = False
 
     tune_channel_proj: bool = False
+    train_decoder_only: bool = False
+    is_training: bool = False  # NOTE: set to True in vae train config
+
+    use_spatial_tiling: bool = False
+    use_temporal_tiling: bool = False
+    spatial_tile_size: int = 256
+    temporal_tile_size: int = 32
+    tile_overlap_factor: float = 0.25
 
 
 def build_block(
@@ -420,11 +433,17 @@ class Encoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.project_in(x)
+        # x = auto_grad_checkpoint(self.project_in, x)
         for stage in self.stages:
             if len(stage.op_list) == 0:
                 continue
-            x = stage(x)
-        x = self.project_out(x)
+            # x = stage(x)
+            if self.cfg.tune_channel_proj:
+                x = stage(x)
+            else:
+                x = auto_grad_checkpoint(stage, x)
+        # x = self.project_out(x)
+        x = auto_grad_checkpoint(self.project_out, x)
         return x
 
 
@@ -493,12 +512,17 @@ class Decoder(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.project_in(x)
+        if self.cfg.tune_channel_proj:
+            x = self.project_in(x)
+        else:
+            x = auto_grad_checkpoint(self.project_in, x)
         for stage in reversed(self.stages):
             if len(stage.op_list) == 0:
                 continue
-            x = stage(x)
-        x = self.project_out(x)
+            # x = stage(x)
+            x = auto_grad_checkpoint(stage, x)
+        # x = self.project_out(x)
+        x = auto_grad_checkpoint(self.project_out, x)
         return x
 
 
@@ -508,15 +532,31 @@ class DCAE(nn.Module):
         self.cfg = cfg
         self.encoder = Encoder(cfg.encoder)
         self.decoder = Decoder(cfg.decoder)
+        if cfg.tune_channel_proj:  # propergate the tune_channel_proj flag for gradient checkpointing handling
+            self.encoder.cfg.tune_channel_proj = True
+            self.decoder.cfg.tune_channel_proj = True
+
         self.scaling_factor = cfg.scaling_factor
         self.time_compression_ratio = cfg.time_compression_ratio
         self.spatial_compression_ratio = cfg.spatial_compression_ratio
-
+        self.use_spatial_tiling = cfg.use_spatial_tiling
+        self.use_temporal_tiling = cfg.use_temporal_tiling
+        self.spatial_tile_size = cfg.spatial_tile_size
+        self.temporal_tile_size = cfg.temporal_tile_size
+        assert (
+            cfg.spatial_tile_size // cfg.spatial_compression_ratio
+        ), f"spatial tile size {cfg.spatial_tile_size} must be divisible by spatial compression of {cfg.spatial_compression_ratio}"
+        self.spatial_tile_latent_size = cfg.spatial_tile_size // cfg.spatial_compression_ratio
+        assert (
+            cfg.temporal_tile_size // cfg.time_compression_ratio
+        ), f"temporal tile size {cfg.temporal_tile_size} must be divisible by temporal compression of {cfg.time_compression_ratio}"
+        self.temporal_tile_latent_size = cfg.temporal_tile_size // cfg.time_compression_ratio
+        self.tile_overlap_factor = cfg.tile_overlap_factor
         if self.cfg.pretrained_path is not None:
             self.load_model()
 
         self.to(torch.float32)
-        init_model(self)
+        init_modules(self, init_type="trunc_normal")
 
     def load_model(self):
         if self.cfg.pretrained_source == "dc-ae":
@@ -548,12 +588,152 @@ class DCAE(nn.Module):
 
         return z
 
-    def encode(self, x: torch.Tensor) -> torch.Tensor:
+    def _encode(self, x: torch.Tensor) -> torch.Tensor:
+        if self.cfg.is_training:
+            return self.encoder(x)
         is_video_encoder = self.encoder.cfg.is_video if self.encoder.cfg.is_video is not None else False
         x_ret = []
         for i in range(x.shape[0]):
             x_ret.append(self.encode_single(x[i : i + 1], is_video_encoder))
         return torch.cat(x_ret, dim=0)
+
+    def blend_v(self, a: torch.Tensor, b: torch.Tensor, blend_extent: int) -> torch.Tensor:
+        blend_extent = min(a.shape[-2], b.shape[-2], blend_extent)
+        for y in range(blend_extent):
+            b[:, :, :, y, :] = a[:, :, :, -blend_extent + y, :] * (1 - y / blend_extent) + b[:, :, :, y, :] * (
+                y / blend_extent
+            )
+        return b
+
+    def blend_h(self, a: torch.Tensor, b: torch.Tensor, blend_extent: int) -> torch.Tensor:
+        blend_extent = min(a.shape[-1], b.shape[-1], blend_extent)
+        for x in range(blend_extent):
+            b[:, :, :, :, x] = a[:, :, :, :, -blend_extent + x] * (1 - x / blend_extent) + b[:, :, :, :, x] * (
+                x / blend_extent
+            )
+        return b
+
+    def blend_t(self, a: torch.Tensor, b: torch.Tensor, blend_extent: int) -> torch.Tensor:
+        blend_extent = min(a.shape[-3], b.shape[-3], blend_extent)
+        for x in range(blend_extent):
+            b[:, :, x, :, :] = a[:, :, -blend_extent + x, :, :] * (1 - x / blend_extent) + b[:, :, x, :, :] * (
+                x / blend_extent
+            )
+        return b
+
+    def spatial_tiled_encode(self, x: torch.Tensor) -> torch.Tensor:
+        net_size = int(self.spatial_tile_size * (1 - self.tile_overlap_factor))
+        blend_extent = int(self.spatial_tile_latent_size * self.tile_overlap_factor)
+        row_limit = self.spatial_tile_latent_size - blend_extent
+
+        # Split video into tiles and encode them separately.
+        rows = []
+        for i in range(0, x.shape[-2], net_size):
+            row = []
+            for j in range(0, x.shape[-1], net_size):
+                tile = x[:, :, :, i : i + self.spatial_tile_size, j : j + self.spatial_tile_size]
+                tile = self._encode(tile)
+                row.append(tile)
+            rows.append(row)
+        result_rows = []
+        for i, row in enumerate(rows):
+            result_row = []
+            for j, tile in enumerate(row):
+                # blend the above tile and the left tile
+                # to the current tile and add the current tile to the result row
+                if i > 0:
+                    tile = self.blend_v(rows[i - 1][j], tile, blend_extent)
+                if j > 0:
+                    tile = self.blend_h(row[j - 1], tile, blend_extent)
+                result_row.append(tile[:, :, :, :row_limit, :row_limit])
+            result_rows.append(torch.cat(result_row, dim=-1))
+
+        return torch.cat(result_rows, dim=-2)
+
+    def temporal_tiled_encode(self, x: torch.Tensor) -> torch.Tensor:
+        overlap_size = int(self.temporal_tile_size * (1 - self.tile_overlap_factor))
+        blend_extent = int(self.temporal_tile_latent_size * self.tile_overlap_factor)
+        t_limit = self.temporal_tile_latent_size - blend_extent
+
+        # Split the video into tiles and encode them separately.
+        row = []
+        for i in range(0, x.shape[2], overlap_size):
+            tile = x[:, :, i : i + self.temporal_tile_size, :, :]
+            if self.use_spatial_tiling and (
+                tile.shape[-1] > self.spatial_tile_size or tile.shape[-2] > self.spatial_tile_size
+            ):
+                tile = self.spatial_tiled_encode(tile)
+            else:
+                tile = self._encode(tile)
+            row.append(tile)
+        result_row = []
+        for i, tile in enumerate(row):
+            if i > 0:
+                tile = self.blend_t(row[i - 1], tile, blend_extent)
+            result_row.append(tile[:, :, :t_limit, :, :])
+
+        return torch.cat(result_row, dim=2)
+
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
+        if self.use_temporal_tiling and x.shape[2] > self.temporal_tile_size:
+            return self.temporal_tiled_encode(x)
+        elif self.use_spatial_tiling and (x.shape[-1] > self.spatial_tile_size or x.shape[-2] > self.spatial_tile_size):
+            return self.spatial_tiled_encode(x)
+        else:
+            return self._encode(x)
+
+    def spatial_tiled_decode(self, z: torch.FloatTensor) -> torch.Tensor:
+        net_size = int(self.spatial_tile_latent_size * (1 - self.tile_overlap_factor))
+        blend_extent = int(self.spatial_tile_size * self.tile_overlap_factor)
+        row_limit = self.spatial_tile_size - blend_extent
+
+        # Split z into overlapping tiles and decode them separately.
+        # The tiles have an overlap to avoid seams between tiles.
+        rows = []
+        for i in range(0, z.shape[-2], net_size):
+            row = []
+            for j in range(0, z.shape[-1], net_size):
+                tile = z[:, :, :, i : i + self.spatial_tile_latent_size, j : j + self.spatial_tile_latent_size]
+                decoded = self._decode(tile)
+                row.append(decoded)
+            rows.append(row)
+        result_rows = []
+        for i, row in enumerate(rows):
+            result_row = []
+            for j, tile in enumerate(row):
+                # blend the above tile and the left tile
+                # to the current tile and add the current tile to the result row
+                if i > 0:
+                    tile = self.blend_v(rows[i - 1][j], tile, blend_extent)
+                if j > 0:
+                    tile = self.blend_h(row[j - 1], tile, blend_extent)
+                result_row.append(tile[:, :, :, :row_limit, :row_limit])
+            result_rows.append(torch.cat(result_row, dim=-1))
+
+        return torch.cat(result_rows, dim=-2)
+
+    def temporal_tiled_decode(self, z: torch.Tensor) -> torch.Tensor:
+        overlap_size = int(self.temporal_tile_latent_size * (1 - self.tile_overlap_factor))
+        blend_extent = int(self.temporal_tile_size * self.tile_overlap_factor)
+        t_limit = self.temporal_tile_size - blend_extent
+
+        row = []
+        for i in range(0, z.shape[2], overlap_size):
+            tile = z[:, :, i : i + self.temporal_tile_latent_size, :, :]
+            if self.use_spatial_tiling and (
+                tile.shape[-1] > self.spatial_tile_latent_size or tile.shape[-2] > self.spatial_tile_latent_size
+            ):
+                decoded = self.spatial_tiled_decode(tile)
+            else:
+                decoded = self._decode(tile)
+            row.append(decoded)
+        result_row = []
+        for i, tile in enumerate(row):
+            if i > 0:
+                tile = self.blend_t(row[i - 1], tile, blend_extent)
+            result_row.append(tile[:, :, :t_limit, :, :])
+
+        return torch.cat(result_row, dim=2)
 
     def decode_single(self, z: torch.Tensor, is_video_decoder: bool = False) -> torch.Tensor:
         assert z.shape[0] == 1
@@ -570,26 +750,38 @@ class DCAE(nn.Module):
             x = x.unsqueeze(dim=0).permute(0, 2, 1, 3, 4)
         return x
 
-    def decode(self, z: torch.Tensor) -> torch.Tensor:
+    def _decode(self, z: torch.Tensor) -> torch.Tensor:
+        if self.cfg.is_training:
+            return self.decoder(z)
         is_video_decoder = self.decoder.cfg.is_video if self.decoder.cfg.is_video is not None else False
         x_ret = []
         for i in range(z.shape[0]):
             x_ret.append(self.decode_single(z[i : i + 1], is_video_decoder))
         return torch.cat(x_ret, dim=0)
 
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        if self.use_temporal_tiling and z.shape[2] > self.temporal_tile_latent_size:
+            return self.temporal_tiled_decode(z)
+        elif self.use_spatial_tiling and (
+            z.shape[-1] > self.spatial_tile_latent_size or z.shape[-2] > self.spatial_tile_latent_size
+        ):
+            return self.spatial_tiled_decode(z)
+        else:
+            return self._decode(z)
+
     def forward(self, x: torch.Tensor) -> tuple[Any, Tensor, dict[Any, Any]]:
         x_type = x.dtype
-        is_image = self.cfg.__dict__.get("is_image", False)
+        is_image_model = self.cfg.__dict__.get("is_image_model", False)
         x = x.to(self.encoder.project_in.conv.weight.dtype)
 
-        if is_image:
+        if is_image_model:
             b, c, _, h, w = x.shape
             x = x.permute(0, 2, 1, 3, 4).reshape(-1, c, h, w)
 
         z = self.encode(x)
         dec = self.decode(z)
 
-        if is_image:
+        if is_image_model:
             dec = dec.reshape(b, 1, c, h, w).permute(0, 2, 1, 3, 4)
             z = z.unsqueeze(dim=0).permute(0, 2, 1, 3, 4)
 
@@ -630,7 +822,8 @@ def dc_ae_f32(name: str, pretrained_path: str) -> DCAEConfig:
             "decoder.width_list=[128,256,512,512,1024,1024] decoder.depth_list=[3,3,3,3,3,3] "
             "decoder.upsample_block_type=InterpolateConv "
             "decoder.norm=rms2d decoder.act=silu "
-            "scaling_factor=0.41407"
+            "scaling_factor=0.41407 "
+            "is_image_model=True"
         )
     elif name in ["dc-ae-f32c32-sana-1.0-video", "dc-ae-f32t4c256", "dc-ae-f32t4c128", "dc-ae-f32t4c64"]:
         cfg_str = (
@@ -677,6 +870,51 @@ def dc_ae_f64c128(name: str, pretrained_path: Optional[str] = None) -> DCAEConfi
             "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViT_GLU,EViT_GLU,EViT_GLU,EViT_GLU] "
             "decoder.width_list=[128,256,512,512,1024,1024,2048] decoder.depth_list=[0,5,10,2,2,2,2] "
             "decoder.norm=[bn2d,bn2d,bn2d,trms2d,trms2d,trms2d,trms2d] decoder.act=[relu,relu,relu,silu,silu,silu,silu]"
+        )
+    elif name in ["dc-ae-f64t4c128"]:
+        cfg_str = (
+            "time_compression_ratio=4 "
+            "spatial_compression_ratio=64 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024,1024] encoder.depth_list=[2,2,2,3,3,3,3] "
+            "encoder.downsample_block_type=Conv "
+            "encoder.norm=rms3d "
+            "encoder.is_video=True "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024,1024] decoder.depth_list=[3,3,3,3,3,3,3] "
+            "decoder.upsample_block_type=InterpolateConv "
+            "decoder.norm=rms3d decoder.act=silu decoder.out_norm=rms3d "
+            "decoder.is_video=True "
+            "encoder.temporal_downsample=[False,False,False,True,True,False,False] "
+            "decoder.temporal_upsample=[False,False,False,True,True,False,False] "
+            "latent_channels=128"
+        )
+    else:
+        raise NotImplementedError
+    cfg = OmegaConf.from_dotlist(cfg_str.split(" "))
+    cfg: DCAEConfig = OmegaConf.to_object(OmegaConf.merge(OmegaConf.structured(DCAEConfig), cfg))
+    cfg.pretrained_path = pretrained_path
+    return cfg
+
+
+def dc_ae_f64t4c256(name: str, pretrained_path: Optional[str] = None) -> DCAEConfig:
+    if name in ["dc-ae-f64t4c256"]:
+        cfg_str = (
+            "time_compression_ratio=4 "
+            "spatial_compression_ratio=64 "
+            "encoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "encoder.width_list=[128,256,512,512,1024,1024,1024] encoder.depth_list=[2,2,2,3,3,3,3] "
+            "encoder.downsample_block_type=Conv "
+            "encoder.norm=rms3d "
+            "encoder.is_video=True "
+            "decoder.block_type=[ResBlock,ResBlock,ResBlock,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU,EViTS5_GLU] "
+            "decoder.width_list=[128,256,512,512,1024,1024,1024] decoder.depth_list=[3,3,3,3,3,3,3] "
+            "decoder.upsample_block_type=InterpolateConv "
+            "decoder.norm=rms3d decoder.act=silu decoder.out_norm=rms3d "
+            "decoder.is_video=True "
+            "encoder.temporal_downsample=[False,False,False,True,True,False,False] "
+            "decoder.temporal_upsample=[False,False,False,True,True,False,False] "
+            "latent_channels=256"
         )
     else:
         raise NotImplementedError

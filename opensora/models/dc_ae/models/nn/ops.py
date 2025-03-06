@@ -20,10 +20,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from opensora.models.vae.utils import ChannelChunkConv3d
+
 from ...models.nn.act import build_act
 from ...models.nn.norm import build_norm
-from ...models.utils import get_same_padding, list_sum, resize, val2list, val2tuple
-from ...models.nn.vo_ops import pixel_unshuffle_3d, pixel_shuffle_3d, chunked_interpolate
+from ...models.nn.vo_ops import chunked_interpolate, get_same_padding, pixel_shuffle_3d, pixel_unshuffle_3d, resize
+from ...utils import list_sum, val2list, val2tuple
+
 __all__ = [
     "ConvLayer",
     "UpSampleLayer",
@@ -72,7 +75,7 @@ class ConvLayer(nn.Module):
         if self.is_video:
             assert dilation == 1, "only support dilation=1 for 3d conv"
             assert kernel_size % 2 == 1, "only support odd kernel size for 3d conv"
-            self.pad_mode_3d = pad_mode_3d # 3d padding follows CausalConv3d by Hunyuan
+            self.pad_mode_3d = pad_mode_3d  # 3d padding follows CausalConv3d by Hunyuan
             # padding = (
             #     kernel_size // 2,
             #     kernel_size // 2,
@@ -93,7 +96,7 @@ class ConvLayer(nn.Module):
             self.padding = padding
             self.dropout = nn.Dropout3d(dropout, inplace=False) if dropout > 0 else None
             assert isinstance(stride, (int, tuple)), "stride must be an integer or 3-tuple for 3d conv"
-            self.conv = nn.Conv3d( # padding is handled by F.pad() in forward()
+            self.conv = ChannelChunkConv3d(  # padding is handled by F.pad() in forward()
                 in_channels,
                 out_channels,
                 kernel_size=(kernel_size, kernel_size, kernel_size),
@@ -105,7 +108,7 @@ class ConvLayer(nn.Module):
             padding = get_same_padding(kernel_size)
             padding *= dilation
             self.dropout = nn.Dropout2d(dropout, inplace=False) if dropout > 0 else None
-            self.conv = nn.Conv2d( 
+            self.conv = nn.Conv2d(
                 in_channels,
                 out_channels,
                 kernel_size=(kernel_size, kernel_size),
@@ -123,15 +126,14 @@ class ConvLayer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.dropout is not None:
             x = self.dropout(x)
-        if self.is_video: # custom padding for 3d conv
-            x = self.pad(x, self.padding, mode=self.pad_mode_3d) # "constant" padding defaults to 0
+        if self.is_video:  # custom padding for 3d conv
+            x = self.pad(x, self.padding, mode=self.pad_mode_3d)  # "constant" padding defaults to 0
         x = self.conv(x)
         if self.norm:
             x = self.norm(x)
         if self.act:
             x = self.act(x)
         return x
-
 
 
 class UpSampleLayer(nn.Module):
@@ -190,14 +192,13 @@ class PixelUnshuffleChannelAveragingDownSampleLayer(nn.Module):
         in_channels: int,
         out_channels: int,
         factor: int,
-        temporal_downsample: bool = False, # temporal downsample for 5d input tensor
+        temporal_downsample: bool = False,  # temporal downsample for 5d input tensor
     ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.factor = factor
         self.temporal_downsample = temporal_downsample
-        
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.dim() == 4:
@@ -207,16 +208,16 @@ class PixelUnshuffleChannelAveragingDownSampleLayer(nn.Module):
             B, C, H, W = x.shape
             x = x.view(B, self.out_channels, group_size, H, W)
             x = x.mean(dim=2)
-        elif x.dim() == 5: # [B, C, T, H, W]
+        elif x.dim() == 5:  # [B, C, T, H, W]
             _, _, T, _, _ = x.shape
-            if self.temporal_downsample and T != 1: # 3d pixel unshuffle
+            if self.temporal_downsample and T != 1:  # 3d pixel unshuffle
                 x = pixel_unshuffle_3d(x, self.factor)
                 assert self.in_channels * self.factor**3 % self.out_channels == 0
                 group_size = self.in_channels * self.factor**3 // self.out_channels
-            else: # 2d pixel unshuffle
-                x = x.permute(0, 2, 1, 3, 4) # [B, T, C, H, W]
+            else:  # 2d pixel unshuffle
+                x = x.permute(0, 2, 1, 3, 4)  # [B, T, C, H, W]
                 x = F.pixel_unshuffle(x, self.factor)
-                x = x.permute(0, 2, 1, 3, 4) # [B, C, T, H, W]
+                x = x.permute(0, 2, 1, 3, 4)  # [B, C, T, H, W]
                 assert self.in_channels * self.factor**2 % self.out_channels == 0
                 group_size = self.in_channels * self.factor**2 // self.out_channels
             B, C, T, H, W = x.shape
@@ -228,6 +229,7 @@ class PixelUnshuffleChannelAveragingDownSampleLayer(nn.Module):
 
     def __repr__(self):
         return f"PixelUnshuffleChannelAveragingDownSampleLayer(in_channels={self.in_channels}, out_channels={self.out_channels}, factor={self.factor}), temporal_downsample={self.temporal_downsample}"
+
 
 class ConvPixelShuffleUpSampleLayer(nn.Module):
     def __init__(
@@ -285,13 +287,13 @@ class InterpolateConvUpSampleLayer(nn.Module):
             x = F.interpolate(x, scale_factor=self.factor, mode=self.mode)
         elif x.dim() == 5:
             # [B, C, T, H, W] -> [B, C, T*factor, H*factor, W*factor]
-            if self.temporal_upsample and x.size(2) != 1: # temporal upsample for video input
-                x = F.interpolate(x, scale_factor=[self.factor, self.factor, self.factor], mode=self.mode)
+            if self.temporal_upsample and x.size(2) != 1:  # temporal upsample for video input
+                x = chunked_interpolate(x, scale_factor=[self.factor, self.factor, self.factor], mode=self.mode)
             else:
-                x = F.interpolate(x, scale_factor=[1, self.factor, self.factor], mode=self.mode)
+                x = chunked_interpolate(x, scale_factor=[1, self.factor, self.factor], mode=self.mode)
         x = self.conv(x)
         return x
-    
+
     def __repr__(self):
         return f"InterpolateConvUpSampleLayer(factor={self.factor}, mode={self.mode}, temporal_upsample={self.temporal_upsample})"
 
@@ -302,7 +304,7 @@ class ChannelDuplicatingPixelShuffleUpSampleLayer(nn.Module):
         in_channels: int,
         out_channels: int,
         factor: int,
-        temporal_upsample: bool = False, # upsample on the temporal dimension as well
+        temporal_upsample: bool = False,  # upsample on the temporal dimension as well
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -310,31 +312,30 @@ class ChannelDuplicatingPixelShuffleUpSampleLayer(nn.Module):
         self.factor = factor
         assert out_channels * factor**2 % in_channels == 0
         self.temporal_upsample = temporal_upsample
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.dim() == 5:
             B, C, T, H, W = x.shape
             assert C == self.in_channels
-        
 
-        if self.temporal_upsample and T != 1: # video input
+        if self.temporal_upsample and T != 1:  # video input
             repeats = self.out_channels * self.factor**3 // self.in_channels
         else:
             repeats = self.out_channels * self.factor**2 // self.in_channels
-        
+
         x = x.repeat_interleave(repeats, dim=1)
-        
-        if x.dim() == 4: # original image-only training
+
+        if x.dim() == 4:  # original image-only training
             x = F.pixel_shuffle(x, self.factor)
-        elif x.dim() == 5: # [B, C, T, H, W]
-            if self.temporal_upsample and T != 1: # video input
+        elif x.dim() == 5:  # [B, C, T, H, W]
+            if self.temporal_upsample and T != 1:  # video input
                 x = pixel_shuffle_3d(x, self.factor)
             else:
-                x = x.permute(0, 2, 1, 3, 4) # [B, T, C, H, W]
-                x = F.pixel_shuffle(x, self.factor) # on H and W only
-                x = x.permute(0, 2, 1, 3, 4) # [B, C, T, H, W]
+                x = x.permute(0, 2, 1, 3, 4)  # [B, T, C, H, W]
+                x = F.pixel_shuffle(x, self.factor)  # on H and W only
+                x = x.permute(0, 2, 1, 3, 4)  # [B, C, T, H, W]
         return x
-    
+
     def __repr__(self):
         return f"ChannelDuplicatingPixelShuffleUpSampleLayer(in_channels={self.in_channels}, out_channels={self.out_channels}, factor={self.factor}, temporal_upsample={self.temporal_upsample})"
 
@@ -676,7 +677,7 @@ class LiteMLA(nn.Module):
             act_func=act_func[0],
             is_video=is_video,
         )
-        conv_class = nn.Conv2d if not is_video else nn.Conv3d
+        conv_class = nn.Conv2d if not is_video else ChannelChunkConv3d
         self.aggreg = nn.ModuleList(
             [
                 nn.Sequential(
@@ -806,17 +807,17 @@ class LiteMLA(nn.Module):
 
         if qkv.ndim == 4:
             H, W = list(qkv.size())[-2:]
-            num_tokens = H * W
+            # num_tokens = H * W
         elif qkv.ndim == 5:
             _, _, T, H, W = list(qkv.size())
-            num_tokens = H * W * T
-        
-        if num_tokens > self.dim:
-            out = self.relu_linear_att(qkv).to(qkv.dtype)
-        else:
-            if self.is_video:
-                raise NotImplementedError("Video is not supported for quadratic attention")
-            out = self.relu_quadratic_att(qkv)
+            # num_tokens = H * W * T
+
+        # if num_tokens > self.dim:
+        out = self.relu_linear_att(qkv).to(qkv.dtype)
+        # else:
+        #     if self.is_video:
+        #         raise NotImplementedError("Video is not supported for quadratic attention")
+        #     out = self.relu_quadratic_att(qkv)
         out = self.proj(out)
 
         return out

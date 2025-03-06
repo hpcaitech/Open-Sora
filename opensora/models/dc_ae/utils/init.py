@@ -64,8 +64,7 @@ def init_modules(model: Union[nn.Module, list[nn.Module]], init_type="trunc_norm
 
 
 def zero_last_gamma(model: nn.Module, init_val=0) -> None:
-    import efficientvit.models.nn.ops as ops
-
+    import opensora.models.dc_ae.models.nn.ops as ops
     for m in model.modules():
         if isinstance(m, ops.ResidualBlock) and isinstance(m.shortcut, ops.IdentityLayer):
             if isinstance(m.main, (ops.DSConv, ops.MBConv, ops.FusedMBConv)):
@@ -82,3 +81,4 @@ def zero_last_gamma(model: nn.Module, init_val=0) -> None:
                 norm = getattr(parent_module, "norm", None)
                 if norm is not None:
                     nn.init.constant_(norm.weight, init_val)
+
