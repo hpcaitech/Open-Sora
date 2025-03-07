@@ -67,11 +67,8 @@ update_warmup_steps = True
 # ============
 # loss config 
 # ============
-opl_loss_weight = 0
-
 vae_loss_config = dict(
     perceptual_loss_weight=0.5,
     kl_loss_weight=0,
-    logvar_init=0,
 )
 

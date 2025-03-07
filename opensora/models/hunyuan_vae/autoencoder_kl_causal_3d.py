@@ -627,7 +627,6 @@ def CausalVAE3D_HUNYUAN(
     from_pretrained: str = None,
     device_map: str | torch.device = "cuda",
     torch_dtype: torch.dtype = torch.bfloat16,
-    train_decoder_only: bool = False,
     **kwargs,
 ) -> AutoencoderKLCausal3D:
     config = AutoEncoder3DConfig(from_pretrained=from_pretrained, **kwargs)
@@ -635,9 +634,5 @@ def CausalVAE3D_HUNYUAN(
         model = AutoencoderKLCausal3D(config).to(torch_dtype)
     if from_pretrained:
         model = load_checkpoint(model, from_pretrained, device_map=device_map, strict=True)
-    if train_decoder_only:
-        for _, param in model.named_parameters():
-            param.requires_grad = False
-        for _, param in model.decoder.named_parameters():
-            param.requires_grad = True
+
     return model

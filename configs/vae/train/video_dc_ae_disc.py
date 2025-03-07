@@ -11,13 +11,11 @@ disc_lr_scheduler = dict(warmup_steps=0)
 
 gen_loss_config = dict(
     gen_start=0,
-    disc_factor=1,
     disc_weight=0.05,
 )
 
 disc_loss_config = dict(
     disc_start=0,
-    disc_factor=1.0,
     disc_loss_type="hinge",
 )
 
@@ -30,3 +28,7 @@ optim_discriminator = dict(
     betas=(0.9, 0.98),
 )
 
+grad_checkpoint = True
+model = dict(
+    disc_off_grad_ckpt = True, # set to true if your `grad_checkpoint` is True
+)

@@ -221,15 +221,3 @@ class DiscriminatorLoss(nn.Module):
             weighted_discriminator_loss = 0
 
         return weighted_discriminator_loss
-
-
-def cal_opl_loss(z: Tensor, weight: float = 1e5):
-    z = rearrange(z, "b c t h w -> (b t) c h w")
-    opl_loss = (
-        ((z - z.mean(dim=(2, 3), keepdim=True)).norm(dim=1) - 3 * z.std(dim=(2, 3), keepdim=True).norm(dim=1))
-        .clamp(min=0)
-        .mean()
-    )
-    # opl_loss = opl_loss.mean()
-    opl_loss = weight * opl_loss
-    return opl_loss

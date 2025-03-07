@@ -62,7 +62,6 @@ class EncoderConfig:
     double_latent: bool = False
     is_video: bool = False
     temporal_downsample: tuple[bool, ...] = ()
-    tune_channel_proj: bool = False
 
 
 @dataclass
@@ -82,7 +81,6 @@ class DecoderConfig:
     out_act: str = "relu"
     is_video: bool = False
     temporal_upsample: tuple[bool, ...] = ()
-    tune_channel_proj: bool = False
 
 
 @dataclass
@@ -105,8 +103,6 @@ class DCAEConfig:
     scaling_factor: Optional[float] = None
     is_image_model: bool = False
 
-    tune_channel_proj: bool = False
-    train_decoder_only: bool = False
     is_training: bool = False  # NOTE: set to True in vae train config
 
     use_spatial_tiling: bool = False
@@ -114,6 +110,7 @@ class DCAEConfig:
     spatial_tile_size: int = 256
     temporal_tile_size: int = 32
     tile_overlap_factor: float = 0.25
+    
 
 
 def build_block(
@@ -437,11 +434,7 @@ class Encoder(nn.Module):
         for stage in self.stages:
             if len(stage.op_list) == 0:
                 continue
-            # x = stage(x)
-            if self.cfg.tune_channel_proj:
-                x = stage(x)
-            else:
-                x = auto_grad_checkpoint(stage, x)
+            x = auto_grad_checkpoint(stage, x)
         # x = self.project_out(x)
         x = auto_grad_checkpoint(self.project_out, x)
         return x
@@ -512,17 +505,17 @@ class Decoder(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.cfg.tune_channel_proj:
-            x = self.project_in(x)
-        else:
-            x = auto_grad_checkpoint(self.project_in, x)
+        x = auto_grad_checkpoint(self.project_in, x)
         for stage in reversed(self.stages):
             if len(stage.op_list) == 0:
                 continue
             # x = stage(x)
             x = auto_grad_checkpoint(stage, x)
-        # x = self.project_out(x)
-        x = auto_grad_checkpoint(self.project_out, x)
+
+        if self.disc_off_grad_ckpt:
+            x = self.project_out(x)
+        else:
+            x = auto_grad_checkpoint(self.project_out, x)
         return x
 
 
@@ -532,10 +525,6 @@ class DCAE(nn.Module):
         self.cfg = cfg
         self.encoder = Encoder(cfg.encoder)
         self.decoder = Decoder(cfg.decoder)
-        if cfg.tune_channel_proj:  # propergate the tune_channel_proj flag for gradient checkpointing handling
-            self.encoder.cfg.tune_channel_proj = True
-            self.decoder.cfg.tune_channel_proj = True
-
         self.scaling_factor = cfg.scaling_factor
         self.time_compression_ratio = cfg.time_compression_ratio
         self.spatial_compression_ratio = cfg.spatial_compression_ratio

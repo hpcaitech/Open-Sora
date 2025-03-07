@@ -24,7 +24,7 @@ from opensora.acceleration.checkpoint import set_grad_checkpoint
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.datasets.pin_memory_cache import PinMemoryCache
-from opensora.models.vae.losses import DiscriminatorLoss, GeneratorLoss, VAELoss, cal_opl_loss
+from opensora.models.vae.losses import DiscriminatorLoss, GeneratorLoss, VAELoss
 from opensora.registry import DATASETS, MODELS, build_module
 from opensora.utils.ckpt import CheckpointIO, model_sharding, record_model_param_shape, rm_checkpoints
 from opensora.utils.config import config_to_name, create_experiment_workspace, parse_configs
@@ -226,7 +226,6 @@ def main():
         nll_rec=0.0,
         nll_per=0.0,
         kl=0.0,
-        opl=0.0,
         gen=0.0,
         gen_w=0.0,
         disc=0.0,
@@ -402,12 +401,6 @@ def main():
                         vae_loss = torch.tensor(0.0, device=device, dtype=dtype)
                         loss_dict = {}  # loss at every step
 
-                        # == opl loss ==
-                        opl_loss_weight = cfg.get("opl_loss_weight", 0)
-                        if opl_loss_weight > 0:
-                            opl_loss = cal_opl_loss(z, opl_loss_weight)
-                            vae_loss += opl_loss
-
                         # == reconstruction loss ==
                         ret = vae_loss_fn(x, x_rec, posterior)
                         nll_loss = ret["nll_loss"]
@@ -469,8 +462,6 @@ def main():
                     log_loss("nll_rec", recon_loss, loss_dict, use_video)
                     log_loss("nll_per", perceptual_loss, loss_dict, use_video)
                     log_loss("kl", kl_loss, loss_dict, use_video)
-                    if opl_loss_weight > 0:
-                        log_loss("opl", opl_loss, loss_dict, use_video)
                     if use_discriminator:
                         log_loss("gen_w", generator_loss, loss_dict, use_video)
                         log_loss("gen", g_loss, loss_dict, use_video)

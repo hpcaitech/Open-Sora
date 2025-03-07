@@ -61,9 +61,8 @@ def DC_AE(
     spatial_tile_size: int = 256,
     temporal_tile_size: int = 32,
     tile_overlap_factor: float = 0.25,
-    tune_channel_proj: bool = False,
-    train_decoder_only: bool = False,
     scaling_factor: float = None,
+    disc_off_grad_ckpt: bool = False,
 ) -> DCAE_HF:
     if not from_scratch:
         model = DCAE_HF.from_pretrained(model_name).to(device_map, torch_dtype)
@@ -74,17 +73,6 @@ def DC_AE(
         model = load_checkpoint(model, from_pretrained, device_map=device_map)
         print(f"loaded dc_ae from ckpt path: {from_pretrained}")
 
-    if train_decoder_only:
-        print("freezing all encoder weights!")
-    # tune the channel projection layer only
-    if tune_channel_proj:
-        model.cfg.tune_channel_proj = True
-        print("freezing all weights except the channel projection!")
-        for _, param in model.named_parameters():
-            param.requires_grad = False
-        for _, param in model.decoder.named_parameters():
-            param.requires_grad = True
-
     model.cfg.is_training = is_training
     model.use_spatial_tiling = use_spatial_tiling
     model.use_temporal_tiling = use_temporal_tiling
@@ -93,4 +81,5 @@ def DC_AE(
     model.tile_overlap_factor = tile_overlap_factor
     if scaling_factor is not None:
         model.scaling_factor = scaling_factor
+    model.decoder.disc_off_grad_ckpt = disc_off_grad_ckpt
     return model
