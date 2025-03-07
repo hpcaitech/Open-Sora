@@ -1,5 +1,5 @@
-# Step by step to train and evaluate an video autoencoder
-Inspired by [SANA](https://arxiv.org/abs/2410.10629), we aim to drastically increase the compression ratio in the VAE. We propose a video autoencoder architecture based on [DC-AE](https://github.com/mit-han-lab/efficientvit), the __Video DC-AE__, which compression the video by 4x in the temporal dimension and 32x32 in the spatial dimension. Compared to he [HunyuanVideo](https://github.com/Tencent/HunyuanVideo)'s VAE of 4x8x8, our proposed AE has a much higher spatial compression ratio.
+# Step by step to train and evaluate an video autoencoder (AE)
+Inspired by [SANA](https://arxiv.org/abs/2410.10629), we aim to drastically increase the compression ratio in the AE. We propose a video autoencoder architecture based on [DC-AE](https://github.com/mit-han-lab/efficientvit), the __Video DC-AE__, which compression the video by 4x in the temporal dimension and 32x32 in the spatial dimension. Compared to [HunyuanVideo](https://github.com/Tencent/HunyuanVideo)'s VAE of 4x8x8, our proposed AE has a much higher spatial compression ratio.
 Thus, we can effectively reduce the token length in the diffusion model by a total of 16x (assuming the same patch sizes), drastically increase both training and inference speed.
 
 ## Data Preparation
@@ -46,7 +46,7 @@ torchrun --nproc_per_node 1 --standalone scripts/vae/inference.py configs/vae/in
 
 ## Config Interpretation
 
-All VAE configs are located in `configs/vae/`, divided into configs for training (`configs/vae/train`) and for inference (`configs/vae/inference`).
+All AE configs are located in `configs/vae/`, divided into configs for training (`configs/vae/train`) and for inference (`configs/vae/inference`).
 
 ### Training Config
 
@@ -83,7 +83,7 @@ disc_loss_config = dict(
 
 <details>
 <summary> <b> Data Bucket Config </b> </summary>
-For the data bucket, we used 32 frames of 256px videos to train our VAE.
+For the data bucket, we used 32 frames of 256px videos to train our AE.
 ```python
 bucket_config = {
     "256px_ar1:1": {32: (1.0, 1)},
@@ -128,9 +128,9 @@ This is to make sure the discriminator loss will have a gradient at the laster l
 
 ### Inference Config
 
-For VAE inference, we have replicated the tiling mechanism in hunyuan to our Video DC-AE, which can be turned on with the following:
+For AE inference, we have replicated the tiling mechanism in hunyuan to our Video DC-AE, which can be turned on with the following:
 
-```bash
+```python
 model = dict(
     ...,
     use_spatial_tiling=True,
@@ -148,6 +148,6 @@ If you train your own Video DC-AE with other resolutions and length, you may adj
 
 You can specify the directory to store output samples with `--save_dir <your_dir>` or setting it in config, for instance:
 
-```bash
+```python
 save_dir = "./samples"
 ```
