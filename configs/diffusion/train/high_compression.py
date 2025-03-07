@@ -41,10 +41,11 @@ condition_config = dict(
     i2v_head=7,
 )
 
+grad_ckpt_settings = (100, 100)
 patch_size = 1
 model = dict(
     from_pretrained=None,
-    grad_ckpt_settings=None,
+    grad_ckpt_settings=grad_ckpt_settings,
     in_channels=128,
     cond_embed=True,
     patch_size=patch_size,

@@ -222,7 +222,7 @@ def main():
         del model_ae.decoder
         log_cuda_memory("autoencoder")
         log_model_params(model_ae)
-        # model_ae = torch.compile(model_ae, mode="max-autotune", fullgraph=True, dynamic=True)
+        model_ae.encode = torch.compile(model_ae.encoder, dynamic=True)
 
     if not cfg.get("cached_text", False):
         # == build text encoder (t5) ==
@@ -312,8 +312,9 @@ def main():
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, ret[0], ret[1])
 
         # load optimizer and scheduler will overwrite some of the hyperparameters, so we need to reset them
-        if cfg.get("lr", None) is not None:
-            set_lr(optimizer, lr_scheduler, cfg.lr, cfg.get("initial_lr", None))
+        set_lr(optimizer, lr_scheduler, cfg.optim.lr, cfg.get("initial_lr", None))
+        set_eps(optimizer, cfg.optim.eps)
+
         if cfg.get("update_warmup_steps", False):
             assert (
                 cfg.get("warmup_steps", None) is not None
@@ -321,9 +322,6 @@ def main():
             # set_warmup_steps(lr_scheduler, cfg.warmup_steps)
             lr_scheduler.step(start_epoch * num_steps_per_epoch + start_step)
             logger.info("The learning rate starts from %s", optimizer.param_groups[0]["lr"])
-        if cfg.get("eps", False):
-            set_eps(optimizer, cfg.eps)
-
     if start_step is not None:
         # if start step exceeds data length, go to next epoch
         if start_step > num_steps_per_epoch:

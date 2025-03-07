@@ -123,7 +123,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 - **[Tech Report of Open-Sora 2.0]()**
 - **[Step by step to train or finetune your own model](docs/train.md)**
 - **[Step by step to train and evaluate an video autoencoder](docs/ae.md)**
-- **[Visit the high compression video autoencoder](docs/hc-ae.md)**
+- **[Visit the high compression video autoencoder](docs/hcae.md)**
 - Reports of previous version (better see in according branch):
   - [Open-Sora 1.3](docs/report_04.md): shift-window attention, unified spatial-temporal VAE, etc.
   - [Open-Sora 1.2](docs/report_03.md), [Tech Report](https://arxiv.org/abs/2412.20404): rectified flow, 3d-VAE, score condition, evaluation, etc.

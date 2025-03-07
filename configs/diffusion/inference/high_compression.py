@@ -28,3 +28,7 @@ ae = dict(
     tile_overlap_factor=0.25,
 )
 ae_spatial_compression = 32
+
+sampling_option = dict(
+    num_frames=128,
+)
