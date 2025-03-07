@@ -49,6 +49,7 @@ ae = dict(
     use_spatial_tiling=True,
     use_temporal_tiling=False,
 )
+is_causal_vae = True
 t5 = dict(
     type="text_embedder",
     from_pretrained="google/t5-v1_1-xxl",
@@ -104,6 +105,9 @@ log_every = 10
 ckpt_every = 100
 keep_n_latest = 20
 wandb_project = "mmdit"
+
+save_master_weights = True
+load_master_weights = True
 
 # For debugging
 # record_time = True

@@ -15,21 +15,33 @@ gc.disable()
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
+import wandb
 from colossalai.booster import Booster
 from colossalai.utils import set_seed
 from peft import LoraConfig
 from tqdm import tqdm
 
-import wandb
-from opensora.acceleration.checkpoint import GLOBAL_ACTIVATION_MANAGER, set_grad_checkpoint
+from opensora.acceleration.checkpoint import (
+    GLOBAL_ACTIVATION_MANAGER,
+    set_grad_checkpoint,
+)
 from opensora.acceleration.parallel_states import get_data_parallel_group
 from opensora.datasets.aspect import bucket_to_shapes
 from opensora.datasets.dataloader import prepare_dataloader
 from opensora.datasets.pin_memory_cache import PinMemoryCache
 from opensora.models.mmdit.distributed import MMDiTPolicy
 from opensora.registry import DATASETS, MODELS, build_module
-from opensora.utils.ckpt import CheckpointIO, model_sharding, record_model_param_shape, rm_checkpoints
-from opensora.utils.config import config_to_name, create_experiment_workspace, parse_configs
+from opensora.utils.ckpt import (
+    CheckpointIO,
+    model_sharding,
+    record_model_param_shape,
+    rm_checkpoints,
+)
+from opensora.utils.config import (
+    config_to_name,
+    create_experiment_workspace,
+    parse_configs,
+)
 from opensora.utils.logger import create_logger
 from opensora.utils.misc import (
     NsysProfiler,
@@ -45,7 +57,13 @@ from opensora.utils.misc import (
     to_torch_dtype,
 )
 from opensora.utils.optimizer import create_lr_scheduler, create_optimizer
-from opensora.utils.sampling import get_res_lin_function, pack, prepare, prepare_ids, time_shift
+from opensora.utils.sampling import (
+    get_res_lin_function,
+    pack,
+    prepare,
+    prepare_ids,
+    time_shift,
+)
 from opensora.utils.train import (
     create_colossalai_plugin,
     dropout_condition,
@@ -204,7 +222,7 @@ def main():
         del model_ae.decoder
         log_cuda_memory("autoencoder")
         log_model_params(model_ae)
-        # model_ae = torch.compile(model_ae, mode="max-autotune", fullgraph=True, dynamic=True)
+        model_ae.encode = torch.compile(model_ae.encoder, dynamic=True)
 
     if not cfg.get("cached_text", False):
         # == build text encoder (t5) ==
@@ -294,8 +312,9 @@ def main():
         logger.info("Loaded checkpoint %s at epoch %s step %s", cfg.load, ret[0], ret[1])
 
         # load optimizer and scheduler will overwrite some of the hyperparameters, so we need to reset them
-        if cfg.get("lr", None) is not None:
-            set_lr(optimizer, lr_scheduler, cfg.lr, cfg.get("initial_lr", None))
+        set_lr(optimizer, lr_scheduler, cfg.optim.lr, cfg.get("initial_lr", None))
+        set_eps(optimizer, cfg.optim.eps)
+
         if cfg.get("update_warmup_steps", False):
             assert (
                 cfg.get("warmup_steps", None) is not None
@@ -303,9 +322,6 @@ def main():
             # set_warmup_steps(lr_scheduler, cfg.warmup_steps)
             lr_scheduler.step(start_epoch * num_steps_per_epoch + start_step)
             logger.info("The learning rate starts from %s", optimizer.param_groups[0]["lr"])
-        if cfg.get("eps", False):
-            set_eps(optimizer, cfg.eps)
-
     if start_step is not None:
         # if start step exceeds data length, go to next epoch
         if start_step > num_steps_per_epoch:
@@ -357,11 +373,7 @@ def main():
             if cfg.get("condition_config", None) is not None:
                 # condition for i2v & v2v
                 x_0, cond = prepare_visual_condition(x, cfg.condition_config, model_ae)
-                if cfg.get("no_i2v_ref_loss", False):
-                    inp["masks"] = cond[
-                        :, 0, :, :, :
-                    ]  # record the padded frames in I2V, so they can be ignored in loss calculation
-                cond = pack(cond)
+                cond = pack(cond, patch_size=cfg.get("patch_size", 2))
                 inp["cond"] = cond
             else:
                 if cfg.get("cached_video", False):
@@ -384,7 +396,7 @@ def main():
             with nsys.range("encode_text"), timers["encode_text"]:
                 inp_ = prepare_ids(x_0, t5_embedding, clip_embedding)
                 inp.update(inp_)
-                x_0 = pack(x_0)
+                x_0 = pack(x_0, patch_size=cfg.get("patch_size", 2))
         else:
             # == encode text ==
             with nsys.range("encode_text"), timers["encode_text"]:

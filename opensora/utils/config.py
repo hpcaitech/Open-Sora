@@ -48,6 +48,10 @@ def parse_configs() -> Config:
     cfg = read_config(config)
     cfg = merge_args(cfg, args)
     cfg.config_path = config
+
+    # hard-coded for spatial compression
+    if cfg.get("ae_spatial_compression", None) is not None:
+        os.environ["AE_SPATIAL_COMPRESSION"] = str(cfg.ae_spatial_compression)
     return cfg
 
 
@@ -142,7 +146,9 @@ def sync_string(value: str):
     bytes_value = value.encode("utf-8")
     max_len = 256
     bytes_tensor = torch.zeros(max_len, dtype=torch.uint8).cuda()
-    bytes_tensor[: len(bytes_value)] = torch.tensor(list(bytes_value), dtype=torch.uint8)
+    bytes_tensor[: len(bytes_value)] = torch.tensor(
+        list(bytes_value), dtype=torch.uint8
+    )
     torch.distributed.broadcast(bytes_tensor, 0)
     synced_value = bytes_tensor.cpu().numpy().tobytes().decode("utf-8").rstrip("\x00")
     return synced_value
@@ -167,7 +173,9 @@ def create_experiment_workspace(
         experiment_index = datetime.now().strftime("%y%m%d_%H%M%S")
         experiment_index = sync_string(experiment_index)
         # Create an experiment folder
-        model_name = "-" + model_name.replace("/", "-") if model_name is not None else ""
+        model_name = (
+            "-" + model_name.replace("/", "-") if model_name is not None else ""
+        )
         exp_name = f"{experiment_index}{model_name}"
     exp_dir = f"{output_dir}/{exp_name}"
     if is_main_process():

@@ -58,6 +58,10 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
+|                                                                                                                                                                 |                                                                                                                                                                 |                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/demo.gif" width="">](https://streamable.com/e/r0imrp?quality=highest&amp;autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/demo.gif" width="">](https://streamable.com/e/hfvjkh?quality=highest&amp;autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/demo.gif" width="">](https://streamable.com/e/kutmma?quality=highest&amp;autoplay=1) |
+
 <details>
 <summary>OpenSora 1.3 Demo</summary>
 
@@ -119,7 +123,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 - **[Tech Report of Open-Sora 2.0]()**
 - **[Step by step to train or finetune your own model](docs/train.md)**
 - **[Step by step to train and evaluate an video autoencoder](docs/ae.md)**
-- **[Visit the high compression video autoencoder](docs/hc-ae.md)**
+- **[Visit the high compression video autoencoder](docs/hcae.md)**
 - Reports of previous version (better see in according branch):
   - [Open-Sora 1.3](docs/report_04.md): shift-window attention, unified spatial-temporal VAE, etc.
   - [Open-Sora 1.2](docs/report_03.md), [Tech Report](https://arxiv.org/abs/2412.20404): rectified flow, 3d-VAE, score condition, evaluation, etc.

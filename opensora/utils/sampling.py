@@ -14,7 +14,11 @@ from opensora.datasets.aspect import get_image_size
 from opensora.models.mmdit.model import MMDiTModel
 from opensora.models.text.conditioner import HFEmbedder
 from opensora.registry import MODELS, build_module
-from opensora.utils.inference import SamplingMethod, collect_references_batch, prepare_inference_condition
+from opensora.utils.inference import (
+    SamplingMethod,
+    collect_references_batch,
+    prepare_inference_condition,
+)
 
 # ======================================================
 # Sampling Options
@@ -85,9 +89,13 @@ def sanitize_sampling_option(sampling_option: SamplingOption) -> SamplingOption:
     Returns:
         SamplingOption: The sanitized sampling options.
     """
-    if sampling_option.resolution is not None or sampling_option.aspect_ratio is not None:
+    if (
+        sampling_option.resolution is not None
+        or sampling_option.aspect_ratio is not None
+    ):
         assert (
-            sampling_option.resolution is not None and sampling_option.aspect_ratio is not None
+            sampling_option.resolution is not None
+            and sampling_option.aspect_ratio is not None
         ), "Both resolution and aspect ratio must be provided"
         resolution = sampling_option.resolution
         aspect_ratio = sampling_option.aspect_ratio
@@ -137,7 +145,12 @@ class Denoiser(ABC):
 
     @abstractmethod
     def prepare_guidance(
-        self, text: list[str], optional_models: dict[str, nn.Module], device: torch.device, dtype: torch.dtype, **kwargs
+        self,
+        text: list[str],
+        optional_models: dict[str, nn.Module],
+        device: torch.device,
+        dtype: torch.dtype,
+        **kwargs,
     ) -> dict[str, Tensor]:
         """Prepare the guidance for the model. This method will alter text."""
 
@@ -159,13 +172,20 @@ class I2VDenoiser(Denoiser):
         image_osci = kwargs.pop("image_osci", False)
         scale_temporal_osci = kwargs.pop("scale_temporal_osci", False)
 
-        guidance_vec = torch.full((img.shape[0],), guidance, device=img.device, dtype=img.dtype)
+        # patch size
+        patch_size = kwargs.pop("patch_size", 2)
+
+        guidance_vec = torch.full(
+            (img.shape[0],), guidance, device=img.device, dtype=img.dtype
+        )
         for i, (t_curr, t_prev) in enumerate(zip(timesteps[:-1], timesteps[1:])):
             # timesteps
-            t_vec = torch.full((img.shape[0],), t_curr, dtype=img.dtype, device=img.device)
+            t_vec = torch.full(
+                (img.shape[0],), t_curr, dtype=img.dtype, device=img.device
+            )
             b, c, t, w, h = masked_ref.size()
             cond = torch.cat((masks, masked_ref), dim=1)
-            cond = pack(cond)
+            cond = pack(cond, patch_size=patch_size)
             kwargs["cond"] = torch.cat([cond, cond, torch.zeros_like(cond)], dim=0)
 
             # forward preparation
@@ -182,14 +202,18 @@ class I2VDenoiser(Denoiser):
 
             # prepare guidance
             text_gs = get_oscillation_gs(guidance, i) if text_osci else guidance
-            image_gs = get_oscillation_gs(guidance_img, i) if image_osci else guidance_img
+            image_gs = (
+                get_oscillation_gs(guidance_img, i) if image_osci else guidance_img
+            )
             cond, uncond, uncond_2 = pred.chunk(3, dim=0)
             if image_gs > 1.0 and scale_temporal_osci:
                 # image_gs decrease with each denoising step
                 step_upper_image_gs = torch.linspace(image_gs, 1.0, len(timesteps))[i]
                 # image_gs increase along the temporal axis of the latent video
-                image_gs = torch.linspace(1.0, step_upper_image_gs, t)[None, None, :, None, None].repeat(b, c, 1, h, w)
-                image_gs = pack(image_gs).to(cond.device, cond.dtype)
+                image_gs = torch.linspace(1.0, step_upper_image_gs, t)[
+                    None, None, :, None, None
+                ].repeat(b, c, 1, h, w)
+                image_gs = pack(image_gs, patch_size=patch_size).to(cond.device, cond.dtype)
 
             # update
             pred = uncond_2 + image_gs * (uncond - uncond_2) + text_gs * (cond - uncond)
@@ -202,7 +226,12 @@ class I2VDenoiser(Denoiser):
         return img
 
     def prepare_guidance(
-        self, text: list[str], optional_models: dict[str, nn.Module], device: torch.device, dtype: torch.dtype, **kwargs
+        self,
+        text: list[str],
+        optional_models: dict[str, nn.Module],
+        device: torch.device,
+        dtype: torch.dtype,
+        **kwargs,
     ) -> tuple[list[str], dict[str, Tensor]]:
         ret = {}
 
@@ -222,10 +251,14 @@ class DistilledDenoiser(Denoiser):
         timesteps = kwargs.pop("timesteps")
         guidance = kwargs.pop("guidance")
 
-        guidance_vec = torch.full((img.shape[0],), guidance, device=img.device, dtype=img.dtype)
+        guidance_vec = torch.full(
+            (img.shape[0],), guidance, device=img.device, dtype=img.dtype
+        )
         for t_curr, t_prev in zip(timesteps[:-1], timesteps[1:]):
             # timesteps
-            t_vec = torch.full((img.shape[0],), t_curr, dtype=img.dtype, device=img.device)
+            t_vec = torch.full(
+                (img.shape[0],), t_curr, dtype=img.dtype, device=img.device
+            )
             # forward
             pred = model(
                 img=img,
@@ -238,7 +271,12 @@ class DistilledDenoiser(Denoiser):
         return img
 
     def prepare_guidance(
-        self, text: list[str], optional_models: dict[str, nn.Module], device: torch.device, dtype: torch.dtype, **kwargs
+        self,
+        text: list[str],
+        optional_models: dict[str, nn.Module],
+        device: torch.device,
+        dtype: torch.dtype,
+        **kwargs,
     ) -> tuple[list[str], dict[str, Tensor]]:
         return text, {}
 
@@ -258,7 +296,9 @@ def time_shift(alpha: float, t: Tensor) -> Tensor:
     return alpha * t / (1 + (alpha - 1) * t)
 
 
-def get_res_lin_function(x1: float = 256, y1: float = 1, x2: float = 4096, y2: float = 3) -> callable:
+def get_res_lin_function(
+    x1: float = 256, y1: float = 1, x2: float = 4096, y2: float = 3
+) -> callable:
     m = (y2 - y1) / (x2 - x1)
     b = y1 - m * x1
     return lambda x: m * x + b
@@ -281,16 +321,15 @@ def get_schedule(
         if shift_alpha is None:
             # estimate mu based on linear estimation between two points
             # spatial scale
-            shift_alpha = get_res_lin_function(y1=base_shift, y2=max_shift)(image_seq_len)
+            shift_alpha = get_res_lin_function(y1=base_shift, y2=max_shift)(
+                image_seq_len
+            )
             # temporal scale
             shift_alpha *= math.sqrt(num_frames)
         # calculate shifted timesteps
         timesteps = time_shift(shift_alpha, timesteps)
 
     return timesteps.tolist()
-
-
-D = int(os.environ.get("VO_ASPECT_DIV", 16))
 
 
 def get_noise(
@@ -319,6 +358,7 @@ def get_noise(
     Returns:
         Tensor: The noise tensor.
     """
+    D = int(os.environ.get("AE_SPATIAL_COMPRESSION", 16))
     return torch.randn(
         num_samples,
         channel,
@@ -333,10 +373,15 @@ def get_noise(
 
 
 def pack(x: Tensor, patch_size: int = 2) -> Tensor:
-    return rearrange(x, "b c t (h ph) (w pw) -> b (t h w) (c ph pw)", ph=patch_size, pw=patch_size)
+    return rearrange(
+        x, "b c t (h ph) (w pw) -> b (t h w) (c ph pw)", ph=patch_size, pw=patch_size
+    )
 
 
-def unpack(x: Tensor, height: int, width: int, num_frames: int, patch_size: int = 2) -> Tensor:
+def unpack(
+    x: Tensor, height: int, width: int, num_frames: int, patch_size: int = 2
+) -> Tensor:
+    D = int(os.environ.get("AE_SPATIAL_COMPRESSION", 16))
     return rearrange(
         x,
         "b (t h w) (c ph pw) -> b c t (h ph) (w pw)",
@@ -383,7 +428,9 @@ def prepare(
     if bs != len(prompt):
         bs = len(prompt)
 
-    img = rearrange(img, "b c t (h ph) (w pw) -> b (t h w) (c ph pw)", ph=patch_size, pw=patch_size)
+    img = rearrange(
+        img, "b c t (h ph) (w pw) -> b (t h w) (c ph pw)", ph=patch_size, pw=patch_size
+    )
     if img.shape[0] != bs:
         img = repeat(img, "b ... -> (repeat b) ...", repeat=bs // img.shape[0])
 
@@ -478,20 +525,34 @@ def prepare_models(
     Returns:
         tuple[nn.Module, nn.Module, nn.Module, nn.Module, dict[str, nn.Module]]: The models. They are the diffusion model, the autoencoder model, the T5 model, the CLIP model, and the optional models.
     """
-    model_device = "cpu" if offload_model and cfg.get("img_flux", None) is not None else device
+    model_device = (
+        "cpu" if offload_model and cfg.get("img_flux", None) is not None else device
+    )
 
-    model = build_module(cfg.model, MODELS, device_map=model_device, torch_dtype=dtype).eval()
-    model_ae = build_module(cfg.ae, MODELS, device_map=model_device, torch_dtype=dtype).eval()
+    model = build_module(
+        cfg.model, MODELS, device_map=model_device, torch_dtype=dtype
+    ).eval()
+    model_ae = build_module(
+        cfg.ae, MODELS, device_map=model_device, torch_dtype=dtype
+    ).eval()
     model_t5 = build_module(cfg.t5, MODELS, device_map=device, torch_dtype=dtype).eval()
-    model_clip = build_module(cfg.clip, MODELS, device_map=device, torch_dtype=dtype).eval()
+    model_clip = build_module(
+        cfg.clip, MODELS, device_map=device, torch_dtype=dtype
+    ).eval()
     if cfg.get("pretrained_lora_path", None) is not None:
-        model = PeftModel.from_pretrained(model, cfg.pretrained_lora_path, is_trainable=False)
+        model = PeftModel.from_pretrained(
+            model, cfg.pretrained_lora_path, is_trainable=False
+        )
 
     # optional models
     optional_models = {}
     if cfg.get("img_flux", None) is not None:
-        model_img_flux = build_module(cfg.img_flux, MODELS, device_map=device, torch_dtype=dtype).eval()
-        model_ae_img_flux = build_module(cfg.img_flux_ae, MODELS, device_map=device, torch_dtype=dtype).eval()
+        model_img_flux = build_module(
+            cfg.img_flux, MODELS, device_map=device, torch_dtype=dtype
+        ).eval()
+        model_ae_img_flux = build_module(
+            cfg.img_flux_ae, MODELS, device_map=device, torch_dtype=dtype
+        ).eval()
         optional_models["img_flux"] = model_img_flux
         optional_models["img_flux_ae"] = model_ae_img_flux
 
@@ -549,9 +610,15 @@ def prepare_api(
             # random seed if not provided
             seed = opt.seed if opt.seed is not None else random.randint(0, 2**32 - 1)
         if opt.is_causal_vae:
-            num_frames = 1 if opt.num_frames == 1 else (opt.num_frames - 1) // opt.temporal_reduction + 1
+            num_frames = (
+                1
+                if opt.num_frames == 1
+                else (opt.num_frames - 1) // opt.temporal_reduction + 1
+            )
         else:
-            num_frames = 1 if opt.num_frames == 1 else opt.num_frames // opt.temporal_reduction
+            num_frames = (
+                1 if opt.num_frames == 1 else opt.num_frames // opt.temporal_reduction
+            )
 
         z = get_noise(
             len(text),
@@ -571,7 +638,11 @@ def prepare_api(
         if cond_type != "t2v" and "ref" in kwargs:
             reference_path_list = kwargs.pop("ref")
             references = collect_references_batch(
-                reference_path_list, cond_type, model_ae, (opt.height, opt.width), is_causal=opt.is_causal_vae
+                reference_path_list,
+                cond_type,
+                model_ae,
+                (opt.height, opt.width),
+                is_causal=opt.is_causal_vae,
             )
         elif cond_type != "t2v":
             print(
@@ -603,7 +674,9 @@ def prepare_api(
 
         if opt.method in [SamplingMethod.I2V]:
             # prepare references
-            masks, masked_ref = prepare_inference_condition(z, cond_type, ref_list=references, causal=opt.is_causal_vae)
+            masks, masked_ref = prepare_inference_condition(
+                z, cond_type, ref_list=references, causal=opt.is_causal_vae
+            )
             inp["masks"] = masks
             inp["masked_ref"] = masked_ref
             inp["sigma_min"] = sigma_min
@@ -619,6 +692,7 @@ def prepare_api(
                 opt.scale_temporal_osci and "i2v" in cond_type
             ),  # don't use temporal osci for v2v or t2v
             flow_shift=opt.flow_shift,
+            patch_size=patch_size,
         )
 
         x = unpack(x, opt.height, opt.width, num_frames, patch_size=patch_size)
