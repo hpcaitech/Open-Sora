@@ -544,8 +544,6 @@ class TPUpDecoderBlockCausal3D(UpsampleCausal3D):
         kernel_size=3,
         bias=True,
         upsample_factor=(2, 2, 2),
-        add_residual=False,
-        slice_t=False,
         tp_group=None,
         split_input: bool = False,
         split_output: bool = False,
@@ -553,7 +551,7 @@ class TPUpDecoderBlockCausal3D(UpsampleCausal3D):
         shortcut_=None,
     ):
         assert tp_group is not None, "tp_group must be provided"
-        super().__init__(channels, out_channels, kernel_size, bias, upsample_factor, add_residual, slice_t)
+        super().__init__(channels, out_channels, kernel_size, bias, upsample_factor)
         conv = conv_ if conv_ is not None else self.conv.conv
         self.conv.conv = Conv3dTPRow.from_native_module(
             conv, tp_group, split_input=split_input, split_output=split_output
@@ -562,8 +560,6 @@ class TPUpDecoderBlockCausal3D(UpsampleCausal3D):
         tp_size = dist.get_world_size(group=self.tp_group)
         assert self.channels % tp_size == 0, f"channels {self.channels} must be divisible by tp_size {tp_size}"
         self.channels = self.channels // tp_size
-        if add_residual:
-            self.shortcut = shortcut_
 
     def forward(self, input_tensor):
         input_tensor = split_forward_gather_backward(input_tensor, 1, self.tp_group)
@@ -577,7 +573,6 @@ class TPUpDecoderBlockCausal3D(UpsampleCausal3D):
             conv.kernel_size[0],
             conv.bias is not None,
             module.upsample_factor,
-            module.add_residual,
             conv_=conv,
             shortcut_=getattr(module, "shortcut", None),
             tp_group=process_group,

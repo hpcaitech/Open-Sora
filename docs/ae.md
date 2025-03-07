@@ -1,18 +1,69 @@
 # Step by step to train and evaluate an video autoencoder
 
-## Installation
+## Data Preparation
 
-```
-pip install diffusers==0.31.0
-```
+Follow this [guide](./train.md#prepare-dataset) to prepare the __DATASET__ for training and inference. You may use our provided dataset or custom ones.
+
+To use custom dataset, pass the argument `--dataset.data_path <your_data_path>` to the following training or inference command.
 
 ## Training
-The command to launch training is as follows:
-```
-torchrun --nproc_per_node 8 scripts/vae/train_video_sana.py configs/vae/train/video_dc_ae_train_channel_proj.py --dataset.data-path /home/zhengzangwei/Open-Sora/datasets/pexels_45k_necessary.csv --model.model_name dc-ae-f32t4c128 --wandb True --optim.lr 5e-5 --wandb-project dcae --vae_loss_config.perceptual_loss_weight 0.5 --wandb-expr-name dc-ae-f32t4c64_full_model_ft
+We propose a 3D VAE architecture based on [DCAE](https://github.com/mit-han-lab/efficientvit), the __Video DC-AE__, and train it from scratch on a single GPU for 3 weeks. 
 
+We first train with the following command:
 ```
+torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae.py --wandb True
+```
+
+When the model is almost converged, we add a discriminator and continue to train the model with the checkpoint `model_ckpt` using the following command:
+```
+torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae_disc.py --model.from_pretrained <model_ckpt> --wandb True
+```
+
 
 ## Inference
 
+### Video DC-AE
+Use the following code to reconstruct the videos using our trained `Video DC-AE`:
+
+```
+torchrun --nproc_per_node 1 --standalone scripts/vae/inference.py configs/vae/inference/video_dc_ae.py --save-dir samples/dcae
+```
+
+### Hunyuan Video 
+Alternatively, we have incorporated Tencent's [HunyuanVideo vae](https://github.com/Tencent/HunyuanVideo) into our code, you may run inference with the following command:
+
+```
+torchrun --nproc_per_node 1 --standalone scripts/vae/inference.py configs/vae/inference/hunyuanvideo_vae.py --save-dir samples/hunyuanvideo_vae
+```
+
+
 ## Config Interpretation
+
+All VAE configs are located in `configs/vae/`, divided into configs for training (`configs/vae/train`) and for inference (`configs/vae/inference`). 
+
+### Training Config
+For training, the same config rules as [those](./train.md#config) for the diffusion model are applied.
+
+
+### Inference Config
+For VAE inference, we have replicated the tiling mechanism in hunyuan to our Video DC-AE, which can be turned on with the following:
+```
+model = dict(
+    ...,
+    use_spatial_tiling=True,
+    use_temporal_tiling=True,
+    spatial_tile_size=256,
+    temporal_tile_size=32,
+    tile_overlap_factor=0.25,
+    ...,
+)
+```
+By default, both spatial tiling and temporal tiling are turned on for the best performance.
+Since our Video DC-AE is trained on 256px videos of 32 frames only, `spatial_tile_size` should be set to 256 and `temporal_tile_size` should be set to 32.
+If you train your own Video DC-AE with other resolutions and length, you may adjust the values accordingly.
+
+
+You can specify the directory to store output samples with `--save_dir <your_dir>` or setting it in config, for instance:
+```
+save_dir = "./samples"
+```

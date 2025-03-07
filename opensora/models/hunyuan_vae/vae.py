@@ -55,8 +55,6 @@ class EncoderCausal3D(nn.Module):
         time_compression_ratio: int = 4,
         spatial_compression_ratio: int = 8,
         dropout: float = 0.0,
-        add_residual: bool = False,
-        slice_t: bool = False,
     ):
         super().__init__()
         self.layers_per_block = layers_per_block
@@ -98,8 +96,6 @@ class EncoderCausal3D(nn.Module):
                 resnet_eps=1e-6,
                 resnet_act_fn=act_fn,
                 resnet_groups=norm_num_groups,
-                add_residual=add_residual,
-                slice_t=slice_t,
             )
 
             self.down_blocks.append(down_block)
@@ -171,8 +167,6 @@ class DecoderCausal3D(nn.Module):
         time_compression_ratio: int = 4,
         spatial_compression_ratio: int = 8,
         dropout: float = 0.0,
-        add_residual: bool = False,
-        slice_t: bool = False,
     ):
         super().__init__()
         self.layers_per_block = layers_per_block
@@ -227,8 +221,6 @@ class DecoderCausal3D(nn.Module):
                 resnet_eps=1e-6,
                 resnet_act_fn=act_fn,
                 resnet_groups=norm_num_groups,
-                add_residual=add_residual,
-                slice_t=slice_t,
             )
 
             self.up_blocks.append(up_block)

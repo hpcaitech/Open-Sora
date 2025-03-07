@@ -1,7 +1,6 @@
 _base_ = ["video_dc_ae.py"]
 
 discriminator = dict(
-    _delete_=True,
     type="N_Layer_discriminator_3D",
     from_pretrained=None,
     input_nc=3,

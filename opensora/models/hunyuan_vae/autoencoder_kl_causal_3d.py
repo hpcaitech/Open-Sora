@@ -54,10 +54,6 @@ from opensora.models.hunyuan_vae.vae import (
     DiagonalGaussianDistribution,
     EncoderCausal3D,
 )
-from opensora.models.hunyuan_vae.vae_channel import (
-    ChannelDecoderCausal3D,
-    ChannelEncoderCausal3D,
-)
 
 
 @dataclass
@@ -82,10 +78,6 @@ class AutoEncoder3DConfig:
     use_temporal_tiling: bool = False
     tile_overlap_factor: float = 0.25
     dropout: float = 0.0
-    encoder_add_residual: bool = False
-    encoder_slice_t: bool = False
-    decoder_add_residual: bool = False
-    decoder_slice_t: bool = False
     channel: bool = False
 
 
@@ -110,11 +102,7 @@ class AutoencoderKLCausal3D(ModelMixin, ConfigMixin, FromOriginalVAEMixin):
         self.spatial_compression_ratio = config.spatial_compression_ratio
         self.z_channels = config.latent_channels
 
-        # channel True to mimic sana that process info with channel averaging and expansion
-        encoder_type = ChannelEncoderCausal3D if config.channel else EncoderCausal3D
-        decoder_type = ChannelDecoderCausal3D if config.channel else DecoderCausal3D
-
-        self.encoder = encoder_type(
+        self.encoder = EncoderCausal3D(
             in_channels=config.in_channels,
             out_channels=config.latent_channels,
             block_out_channels=config.block_out_channels,
@@ -126,11 +114,9 @@ class AutoencoderKLCausal3D(ModelMixin, ConfigMixin, FromOriginalVAEMixin):
             spatial_compression_ratio=config.spatial_compression_ratio,
             mid_block_add_attention=config.mid_block_add_attention,
             dropout=config.dropout,
-            add_residual=config.encoder_add_residual,
-            slice_t=config.encoder_slice_t,
         )
 
-        self.decoder = decoder_type(
+        self.decoder = DecoderCausal3D(
             in_channels=config.latent_channels,
             out_channels=config.out_channels,
             block_out_channels=config.block_out_channels,
@@ -141,8 +127,6 @@ class AutoencoderKLCausal3D(ModelMixin, ConfigMixin, FromOriginalVAEMixin):
             spatial_compression_ratio=config.spatial_compression_ratio,
             mid_block_add_attention=config.mid_block_add_attention,
             dropout=config.dropout,
-            add_residual=config.decoder_add_residual,
-            slice_t=config.decoder_slice_t,
         )
 
         self.quant_conv = nn.Conv3d(2 * config.latent_channels, 2 * config.latent_channels, kernel_size=1)

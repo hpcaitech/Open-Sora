@@ -14,6 +14,7 @@ model = dict(
 dataset = dict(
     type="video_text",
     transform_name="resize_crop",
+    data_path="datasets/pexels_45k_necessary.csv",
     fps_max=24,
 )
 
@@ -61,10 +62,6 @@ keep_n_latest = 50
 ema_decay = 0.99
 wandb_project = "dcae"
 
-discriminator = None
-disc_lr_scheduler = None
-optim_discriminator = None
-
 update_warmup_steps = True
 
 # ============
@@ -77,7 +74,4 @@ vae_loss_config = dict(
     kl_loss_weight=0,
     logvar_init=0,
 )
-
-gen_loss_config = None
-disc_loss_config = None
 

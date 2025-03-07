@@ -95,61 +95,6 @@ class CausalConv3d(nn.Module):
         x = F.pad(x, self.time_causal_padding, mode=self.pad_mode)
         return self.conv(x)
 
-
-class ChannelDuplicatingPixelShuffleUpSampleLayer(nn.Module):
-    def __init__(
-        self,
-        factor=(1, 2, 2),
-        slice_t=False,  # either slice T or pad T
-    ):
-        super().__init__()
-        self.factor = factor
-        self.slice_t = slice_t
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        T = x.size(2)
-        if self.factor[0] == 2:
-            if T == 1:  # image
-                x = x.repeat_interleave(self.factor[1] * self.factor[2], dim=1)
-                residual = rearrange(
-                    x, "B (C fh fw) T H W -> B C T (H fh) (W fw)", fh=self.factor[1], fw=self.factor[2]
-                )
-            else:  # video
-                if self.slice_t:
-                    # slice T and process differently
-                    first_f, other_f = x.split((1, T - 1), dim=2)
-                    first_f = first_f.repeat_interleave(self.factor[1] * self.factor[2], dim=1)
-                    first_f = rearrange(
-                        first_f, "B (C fh fw) T H W -> B C T (H fh) (W fw)", fh=self.factor[1], fw=self.factor[2]
-                    )
-                    other_f = other_f.repeat_interleave(self.factor[0] * self.factor[1] * self.factor[2], dim=1)
-                    other_f = rearrange(
-                        other_f,
-                        "B (C ft fh fw) T H W -> B C (T ft) (H fh) (W fw)",
-                        ft=self.factor[0],
-                        fh=self.factor[1],
-                        fw=self.factor[2],
-                    )
-                    residual = torch.cat((first_f, other_f), dim=2)
-                else:
-                    x = x.repeat_interleave(self.factor[0] * self.factor[1] * self.factor[2], dim=1)
-                    residual = rearrange(
-                        x,
-                        "B (C ft fh fw) T H W -> B C (T ft) (H fh) (W fw)",
-                        ft=self.factor[0],
-                        fh=self.factor[1],
-                        fw=self.factor[2],
-                    )
-                    residual = residual[:, :, 1:]  # remove 1st frame TODO: this may not be wise
-        elif self.factor[0] == 1:
-            x = x.repeat_interleave(self.factor[1] * self.factor[2], dim=1)
-            residual = rearrange(x, "B (C fh fw) T H W -> B C T (H fh) (W fw)", fh=self.factor[1], fw=self.factor[2])
-        else:
-            raise NotImplementedError
-
-        return residual
-
-
 class UpsampleCausal3D(nn.Module):
     """
     A 3D upsampling layer with an optional convolution.
@@ -162,17 +107,12 @@ class UpsampleCausal3D(nn.Module):
         kernel_size: int = 3,
         bias=True,
         upsample_factor=(2, 2, 2),
-        add_residual=False,
-        slice_t=False,
     ):
         super().__init__()
         self.channels = channels
         self.out_channels = out_channels or channels
         self.upsample_factor = upsample_factor
         self.conv = CausalConv3d(self.channels, self.out_channels, kernel_size=kernel_size, bias=bias)
-        self.add_residual = add_residual
-        if self.add_residual:
-            self.shortcut = ChannelDuplicatingPixelShuffleUpSampleLayer(factor=upsample_factor, slice_t=slice_t)
 
     def forward(
         self,
@@ -215,81 +155,7 @@ class UpsampleCausal3D(nn.Module):
 
         hidden_states = self.conv(hidden_states)
 
-        #######################
-        # handle residual
-        #######################
-        if self.add_residual:
-            residual = self.shortcut(input_tensor)
-            hidden_states += residual
-
         return hidden_states
-
-
-class PixelUnshuffleChannelAveragingDownSampleLayer(nn.Module):
-    """
-    residual for downsample layer;
-    if has downsample in T dim, add reshaping for T as well.
-    Note: (T-1),H,W must be multiples of 2
-    """
-
-    def __init__(
-        self,
-        factor=(1, 2, 2),  # can be (1,2,2) or (2,2,2)
-        slice_t=False,  # either slice T or pad T if need to reduce the T dimension
-    ):
-        super().__init__()
-        self.factor = factor
-        self.slice_t = slice_t
-        self.time_causal_padding = (0, 0, 0, 0, 1, 0)  # W, H, T
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        assert self.factor[0] == 1 or self.factor[0] == 2, f"unsupported temporal reduction {self.factor[0]}"
-        # shape check
-        T, H, W = x.shape[-3:]
-        assert (
-            (T - 1) % self.factor[0] == H % self.factor[1] == W % self.factor[2] == 0
-        ), f"{T}-1, {W}, {H} not divisible by {self.factor}"
-        if self.factor[0] == 2:  # temporal reduction
-            if self.slice_t:
-                if T > 1:  # video
-                    # slice T and process differently
-                    first_f, other_f = x.split((1, T - 1), dim=2)
-                    first_f = rearrange(
-                        first_f, "B C T (H fh) (W fw) -> B C (fh fw) T H W", fw=self.factor[1], fh=self.factor[2]
-                    )
-                    first_f = first_f.mean(dim=2)
-                    other_f = rearrange(
-                        other_f,
-                        "B C (T ft) (H fh) (W fw) -> B C (ft fh fw) T H W",
-                        ft=self.factor[0],
-                        fw=self.factor[1],
-                        fh=self.factor[2],
-                    )
-                    other_f = other_f.mean(dim=2)
-                    residual = torch.cat((first_f, other_f), dim=2)
-                else:  # image, only work on H & W
-                    x = rearrange(x, "B C T (H fh) (W fw) -> B C (fh fw) T H W", fw=self.factor[1], fh=self.factor[2])
-                    residual = x.mean(dim=2)
-            else:  # use padding to handle temporal reduction
-                x = F.pad(x, self.time_causal_padding, mode="replicate")
-                # reshape and take average for shortcut
-                x = rearrange(
-                    x,
-                    "B C (T ft) (H fh) (W fw) -> B C (ft fh fw) T H W",
-                    ft=self.factor[0],
-                    fw=self.factor[1],
-                    fh=self.factor[2],
-                )
-                residual = x.mean(dim=2)
-        elif self.factor[0] == 1:  # no temporal reduction
-            # reshape and take average for shortcut
-            x = rearrange(x, "B C T (H fh) (W fw) -> B C (fh fw) T H W", fw=self.factor[1], fh=self.factor[2])
-            residual = x.mean(dim=2)
-        else:
-            raise NotImplementedError
-
-        return residual
-
 
 class DownsampleCausal3D(nn.Module):
     """
@@ -302,24 +168,15 @@ class DownsampleCausal3D(nn.Module):
         kernel_size=3,
         bias=True,
         stride=2,
-        add_residual=False,
-        slice_t=False,
     ):
         super().__init__()
         self.channels = channels
         self.out_channels = channels
         self.conv = CausalConv3d(self.channels, self.out_channels, kernel_size=kernel_size, stride=stride, bias=bias)
-        self.add_residual = add_residual
-        if self.add_residual:
-            self.shortcut = PixelUnshuffleChannelAveragingDownSampleLayer(factor=stride, slice_t=slice_t)
 
     def forward(self, input_tensor: torch.FloatTensor) -> torch.FloatTensor:
         assert input_tensor.shape[1] == self.channels
         hidden_states = self.conv(input_tensor)
-
-        if self.add_residual:
-            residual = self.shortcut(input_tensor)
-            hidden_states += residual
 
         return hidden_states
 
@@ -512,8 +369,6 @@ class DownEncoderBlockCausal3D(nn.Module):
         output_scale_factor: float = 1.0,
         add_downsample: bool = True,
         downsample_stride: int = 2,
-        add_residual: bool = False,
-        slice_t: bool = False,
     ):
         super().__init__()
         resnets = []
@@ -541,8 +396,6 @@ class DownEncoderBlockCausal3D(nn.Module):
                     DownsampleCausal3D(
                         out_channels,
                         stride=downsample_stride,
-                        add_residual=add_residual,
-                        slice_t=slice_t,
                     )
                 ]
             )
@@ -575,8 +428,6 @@ class UpDecoderBlockCausal3D(nn.Module):
         output_scale_factor: float = 1.0,
         add_upsample: bool = True,
         upsample_scale_factor=(2, 2, 2),
-        add_residual: bool = False,
-        slice_t: bool = False,
     ):
         super().__init__()
         resnets = []
@@ -606,8 +457,6 @@ class UpDecoderBlockCausal3D(nn.Module):
                         out_channels,
                         out_channels=out_channels,
                         upsample_factor=upsample_scale_factor,
-                        add_residual=add_residual,
-                        slice_t=slice_t,
                     )
                 ]
             )

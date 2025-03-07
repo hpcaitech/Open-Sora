@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.batchnorm import _BatchNorm
 
-__all__ = ["init_modules", "zero_last_gamma"]
+__all__ = ["init_modules"]
 
 
 def init_modules(model: Union[nn.Module, list[nn.Module]], init_type="trunc_normal") -> None:
@@ -61,24 +61,3 @@ def init_modules(model: Union[nn.Module, list[nn.Module]], init_type="trunc_norm
                     init_func(weight)
                 if isinstance(bias, torch.nn.Parameter):
                     bias.data.zero_()
-
-
-def zero_last_gamma(model: nn.Module, init_val=0) -> None:
-    import opensora.models.dc_ae.models.nn.ops as ops
-    for m in model.modules():
-        if isinstance(m, ops.ResidualBlock) and isinstance(m.shortcut, ops.IdentityLayer):
-            if isinstance(m.main, (ops.DSConv, ops.MBConv, ops.FusedMBConv)):
-                parent_module = m.main.point_conv
-            elif isinstance(m.main, ops.ResBlock):
-                parent_module = m.main.conv2
-            elif isinstance(m.main, ops.ConvLayer):
-                parent_module = m.main
-            elif isinstance(m.main, (ops.LiteMLA)):
-                parent_module = m.main.proj
-            else:
-                parent_module = None
-            if parent_module is not None:
-                norm = getattr(parent_module, "norm", None)
-                if norm is not None:
-                    nn.init.constant_(norm.weight, init_val)
-
