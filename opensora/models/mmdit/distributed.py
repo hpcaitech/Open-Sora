@@ -4,19 +4,24 @@ from typing import Dict, List, Optional, Tuple, Union
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from colossalai.shardformer.layer import FusedLinear1D_Col, FusedLinear1D_Row, Linear1D_Col, Linear1D_Row
+from colossalai.shardformer.layer import (FusedLinear1D_Col, FusedLinear1D_Row,
+                                          Linear1D_Col, Linear1D_Row)
 from colossalai.shardformer.layer._operation import all_to_all_comm
 from colossalai.shardformer.layer.attn import RingComm, _rescale_out_lse
 from colossalai.shardformer.layer.utils import is_share_sp_tp
-from colossalai.shardformer.policies.base_policy import ModulePolicyDescription, Policy, SubModuleReplacementDescription
+from colossalai.shardformer.policies.base_policy import (
+    ModulePolicyDescription, Policy, SubModuleReplacementDescription)
 from colossalai.shardformer.shard import ShardConfig
 from einops import rearrange
-from flash_attn.flash_attn_interface import _flash_attn_backward, _flash_attn_forward
+from flash_attn.flash_attn_interface import (_flash_attn_backward,
+                                             _flash_attn_forward)
 from liger_kernel.ops.rope import LigerRopeFunction
 
 try:
-    from flash_attn_interface import _flash_attn_backward as _flash_attn_backward_v3
-    from flash_attn_interface import _flash_attn_forward as _flash_attn_forward_v3
+    from flash_attn_interface import \
+        _flash_attn_backward as _flash_attn_backward_v3
+    from flash_attn_interface import \
+        _flash_attn_forward as _flash_attn_forward_v3
 
     SUPPORT_FA3 = True
 except:
@@ -179,6 +184,7 @@ def _fa_backward(
             v,
             out,
             softmax_lse,
+            None, None, None, None, None, None,
             dq,
             dk,
             dv,
@@ -201,7 +207,8 @@ def _fa_backward(
             dropout_p=dropout_p,
             softmax_scale=softmax_scale,
             causal=False,
-            window_size=(-1, -1),
+            window_size_left=-1,
+            window_size_right=-1,
             softcap=0.0,
             alibi_slopes=None,
             deterministic=deterministic,
