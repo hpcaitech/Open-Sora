@@ -15,14 +15,15 @@ We train our __Video DC-AE__ from scratch on 8xGPUs for 3 weeks.
 We first train with the following command:
 
 ```bash
-torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae.py --wandb True
+torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae.py
 ```
 
 When the model is almost converged, we add a discriminator and continue to train the model with the checkpoint `model_ckpt` using the following command:
 
 ```bash
-torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae_disc.py --model.from_pretrained <model_ckpt> --wandb True
+torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae_disc.py --model.from_pretrained <model_ckpt>
 ```
+You may pass the flag `--wandb True` if you have a [wandb](https://wandb.ai/home) account and wish to track the training progress online.
 
 ## Inference
 
