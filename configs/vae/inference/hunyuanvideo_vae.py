@@ -20,7 +20,7 @@ prefetch_factor = 4
 
 model = dict(
     type="hunyuan_vae",
-    from_pretrained="/mnt/jfs-hdd/sora/checkpoints/pretrained_models/hunyuan-video-t2v-720p/vae/pytorch_model.pt",
+    from_pretrained="./ckpts/hunyuan_vae.safetensors",
     in_channels=3,
     out_channels=3,
     layers_per_block=2,
@@ -30,11 +30,4 @@ model = dict(
     use_spatial_tiling=True,
     use_temporal_tiling=True,
     time_compression_ratio=4,
-    # # TODO: TO cleanup 
-    # # set the following to True to use residual
-    # encoder_add_residual=False,
-    # decoder_add_residual=False,
-    # # residual slice or pad
-    # encoder_slice_t=False,
-    # decoder_slice_t=False,
 )

@@ -26,6 +26,8 @@ torchrun --nproc_per_node 8 scripts/vae/train.py configs/vae/train/video_dc_ae_d
 
 ## Inference
 
+Download the relevant weights following [this guide](../README.md#model-download). Alternatively, you may use your own trained model by passing the following flag `--model.from_pretrained <your_model_ckpt_path>`.
+
 ### Video DC-AE
 
 Use the following code to reconstruct the videos using our trained `Video DC-AE`:
