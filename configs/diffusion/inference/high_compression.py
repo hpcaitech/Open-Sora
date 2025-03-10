@@ -9,6 +9,7 @@ plugin_config_ae = None
 # model settings
 patch_size = 1
 model = dict(
+    from_pretrained="./ckpts/Open_Sora_v2_Video_DC_AE.safetensors",
     in_channels=128,
     cond_embed=True,
     patch_size=1,
