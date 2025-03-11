@@ -3,9 +3,12 @@
 </p>
 <div align="center">
     <a href="https://github.com/hpcaitech/Open-Sora/stargazers"><img src="https://img.shields.io/github/stars/hpcaitech/Open-Sora?style=social"></a>
+    <a href=""><img src="https://img.shields.io/static/v1?label=Tech Report 2.0&message=Arxiv&color=red"></a>
+    <a href="https://arxiv.org/abs/2412.20404"><img src="https://img.shields.io/static/v1?label=Tech Report 1.2&message=Arxiv&color=red"></a>
     <a href="https://hpcaitech.github.io/Open-Sora/"><img src="https://img.shields.io/badge/Gallery-View-orange?logo=&amp"></a>
-    <a href=""><img src="https://img.shields.io/static/v1?label=Tech Report v2.0&message=Arxiv&color=red"></a>
-    <a href="https://arxiv.org/abs/2412.20404"><img src="https://img.shields.io/static/v1?label=Tech Report v1.2&message=Arxiv&color=red"></a>
+</div>
+
+<div align="center">
     <a href="https://discord.gg/kZakZzrSUT"><img src="https://img.shields.io/badge/Discord-join-blueviolet?logo=discord&amp"></a>
     <a href="https://join.slack.com/t/colossalaiworkspace/shared_invite/zt-247ipg9fk-KRRYmUl~u2ll2637WRURVA"><img src="https://img.shields.io/badge/Slack-ColossalAI-blueviolet?logo=slack&amp"></a>
     <a href="https://twitter.com/yangyou1991/status/1769411544083996787?s=61&t=jT0Dsx2d-MS5vS9rNM5e5g"><img src="https://img.shields.io/badge/Twitter-Discuss-blue?logo=twitter&amp"></a>
@@ -37,7 +40,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). 🎬 11B model achieves on-par performance with 14B HunyuanVideo & 30B Step-Video on 📐VBench & 📊Human Preference. 🛠️ Fully open-source: checkpoints and training codes for training with only **$200K**.
+- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). 🎬 11B model achieves [on-par performance](#evaluation) with 14B HunyuanVideo & 30B Step-Video on 📐VBench & 📊Human Preference. 🛠️ Fully open-source: checkpoints and training codes for training with only **$200K**.
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md) [[arxiv]](https://arxiv.org/abs/2412.20404)
