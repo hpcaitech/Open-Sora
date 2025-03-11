@@ -37,7 +37,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). With MMDiT structure and optimized for image-to-video generation, the model generates high quality of videos (t2v, i2v, t2i2v) with 256x256 and 768x768 resolution. An attempt to adapt for a high-compression autoencoder is also presented. 😚 All training codes are released! [[report]]()
+- **[2025.03.17]** 🔥 We released **Open-Sora 2.0** (11B). 🎬 11B model achieves on-par performance with 14B HunyuanVideo & 30B Step-Video on 📐VBench & 📊Human Preference. 🛠️ Fully open-source: checkpoints and training codes for training with only **$200K**.
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md) [[arxiv]](https://arxiv.org/abs/2412.20404)
@@ -274,6 +274,14 @@ We test the computational efficiency of text-to-video on H100/H800 GPU. For 256x
 | 768x768    | $\color{blue}{1656}/\color{red}{60.3}$ | $\color{blue}{863}/\color{red}{48.3}$ | $\color{blue}{466}/\color{red}{44.3}$ | $\color{blue}{276}/\color{red}{44.3}$ |
 
 ## Evaluation
+
+On [VBench](https://huggingface.co/spaces/Vchitect/VBench_Leaderboard), Open-Sora 2.0 significantly narrows the gap with OpenAI’s Sora, reducing it from 4.52% → 0.69% compared to Open-Sora 1.2.
+
+![VBench](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/v2_vbench.png)
+
+Human preference results show our model is on par with HunyuanVideo 14B and Step-Video 30B.
+
+![Win Rate](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/v2_winrate.png)
 
 ## Contribution
 
