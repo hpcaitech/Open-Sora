@@ -61,7 +61,6 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
-<details>
 <summary>OpenSora 2.0 Demo</summary>
 
 | **5s 1024×576**                                                                                                                                    | **5s 576×1024**                                                                                                                       | **5s 576×124**                                                                                                                       |
@@ -70,7 +69,6 @@ More samples and corresponding prompts are available in our [Gallery](https://hp
 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0012_1_1.gif" width="">](https://streamable.com/e/dsv8da?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/douyin_0005.gif" width="">](https://streamable.com/e/3wif07?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0037.gif" width="">](https://streamable.com/e/us2w7h?autoplay=1) |
 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0055_1_1.gif" width="">](https://streamable.com/e/yfwk8i?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0019.gif" width="">](https://streamable.com/e/jgjil0?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0463.gif" width="">](https://streamable.com/e/lsoai1?autoplay=1) |
 
-</details>
 
 <details>
 <summary>OpenSora 1.3 Demo</summary>
