@@ -61,9 +61,16 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
-|                                                                                                                                                                 |                                                                                                                                                                 |                                                                                                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/demo.gif" width="">](https://streamable.com/e/r0imrp?quality=highest&amp;autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/demo.gif" width="">](https://streamable.com/e/hfvjkh?quality=highest&amp;autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/demo.gif" width="">](https://streamable.com/e/kutmma?quality=highest&amp;autoplay=1) |
+<details>
+<summary>OpenSora 2.0 Demo</summary>
+
+| **5s 1024×576**                                                                                                                       | **4s 720×1280**                                                                                                                                                                                     | **4s 720×1280**                                                                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0001_1_1.gif" width="">](https://streamable.com/8g9y9h) |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0055_1_1.gif" width="">](https://streamable.com/yfwk8i) |
+|                                                                                                                                       | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v1.2/sample_0004.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/d6ce9c13-28e1-4dff-9644-cc01f5f11926) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v1.2/sample_0061.gif" width="">](https://github.com/hpcaitech/Open-Sora/assets/99191637/561978f8-f1b0-4f4d-ae7b-45bec9001b4a) |
+
+</details>
 
 <details>
 <summary>OpenSora 1.3 Demo</summary>
