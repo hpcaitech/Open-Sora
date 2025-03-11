@@ -27,10 +27,10 @@ CONFIG_MAP = {
 }
 HF_STDIT_MAP = {
     "t2v": {
-        "360p": "/home/guoxinying/open_source_video_ocean_V1/OpenSora-STDiT-v4-360p",
-        "720p": "/home/guoxinying/open_source_video_ocean_V1/OpenSora-STDiT-v4",
+        "360p": "hpcaitech/OpenSora-STDiT-v4-360p",
+        "720p": "hpcaitech/OpenSora-STDiT-v4",
     },
-    "i2v": "/home/guoxinying/open_source_video_ocean_V1/OpenSora-STDiT-v4-i2v",
+    "i2v": "hpcaitech/OpenSora-STDiT-v4-i2v",
 }
 
 
