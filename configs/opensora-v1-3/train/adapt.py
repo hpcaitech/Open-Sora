@@ -26,22 +26,16 @@ plugin = "zero2"
 # Model settings
 model = dict(
     type="STDiT3-XL/2",
-    from_pretrained="outputs/0373-STDiT3-XL-2/epoch3-global_step36000/ema.pt",
+    from_pretrained=None,
     qk_norm=True,
     enable_flash_attn=True,
     enable_layernorm_kernel=True,
     adapt_16ch=True,
     skip_temporal=True,
 )
-# vae = dict(
-#     type="VideoAutoencoderKL",
-#     from_pretrained="PixArt-alpha/pixart_sigma_sdxlvae_T5_diffusers",
-#     subfolder="vae",
-#     scaling_factor=0.13025,
-# )
 vae = dict(
     type="OpenSoraVAE_V1_3",
-    from_pretrained="/home/guoxinying/open_source_video_ocean_V1/OpenSora-VAE-v1.3",
+    from_pretrained="hpcaitech/OpenSora-VAE-v1.3",
     z_channels=16,
     micro_batch_size=1,
     micro_batch_size_2d=4,
