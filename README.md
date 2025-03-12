@@ -336,8 +336,7 @@ Here we only list a few of the projects. For other works and datasets, please re
 
 @software{opensorav2,
   author = {Xiangyu Peng, Zangwei Zheng, Chenhui Shen, Tom Young, Xinying Guo, Binluo Wang, Hang Xu, Hongxin Liu, Mingyan Jiang, Wenjun Li, Yuhui Wang, Anbang Ye, Gang Ren, Qianran Ma, Wanying Liang, Xiang Lian, Xiwen Wu, Yuting Zhong, Zhuangyan Li, Chaoyu Gong, Guojun Lei, Leijun Cheng, Limin Zhang, Minghao Li, Ruijie Zhang, Silan Hu, Shijie Huang, Xiaokang Wang, Yuanheng Zhao, Yuqi Wang, Ziang Wei, Yang You},
-  title = {Open-Sora 2.0: Training a Commercial-Level Video
-Generation Model in $200k},
+  title = {Open-Sora 2.0: Training a Commercial-Level Video Generation Model in $200k},
   month = {March},
   year = {2025},
   url = {https://github.com/hpcaitech/Open-Sora}
