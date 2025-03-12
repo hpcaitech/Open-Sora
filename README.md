@@ -59,9 +59,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 🎥 Latest Demo
 
-More samples and corresponding prompts are available in our [Gallery](https://hpcaitech.github.io/Open-Sora/).
-
-<summary>OpenSora 2.0 Demo</summary>
+Demos are presented in compressed GIF format for convenience. For original quality samples and their corresponding prompts, please visit our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
 | **5s 1024×576**                                                                                                                                    | **5s 576×1024**                                                                                                                       | **5s 576×124**                                                                                                                       |
 | --------------------------------------------------------------------------------------------------------------------------------------             | -----------------------------------------------------------------------------------------------------------------------------------   | ------------------------------------------------------------------------------------------------------------------------------------- |
