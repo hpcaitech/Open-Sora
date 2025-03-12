@@ -4,7 +4,6 @@ import os
 import re
 import warnings
 from fractions import Fraction
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 import av
 import cv2
@@ -18,11 +17,11 @@ MAX_NUM_FRAMES = 2500
 
 def read_video_av(
     filename: str,
-    start_pts: Union[float, Fraction] = 0,
-    end_pts: Optional[Union[float, Fraction]] = None,
+    start_pts: float | Fraction = 0,
+    end_pts: float | Fraction | None = None,
     pts_unit: str = "pts",
     output_format: str = "THWC",
-) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any]]:
+) -> tuple[torch.Tensor, torch.Tensor, dict]:
     """
     Reads a video from a file, returning both the video frames and the audio frames
 
@@ -46,7 +45,7 @@ def read_video_av(
     Returns:
         vframes (Tensor[T, H, W, C] or Tensor[T, C, H, W]): the `T` video frames
         aframes (Tensor[K, L]): the audio frames, where `K` is the number of channels and `L` is the number of points
-        info (Dict): metadata for the video and audio. Can contain the fields video_fps (float) and audio_fps (int)
+        info (dict): metadata for the video and audio. Can contain the fields video_fps (float) and audio_fps (int)
     """
     # format
     output_format = output_format.upper()
@@ -123,9 +122,9 @@ def _read_from_stream(
     end_offset: float,
     pts_unit: str,
     stream: "av.stream.Stream",
-    stream_name: Dict[str, Optional[Union[int, Tuple[int, ...], List[int]]]],
-    filename: Optional[str] = None,
-) -> List["av.frame.Frame"]:
+    stream_name: dict[str, int | tuple[int, ...] | list[int] | None],
+    filename: str | None = None,
+) -> list["av.frame.Frame"]:
     if pts_unit == "sec":
         # TODO: we should change all of this from ground up to simply take
         # sec and convert to MS in C++

@@ -1,4 +1,3 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -182,23 +181,18 @@ cache/
 debug/
 
 # Secret files
-hostfile
+hostfiles/
+hostfile*
 run.sh
 gradio_cached_examples/
 wandb/
-
-# vae weights
-eval/vae/flolpips/weights/
 
 # npm
 node_modules/
 package-lock.json
 package.json
 
-# PLLaVA
-tools/caption/pllava_dir/PLLaVA/
-
-# vbench
-vbench
-!eval/vbench
-vbench2_beta_i2v
+exps
+ckpts
+flash-attention
+datasets

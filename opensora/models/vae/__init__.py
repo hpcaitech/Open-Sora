@@ -1,3 +1,2 @@
-from .discriminator import DISCRIMINATOR_3D
-from .vae import VideoAutoencoderKL, VideoAutoencoderKLTemporalDecoder
-from .vae_temporal import VAE_Temporal
+from .autoencoder_2d import AutoEncoderFlux
+from .discriminator import N_LAYER_DISCRIMINATOR_3D

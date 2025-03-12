@@ -16,32 +16,6 @@ class T5EncoderPolicy(Policy):
 
         policy = {}
 
-        # check whether apex is installed
-        try:
-            from opensora.acceleration.shardformer.modeling.t5 import T5LayerNorm
-
-            # recover hf from fused rms norm to T5 norm which is faster
-            self.append_or_create_submodule_replacement(
-                description=SubModuleReplacementDescription(
-                    suffix="layer_norm",
-                    target_module=T5LayerNorm,
-                ),
-                policy=policy,
-                target_key=T5LayerFF,
-            )
-            self.append_or_create_submodule_replacement(
-                description=SubModuleReplacementDescription(suffix="layer_norm", target_module=T5LayerNorm),
-                policy=policy,
-                target_key=T5LayerSelfAttention,
-            )
-            self.append_or_create_submodule_replacement(
-                description=SubModuleReplacementDescription(suffix="final_layer_norm", target_module=T5LayerNorm),
-                policy=policy,
-                target_key=T5Stack,
-            )
-        except (ImportError, ModuleNotFoundError):
-            pass
-
         # use jit operator
         if self.shard_config.enable_jit_fused:
             self.append_or_create_method_replacement(

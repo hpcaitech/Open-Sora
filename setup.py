@@ -35,11 +35,10 @@ def fetch_readme() -> str:
 
 setup(
     name="opensora",
-    version="1.2.0",
+    version="2.0.0",
     packages=find_packages(
         exclude=(
             "assets",
-            "cache",
             "configs",
             "docs",
             "eval",
@@ -51,8 +50,6 @@ setup(
             "pretrained_models",
             "samples",
             "scripts",
-            "tests",
-            "tools",
             "*.egg-info",
         )
     ),
@@ -67,7 +64,7 @@ setup(
         "Documentation": "https://github.com/hpcaitech/Open-Sora?tab=readme-ov-file",
         "Github": "https://github.com/hpcaitech/Open-Sora",
     },
-    install_requires=fetch_requirements("requirements/requirements.txt"),
+    install_requires=fetch_requirements("requirements.txt"),
     python_requires=">=3.6",
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -76,15 +73,4 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: System :: Distributed Computing",
     ],
-    extras_require={
-        "data": fetch_requirements("requirements/requirements-data.txt"),
-        "eval": fetch_requirements("requirements/requirements-eval.txt"),
-        "vae": fetch_requirements("requirements/requirements-vae.txt"),
-        "full": fetch_requirements(
-            [
-                "requirements/requirements-data.txt",
-                "requirements/requirements-eval.txt",
-            ]
-        ),
-    },
 )
