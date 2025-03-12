@@ -128,7 +128,7 @@ see [here](/assets/texts/t2v_samples.txt) for full prompts.
 
 ## 🔆 Reports
 
-- **[Tech Report of Open-Sora 2.0]()**
+- **[Tech Report of Open-Sora 2.0](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/paper/Open_Sora_2_tech_report.pdf)**
 - **[Step by step to train or finetune your own model](docs/train.md)**
 - **[Step by step to train and evaluate an video autoencoder](docs/ae.md)**
 - **[Visit the high compression video autoencoder](docs/hcae.md)**
