@@ -61,11 +61,11 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 Demos are presented in compressed GIF format for convenience. For original quality samples and their corresponding prompts, please visit our [Gallery](https://hpcaitech.github.io/Open-Sora/).
 
-| **5s 1024×576**                                                                                                                                    | **5s 576×1024**                                                                                                                       | **5s 576×1024**                                                                                                                       |
-| --------------------------------------------------------------------------------------------------------------------------------------             | -----------------------------------------------------------------------------------------------------------------------------------   | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0001_1_1.gif" width="">](https://streamable.com/e/8g9y9h?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0160.gif" width="">](https://streamable.com/e/k50mnv?autoplay=1)   | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0017.gif" width="">](https://streamable.com/e/bzrn9n?autoplay=1) |
+| **5s 1024×576**                                                                                                                                    | **5s 576×1024**                                                                                                                                    | **5s 576×1024**                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0001_1_1.gif" width="">](https://streamable.com/e/8g9y9h?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0160.gif" width="">](https://streamable.com/e/k50mnv?autoplay=1)  | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0017.gif" width="">](https://streamable.com/e/bzrn9n?autoplay=1) |
 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0012_1_1.gif" width="">](https://streamable.com/e/dsv8da?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/douyin_0005.gif" width="">](https://streamable.com/e/3wif07?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0037.gif" width="">](https://streamable.com/e/us2w7h?autoplay=1) |
-| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0055_1_1.gif" width="">](https://streamable.com/e/yfwk8i?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0019.gif" width="">](https://streamable.com/e/jgjil0?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0463.gif" width="">](https://streamable.com/e/lsoai1?autoplay=1) |
+| [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0055_1_1.gif" width="">](https://streamable.com/e/yfwk8i?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0019.gif" width="">](https://streamable.com/e/jgjil0?autoplay=1)   | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0463.gif" width="">](https://streamable.com/e/lsoai1?autoplay=1) |
 
 
 <details>
@@ -332,6 +332,15 @@ Here we only list a few of the projects. For other works and datasets, please re
   author={Zheng, Zangwei and Peng, Xiangyu and Yang, Tianji and Shen, Chenhui and Li, Shenggui and Liu, Hongxin and Zhou, Yukun and Li, Tianyi and You, Yang},
   journal={arXiv preprint arXiv:2412.20404},
   year={2024}
+}
+
+@software{opensorav2,
+  author = {Xiangyu Peng, Zangwei Zheng, Chenhui Shen, Tom Young, Xinying Guo, Binluo Wang, Hang Xu, Hongxin Liu, Mingyan Jiang, Wenjun Li, Yuhui Wang, Anbang Ye, Gang Ren, Qianran Ma, Wanying Liang, Xiang Lian, Xiwen Wu, Yuting Zhong, Zhuangyan Li, Chaoyu Gong, Guojun Lei, Leijun Cheng, Limin Zhang, Minghao Li, Ruijie Zhang, Silan Hu, Shijie Huang, Xiaokang Wang, Yuanheng Zhao, Yuqi Wang, Ziang Wei, Yang You},
+  title = {Open-Sora 2.0: Training a Commercial-Level Video
+Generation Model in $200k},
+  month = {March},
+  year = {2025},
+  url = {https://github.com/hpcaitech/Open-Sora}
 }
 ```
 
