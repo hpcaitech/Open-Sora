@@ -40,7 +40,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 ## 📰 News
 
-- **[2025.03.12]** 🔥 We released **Open-Sora 2.0** (11B). 🎬 11B model achieves [on-par performance](#evaluation) with 14B HunyuanVideo & 30B Step-Video on 📐VBench & 📊Human Preference. 🛠️ Fully open-source: checkpoints and training codes for training with only **$200K**. [[report]](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/paper/Open_Sora_2_tech_report.pdf)
+- **[2025.03.12]** 🔥 We released **Open-Sora 2.0** (11B). 🎬 11B model achieves [on-par performance](#evaluation) with 11B HunyuanVideo & 30B Step-Video on 📐VBench & 📊Human Preference. 🛠️ Fully open-source: checkpoints and training codes for training with only **$200K**. [[report]](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/paper/Open_Sora_2_tech_report.pdf)
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
 - **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md) [[arxiv]](https://arxiv.org/abs/2412.20404)
@@ -285,7 +285,7 @@ On [VBench](https://huggingface.co/spaces/Vchitect/VBench_Leaderboard), Open-Sor
 
 ![VBench](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/v2_vbench.png)
 
-Human preference results show our model is on par with HunyuanVideo 14B and Step-Video 30B.
+Human preference results show our model is on par with HunyuanVideo 11B and Step-Video 30B.
 
 ![Win Rate](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/v2_winrate.png)
 
@@ -327,12 +327,11 @@ Here we only list a few of the projects. For other works and datasets, please re
 ## Citation
 
 ```bibtex
-@software{opensora,
-  author = {Zangwei Zheng and Xiangyu Peng and Tianji Yang and Chenhui Shen and Shenggui Li and Hongxin Liu and Yukun Zhou and Tianyi Li and Yang You},
-  title = {Open-Sora: Democratizing Efficient Video Production for All},
-  month = {March},
-  year = {2024},
-  url = {https://github.com/hpcaitech/Open-Sora}
+@article{opensora,
+  title={Open-sora: Democratizing efficient video production for all},
+  author={Zheng, Zangwei and Peng, Xiangyu and Yang, Tianji and Shen, Chenhui and Li, Shenggui and Liu, Hongxin and Zhou, Yukun and Li, Tianyi and You, Yang},
+  journal={arXiv preprint arXiv:2412.20404},
+  year={2024}
 }
 ```
 
