@@ -23,12 +23,12 @@ Open-Sora not only democratizes access to advanced video generation techniques, 
 streamlined and user-friendly platform that simplifies the complexities of video generation.
 With Open-Sora, our goal is to foster innovation, creativity, and inclusivity within the field of content creation.
 
-<!-- 🎬 For a professional and better version of the model, please try [Video Ocean](https://video-ocean.com/).
+🎬 For a professional and better version of the model, please try [Video Ocean](https://video-ocean.com/).
 <div align="center">
    <a href="https://video-ocean.com/">
    <img src="https://github.com/hpcaitech/public_assets/blob/main/colossalai/img/3.gif" width="850" />
    </a>
-</div> -->
+</div>
 
 <div align="center">
    <a href="https://hpc-ai.com/?utm_source=github&utm_medium=social&utm_campaign=promotion-opensora">
