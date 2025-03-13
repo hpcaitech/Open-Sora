@@ -67,7 +67,6 @@ Demos are presented in compressed GIF format for convenience. For original quali
 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0012_1_1.gif" width="">](https://streamable.com/e/dsv8da?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/douyin_0005.gif" width="">](https://streamable.com/e/3wif07?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0037.gif" width="">](https://streamable.com/e/us2w7h?autoplay=1) |
 | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/ft_0055_1_1.gif" width="">](https://streamable.com/e/yfwk8i?autoplay=1) | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0019.gif" width="">](https://streamable.com/e/jgjil0?autoplay=1)   | [<img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/movie_0463.gif" width="">](https://streamable.com/e/lsoai1?autoplay=1) |
 
-
 <details>
 <summary>OpenSora 1.3 Demo</summary>
 
@@ -191,6 +190,9 @@ Our model is optimized for image-to-video generation, but it can also be used fo
 # Generate one given prompt
 torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea"
 
+# Save memory with offloading
+torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --offload True
+
 # Generation with csv
 torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --dataset.data-path assets/texts/example.csv
 ```
@@ -272,7 +274,7 @@ Use `--num-sample k` to generate `k` samples for each prompt.
 
 ## Computational Efficiency
 
-We test the computational efficiency of text-to-video on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism. For 768x768, we use colossalai's sequence parallelism. All use number of steps 50. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
+We test the computational efficiency of text-to-video on H100/H800 GPU. For 256x256, we use colossalai's tensor parallelism, and `--offload True` is used. For 768x768, we use colossalai's sequence parallelism. All use number of steps 50. The results are presented in the format: $\color{blue}{\text{Total time (s)}}/\color{red}{\text{peak GPU memory (GB)}}$
 
 | Resolution | 1x GPU                                 | 2x GPUs                               | 4x GPUs                               | 8x GPUs                               |
 | ---------- | -------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- |
