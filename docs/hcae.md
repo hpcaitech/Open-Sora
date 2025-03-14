@@ -13,6 +13,15 @@ relationships. We release this model to the research community for further explo
 
 Checkout more details in our [report]().
 
+## Model Download
+
+Download from huggingface:
+
+```bash
+pip install "huggingface_hub[cli]"
+huggingface-cli download hpcai-tech/Open-Sora-v2-Video-DC-AE --local-dir ./ckpts
+```
+
 ## Inference
 
 To inference on our fast video generation model:
