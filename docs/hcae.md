@@ -11,11 +11,11 @@ we explore training video generation models with high-compression autoencoders (
 Nevertheless, despite the advantanges in drastically lower computation costs, other challenges remain. For instance, larger channels low down convergance. Our generation model adapted with a 128-channel Video DC-AE for 25K iterations achieves a loss level of 0.5, as compared to 0.1 from the initialization model. While the fast video generation model underperforms the original, it still captures spatial-temporal
 relationships. We release this model to the research community for further exploration.
 
-Checkout more details in our [report]().
+Checkout more details in our [report](https://arxiv.org/abs/2503.09642v1).
 
 ## Model Download
 
-Download from huggingface:
+Download from 🤗 [Huggingface](https://huggingface.co/hpcai-tech/Open-Sora-v2-Video-DC-AE):
 
 ```bash
 pip install "huggingface_hub[cli]"
