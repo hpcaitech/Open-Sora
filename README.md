@@ -166,6 +166,7 @@ python setup.py install
 
 ### Model Download
 
+#### 1. Hunyuan-adapt VAE and DiT
 Our 11B model supports 256px and 768px resolution. Both T2V and I2V are supported by one model. 🤗 [Huggingface](https://huggingface.co/hpcai-tech/Open-Sora-v2) 🤖 [ModelScope](https://modelscope.cn/models/luchentech/Open-Sora-v2).
 
 Download from huggingface:
@@ -180,6 +181,15 @@ Download from ModelScope:
 ```bash
 pip install modelscope
 modelscope download hpcai-tech/Open-Sora-v2 --local_dir ./ckpts
+```
+
+#### 2. Video DC-AE and DiT
+
+Download from huggingface:
+
+```bash
+pip install "huggingface_hub[cli]"
+huggingface-cli download hpcai-tech/Open-Sora-v2-Video-DC-AE --local-dir ./ckpts
 ```
 
 ### Text-to-Video Generation
