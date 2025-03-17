@@ -196,3 +196,6 @@ exps
 ckpts
 flash-attention
 datasets
+
+# inference scaling
+temp/
