@@ -267,14 +267,14 @@ torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/
 We implemented an inference scaling sampling method inspaired by [Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps](https://inference-scale-diffusion.github.io). You can spent more computational resources to get better results. Use it by specifying the sampling option.
 
 ```
-torchrun --nproc_per_node 4 --standalone scripts/diffusion/inference.py configs/diffusion/inference/768px_t2i2v_inference_scaling.py --save-dir samples --dataset.data-path assets/texts/sora.csv 
+torchrun --nproc_per_node 4 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_768px_inference_scaling.py --save-dir samples --dataset.data-path assets/texts/sora.csv 
 ```
 
-| Orignal               | <br>num_subtree=3<br>num_scaling_steps=5<br>num_noise=1<br>time=16min | <br>num_subtree=7<br>num_scaling_steps=8<br>num_noise=1<br>time=1h |
+| Original | <br>num_subtree=3<br>num_scaling_steps=5<br>num_noise=1<br>time=16min | <br>num_subtree=7<br>num_scaling_steps=8<br>num_noise=1<br>time=1h |
 |----------------------|----------------------------------------------------------------|----------------------------------------------------------------|
-| [Video Placeholder 1] | [Video Placeholder 2]                                          | [Video Placeholder 3]                                          |
-| [Video Placeholder 1] | [Video Placeholder 2]                                          | [Video Placeholder 3]                                          |
-
+| <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0000.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/i2v_sora_0000_scaling1.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/i2v_sora_0000_scaling2.gif" width=""> |
+| <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0001.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/i2v_sora_0001_scaling1.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/i2v_sora_0001_scaling2.gif" width=""> |
+| <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/sora_0006.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/i2v_sora_0006_scaling1.gif" width=""> | <img src="https://github.com/hpcaitech/Open-Sora-Demo/blob/main/demo/v2.0/i2v_sora_0006_scaling2.gif" width=""> |
 
 ### Reproductivity
 
@@ -297,7 +297,7 @@ We test the computational efficiency of text-to-video on H100/H800 GPU. For 256x
 
 ## Evaluation
 
-On [VBench](https://huggingface.co/spaces/Vchitect/VBench_Leaderboard), Open-Sora 2.0 significantly narrows the gap with OpenAI’s Sora, reducing it from 4.52% → 0.69% compared to Open-Sora 1.2.
+On [VBench](https://huggingface.co/spaces/Vchitect/VBench_Leaderboard), Open-Sora 2.0 significantly narrows the gap with OpenAI's Sora, reducing it from 4.52% → 0.69% compared to Open-Sora 1.2.
 
 ![VBench](https://github.com/hpcaitech/Open-Sora-Demo/blob/main/readme/v2_vbench.png)
 
