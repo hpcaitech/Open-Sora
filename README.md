@@ -262,6 +262,20 @@ export OPENAI_API_KEY=sk-xxxx
 torchrun --nproc_per_node 1 --standalone scripts/diffusion/inference.py configs/diffusion/inference/t2i2v_256px.py --save-dir samples --prompt "raining, sea" --refine-prompt True
 ```
 
+### Inference Scaling
+
+We implemented an inference scaling sampling method inspaired by [Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps](https://inference-scale-diffusion.github.io). You can spent more computational resources to get better results. Use it by specifying the sampling option.
+
+```
+torchrun --nproc_per_node 4 --standalone scripts/diffusion/inference.py configs/diffusion/inference/768px_t2i2v_inference_scaling.py --save-dir samples --dataset.data-path assets/texts/sora.csv 
+```
+
+| Orignal               | <br>num_subtree=3<br>num_scaling_steps=5<br>num_noise=1<br>time=16min | <br>num_subtree=7<br>num_scaling_steps=8<br>num_noise=1<br>time=1h |
+|----------------------|----------------------------------------------------------------|----------------------------------------------------------------|
+| [Video Placeholder 1] | [Video Placeholder 2]                                          | [Video Placeholder 3]                                          |
+| [Video Placeholder 1] | [Video Placeholder 2]                                          | [Video Placeholder 3]                                          |
+
+
 ### Reproductivity
 
 To make the results reproducible, you can set the random seed by:

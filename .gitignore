@@ -198,4 +198,5 @@ flash-attention
 datasets
 
 # inference scaling
-temp/
+temp*
+samples*

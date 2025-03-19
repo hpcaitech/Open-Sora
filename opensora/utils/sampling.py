@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 import json
 import subprocess
 from collections import defaultdict
+import sys
 
 import torch
 import torchvision
@@ -105,32 +106,38 @@ class SamplingOption:
     vbench_dimension_list: list = None
 
 
-def find_highest_score_video(data):
-    video_scores = defaultdict(list)
-    normalization_rules = {
-        "subject_consistency": lambda e: e["video_results"],
-        "background_consistency": lambda e: e["video_results"],
-        "temporal_flickering": lambda e: e["video_results"],
-        "motion_smoothness": lambda e: e["video_results"],
-        
-        "dynamic_degree": lambda e: 1.0 if e["video_results"] else 0.0,
-        
-        "aesthetic_quality": lambda e: e["video_results"],
-        "imaging_quality": lambda e: e["video_results"] / 100,
-        
-        "human_action": lambda e: e["cor_num_per_video"],
-        
-        "temporal_style": lambda e: e["video_results"],
-        "overall_consistency": lambda e: e["video_results"]
-    }
+NORMALIZE_DIC = {
+    "subject consistency": {"Min": 0.1462, "Max": 1.0},
+    "background consistency": {"Min": 0.2615, "Max": 1.0},
+    "motion smoothness": {"Min": 0.706, "Max": 0.9975},
+    "dynamic degree": {"Min": 0.0, "Max": 1.0},
+    "aesthetic quality": {"Min": 0.0, "Max": 1.0},
+    "imaging quality": {"Min": 0.0, "Max": 1.0},
+}
 
+DIM_WEIGHT = {
+    "subject consistency":1,
+    "background consistency":1,
+    "motion smoothness":1,
+    "aesthetic quality":1,
+    "imaging quality":1,
+    "dynamic degree":0.5,
+}
+
+
+def find_highest_score_video(data):
+    video_scores = defaultdict(dict)
+    
     for metric_name, metric_data in data.items():
         if not isinstance(metric_data, list) or len(metric_data) < 2:
             continue
             
-        process_rule = normalization_rules.get(metric_name)
-        if not process_rule:
+        if metric_name not in NORMALIZE_DIC:
             continue
+            
+        min_val = NORMALIZE_DIC[metric_name]["Min"] 
+        max_val = NORMALIZE_DIC[metric_name]["Max"]
+        dim_weight = DIM_WEIGHT[metric_name]
             
         for entry in metric_data[1]:
             try:
@@ -138,29 +145,30 @@ def find_highest_score_video(data):
                 filename = path_parts[-1]
                 video_index = int(filename.split(".")[0])
                 
-                score = process_rule(entry)
-                video_scores[video_index].append(score)
+                if "video_results" in entry:
+                    raw_score = entry["video_results"]
+                elif "cor_num_per_video" in entry:
+                    raw_score = entry["cor_num_per_video"]
+                else:
+                    continue
+                    
+                norm_score = (raw_score - min_val) / (max_val - min_val) * dim_weight
+                video_scores[video_index][metric_name] = norm_score
                 
             except (KeyError, ValueError, IndexError):
                 continue
 
-    avg_scores = {}
+    final_scores = {}
     for vid, scores in video_scores.items():
-        if len(scores) == 0:
-            avg_scores[vid] = 0.0
-            continue
-            
-        avg_scores[vid] = sum(scores) / len(scores)
-
-    if not avg_scores:
+        if len(scores) > 0:
+            final_scores[vid] = sum(scores.values()) / sum(DIM_WEIGHT[key] for key in scores.keys())
+    
+    if not final_scores:
         return -1
         
-    max_score = max(avg_scores.values())
-    candidates = sorted(
-        [vid for vid, score in avg_scores.items() if score == max_score]
-    )
-    
-    return candidates[0] if candidates else -1
+    max_score = max(final_scores.values())
+    candidates = [vid for vid, score in final_scores.items() if score == max_score]
+    return min(candidates) if candidates else -1
 
 
 def sanitize_sampling_option(sampling_option: SamplingOption) -> SamplingOption:
@@ -364,7 +372,7 @@ class I2VScalingDenoiser(Denoiser):
         scale_temporal_osci = kwargs.pop("scale_temporal_osci", False)
 
         prompt = [prompt[0]]
-        prompt_short = prompt[0][:30].replace(" ", "_")
+        prompt_short = sanitize_filename(prompt[0])
         save_dir = f'temp/{prompt_short}'
         os.makedirs(save_dir, exist_ok=True)
 
@@ -437,9 +445,9 @@ class I2VScalingDenoiser(Denoiser):
                     noise = torch.randn(noise_shape, device=cond_x.device, dtype=cond_x.dtype)
                     zeros = torch.zeros(noise_shape, device=cond_x.device, dtype=cond_x.dtype)
                     noise = torch.cat([noise, zeros, zeros], dim=0)
-                    subtree = img - (t_curr - timesteps[i-1]) * forward_scale * noise
-                    t_subtree = t_curr - (t_curr - timesteps[i-1]) * forward_scale
-                    t_subtree_prev = t_subtree + (t_curr - timesteps[i-1]) * backward_scale
+                    subtree = img - (timesteps[i+1] - t_curr) * forward_scale * noise
+                    t_subtree = t_curr
+                    t_subtree_prev = t_subtree + (timesteps[i+1] - t_curr) * backward_scale
                     t_subtree_vec = torch.full((img.shape[0],), t_subtree, dtype=cond.dtype, device=cond.device)
                     subtree_noise_pred = model(
                         img=subtree,
@@ -506,20 +514,21 @@ class I2VScalingDenoiser(Denoiser):
                     videos_path = f"{save_dir}/{i}_subtree"
                     output_path = f"{save_dir}/{i}_subtree"
                     
-                    prompt_file = "temp/prompt.json"
+                    prompt_file = "temp/prompt.json" # hard coded for now
                     with open(prompt_file, "w") as fp:
                         prompt_json = {f"{index}.mp4": prompt[0] for index in range(num_subtree)}
                         json.dump(prompt_json, fp)
                     
+                    python_path = os.path.dirname(sys.executable)
                     minimal_env = {
-                        "PATH": "/usr/local/bin:/usr/bin:/bin:/mnt/jfs-hdd/home/huangshijie/opensora_vbench/bin",
+                        "PATH": f"{python_path}:/usr/local/bin:/usr/bin:/bin",
                         "CUDA_VISIBLE_DEVICES": ",".join([str(item) for item in vbench_gpus])
                     }
                     cmd_args = [
                         'vbench', 
                         'evaluate',
                         '--dimension', 
-                        ','.join(vbench_dimension_list),
+                        ' '.join(vbench_dimension_list),
                         '--videos_path', 
                         videos_path,
                         '--mode',
@@ -1060,3 +1069,23 @@ def prepare_api(
         return x
 
     return api_fn
+
+
+def sanitize_filename(prompt):
+    """Sanitize the prompt to create a valid filename."""
+    # Remove or replace special characters
+    invalid_chars = '<>:"/\\|?*\n\r\t'
+    filename = prompt.strip()
+    for char in invalid_chars:
+        filename = filename.replace(char, '_')
+    
+    # Replace multiple spaces/underscores with single underscore
+    filename = '_'.join(filter(None, filename.split()))
+    
+    # Limit length and ensure it's not empty
+    filename = filename[:30] if filename else "default"
+    
+    # Remove leading/trailing special characters
+    filename = filename.strip('._-')
+    
+    return filename or "default"
