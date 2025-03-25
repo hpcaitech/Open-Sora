@@ -2,7 +2,8 @@ import torch
 from einops import rearrange
 from flash_attn import flash_attn_func as flash_attn_func_v2
 from liger_kernel.ops.rope import LigerRopeFunction
-from torch import Tensor, Tuple
+from torch import Tensor
+from typing import Tuple
 
 try:
     from flash_attn_interface import flash_attn_func as flash_attn_func_v3
