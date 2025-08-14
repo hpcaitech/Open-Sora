@@ -1,0 +1,14 @@
+# create env
+conda create -n opensora python=3.10 -y
+conda activate opensora
+
+# get the repo
+git clone https://github.com/hpcaitech/Open-Sora
+cd Open-Sora
+
+# install (PyTorch 2.4+ recommended)
+pip install -v .
+# install xformers for your CUDA version (example: CUDA 12.1)
+pip install xformers==0.0.27.post2 --index-url https://download.pytorch.org/whl/cu121
+# optional: speedup (if your GPU supports it)
+pip install flash-attn --no-build-isolation
