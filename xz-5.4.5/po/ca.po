@@ -1,0 +1,1044 @@
+# XZ Utils Catalan Translation
+# This file is put in the public domain.
+# Jordi Mas i Hernàndez <jmas@softcatala.org>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: xz 5.4.0-pre2\n"
+"Report-Msgid-Bugs-To: xz@tukaani.org\n"
+"POT-Creation-Date: 2023-10-31 22:33+0800\n"
+"PO-Revision-Date: 2022-12-12 18:19+0300\n"
+"Last-Translator: Jordi Mas i Hernàndez <jmas@softcatala.org>\n"
+"Language-Team: Catalan <ca@dodds.net>\n"
+"Language: ca\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n==1) ? 0 : 1;\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+
+#: src/xz/args.c:77
+#, c-format
+msgid "%s: Invalid argument to --block-list"
+msgstr "%s: argument no vàlid per a --block-list"
+
+#: src/xz/args.c:87
+#, c-format
+msgid "%s: Too many arguments to --block-list"
+msgstr "%s: massa arguments per a --block-list"
+
+#: src/xz/args.c:116
+msgid "0 can only be used as the last element in --block-list"
+msgstr "0 només es pot utilitzar com a últim element a --block-list"
+
+#: src/xz/args.c:451
+#, c-format
+msgid "%s: Unknown file format type"
+msgstr "%s: tipus de format de fitxer desconegut"
+
+#: src/xz/args.c:474 src/xz/args.c:482
+#, c-format
+msgid "%s: Unsupported integrity check type"
+msgstr "%s: tipus de comprovació d'integritat no suportat"
+
+#: src/xz/args.c:518
+msgid "Only one file can be specified with `--files' or `--files0'."
+msgstr "Només es pot especificar un fitxer amb `--files' o `--files0'."
+
+#. TRANSLATORS: This is a translatable
+#. string because French needs a space
+#. before the colon ("%s : %s").
+#: src/xz/args.c:533 src/xz/coder.c:692 src/xz/coder.c:708 src/xz/coder.c:968
+#: src/xz/coder.c:971 src/xz/file_io.c:605 src/xz/file_io.c:679
+#: src/xz/file_io.c:769 src/xz/file_io.c:940 src/xz/list.c:369
+#: src/xz/list.c:415 src/xz/list.c:477 src/xz/list.c:581 src/xz/list.c:590
+#, fuzzy, c-format
+#| msgid "%s: "
+msgid "%s: %s"
+msgstr "%s: "
+
+#: src/xz/args.c:589
+#, c-format
+msgid "The environment variable %s contains too many arguments"
+msgstr "La variable d'entorn %s conté massa arguments"
+
+#: src/xz/args.c:691
+msgid "Compression support was disabled at build time"
+msgstr "El suport de compressió s'ha desactivat en temps de construcció"
+
+#: src/xz/args.c:698
+msgid "Decompression support was disabled at build time"
+msgstr "El suport de descompressió s'ha desactivat en temps de construcció"
+
+#: src/xz/args.c:704
+msgid "Compression of lzip files (.lz) is not supported"
+msgstr "No s'admet la compressió de fitxers lzip (.lz)"
+
+#: src/xz/args.c:735
+#, fuzzy
+#| msgid "%s: With --format=raw, --suffix=.SUF is required unless writing to stdout"
+msgid "With --format=raw, --suffix=.SUF is required unless writing to stdout"
+msgstr "%s: amb --format=raw, --suffix=.SUF és necessari si no s'escriu a la sortida estàndard"
+
+#: src/xz/coder.c:115
+msgid "Maximum number of filters is four"
+msgstr "El nombre màxim de filtres és de quatre"
+
+#: src/xz/coder.c:135
+msgid "Memory usage limit is too low for the given filter setup."
+msgstr "El límit d'ús de la memòria és massa baix per a la configuració del filtre indicat."
+
+#: src/xz/coder.c:170
+msgid "Using a preset in raw mode is discouraged."
+msgstr "Es desaconsella l'ús d'un predefinit en mode RAW."
+
+#: src/xz/coder.c:172
+msgid "The exact options of the presets may vary between software versions."
+msgstr "Les opcions exactes dels predefinits poden variar entre versions de programari."
+
+#: src/xz/coder.c:195
+msgid "The .lzma format supports only the LZMA1 filter"
+msgstr "El format .lzma només admet el filtre LZMA1"
+
+#: src/xz/coder.c:203
+msgid "LZMA1 cannot be used with the .xz format"
+msgstr "No es pot usar LZMA1 amb el format .xz"
+
+#: src/xz/coder.c:220
+msgid "The filter chain is incompatible with --flush-timeout"
+msgstr "La cadena de filtratge és incompatible amb --flush-timeout"
+
+#: src/xz/coder.c:226
+msgid "Switching to single-threaded mode due to --flush-timeout"
+msgstr "Es canvia al mode d'un sol fil a causa de --flush-timeout"
+
+#: src/xz/coder.c:250
+#, c-format
+msgid "Using up to %<PRIu32> threads."
+msgstr "S'utilitzen fins a %<PRIu32> fils."
+
+#: src/xz/coder.c:266
+msgid "Unsupported filter chain or filter options"
+msgstr "Cadena de filtre no suportada o opcions de filtre"
+
+#: src/xz/coder.c:278
+#, c-format
+msgid "Decompression will need %s MiB of memory."
+msgstr "La descompressió necessitarà %s MiB de memòria."
+
+#: src/xz/coder.c:310
+#, c-format
+msgid "Reduced the number of threads from %s to %s to not exceed the memory usage limit of %s MiB"
+msgstr "S'ha reduït el nombre de fils de %s a %s per a no excedir el límit d'ús de memòria de %s MiB"
+
+#: src/xz/coder.c:330
+#, c-format
+msgid "Reduced the number of threads from %s to one. The automatic memory usage limit of %s MiB is still being exceeded. %s MiB of memory is required. Continuing anyway."
+msgstr "S'ha reduït el nombre de fils de %s a un. El límit d'ús automàtic de memòria de %s MiB encara s'està excedint. Es requereix %s MiB de memòria. Es continua igualment."
+
+#: src/xz/coder.c:357
+#, c-format
+msgid "Switching to single-threaded mode to not exceed the memory usage limit of %s MiB"
+msgstr "S'està canviant al mode d'un sol fil per a no excedir el límit d'ús de la memòria de %s MiB"
+
+#: src/xz/coder.c:412
+#, c-format
+msgid "Adjusted LZMA%c dictionary size from %s MiB to %s MiB to not exceed the memory usage limit of %s MiB"
+msgstr "S'ha ajustat la mida del diccionari LZMA%c de %s MiB a %s MiB per a no excedir el límit d'ús de memòria de %s MiB"
+
+#: src/xz/file_io.c:110 src/xz/file_io.c:118
+#, c-format
+msgid "Error creating a pipe: %s"
+msgstr "S'ha produït un error en crear una canonada: %s"
+
+#: src/xz/file_io.c:252
+msgid "Failed to enable the sandbox"
+msgstr "No s'ha pogut habilitar l'espai aïllat"
+
+#: src/xz/file_io.c:294
+#, c-format
+msgid "%s: poll() failed: %s"
+msgstr "%s: ha fallat la funció poll(): %s"
+
+#. TRANSLATORS: When compression or decompression finishes,
+#. and xz is going to remove the source file, xz first checks
+#. if the source file still exists, and if it does, does its
+#. device and inode numbers match what xz saw when it opened
+#. the source file. If these checks fail, this message is
+#. shown, %s being the filename, and the file is not deleted.
+#. The check for device and inode numbers is there, because
+#. it is possible that the user has put a new file in place
+#. of the original file, and in that case it obviously
+#. shouldn't be removed.
+#: src/xz/file_io.c:361
+#, c-format
+msgid "%s: File seems to have been moved, not removing"
+msgstr "%s: sembla que el fitxer s'ha mogut, no s'elimina"
+
+#: src/xz/file_io.c:368 src/xz/file_io.c:924
+#, c-format
+msgid "%s: Cannot remove: %s"
+msgstr "%s: no es pot eliminar: %s"
+
+#: src/xz/file_io.c:394
+#, c-format
+msgid "%s: Cannot set the file owner: %s"
+msgstr "%s: no es pot establir el propietari del fitxer: %s"
+
+#: src/xz/file_io.c:407
+#, c-format
+msgid "%s: Cannot set the file group: %s"
+msgstr "%s: no es pot establir el grup de fitxers: %s"
+
+#: src/xz/file_io.c:426
+#, c-format
+msgid "%s: Cannot set the file permissions: %s"
+msgstr "%s: no es poden establir els permisos del fitxer: %s"
+
+#: src/xz/file_io.c:552
+#, c-format
+msgid "Error getting the file status flags from standard input: %s"
+msgstr "S'ha produït un error en obtenir els indicadors d'estat del fitxer de l'entrada estàndard: %s"
+
+#: src/xz/file_io.c:610 src/xz/file_io.c:672
+#, c-format
+msgid "%s: Is a symbolic link, skipping"
+msgstr "%s: és un enllaç simbòlic, s'omet"
+
+#: src/xz/file_io.c:701
+#, c-format
+msgid "%s: Is a directory, skipping"
+msgstr "%s: és un directori, s'omet"
+
+#: src/xz/file_io.c:707
+#, c-format
+msgid "%s: Not a regular file, skipping"
+msgstr "%s: no és un fitxer normal, s'omet"
+
+#: src/xz/file_io.c:724
+#, c-format
+msgid "%s: File has setuid or setgid bit set, skipping"
+msgstr "%s: el fitxer té el bit de setuid o setgid, s'omet"
+
+#: src/xz/file_io.c:731
+#, c-format
+msgid "%s: File has sticky bit set, skipping"
+msgstr "%s: el fitxer té un bit enganxós, s'omet"
+
+#: src/xz/file_io.c:738
+#, c-format
+msgid "%s: Input file has more than one hard link, skipping"
+msgstr "%s: el fitxer d'entrada té més d'un enllaç dur, s'omet"
+
+#: src/xz/file_io.c:780
+msgid "Empty filename, skipping"
+msgstr "Nom de fitxer buit, s'omet"
+
+#: src/xz/file_io.c:834
+#, c-format
+msgid "Error restoring the status flags to standard input: %s"
+msgstr "S'ha produït un error en restaurar els indicadors d'estat a l'entrada estàndard: %s"
+
+#: src/xz/file_io.c:882
+#, c-format
+msgid "Error getting the file status flags from standard output: %s"
+msgstr "S'ha produït un error en obtenir els indicadors d'estat del fitxer de la sortida estàndard: %s"
+
+#: src/xz/file_io.c:1081
+#, c-format
+msgid "Error restoring the O_APPEND flag to standard output: %s"
+msgstr "S'ha produït un error en restaurar l'indicador O_APPEND a la sortida estàndard: %s"
+
+#: src/xz/file_io.c:1093
+#, c-format
+msgid "%s: Closing the file failed: %s"
+msgstr "%s: ha fallat el tancament del fitxer: %s"
+
+#: src/xz/file_io.c:1129 src/xz/file_io.c:1391
+#, c-format
+msgid "%s: Seeking failed when trying to create a sparse file: %s"
+msgstr "%s: ha fallat la cerca en intentar crear un fitxer dispers: %s"
+
+#: src/xz/file_io.c:1229
+#, c-format
+msgid "%s: Read error: %s"
+msgstr "%s: error de lectura: %s"
+
+#: src/xz/file_io.c:1259
+#, c-format
+msgid "%s: Error seeking the file: %s"
+msgstr "%s: error en cercar el fitxer: %s"
+
+#: src/xz/file_io.c:1283
+#, c-format
+msgid "%s: Unexpected end of file"
+msgstr "%s: fi inesperat del fitxer"
+
+#: src/xz/file_io.c:1342
+#, c-format
+msgid "%s: Write error: %s"
+msgstr "%s: error d'escriptura: %s"
+
+#: src/xz/hardware.c:238
+msgid "Disabled"
+msgstr "Desactivat"
+
+#: src/xz/hardware.c:269
+msgid "Amount of physical memory (RAM):"
+msgstr "Quantitat de memòria física (RAM):"
+
+#: src/xz/hardware.c:270
+msgid "Number of processor threads:"
+msgstr "Nombre de fils del processador:"
+
+#: src/xz/hardware.c:271
+msgid "Compression:"
+msgstr "Compressió:"
+
+#: src/xz/hardware.c:272
+msgid "Decompression:"
+msgstr "Descompressió:"
+
+#: src/xz/hardware.c:273
+msgid "Multi-threaded decompression:"
+msgstr "Descompressió multifil:"
+
+#: src/xz/hardware.c:274
+msgid "Default for -T0:"
+msgstr "Predeterminat per a -T0:"
+
+#: src/xz/hardware.c:292
+msgid "Hardware information:"
+msgstr "Informació del maquinari:"
+
+#: src/xz/hardware.c:299
+msgid "Memory usage limits:"
+msgstr "Límits d'ús de la memòria"
+
+#: src/xz/list.c:68
+msgid "Streams:"
+msgstr "Fluxos:"
+
+#: src/xz/list.c:69
+msgid "Blocks:"
+msgstr "Blocs:"
+
+#: src/xz/list.c:70
+msgid "Compressed size:"
+msgstr "Mida comprimida:"
+
+#: src/xz/list.c:71
+msgid "Uncompressed size:"
+msgstr "Mida no comprimida:"
+
+#: src/xz/list.c:72
+msgid "Ratio:"
+msgstr "Relació:"
+
+#: src/xz/list.c:73
+msgid "Check:"
+msgstr "Comprovació:"
+
+#: src/xz/list.c:74
+msgid "Stream Padding:"
+msgstr "Farciment del flux:"
+
+#: src/xz/list.c:75
+msgid "Memory needed:"
+msgstr "Memòria necessària:"
+
+#: src/xz/list.c:76
+msgid "Sizes in headers:"
+msgstr "Mides a les capçaleres:"
+
+#: src/xz/list.c:79
+msgid "Number of files:"
+msgstr "Nombre de fitxers:"
+
+#: src/xz/list.c:122
+msgid "Stream"
+msgstr "Flux"
+
+#: src/xz/list.c:123
+msgid "Block"
+msgstr "Bloc"
+
+#: src/xz/list.c:124
+msgid "Blocks"
+msgstr "Blocs"
+
+#: src/xz/list.c:125
+msgid "CompOffset"
+msgstr "CompOffset"
+
+#: src/xz/list.c:126
+msgid "UncompOffset"
+msgstr "UncompOffset"
+
+#: src/xz/list.c:127
+msgid "CompSize"
+msgstr "CompSize"
+
+#: src/xz/list.c:128
+msgid "UncompSize"
+msgstr "UncompSize"
+
+#: src/xz/list.c:129
+msgid "TotalSize"
+msgstr "TotalSize"
+
+#: src/xz/list.c:130
+msgid "Ratio"
+msgstr "Relació"
+
+#: src/xz/list.c:131
+msgid "Check"
+msgstr "Comprovació"
+
+#: src/xz/list.c:132
+msgid "CheckVal"
+msgstr "CheckVal"
+
+#: src/xz/list.c:133
+msgid "Padding"
+msgstr "Separació"
+
+#: src/xz/list.c:134
+msgid "Header"
+msgstr "Capçalera"
+
+#: src/xz/list.c:135
+msgid "Flags"
+msgstr "Senyals"
+
+#: src/xz/list.c:136
+msgid "MemUsage"
+msgstr "MemUsage"
+
+#: src/xz/list.c:137
+msgid "Filters"
+msgstr "Filtres"
+
+#. TRANSLATORS: Indicates that there is no integrity check.
+#. This string is used in tables. In older xz version this
+#. string was limited to ten columns in a fixed-width font, but
+#. nowadays there is no strict length restriction anymore.
+#: src/xz/list.c:169
+msgid "None"
+msgstr "Cap"
+
+#. TRANSLATORS: Indicates that integrity check name is not known,
+#. but the Check ID is known (here 2). In older xz version these
+#. strings were limited to ten columns in a fixed-width font, but
+#. nowadays there is no strict length restriction anymore.
+#: src/xz/list.c:175
+msgid "Unknown-2"
+msgstr "NoConeix2"
+
+#: src/xz/list.c:176
+msgid "Unknown-3"
+msgstr "NoConeix3"
+
+#: src/xz/list.c:178
+msgid "Unknown-5"
+msgstr "NoConeix5"
+
+#: src/xz/list.c:179
+msgid "Unknown-6"
+msgstr "NoConeix6"
+
+#: src/xz/list.c:180
+msgid "Unknown-7"
+msgstr "NoConeix7"
+
+#: src/xz/list.c:181
+msgid "Unknown-8"
+msgstr "NoConeix8"
+
+#: src/xz/list.c:182
+msgid "Unknown-9"
+msgstr "NoConeix9"
+
+#: src/xz/list.c:184
+msgid "Unknown-11"
+msgstr "NoConeix11"
+
+#: src/xz/list.c:185
+msgid "Unknown-12"
+msgstr "NoConeix12"
+
+#: src/xz/list.c:186
+msgid "Unknown-13"
+msgstr "NoConeix13"
+
+#: src/xz/list.c:187
+msgid "Unknown-14"
+msgstr "NoConeix14"
+
+#: src/xz/list.c:188
+msgid "Unknown-15"
+msgstr "NoConeix15"
+
+#: src/xz/list.c:351
+#, c-format
+msgid "%s: File is empty"
+msgstr "%s: El fitxer està buit"
+
+#: src/xz/list.c:356
+#, c-format
+msgid "%s: Too small to be a valid .xz file"
+msgstr "%s: Massa petit per a ser un fitxer .xz vàlid"
+
+#. TRANSLATORS: These are column headings. From Strms (Streams)
+#. to Ratio, the columns are right aligned. Check and Filename
+#. are left aligned. If you need longer words, it's OK to
+#. use two lines here. Test with "xz -l foo.xz".
+#: src/xz/list.c:731
+msgid "Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename"
+msgstr "Strms   Blocs    Comprimit  NoComprimit  Ràtio  Check   Nom de fitxer"
+
+#: src/xz/list.c:1026 src/xz/list.c:1204
+msgid "Yes"
+msgstr "Sí"
+
+#: src/xz/list.c:1026 src/xz/list.c:1204
+msgid "No"
+msgstr "No"
+
+#: src/xz/list.c:1028 src/xz/list.c:1206
+#, c-format
+msgid "  Minimum XZ Utils version: %s\n"
+msgstr "  Versió mínima de XZ Utils: %s\n"
+
+#. TRANSLATORS: %s is an integer. Only the plural form of this
+#. message is used (e.g. "2 files"). Test with "xz -l foo.xz bar.xz".
+#: src/xz/list.c:1179
+#, c-format
+msgid "%s file\n"
+msgid_plural "%s files\n"
+msgstr[0] "%s fitxer\n"
+msgstr[1] "%s fitxers\n"
+
+#: src/xz/list.c:1192
+msgid "Totals:"
+msgstr "Totals:"
+
+#: src/xz/list.c:1270
+msgid "--list works only on .xz files (--format=xz or --format=auto)"
+msgstr "--list només funciona en fitxers .xz (--format=xz o --format=auto)"
+
+#: src/xz/list.c:1276
+msgid "--list does not support reading from standard input"
+msgstr "--list no admet la lectura des de l'entrada estàndard"
+
+#: src/xz/main.c:89
+#, c-format
+msgid "%s: Error reading filenames: %s"
+msgstr "%s: Error en llegir els noms de fitxer: %s"
+
+#: src/xz/main.c:96
+#, c-format
+msgid "%s: Unexpected end of input when reading filenames"
+msgstr "%s: Final inesperat de l'entrada en llegir els noms de fitxer"
+
+#: src/xz/main.c:120
+#, c-format
+msgid "%s: Null character found when reading filenames; maybe you meant to use `--files0' instead of `--files'?"
+msgstr "%s: s'ha trobat un caràcter nul en llegir els noms de fitxer; potser volíeu utilitzar «--files0» en lloc de «--files»?"
+
+#: src/xz/main.c:188
+msgid "Compression and decompression with --robot are not supported yet."
+msgstr "La compressió i descompressió amb --robot encara no són admesos."
+
+#: src/xz/main.c:266
+msgid "Cannot read data from standard input when reading filenames from standard input"
+msgstr "No es poden llegir les dades de l'entrada estàndard en llegir els noms de fitxer de l'entrada estàndard"
+
+#. TRANSLATORS: This is the program name in the beginning
+#. of the line in messages. Usually it becomes "xz: ".
+#. This is a translatable string because French needs
+#. a space before a colon.
+#: src/xz/message.c:670 src/xz/message.c:725
+#, c-format
+msgid "%s: "
+msgstr "%s: "
+
+#: src/xz/message.c:797 src/xz/message.c:856
+msgid "Internal error (bug)"
+msgstr "Error intern (error)"
+
+#: src/xz/message.c:804
+msgid "Cannot establish signal handlers"
+msgstr "No es poden establir els gestors de senyals"
+
+#: src/xz/message.c:813
+msgid "No integrity check; not verifying file integrity"
+msgstr "Sense comprovació d'integritat; no es verifica la integritat del fitxer"
+
+#: src/xz/message.c:816
+msgid "Unsupported type of integrity check; not verifying file integrity"
+msgstr "Tipus no admès de comprovació d'integritat; no es verifica la integritat del fitxer"
+
+#: src/xz/message.c:823
+msgid "Memory usage limit reached"
+msgstr "S'ha arribat al límit d'ús de la memòria"
+
+#: src/xz/message.c:826
+msgid "File format not recognized"
+msgstr "No s'ha reconegut el format del fitxer"
+
+#: src/xz/message.c:829
+msgid "Unsupported options"
+msgstr "Opcions no suportades"
+
+#: src/xz/message.c:832
+msgid "Compressed data is corrupt"
+msgstr "Les dades comprimides estan malmeses"
+
+#: src/xz/message.c:835
+msgid "Unexpected end of input"
+msgstr "Final inesperat de l'entrada"
+
+#: src/xz/message.c:877
+#, c-format
+msgid "%s MiB of memory is required. The limiter is disabled."
+msgstr "Es requereixen %s MiB de memòria. El limitador està desactivat."
+
+#: src/xz/message.c:905
+#, c-format
+msgid "%s MiB of memory is required. The limit is %s."
+msgstr "Es requereixen %s MiB de memòria. El límit és %s."
+
+#: src/xz/message.c:924
+#, c-format
+msgid "%s: Filter chain: %s\n"
+msgstr "%s: Cadena de filtratge: %s\n"
+
+#: src/xz/message.c:935
+#, c-format
+msgid "Try `%s --help' for more information."
+msgstr "Proveu «%s --help» per a més informació."
+
+#: src/xz/message.c:961
+#, c-format
+msgid ""
+"Usage: %s [OPTION]... [FILE]...\n"
+"Compress or decompress FILEs in the .xz format.\n"
+"\n"
+msgstr ""
+"Ús: %s [OPCIÓ]... [FITXER]...\n"
+"Comprimeix o descomprimeix FITXERS en format .xz.\n"
+"\n"
+
+#: src/xz/message.c:968
+msgid "Mandatory arguments to long options are mandatory for short options too.\n"
+msgstr ""
+"Els arguments obligatoris per a opcions llargues també són obligatoris\n"
+"per a opcions curtes.\n"
+
+#: src/xz/message.c:972
+msgid " Operation mode:\n"
+msgstr " Mode d'operació:\n"
+
+#: src/xz/message.c:975
+msgid ""
+"  -z, --compress      force compression\n"
+"  -d, --decompress    force decompression\n"
+"  -t, --test          test compressed file integrity\n"
+"  -l, --list          list information about .xz files"
+msgstr ""
+"  -z, --compress      força la compressió\n"
+"  -d, --decompress    força la descompressió\n"
+"  -t, --test          comprova la integritat del fitxer comprimit\n"
+"  -l, --list          informació sobre els fitxers .xz"
+
+#: src/xz/message.c:981
+msgid ""
+"\n"
+" Operation modifiers:\n"
+msgstr ""
+"\n"
+" Modificadors de l'operació:\n"
+
+#: src/xz/message.c:984
+msgid ""
+"  -k, --keep          keep (don't delete) input files\n"
+"  -f, --force         force overwrite of output file and (de)compress links\n"
+"  -c, --stdout        write to standard output and don't delete input files"
+msgstr ""
+"  -k, --keep          manté (no suprimeixis) els fitxers d'entrada\n"
+"  -f, --force         força la sobreescriptura del fitxer de sortida i\n"
+"                      (des)comprimeix els enllaços\n"
+"  -c, --stdout        escriu a la sortida estàndard i no suprimeixis els\n"
+"                      fitxers d'entrada"
+
+#: src/xz/message.c:993
+msgid ""
+"      --single-stream decompress only the first stream, and silently\n"
+"                      ignore possible remaining input data"
+msgstr ""
+"      --single-stream descomprimeix només el primer flux, i silenciosament\n"
+"                      ignora les possibles dades d'entrada restants"
+
+#: src/xz/message.c:996
+msgid ""
+"      --no-sparse     do not create sparse files when decompressing\n"
+"  -S, --suffix=.SUF   use the suffix `.SUF' on compressed files\n"
+"      --files[=FILE]  read filenames to process from FILE; if FILE is\n"
+"                      omitted, filenames are read from the standard input;\n"
+"                      filenames must be terminated with the newline character\n"
+"      --files0[=FILE] like --files but use the null character as terminator"
+msgstr ""
+"      --no-sparse     no creïs fitxers dispersos en descomprimir\n"
+"  -S, --suffix=.SUF   usa el sufix «.SUF» en fitxers comprimits\n"
+"      --files[=FILE]  llegeix els noms de fitxer a processar des del FITXER;\n"
+"                      si s'omet, els noms de fitxer es llegeixen de l'entrada\n"
+"                      estàndard; els noms de fitxer s'han de finalitzar amb el\n"
+"                      caràcter de línia nova\n"
+"      --files0[=FILE] com --files però usa el caràcter nul com a terminador"
+
+#: src/xz/message.c:1005
+msgid ""
+"\n"
+" Basic file format and compression options:\n"
+msgstr ""
+"\n"
+" Opcions bàsiques de format i compressió de fitxers:\n"
+
+#: src/xz/message.c:1007
+msgid ""
+"  -F, --format=FMT    file format to encode or decode; possible values are\n"
+"                      `auto' (default), `xz', `lzma', `lzip', and `raw'\n"
+"  -C, --check=CHECK   integrity check type: `none' (use with caution),\n"
+"                      `crc32', `crc64' (default), or `sha256'"
+msgstr ""
+"  -F, --format=FMT    fitxer de format per a codificar o descodificar; els\n"
+"                      valors possibles són «auto» (predeterminat), «xz»,\n"
+"                      «lzma», «lzip» i «raw»\n"
+"  -C, --check=CHECK   el tipus de comprovació d'integritat: «none» (useu amb\n"
+"                      precaució), «crc32», «crc64» (predeterminat), o «sha256»"
+
+#: src/xz/message.c:1012
+msgid "      --ignore-check  don't verify the integrity check when decompressing"
+msgstr "      --ignore-check  no verifiquis la comprovació d'integritat en descomprimir"
+
+#: src/xz/message.c:1016
+msgid ""
+"  -0 ... -9           compression preset; default is 6; take compressor *and*\n"
+"                      decompressor memory usage into account before using 7-9!"
+msgstr ""
+"  -0 ... -9           compressió predefinida; per defecte és 6; tingueu en\n"
+"                      compte l'ús de memòria del compressor *i* del\n"
+"                      descompressor abans d'utilitzar 7-9!"
+
+#: src/xz/message.c:1020
+msgid ""
+"  -e, --extreme       try to improve compression ratio by using more CPU time;\n"
+"                      does not affect decompressor memory requirements"
+msgstr ""
+"  -e, --extreme       intenta millorar la ràtio de compressió usant més temps;\n"
+"                      de CPU no afecta els requisits de memòria del\n"
+"                      descompressor"
+
+#: src/xz/message.c:1024
+msgid ""
+"  -T, --threads=NUM   use at most NUM threads; the default is 1; set to 0\n"
+"                      to use as many threads as there are processor cores"
+msgstr ""
+"  -T, --threads=NUM   usa com a màxim NUM fils; el valor predeterminat és 1;\n"
+"                      estableix a 0 per a utilitzar tants fils com nuclis té\n"
+"                      el processador"
+
+#: src/xz/message.c:1029
+msgid ""
+"      --block-size=SIZE\n"
+"                      start a new .xz block after every SIZE bytes of input;\n"
+"                      use this to set the block size for threaded compression"
+msgstr ""
+"      --block-size=MIDA\n"
+"                      inicia un bloc nou .xz després de cada MIDA de bytes\n"
+"                      d'entrada; utilitzeu-ho per a establir la mida del bloc\n"
+"                      per a la compressió amb fils"
+
+#: src/xz/message.c:1033
+msgid ""
+"      --block-list=SIZES\n"
+"                      start a new .xz block after the given comma-separated\n"
+"                      intervals of uncompressed data"
+msgstr ""
+"       --block-list=MIDES\n"
+"                      inicia un bloc nou .xz després dels intervals de dades\n"
+"                      sense comprimir donats amb separació per comes"
+
+#: src/xz/message.c:1037
+msgid ""
+"      --flush-timeout=TIMEOUT\n"
+"                      when compressing, if more than TIMEOUT milliseconds has\n"
+"                      passed since the previous flush and reading more input\n"
+"                      would block, all pending data is flushed out"
+msgstr ""
+"       --flush-timeout=TEMPS\n"
+"                      en comprimir, si han passat més de mil·lisegons de temps\n"
+"                      d'espera des de l'anterior fluix i llegir més entrades\n"
+"                      blocaria, totes les dades pendents es buiden"
+
+#: src/xz/message.c:1043
+#, no-c-format
+msgid ""
+"      --memlimit-compress=LIMIT\n"
+"      --memlimit-decompress=LIMIT\n"
+"      --memlimit-mt-decompress=LIMIT\n"
+"  -M, --memlimit=LIMIT\n"
+"                      set memory usage limit for compression, decompression,\n"
+"                      threaded decompression, or all of these; LIMIT is in\n"
+"                      bytes, % of RAM, or 0 for defaults"
+msgstr ""
+"      --memlimit-compress=LÍMIT\n"
+"      --memlimit-decompress=LÍMIT\n"
+"      --memlimit-mt-decompress=LÍMIT\n"
+"  -M, --memlimit=LÍMIT\n"
+"                      estableix el límit d'ús de memòria per a la compressió,\n"
+"                      descompressió, descompressió amb fils, o tots ells; el\n"
+"                      LÍMIT és en bytes, % de RAM, o 0 per als predeterminats"
+
+#: src/xz/message.c:1052
+msgid ""
+"      --no-adjust     if compression settings exceed the memory usage limit,\n"
+"                      give an error instead of adjusting the settings downwards"
+msgstr ""
+"       --no-adjust    si la configuració de compressió excedeix el límit d'ús\n"
+"                      de memòria, dona error en lloc de reduir la configuració"
+
+#: src/xz/message.c:1058
+msgid ""
+"\n"
+" Custom filter chain for compression (alternative for using presets):"
+msgstr ""
+"\n"
+" Cadena de filtre personalitzada per a la compressió (alternativa per a l'ús\n"
+" de predefinits):"
+
+#: src/xz/message.c:1067
+msgid ""
+"\n"
+"  --lzma1[=OPTS]      LZMA1 or LZMA2; OPTS is a comma-separated list of zero or\n"
+"  --lzma2[=OPTS]      more of the following options (valid values; default):\n"
+"                        preset=PRE reset options to a preset (0-9[e])\n"
+"                        dict=NUM   dictionary size (4KiB - 1536MiB; 8MiB)\n"
+"                        lc=NUM     number of literal context bits (0-4; 3)\n"
+"                        lp=NUM     number of literal position bits (0-4; 0)\n"
+"                        pb=NUM     number of position bits (0-4; 2)\n"
+"                        mode=MODE  compression mode (fast, normal; normal)\n"
+"                        nice=NUM   nice length of a match (2-273; 64)\n"
+"                        mf=NAME    match finder (hc3, hc4, bt2, bt3, bt4; bt4)\n"
+"                        depth=NUM  maximum search depth; 0=automatic (default)"
+msgstr ""
+"\n"
+"   --lzma1[=OPTS]     LZMA1 o LZMA2; OPTS és una llista separada per comes de\n"
+"   --lzma2[=OPTS]     zero o més opcions de les següents (valors vàlids;\n"
+"                      predeterminat):\n"
+"                        preset=PRE restableix les opcions a un predefinit\n"
+"                                   (0-9[e])\n"
+"                        dict=NUM   mida del diccionari (4KiB - 1536MiB; 8MiB)\n"
+"                        lc=NUM     nombre de bits de context literal (0-4; 3)\n"
+"                        lp=NUM     nombre de bits de posició literal (0-4; 0)\n"
+"                        pb=NUM     nombre de bits de posició (0-4; 2)\n"
+"                        mode=MODE  mode de compressió (ràpid, normal; normal)\n"
+"                        nice=NUM   longitud de coincidència (2-273; 64)\n"
+"                        mf=NAME    cercador de coincidències (hc3, hc4, bt2,\n"
+"                                   bt3, bt4; bt4)\n"
+"                        depth=NUM  profunditat màxima de cerca; 0=automàtic\n"
+"                                   (predeterminat)"
+
+#: src/xz/message.c:1082
+msgid ""
+"\n"
+"  --x86[=OPTS]        x86 BCJ filter (32-bit and 64-bit)\n"
+"  --arm[=OPTS]        ARM BCJ filter\n"
+"  --armthumb[=OPTS]   ARM-Thumb BCJ filter\n"
+"  --arm64[=OPTS]      ARM64 BCJ filter\n"
+"  --powerpc[=OPTS]    PowerPC BCJ filter (big endian only)\n"
+"  --ia64[=OPTS]       IA-64 (Itanium) BCJ filter\n"
+"  --sparc[=OPTS]      SPARC BCJ filter\n"
+"                      Valid OPTS for all BCJ filters:\n"
+"                        start=NUM  start offset for conversions (default=0)"
+msgstr ""
+"\n"
+"  --x86[=OPTS]        filtre BCJ x86 (32-bit i 64-bit)\n"
+"  --arm[=OPTS]        filtre BCJ ARM\n"
+"  --armthumb[=OPTS]   filtre BCJ ARM-Thumb\n"
+"  --arm64[=OPTS]      filtre ARM64 BCJ\n"
+"  --powerpc[=OPTS]    filtre BCJ PowerPC (només endian gran)\n"
+"  --ia64[=OPTS]       filtre IA-64 (Itanium) BCJ\n"
+"  --sparc[=OPTS]      filtre BCJ SPARC\n"
+"                      OPTS vàlids per a tots els filtres BCJ:\n"
+"                        start=Núm.  decalatge d'inici per a les conversions\n"
+"                                    (per defecte=0)"
+
+#: src/xz/message.c:1095
+msgid ""
+"\n"
+"  --delta[=OPTS]      Delta filter; valid OPTS (valid values; default):\n"
+"                        dist=NUM   distance between bytes being subtracted\n"
+"                                   from each other (1-256; 1)"
+msgstr ""
+"\n"
+"  --delta[=OPTS]      Filtre delta; OPT (valors vàlids; predeterminat):\n"
+"                        dist=Núm.   entre bytes que es resten de\n"
+"                                    l'altre (1-256; 1)"
+
+#: src/xz/message.c:1103
+msgid ""
+"\n"
+" Other options:\n"
+msgstr ""
+"\n"
+" Altres opcions:\n"
+
+#: src/xz/message.c:1106
+msgid ""
+"  -q, --quiet         suppress warnings; specify twice to suppress errors too\n"
+"  -v, --verbose       be verbose; specify twice for even more verbose"
+msgstr ""
+"  -q, --quiet         suprimeix els avisos; especifiqueu-ho dues vegades per a\n"
+"                      suprimir també els errors\n"
+"  -v, --verbose       sigues detallat; especifiqueu dues vegades per a tenir\n"
+"                      encara més detall"
+
+#: src/xz/message.c:1111
+msgid "  -Q, --no-warn       make warnings not affect the exit status"
+msgstr "  -Q, --no-warn       fes que els avisos no afectin l'estat de sortida"
+
+#: src/xz/message.c:1113
+msgid "      --robot         use machine-parsable messages (useful for scripts)"
+msgstr ""
+"       --robot        usa missatges analitzables per la màquina\n"
+"                      (útil per a scripts)"
+
+#: src/xz/message.c:1116
+msgid ""
+"      --info-memory   display the total amount of RAM and the currently active\n"
+"                      memory usage limits, and exit"
+msgstr ""
+"      --info-memory   mostra la quantitat total de RAM i els límits actualment\n"
+"                      actius d'ús de memòria, i surt"
+
+#: src/xz/message.c:1119
+msgid ""
+"  -h, --help          display the short help (lists only the basic options)\n"
+"  -H, --long-help     display this long help and exit"
+msgstr ""
+"  -h, --help          mostra l'ajuda curta (només mostra les opcions bàsiques)\n"
+"  -H, --long-help     mostra aquesta ajuda llarga i surt"
+
+#: src/xz/message.c:1123
+msgid ""
+"  -h, --help          display this short help and exit\n"
+"  -H, --long-help     display the long help (lists also the advanced options)"
+msgstr ""
+"  -h, --help          mostra aquesta ajuda curta i surt\n"
+"  -H, --long-help     mostra l'ajuda llarga (llista també opcions avançades)"
+
+#: src/xz/message.c:1128
+msgid "  -V, --version       display the version number and exit"
+msgstr "  -V, --version       mostra el número de versió i surt"
+
+#: src/xz/message.c:1130
+msgid ""
+"\n"
+"With no FILE, or when FILE is -, read standard input.\n"
+msgstr ""
+"\n"
+"Sense FITXER, o quan el FITXER és -, es llegeix l'entrada estàndard.\n"
+
+#. TRANSLATORS: This message indicates the bug reporting address
+#. for this package. Please add _another line_ saying
+#. "Report translation bugs to <...>\n" with the email or WWW
+#. address for translation bugs. Thanks.
+#: src/xz/message.c:1136
+#, c-format
+msgid "Report bugs to <%s> (in English or Finnish).\n"
+msgstr "Informa d'errors a <%s> (en anglès o finès).\n"
+
+#: src/xz/message.c:1138
+#, c-format
+msgid "%s home page: <%s>\n"
+msgstr "Pàgina inicial de %s: <%s>\n"
+
+#: src/xz/message.c:1142
+msgid "THIS IS A DEVELOPMENT VERSION NOT INTENDED FOR PRODUCTION USE."
+msgstr "AQUESTA ÉS UNA VERSIÓ DE DESENVOLUPAMENT NO DESTINADA A L'ÚS EN PRODUCCIÓ."
+
+#: src/xz/options.c:86
+#, c-format
+msgid "%s: Options must be `name=value' pairs separated with commas"
+msgstr "%s: les opcions han de ser parelles «name=value» separades amb comes"
+
+#: src/xz/options.c:93
+#, c-format
+msgid "%s: Invalid option name"
+msgstr "%s: nom d'opció no vàlid"
+
+#: src/xz/options.c:113
+#, c-format
+msgid "%s: Invalid option value"
+msgstr "%s: el valor de l'opció no és vàlid"
+
+#: src/xz/options.c:248
+#, c-format
+msgid "Unsupported LZMA1/LZMA2 preset: %s"
+msgstr "No s'admet el LZMA1/LZMA2 predefinit: %s"
+
+#: src/xz/options.c:356
+msgid "The sum of lc and lp must not exceed 4"
+msgstr "La suma de lc i lp no ha de superar 4"
+
+#: src/xz/suffix.c:160
+#, c-format
+msgid "%s: Filename has an unknown suffix, skipping"
+msgstr "%s: El nom de fitxer té un sufix desconegut, s'omet"
+
+#: src/xz/suffix.c:181
+#, c-format
+msgid "%s: File already has `%s' suffix, skipping"
+msgstr "%s: El fitxer ja té el sufix «%s», s'ometrà"
+
+#: src/xz/suffix.c:388
+#, c-format
+msgid "%s: Invalid filename suffix"
+msgstr "%s: El sufix del nom de fitxer no és vàlid"
+
+#: src/xz/util.c:107
+#, c-format
+msgid "%s: Value is not a non-negative decimal integer"
+msgstr "%s: El valor no és un enter decimal no negatiu"
+
+#: src/xz/util.c:149
+#, c-format
+msgid "%s: Invalid multiplier suffix"
+msgstr "%s: el sufix multiplicador no és vàlid"
+
+#: src/xz/util.c:151
+msgid "Valid suffixes are `KiB' (2^10), `MiB' (2^20), and `GiB' (2^30)."
+msgstr "Els sufixos vàlids són `KiB' (2.10), `MiB' (2.20), i `GiB' (2.30)."
+
+#: src/xz/util.c:168
+#, c-format
+msgid "Value of the option `%s' must be in the range [%<PRIu64>, %<PRIu64>]"
+msgstr "El valor de l'opció «%s» ha d'estar a l'interval [%<PRIu64>, %<PRIu64>]"
+
+#: src/xz/util.c:270
+msgid "Compressed data cannot be read from a terminal"
+msgstr "Les dades comprimides no es poden llegir des d'un terminal"
+
+#: src/xz/util.c:283
+msgid "Compressed data cannot be written to a terminal"
+msgstr "Les dades comprimides no es poden escriure en un terminal"
+
+#: src/common/tuklib_exit.c:40
+msgid "Writing to standard output failed"
+msgstr "Ha fallat l'escriptura a la sortida estàndard"
+
+#: src/common/tuklib_exit.c:43
+msgid "Unknown error"
+msgstr "Error desconegut"
