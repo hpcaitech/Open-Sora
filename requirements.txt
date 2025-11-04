@@ -1,5 +1,5 @@
-torch==2.4.0
-torch==2.4.0
+torch==2.2.2
+torch==2.2.2
 colossalai>=0.4.4
 mmengine>=0.10.3
 ftfy>=6.2.0 # for t5
