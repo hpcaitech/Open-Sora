@@ -1,0 +1,3 @@
+#!/bin/sh
+
+exec "$srcdir/test_compress.sh" compress_prepared_bcj_x86

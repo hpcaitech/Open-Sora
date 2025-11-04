@@ -1,0 +1,1070 @@
+# Korean translation for the xz.
+# This file is put in the public domain.
+# Seong-ho Cho <darkcircle.0426@gmail.com>, 2019, 2022, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: xz 5.4.4-pre1\n"
+"Report-Msgid-Bugs-To: xz@tukaani.org\n"
+"POT-Creation-Date: 2023-10-31 22:33+0800\n"
+"PO-Revision-Date: 2023-07-20 10:59+0900\n"
+"Last-Translator: Seong-ho Cho <darkcircle.0426@gmail.com>\n"
+"Language-Team: Korean <translation-team-ko@googlegroups.com>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Bugs: Report translation errors to the Language-Team address.\n"
+"X-Generator: Poedit 3.0.1\n"
+
+#: src/xz/args.c:77
+#, c-format
+msgid "%s: Invalid argument to --block-list"
+msgstr "%s: --block-list의 인자값이 잘못됨"
+
+#: src/xz/args.c:87
+#, c-format
+msgid "%s: Too many arguments to --block-list"
+msgstr "%s: --block-list 인자 갯수가 너무 많음"
+
+#: src/xz/args.c:116
+msgid "0 can only be used as the last element in --block-list"
+msgstr "0 값은 --block-list의 마지막 원소로만 사용할 수 있습니다"
+
+#: src/xz/args.c:451
+#, c-format
+msgid "%s: Unknown file format type"
+msgstr "%s: 알 수 없는 파일 형식"
+
+#: src/xz/args.c:474 src/xz/args.c:482
+#, c-format
+msgid "%s: Unsupported integrity check type"
+msgstr "%s: 지원하지 않는 무결성 검사 형식"
+
+#: src/xz/args.c:518
+msgid "Only one file can be specified with `--files' or `--files0'."
+msgstr "`--files' 또는 `--files0' 옵션으로 하나의 파일만 지정할 수 있습니다."
+
+#. TRANSLATORS: This is a translatable
+#. string because French needs a space
+#. before the colon ("%s : %s").
+#: src/xz/args.c:533 src/xz/coder.c:692 src/xz/coder.c:708 src/xz/coder.c:968
+#: src/xz/coder.c:971 src/xz/file_io.c:605 src/xz/file_io.c:679
+#: src/xz/file_io.c:769 src/xz/file_io.c:940 src/xz/list.c:369
+#: src/xz/list.c:415 src/xz/list.c:477 src/xz/list.c:581 src/xz/list.c:590
+#, c-format
+msgid "%s: %s"
+msgstr "%s: %s"
+
+#: src/xz/args.c:589
+#, c-format
+msgid "The environment variable %s contains too many arguments"
+msgstr "%s 환경 변수에 너무 많은 인자 값이 들어있습니다"
+
+#: src/xz/args.c:691
+msgid "Compression support was disabled at build time"
+msgstr "빌드 시점에 압축 기능을 비활성했습니다"
+
+#: src/xz/args.c:698
+msgid "Decompression support was disabled at build time"
+msgstr "빌드 시점에 압축 해제 기능을 비활성했습니다"
+
+#: src/xz/args.c:704
+msgid "Compression of lzip files (.lz) is not supported"
+msgstr "lzip 파일(.lz) 압축은 지원하지 않습니다"
+
+#: src/xz/args.c:735
+msgid "With --format=raw, --suffix=.SUF is required unless writing to stdout"
+msgstr "표준 출력으로 기록하지 않는 한 --format=raw, --suffix=.SUF 옵션이 필요합니다"
+
+#: src/xz/coder.c:115
+msgid "Maximum number of filters is four"
+msgstr "최대 필터 갯수는 4 입니다"
+
+#: src/xz/coder.c:135
+msgid "Memory usage limit is too low for the given filter setup."
+msgstr "주어진 필터 설정으로는 메모리 사용 제한 값이 너무 적습니다."
+
+#: src/xz/coder.c:170
+msgid "Using a preset in raw mode is discouraged."
+msgstr "RAW 모드에서의 프리셋 사용은 권장하지 않습니다."
+
+#: src/xz/coder.c:172
+msgid "The exact options of the presets may vary between software versions."
+msgstr "프리셋의 정확한 옵션 값은 프로그램 버전에 따라 다릅니다."
+
+#: src/xz/coder.c:195
+msgid "The .lzma format supports only the LZMA1 filter"
+msgstr ".lzma 형식은 LZMA1 필터만 지원합니다"
+
+#: src/xz/coder.c:203
+msgid "LZMA1 cannot be used with the .xz format"
+msgstr ".xz 형식에는 LZMA1 필터를 사용할 수 없습니다"
+
+#: src/xz/coder.c:220
+msgid "The filter chain is incompatible with --flush-timeout"
+msgstr "--flush-timeout 옵션에는 필터 체인이 맞지 않습니다"
+
+#: src/xz/coder.c:226
+msgid "Switching to single-threaded mode due to --flush-timeout"
+msgstr "--flush-timeout 옵션을 지정하였으므로 단일 스레드 모드로 전환합니다"
+
+#: src/xz/coder.c:250
+#, c-format
+msgid "Using up to %<PRIu32> threads."
+msgstr "최대 %<PRIu32> 스레드를 사용합니다."
+
+#: src/xz/coder.c:266
+msgid "Unsupported filter chain or filter options"
+msgstr "지원하지 않는 필터 체인 또는 필터 옵션"
+
+#: src/xz/coder.c:278
+#, c-format
+msgid "Decompression will need %s MiB of memory."
+msgstr "압축 해제시 %s MiB 메모리 용량이 필요합니다."
+
+#: src/xz/coder.c:310
+#, c-format
+msgid "Reduced the number of threads from %s to %s to not exceed the memory usage limit of %s MiB"
+msgstr "메모리 사용량 %s MiB 제한을 넘지 않으려 스레드 수를 %s(에)서 %s(으)로 줄였습니다"
+
+#: src/xz/coder.c:330
+#, c-format
+msgid "Reduced the number of threads from %s to one. The automatic memory usage limit of %s MiB is still being exceeded. %s MiB of memory is required. Continuing anyway."
+msgstr "스레드 수가 %s(에)서 하나로 줄었습니다. 메모리 사용 자동 제한량 %s MiB를 여전히 초과합니다. 메모리 공간 %s MiB가 필요합니다. 어쨌든 계속합니다."
+
+#: src/xz/coder.c:357
+#, c-format
+msgid "Switching to single-threaded mode to not exceed the memory usage limit of %s MiB"
+msgstr "메모리 사용량 %s MiB 제한을 넘지 않으려 단일 스레드 모드로 전환합니다"
+
+#: src/xz/coder.c:412
+#, c-format
+msgid "Adjusted LZMA%c dictionary size from %s MiB to %s MiB to not exceed the memory usage limit of %s MiB"
+msgstr "메모리 사용량 %4$s MiB 제한을 넘지 않으려 %2$s MiB에서 %3$s MiB로 LZMA%1$c 딕셔너리 크기를 조정했습니다"
+
+#: src/xz/file_io.c:110 src/xz/file_io.c:118
+#, c-format
+msgid "Error creating a pipe: %s"
+msgstr "파이프 생성 오류: %s"
+
+#: src/xz/file_io.c:252
+msgid "Failed to enable the sandbox"
+msgstr "샌드 박스 활성화 실패"
+
+#: src/xz/file_io.c:294
+#, c-format
+msgid "%s: poll() failed: %s"
+msgstr "%s: poll() 실패: %s"
+
+#. TRANSLATORS: When compression or decompression finishes,
+#. and xz is going to remove the source file, xz first checks
+#. if the source file still exists, and if it does, does its
+#. device and inode numbers match what xz saw when it opened
+#. the source file. If these checks fail, this message is
+#. shown, %s being the filename, and the file is not deleted.
+#. The check for device and inode numbers is there, because
+#. it is possible that the user has put a new file in place
+#. of the original file, and in that case it obviously
+#. shouldn't be removed.
+#: src/xz/file_io.c:361
+#, c-format
+msgid "%s: File seems to have been moved, not removing"
+msgstr "%s: 파일을 이동한 것 같음, 제거 안함"
+
+#: src/xz/file_io.c:368 src/xz/file_io.c:924
+#, c-format
+msgid "%s: Cannot remove: %s"
+msgstr "%s: 제거할 수 없음: %s"
+
+#: src/xz/file_io.c:394
+#, c-format
+msgid "%s: Cannot set the file owner: %s"
+msgstr "%s: 파일 소유자를 설정할 수 없음: %s"
+
+#: src/xz/file_io.c:407
+#, c-format
+msgid "%s: Cannot set the file group: %s"
+msgstr "%s: 파일 소유 그룹을 설정할 수 없음: %s"
+
+#: src/xz/file_io.c:426
+#, c-format
+msgid "%s: Cannot set the file permissions: %s"
+msgstr "%s: 파일 권한을 설정할 수 없음: %s"
+
+#: src/xz/file_io.c:552
+#, c-format
+msgid "Error getting the file status flags from standard input: %s"
+msgstr "표준 입력에서 파일 상태 플래그 가져오기 오류: %s"
+
+#: src/xz/file_io.c:610 src/xz/file_io.c:672
+#, c-format
+msgid "%s: Is a symbolic link, skipping"
+msgstr "%s: 심볼릭 링크, 건너뜀"
+
+#: src/xz/file_io.c:701
+#, c-format
+msgid "%s: Is a directory, skipping"
+msgstr "%s: 디렉터리입니다, 건너뜀"
+
+#: src/xz/file_io.c:707
+#, c-format
+msgid "%s: Not a regular file, skipping"
+msgstr "%s: 일반 파일 아님, 건너뜀"
+
+#: src/xz/file_io.c:724
+#, c-format
+msgid "%s: File has setuid or setgid bit set, skipping"
+msgstr "%s: setuid 또는 setgid 비트 설정 있음, 건너뜀"
+
+#: src/xz/file_io.c:731
+#, c-format
+msgid "%s: File has sticky bit set, skipping"
+msgstr "%s: 끈적이 비트 설정이 있는 파일, 건너뜀"
+
+#: src/xz/file_io.c:738
+#, c-format
+msgid "%s: Input file has more than one hard link, skipping"
+msgstr "%s: 입력 파일에 하나 이상의 하드링크가 있습니다, 건너뜀"
+
+#: src/xz/file_io.c:780
+msgid "Empty filename, skipping"
+msgstr "파일 이름 없음, 건너뜀"
+
+#: src/xz/file_io.c:834
+#, c-format
+msgid "Error restoring the status flags to standard input: %s"
+msgstr "표준 입력으로의 상태 플래그 복원 오류: %s"
+
+#: src/xz/file_io.c:882
+#, c-format
+msgid "Error getting the file status flags from standard output: %s"
+msgstr "표준 출력에서 파일 상태 플래그 가져오기 오류: %s"
+
+#: src/xz/file_io.c:1081
+#, c-format
+msgid "Error restoring the O_APPEND flag to standard output: %s"
+msgstr "표준 출력으로의 O_APPEND 플래그 복원 오류: %s"
+
+#: src/xz/file_io.c:1093
+#, c-format
+msgid "%s: Closing the file failed: %s"
+msgstr "%s: 파일 닫기 실패: %s"
+
+#: src/xz/file_io.c:1129 src/xz/file_io.c:1391
+#, c-format
+msgid "%s: Seeking failed when trying to create a sparse file: %s"
+msgstr "%s: 분할 파일 생성 시도시 탐색 실패: %s"
+
+#: src/xz/file_io.c:1229
+#, c-format
+msgid "%s: Read error: %s"
+msgstr "%s: 읽기 오류: %s"
+
+#: src/xz/file_io.c:1259
+#, c-format
+msgid "%s: Error seeking the file: %s"
+msgstr "%s: 파일 탐색 오류: %s"
+
+#: src/xz/file_io.c:1283
+#, c-format
+msgid "%s: Unexpected end of file"
+msgstr "%s: 예상치 못한 파일의 끝"
+
+#: src/xz/file_io.c:1342
+#, c-format
+msgid "%s: Write error: %s"
+msgstr "%s: 쓰기 오류: %s"
+
+#: src/xz/hardware.c:238
+msgid "Disabled"
+msgstr "사용 안함"
+
+#: src/xz/hardware.c:269
+msgid "Amount of physical memory (RAM):"
+msgstr "물리 메모리 양(RAM):"
+
+#: src/xz/hardware.c:270
+msgid "Number of processor threads:"
+msgstr "프로세서 스레드 수:"
+
+#: src/xz/hardware.c:271
+msgid "Compression:"
+msgstr "압축:"
+
+#: src/xz/hardware.c:272
+msgid "Decompression:"
+msgstr "압축해제:"
+
+#: src/xz/hardware.c:273
+msgid "Multi-threaded decompression:"
+msgstr "멀티 스레드 압축 해제:"
+
+#: src/xz/hardware.c:274
+msgid "Default for -T0:"
+msgstr "-T0 기본값:"
+
+#: src/xz/hardware.c:292
+msgid "Hardware information:"
+msgstr "하드웨어 정보:"
+
+#: src/xz/hardware.c:299
+msgid "Memory usage limits:"
+msgstr "메모리 사용량 제한:"
+
+#: src/xz/list.c:68
+msgid "Streams:"
+msgstr "스트림:"
+
+#: src/xz/list.c:69
+msgid "Blocks:"
+msgstr "블록 수:"
+
+#: src/xz/list.c:70
+msgid "Compressed size:"
+msgstr "압축 용량:"
+
+#: src/xz/list.c:71
+msgid "Uncompressed size:"
+msgstr "압축해제 용량:"
+
+#: src/xz/list.c:72
+msgid "Ratio:"
+msgstr "압축율:"
+
+#: src/xz/list.c:73
+msgid "Check:"
+msgstr "검사:"
+
+#: src/xz/list.c:74
+msgid "Stream Padding:"
+msgstr "스트림 패딩:"
+
+#: src/xz/list.c:75
+msgid "Memory needed:"
+msgstr "요구 메모리:"
+
+#: src/xz/list.c:76
+msgid "Sizes in headers:"
+msgstr "헤더 길이:"
+
+#: src/xz/list.c:79
+msgid "Number of files:"
+msgstr "파일 갯수:"
+
+#: src/xz/list.c:122
+msgid "Stream"
+msgstr "스트림"
+
+#: src/xz/list.c:123
+msgid "Block"
+msgstr "블록"
+
+#: src/xz/list.c:124
+msgid "Blocks"
+msgstr "블록"
+
+#: src/xz/list.c:125
+msgid "CompOffset"
+msgstr "압축오프셋"
+
+#: src/xz/list.c:126
+msgid "UncompOffset"
+msgstr "압축해제오프셋"
+
+#: src/xz/list.c:127
+msgid "CompSize"
+msgstr "압축크기"
+
+#: src/xz/list.c:128
+msgid "UncompSize"
+msgstr "압축해제크기"
+
+#: src/xz/list.c:129
+msgid "TotalSize"
+msgstr "총크기"
+
+#: src/xz/list.c:130
+msgid "Ratio"
+msgstr "압축율"
+
+#: src/xz/list.c:131
+msgid "Check"
+msgstr "검사"
+
+#: src/xz/list.c:132
+msgid "CheckVal"
+msgstr "검사값"
+
+#: src/xz/list.c:133
+msgid "Padding"
+msgstr "패딩"
+
+#: src/xz/list.c:134
+msgid "Header"
+msgstr "헤더"
+
+#: src/xz/list.c:135
+msgid "Flags"
+msgstr "플래그"
+
+#: src/xz/list.c:136
+msgid "MemUsage"
+msgstr "메모리사용"
+
+#: src/xz/list.c:137
+msgid "Filters"
+msgstr "필터"
+
+#. TRANSLATORS: Indicates that there is no integrity check.
+#. This string is used in tables. In older xz version this
+#. string was limited to ten columns in a fixed-width font, but
+#. nowadays there is no strict length restriction anymore.
+#: src/xz/list.c:169
+msgid "None"
+msgstr "없음"
+
+#. TRANSLATORS: Indicates that integrity check name is not known,
+#. but the Check ID is known (here 2). In older xz version these
+#. strings were limited to ten columns in a fixed-width font, but
+#. nowadays there is no strict length restriction anymore.
+#: src/xz/list.c:175
+msgid "Unknown-2"
+msgstr "알 수 없음-2"
+
+#: src/xz/list.c:176
+msgid "Unknown-3"
+msgstr "알 수 없음-3"
+
+#: src/xz/list.c:178
+msgid "Unknown-5"
+msgstr "알 수 없음-5"
+
+#: src/xz/list.c:179
+msgid "Unknown-6"
+msgstr "알 수 없음-6"
+
+#: src/xz/list.c:180
+msgid "Unknown-7"
+msgstr "알 수 없음-7"
+
+#: src/xz/list.c:181
+msgid "Unknown-8"
+msgstr "알 수 없음-8"
+
+#: src/xz/list.c:182
+msgid "Unknown-9"
+msgstr "알 수 없음-9"
+
+#: src/xz/list.c:184
+msgid "Unknown-11"
+msgstr "알 수 없음-11"
+
+#: src/xz/list.c:185
+msgid "Unknown-12"
+msgstr "알 수 없음-12"
+
+#: src/xz/list.c:186
+msgid "Unknown-13"
+msgstr "알 수 없음-13"
+
+#: src/xz/list.c:187
+msgid "Unknown-14"
+msgstr "알 수 없음-14"
+
+#: src/xz/list.c:188
+msgid "Unknown-15"
+msgstr "알 수 없음-15"
+
+#: src/xz/list.c:351
+#, c-format
+msgid "%s: File is empty"
+msgstr "%s: 파일 내용 없음"
+
+#: src/xz/list.c:356
+#, c-format
+msgid "%s: Too small to be a valid .xz file"
+msgstr "%s: 유효한 .xz 파일로 보기에는 너무 작습니다"
+
+#. TRANSLATORS: These are column headings. From Strms (Streams)
+#. to Ratio, the columns are right aligned. Check and Filename
+#. are left aligned. If you need longer words, it's OK to
+#. use two lines here. Test with "xz -l foo.xz".
+#: src/xz/list.c:731
+msgid "Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename"
+msgstr "스트림   블록         압축     압축해제 압축율  검사    파일 이름"
+
+#: src/xz/list.c:1026 src/xz/list.c:1204
+msgid "Yes"
+msgstr "예"
+
+# 주: 아니오가 아니라 아니요가 맞는 표현
+#: src/xz/list.c:1026 src/xz/list.c:1204
+msgid "No"
+msgstr "아니요"
+
+#: src/xz/list.c:1028 src/xz/list.c:1206
+#, c-format
+msgid "  Minimum XZ Utils version: %s\n"
+msgstr "  최소 XZ Utils 버전: %s\n"
+
+#. TRANSLATORS: %s is an integer. Only the plural form of this
+#. message is used (e.g. "2 files"). Test with "xz -l foo.xz bar.xz".
+#: src/xz/list.c:1179
+#, c-format
+msgid "%s file\n"
+msgid_plural "%s files\n"
+msgstr[0] "파일 %s개\n"
+
+#: src/xz/list.c:1192
+msgid "Totals:"
+msgstr "총:"
+
+#: src/xz/list.c:1270
+msgid "--list works only on .xz files (--format=xz or --format=auto)"
+msgstr "--list 옵션은 .xz 파일에만 동작합니다(--format=xz 또는 --format=auto)"
+
+#: src/xz/list.c:1276
+msgid "--list does not support reading from standard input"
+msgstr "--list 옵션은 표준 입력 읽기를 지원하지 않습니다"
+
+#: src/xz/main.c:89
+#, c-format
+msgid "%s: Error reading filenames: %s"
+msgstr "%s: 파일 이름 읽기 오류: %s"
+
+#: src/xz/main.c:96
+#, c-format
+msgid "%s: Unexpected end of input when reading filenames"
+msgstr "%s: 파일 이름 읽는 중 예상치 못한 입력 끝"
+
+#: src/xz/main.c:120
+#, c-format
+msgid "%s: Null character found when reading filenames; maybe you meant to use `--files0' instead of `--files'?"
+msgstr "%s: 파일 이름을 읽는 도중 NULL 문자 발견. `--files' 옵션 대신 `--files0' 옵션을 사용하시려는게 아닙니까?"
+
+#: src/xz/main.c:188
+msgid "Compression and decompression with --robot are not supported yet."
+msgstr "아직 압축 동작과 압축 해제 동작에 --robot 옵션을 지원하지 않습니다."
+
+#: src/xz/main.c:266
+msgid "Cannot read data from standard input when reading filenames from standard input"
+msgstr "표준 출력에서 파일 이름을 읽을 때 표준 입력에서 데이터를 읽을 수 없습니다"
+
+#. TRANSLATORS: This is the program name in the beginning
+#. of the line in messages. Usually it becomes "xz: ".
+#. This is a translatable string because French needs
+#. a space before a colon.
+#: src/xz/message.c:670 src/xz/message.c:725
+#, c-format
+msgid "%s: "
+msgstr "%s: "
+
+#: src/xz/message.c:797 src/xz/message.c:856
+msgid "Internal error (bug)"
+msgstr "내부 오류(버그)"
+
+#: src/xz/message.c:804
+msgid "Cannot establish signal handlers"
+msgstr "시그널 처리자를 준비할 수 없습니다"
+
+#: src/xz/message.c:813
+msgid "No integrity check; not verifying file integrity"
+msgstr "무결성 검사 안함. 파일 무결성을 검증하지 않습니다"
+
+#: src/xz/message.c:816
+msgid "Unsupported type of integrity check; not verifying file integrity"
+msgstr "지원하지 않는 무결성 검사 형식. 파일 무결성을 검증하지 않습니다"
+
+#: src/xz/message.c:823
+msgid "Memory usage limit reached"
+msgstr "메모리 사용량 한계에 도달했습니다"
+
+#: src/xz/message.c:826
+msgid "File format not recognized"
+msgstr "파일 형식을 인식할 수 없음"
+
+#: src/xz/message.c:829
+msgid "Unsupported options"
+msgstr "지원하지 않는 옵션"
+
+#: src/xz/message.c:832
+msgid "Compressed data is corrupt"
+msgstr "압축 데이터 깨짐"
+
+#: src/xz/message.c:835
+msgid "Unexpected end of input"
+msgstr "예상치 못한 입력 끝"
+
+#: src/xz/message.c:877
+#, c-format
+msgid "%s MiB of memory is required. The limiter is disabled."
+msgstr "%s MiB 메모리 용량이 필요합니다. 제한을 비활성합니다."
+
+#: src/xz/message.c:905
+#, c-format
+msgid "%s MiB of memory is required. The limit is %s."
+msgstr "%s MiB 메모리 용량이 필요합니다. 제한 값은 %s 입니다."
+
+#: src/xz/message.c:924
+#, c-format
+msgid "%s: Filter chain: %s\n"
+msgstr "%s: 필터 체인: %s\n"
+
+#: src/xz/message.c:935
+#, c-format
+msgid "Try `%s --help' for more information."
+msgstr "자세한 사용법은 `%s --help'를 입력하십시오."
+
+#: src/xz/message.c:961
+#, c-format
+msgid ""
+"Usage: %s [OPTION]... [FILE]...\n"
+"Compress or decompress FILEs in the .xz format.\n"
+"\n"
+msgstr ""
+"사용법: %s [<옵션>]... [<파일>]...\n"
+".xz 형식으로 <파일> 다수를 압축(해제)합니다.\n"
+"\n"
+
+#: src/xz/message.c:968
+msgid "Mandatory arguments to long options are mandatory for short options too.\n"
+msgstr "긴 옵션 버전의 필수 인자는 짧은 옵션 버전에도 해당합니다.\n"
+
+#: src/xz/message.c:972
+msgid " Operation mode:\n"
+msgstr " 동작 방식:\n"
+
+#: src/xz/message.c:975
+msgid ""
+"  -z, --compress      force compression\n"
+"  -d, --decompress    force decompression\n"
+"  -t, --test          test compressed file integrity\n"
+"  -l, --list          list information about .xz files"
+msgstr ""
+"  -z, --compress      압축 강제\n"
+"  -d, --decompress    압축 해제 강제\n"
+"  -t, --test          압축 파일 무결성 검사\n"
+"  -l, --list          .xz 파일 정보 출력"
+
+#: src/xz/message.c:981
+msgid ""
+"\n"
+" Operation modifiers:\n"
+msgstr ""
+"\n"
+" 동작 지정:\n"
+
+#: src/xz/message.c:984
+msgid ""
+"  -k, --keep          keep (don't delete) input files\n"
+"  -f, --force         force overwrite of output file and (de)compress links\n"
+"  -c, --stdout        write to standard output and don't delete input files"
+msgstr ""
+"  -k, --keep          입력 파일을 유지합니다(삭제 안함)\n"
+"  -f, --force         출력 파일을 강제로 덮어쓰고 링크도 압축(해제)합니다\n"
+"  -c, --stdout        표준 출력으로 기록하고 입력 파일을 삭제하지 않습니다"
+
+#: src/xz/message.c:993
+msgid ""
+"      --single-stream decompress only the first stream, and silently\n"
+"                      ignore possible remaining input data"
+msgstr ""
+"      --single-stream 첫번째 스트림만 압축해제하며, 나머지 입력 데이터는\n"
+"                      조용히 무시합니다"
+
+#: src/xz/message.c:996
+msgid ""
+"      --no-sparse     do not create sparse files when decompressing\n"
+"  -S, --suffix=.SUF   use the suffix `.SUF' on compressed files\n"
+"      --files[=FILE]  read filenames to process from FILE; if FILE is\n"
+"                      omitted, filenames are read from the standard input;\n"
+"                      filenames must be terminated with the newline character\n"
+"      --files0[=FILE] like --files but use the null character as terminator"
+msgstr ""
+"      --no-sparse     압축 해제에 활용할 분할 파일을 만들지 않음\n"
+"  -S, --suffix=.<확장자>\n"
+"                      압축 파일 확장자에 `.<확장자>'를 사용합니다\n"
+"      --files[=<파일>]\n"
+"                      <파일> 에서 처리할 파일 이름을 읽습니다. <파일>을\n"
+"                      생략하면 표준 입력에서 파일 이름을 읽습니다.\n"
+"                      파일 이름은 개행 문자로 끝나야합니다\n"
+"      --files0[=<파일>]\n"
+"                      --files 옵션과 비슷하지만 NULL 문자로 끝납니다"
+
+#: src/xz/message.c:1005
+msgid ""
+"\n"
+" Basic file format and compression options:\n"
+msgstr ""
+"\n"
+" 기본 파일 형식 및 압축 옵션:\n"
+
+#: src/xz/message.c:1007
+msgid ""
+"  -F, --format=FMT    file format to encode or decode; possible values are\n"
+"                      `auto' (default), `xz', `lzma', `lzip', and `raw'\n"
+"  -C, --check=CHECK   integrity check type: `none' (use with caution),\n"
+"                      `crc32', `crc64' (default), or `sha256'"
+msgstr ""
+"  -F, --format=<형식> 인코딩 디코딩할 파일 형식입니다. 가능한 값:\n"
+"                      `auto' (기본), `xz', `lzma', `lzip', `raw'\n"
+"  -C, --check=<검사>  무결성 검사 형식: `none'(위험),\n"
+"                      `crc32', `crc64'(기본), `sha256'"
+
+#: src/xz/message.c:1012
+msgid "      --ignore-check  don't verify the integrity check when decompressing"
+msgstr "      --ignore-check  압축 해제시 무결성 검사를 수행하지 않습니다"
+
+#: src/xz/message.c:1016
+msgid ""
+"  -0 ... -9           compression preset; default is 6; take compressor *and*\n"
+"                      decompressor memory usage into account before using 7-9!"
+msgstr ""
+"  -0 ... -9           압축 프리셋. 기본값은 6 입니다. 7-9를 사용하려면 입축\n"
+"                      메모리 사용량*과* 압축 해제 메모리 사용량을 지정하십시오!"
+
+#: src/xz/message.c:1020
+msgid ""
+"  -e, --extreme       try to improve compression ratio by using more CPU time;\n"
+"                      does not affect decompressor memory requirements"
+msgstr ""
+"  -e, --extreme       CPU 점유시간을 더 확보하여 압축률을 개선합니다.\n"
+"                      압축 해제시 메모리 요구 용량에는 영향을 주지 않습니다"
+
+#: src/xz/message.c:1024
+msgid ""
+"  -T, --threads=NUM   use at most NUM threads; the default is 1; set to 0\n"
+"                      to use as many threads as there are processor cores"
+msgstr ""
+"  -T, --threads=<개수>\n"
+"                      최대 스레드 <개수>를 사용합니다. 기본값은 1 입니다\n"
+"                      실제 프로세서 코어만큼의 스레드를 사용하려면 0 값으로\n"
+"                      지정합니다"
+
+#: src/xz/message.c:1029
+msgid ""
+"      --block-size=SIZE\n"
+"                      start a new .xz block after every SIZE bytes of input;\n"
+"                      use this to set the block size for threaded compression"
+msgstr ""
+"      --block-size=<크기>\n"
+"                      모든 <크기>의 입력 다음 새 .xz 블록을 시작합니다.\n"
+"                      스레드 압축에 블록 크기를 지정할 때 사용합니다"
+
+#: src/xz/message.c:1033
+msgid ""
+"      --block-list=SIZES\n"
+"                      start a new .xz block after the given comma-separated\n"
+"                      intervals of uncompressed data"
+msgstr ""
+"      --block-list=<크기>\n"
+"                      콤마로 구분한 연속 지정값 만큼 압축해제한 데이터 용량을\n"
+"                      넘긴 후 새 .xz 블록을 시작합니다"
+
+#: src/xz/message.c:1037
+msgid ""
+"      --flush-timeout=TIMEOUT\n"
+"                      when compressing, if more than TIMEOUT milliseconds has\n"
+"                      passed since the previous flush and reading more input\n"
+"                      would block, all pending data is flushed out"
+msgstr ""
+"      --flush-timeout=<제한시간>\n"
+"                      앞서 플러싱한 후 더 많은 블록 입력을 읽어들일 때 밀리초\n"
+"                      단위 <제한시간>을 넘기면 모든 대기 데이터를\n"
+"                      플러싱아웃합니다"
+
+#: src/xz/message.c:1043
+#, no-c-format
+msgid ""
+"      --memlimit-compress=LIMIT\n"
+"      --memlimit-decompress=LIMIT\n"
+"      --memlimit-mt-decompress=LIMIT\n"
+"  -M, --memlimit=LIMIT\n"
+"                      set memory usage limit for compression, decompression,\n"
+"                      threaded decompression, or all of these; LIMIT is in\n"
+"                      bytes, % of RAM, or 0 for defaults"
+msgstr ""
+"      --memlimit-compress=<제한용량>\n"
+"      --memlimit-decompress=<제한용량>\n"
+"      --memlimit-mt-decompress=<제한용량>\n"
+"  -M, --memlimit=<제한용량>\n"
+"                      압축, 압축해제, 또는 각각의 경우에 대한 메모리 사용량\n"
+"                      제한값을 설정합니다. <제한용량> 값 단위는 바이트 또는 램\n"
+"                      용량 백분율이며, 기본 값은 0 입니다"
+
+#: src/xz/message.c:1052
+msgid ""
+"      --no-adjust     if compression settings exceed the memory usage limit,\n"
+"                      give an error instead of adjusting the settings downwards"
+msgstr ""
+"      --no-adjust     압축 설정이 메모리 사용량 제한을 넘어서면\n"
+"                      설정 값을 줄이는 대신 오류 정보를 나타냅니다"
+
+#: src/xz/message.c:1058
+msgid ""
+"\n"
+" Custom filter chain for compression (alternative for using presets):"
+msgstr ""
+"\n"
+" 압축용 개별 필터 체인 설정(사전 설정 사용을 대신함):"
+
+#: src/xz/message.c:1067
+msgid ""
+"\n"
+"  --lzma1[=OPTS]      LZMA1 or LZMA2; OPTS is a comma-separated list of zero or\n"
+"  --lzma2[=OPTS]      more of the following options (valid values; default):\n"
+"                        preset=PRE reset options to a preset (0-9[e])\n"
+"                        dict=NUM   dictionary size (4KiB - 1536MiB; 8MiB)\n"
+"                        lc=NUM     number of literal context bits (0-4; 3)\n"
+"                        lp=NUM     number of literal position bits (0-4; 0)\n"
+"                        pb=NUM     number of position bits (0-4; 2)\n"
+"                        mode=MODE  compression mode (fast, normal; normal)\n"
+"                        nice=NUM   nice length of a match (2-273; 64)\n"
+"                        mf=NAME    match finder (hc3, hc4, bt2, bt3, bt4; bt4)\n"
+"                        depth=NUM  maximum search depth; 0=automatic (default)"
+msgstr ""
+"\n"
+"  --lzma1[=<옵션>]     LZMA1 또는 LZMA2. <옵션>은 하나도 지정하지 않거나,\n"
+"  --lzma2[=<옵션>]     다음 옵션 중 한개 이상을 쉼표로 구분하여 지정합니다\n"
+"                       (유효값, 기본값):\n"
+"                        preset=<프리셋> 옵션을 <프리셋>값으로 초기화(0-9[e])\n"
+"                        dict=<숫자>     딕셔너리 크기(4KiB - 1536MiB, 8MiB)\n"
+"                        lc=<숫자>       리터럴 컨텍스트 비트 수(0-4, 3)\n"
+"                        lp=<숫자>       리터럴 위치 비트 수(0-4, 0)\n"
+"                        pb=<숫자>       위치 비트 갯수(0-4, 2)\n"
+"                        mode=<모드>     압축 모드 fast 또는 normal, normal)\n"
+"                        nice=<숫자>     nice 일치 길이 값(2-273, 64)\n"
+"                        mf=<이름>       일치 탐색기(hc3, hc4, bt2, bt3, bt4\n"
+"                                        중 하나. bt4)\n"
+"                        depth=<숫자>    최대 검색 깊이. 0=자동(기본값)"
+
+#: src/xz/message.c:1082
+msgid ""
+"\n"
+"  --x86[=OPTS]        x86 BCJ filter (32-bit and 64-bit)\n"
+"  --arm[=OPTS]        ARM BCJ filter\n"
+"  --armthumb[=OPTS]   ARM-Thumb BCJ filter\n"
+"  --arm64[=OPTS]      ARM64 BCJ filter\n"
+"  --powerpc[=OPTS]    PowerPC BCJ filter (big endian only)\n"
+"  --ia64[=OPTS]       IA-64 (Itanium) BCJ filter\n"
+"  --sparc[=OPTS]      SPARC BCJ filter\n"
+"                      Valid OPTS for all BCJ filters:\n"
+"                        start=NUM  start offset for conversions (default=0)"
+msgstr ""
+"\n"
+"  --x86[=<옵션>]      x86 BCJ 필터(32-bit, 64-bit)\n"
+"  --arm[=<옵션>]      ARM BCJ 필터\n"
+"  --armthumb[=<옵션>] ARM-Thumb BCJ 필터\n"
+"  --arm64[=<옵션>]    ARM64 BCJ 필터\n"
+"  --powerpc[=<옵션>]  PowerPC BCJ 필터 (빅 엔디언 전용)\n"
+"  --ia64[=<옵션>]     IA-64 (아이태니엄) BCJ 필터\n"
+"  --sparc[=<옵션>]    SPARC BCJ 필터\n"
+"                     모든 BCJ 필터의 유효한 <옵션>:\n"
+"                        start=<숫자>  변환 시작 오프셋(기본값=0)"
+
+#: src/xz/message.c:1095
+msgid ""
+"\n"
+"  --delta[=OPTS]      Delta filter; valid OPTS (valid values; default):\n"
+"                        dist=NUM   distance between bytes being subtracted\n"
+"                                   from each other (1-256; 1)"
+msgstr ""
+"\n"
+"  --delta[=<옵션>]    델타 필터. 유효한 <옵션> (유효값, 기본값):\n"
+"                        dist=<숫자>   각 바이트 값의 차이 값\n"
+"                                     (1-256, 1)"
+
+#: src/xz/message.c:1103
+msgid ""
+"\n"
+" Other options:\n"
+msgstr ""
+"\n"
+"기타 옵션:\n"
+
+#: src/xz/message.c:1106
+msgid ""
+"  -q, --quiet         suppress warnings; specify twice to suppress errors too\n"
+"  -v, --verbose       be verbose; specify twice for even more verbose"
+msgstr ""
+"  -q, --quiet         경고 메시지 끔. 오류 메시지도 끄려면 두번 지정합니다\n"
+"  -v, --verbose       자세히 표시. 더 자세히 표시하려면 두번 지정합니다"
+
+#: src/xz/message.c:1111
+msgid "  -Q, --no-warn       make warnings not affect the exit status"
+msgstr "  -Q, --no-warn       경고가 종료 상태에 영향을 주지 않게합니다"
+
+#: src/xz/message.c:1113
+msgid "      --robot         use machine-parsable messages (useful for scripts)"
+msgstr "      --robot         기계 해석용 메시지를 사용합니다(스크립트에 적합)"
+
+#: src/xz/message.c:1116
+msgid ""
+"      --info-memory   display the total amount of RAM and the currently active\n"
+"                      memory usage limits, and exit"
+msgstr ""
+"      --info-memory   총 사용 메모리양과 현재 활성 메모리 사용 제한 값을\n"
+"                      표시하고 빠져나갑니다"
+
+#: src/xz/message.c:1119
+msgid ""
+"  -h, --help          display the short help (lists only the basic options)\n"
+"  -H, --long-help     display this long help and exit"
+msgstr ""
+"  -h, --help          간단한 도움말을 표시합니다(기본 옵션만 나열)\n"
+"  -H, --long-help     긴 도움말을 표시하고 빠져나갑니다"
+
+#: src/xz/message.c:1123
+msgid ""
+"  -h, --help          display this short help and exit\n"
+"  -H, --long-help     display the long help (lists also the advanced options)"
+msgstr ""
+"  -h, --help          간단한 도움말을 표시하고 빠져나갑니다\n"
+"  -H, --long-help     긴 도움말을 표시합니다(고급 옵션도 나열)"
+
+#: src/xz/message.c:1128
+msgid "  -V, --version       display the version number and exit"
+msgstr "  -V, --version       버전 번호를 표시하고 빠져나갑니다"
+
+#: src/xz/message.c:1130
+msgid ""
+"\n"
+"With no FILE, or when FILE is -, read standard input.\n"
+msgstr ""
+"\n"
+"<파일> 값이 없거나, <파일> 값이 - 문자이면, 표준 입력을 읽습니다.\n"
+
+#. TRANSLATORS: This message indicates the bug reporting address
+#. for this package. Please add _another line_ saying
+#. "Report translation bugs to <...>\n" with the email or WWW
+#. address for translation bugs. Thanks.
+#: src/xz/message.c:1136
+#, c-format
+msgid "Report bugs to <%s> (in English or Finnish).\n"
+msgstr "<%s> (영문 또는 핀란드어)에 버그를 보고하십시오.\n"
+
+#: src/xz/message.c:1138
+#, c-format
+msgid "%s home page: <%s>\n"
+msgstr "%s 홈페이지: <%s>\n"
+
+#: src/xz/message.c:1142
+msgid "THIS IS A DEVELOPMENT VERSION NOT INTENDED FOR PRODUCTION USE."
+msgstr "!! 주의 !! 개발 버전이며 실제 사용 용도가 아닙니다."
+
+#: src/xz/options.c:86
+#, c-format
+msgid "%s: Options must be `name=value' pairs separated with commas"
+msgstr "%s: 옵션은 쉼표로 구분한 `이름=값' 쌍이어야합니다"
+
+#: src/xz/options.c:93
+#, c-format
+msgid "%s: Invalid option name"
+msgstr "%s: 잘못된 옵션 이름"
+
+#: src/xz/options.c:113
+#, c-format
+msgid "%s: Invalid option value"
+msgstr "%s: 잘못된 옵션 값"
+
+#: src/xz/options.c:248
+#, c-format
+msgid "Unsupported LZMA1/LZMA2 preset: %s"
+msgstr "지원하지 않는 LZMA1/LZMA2 프리셋: %s"
+
+#: src/xz/options.c:356
+msgid "The sum of lc and lp must not exceed 4"
+msgstr "lc값과 lp값의 합이 4를 초과하면 안됩니다"
+
+#: src/xz/suffix.c:160
+#, c-format
+msgid "%s: Filename has an unknown suffix, skipping"
+msgstr "%s: 파일 이름에 알 수 없는 확장자 붙음, 건너뜀"
+
+#: src/xz/suffix.c:181
+#, c-format
+msgid "%s: File already has `%s' suffix, skipping"
+msgstr "%s: 파일에 이미 `%s' 확장자가 붙음, 건너뜀"
+
+#: src/xz/suffix.c:388
+#, c-format
+msgid "%s: Invalid filename suffix"
+msgstr "%s: 잘못된 파일 이름 확장자"
+
+#: src/xz/util.c:107
+#, c-format
+msgid "%s: Value is not a non-negative decimal integer"
+msgstr "%s: 값은 10진 양수입니다"
+
+#: src/xz/util.c:149
+#, c-format
+msgid "%s: Invalid multiplier suffix"
+msgstr "%s: 잘못된 승수 후위 단위"
+
+#: src/xz/util.c:151
+msgid "Valid suffixes are `KiB' (2^10), `MiB' (2^20), and `GiB' (2^30)."
+msgstr "유효한 후위 단위는 `KiB' (2^10), `MiB' (2^20), and `GiB' (2^30) 입니다."
+
+#: src/xz/util.c:168
+#, c-format
+msgid "Value of the option `%s' must be in the range [%<PRIu64>, %<PRIu64>]"
+msgstr "`%s' 옵션 값은 범위[%<PRIu64>, %<PRIu64>] 안에 있어야 합니다"
+
+#: src/xz/util.c:270
+msgid "Compressed data cannot be read from a terminal"
+msgstr "압축 데이터를 터미널에서 읽을 수 없습니다"
+
+#: src/xz/util.c:283
+msgid "Compressed data cannot be written to a terminal"
+msgstr "압축 데이터를 터미널에 기록할 수 없습니다"
+
+#: src/common/tuklib_exit.c:40
+msgid "Writing to standard output failed"
+msgstr "표준 출력 기록 실패"
+
+#: src/common/tuklib_exit.c:43
+msgid "Unknown error"
+msgstr "알 수 없는 오류"
+
+#~ msgid "The selected match finder requires at least nice=%<PRIu32>"
+#~ msgstr "선택한 일치 탐색기는 최소한 nice=%<PRIu32> 상태여야합니다"
+
+#~ msgid "Sandbox is disabled due to incompatible command line arguments"
+#~ msgstr "비호환 명령행 인자값이 있어 샌드박스를 비활성했습니다"
+
+#~ msgid "Sandbox was successfully enabled"
+#~ msgstr "샌드 박스 활성화에 성공했습니다"
+
+#~ msgid "Memory usage limit for compression:    "
+#~ msgstr "압축 메모리 사용 제한량:    "
+
+#~ msgid "  Streams:            %s\n"
+#~ msgstr "  스트림:            %s\n"
+
+#~ msgid "  Blocks:             %s\n"
+#~ msgstr "  블록:             %s\n"
+
+#~ msgid "  Ratio:              %s\n"
+#~ msgstr "  압축률:              %s\n"
+
+#~ msgid "  Check:              %s\n"
+#~ msgstr "  검사:              %s\n"
+
+#~ msgid ""
+#~ "  Streams:\n"
+#~ "    Stream    Blocks      CompOffset    UncompOffset        CompSize      UncompSize  Ratio  Check      Padding"
+#~ msgstr ""
+#~ "  스트림:\n"
+#~ "    스트림       블록       압축오프셋   압축해제 오프셋         압축용량     압축해제용량  압축율   검사      패딩"
+
+#~ msgid ""
+#~ "  Blocks:\n"
+#~ "    Stream     Block      CompOffset    UncompOffset       TotalSize      UncompSize  Ratio  Check"
+#~ msgstr ""
+#~ "  블록:\n"
+#~ "    스트림     블록      압축오프셋    압축해제오프셋       총용량      압축해제용량  압축율  검사"
+
+#~ msgid "      CheckVal %*s Header  Flags        CompSize    MemUsage  Filters"
+#~ msgstr "      CheckVal %*s Header  플래그        압축용량    메모리사용량  필터"
