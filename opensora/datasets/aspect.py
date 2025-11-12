@@ -16,6 +16,8 @@ ASPECT_RATIO_LD_LIST = [  # width:height
 
 def get_ratio(name: str) -> float:
     width, height = map(float, name.split(":"))
+    if width == 0:
+        raise ValueError(f"Invalid aspect ratio {name}: width cannot be zero")
     return height / width
 
 
@@ -28,6 +30,9 @@ def get_aspect_ratios_dict(
     for ratio in ASPECT_RATIO_LD_LIST:
         width_ratio, height_ratio = map(float, ratio.split(":"))
         width = int(math.sqrt(total_pixels * (width_ratio / height_ratio)) // D) * D
+        # Ensure width is not zero to avoid division by zero
+        if width == 0:
+            width = D
         height = int((total_pixels / width) // D) * D
 
         if training:
@@ -123,6 +128,8 @@ def get_resolution_with_aspect_ratio(
 
 
 def get_closest_ratio(height: float, width: float, ratios: dict) -> str:
+    if width == 0:
+        raise ValueError("Width cannot be zero when calculating aspect ratio")
     aspect_ratio = height / width
     closest_ratio = min(
         ratios.keys(), key=lambda ratio: abs(aspect_ratio - get_ratio(ratio))
