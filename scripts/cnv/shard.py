@@ -7,7 +7,7 @@ try:
     import dask.dataframe as dd
 
     SUPPORT_DASK = True
-except:
+except Exception:
     SUPPORT_DASK = False
 
 
