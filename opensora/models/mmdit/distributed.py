@@ -24,7 +24,7 @@ try:
         _flash_attn_forward as _flash_attn_forward_v3
 
     SUPPORT_FA3 = True
-except:
+except Exception:
     SUPPORT_FA3 = False
 
 from torch import Tensor
