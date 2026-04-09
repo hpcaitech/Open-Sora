@@ -202,6 +202,8 @@ def prepare_visual_condition_uncausal(
     C = model_ae.cfg.latent_channels
     T, H, W = model_ae.get_latent_size(x.shape[-3:])
 
+    condition_config = condition_config.copy()  # prevent altering the global config when applying local changes
+
     # Initialize masks tensor to match the shape of x, but only the time dimension will be masked
     masks = torch.zeros(B, 1, T, H, W).to(
         x.device, x.dtype
@@ -329,6 +331,8 @@ def prepare_visual_condition_causal(x: torch.Tensor, condition_config: dict, mod
     B = x.shape[0]
     C = model_ae.cfg.latent_channels
     T, H, W = model_ae.get_latent_size(x.shape[-3:])
+
+    condition_config = condition_config.copy()  # prevent altering the global config when applying local changes
 
     # Initialize masks tensor to match the shape of x, but only the time dimension will be masked
     masks = torch.zeros(B, 1, T, H, W).to(
