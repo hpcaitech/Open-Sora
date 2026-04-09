@@ -1,0 +1,57 @@
+{
+    "title": "Hello World AWS Lambda and Amazon API Gateway REST API",
+    "description": "Create a simple Lambda function connected to a REST API.",
+    "language": "Python",
+    "level": "200",
+    "framework": "AWS SAM",
+    "introBox": {
+      "headline": "How it works",
+      "text": [
+        "This sample project shows how to trigger a simple Lambda function using a REST API.",
+        "This pattern deploys one Lambda function and one API Gateway REST API."
+      ]
+    },
+    "gitHub": {
+      "template": {
+        "repoURL": "https://github.com/aws-samples/serverless-patterns/tree/main/apigw-rest-api-lambda-python",
+        "templateURL": "serverless-patterns/apigw-rest-api-lambda-python",
+        "projectFolder": "apigw-rest-api-lambda-python",
+        "templateFile": "template.yaml"
+      }
+    },
+    "resources": {
+      "bullets": [
+        {
+          "text": "Invoking a Lambda function using an Amazon API Gateway endpoint",
+          "link": "https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html"
+        },
+        {
+          "text": "Amazon API Gateway REST API",
+          "link": "https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html"
+        }
+      ]
+    },
+    "deploy": {
+      "text": [
+        "sam deploy --guided"
+      ]
+    },
+    "testing": {
+      "text": [
+        "See the GitHub repo for detailed testing instructions."
+      ]
+    },
+    "cleanup": {
+      "text": [
+        "Delete the application: <code>sam delete</code>."
+      ]
+    },
+   "authors": [
+    {
+      "name": "Seshu Brahma",
+      "image": "https://i.postimg.cc/ZR0MyrTN/seshub-photo.jpg",
+      "bio": "SDE for AWS Lambda",
+      "linkedin": "seshu-brahma"
+    }
+  ]
+}
