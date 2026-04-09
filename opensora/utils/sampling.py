@@ -183,7 +183,7 @@ class I2VDenoiser(Denoiser):
             t_vec = torch.full(
                 (img.shape[0],), t_curr, dtype=img.dtype, device=img.device
             )
-            b, c, t, w, h = masked_ref.size()
+            b, c, t, h, w = masked_ref.size()
             cond = torch.cat((masks, masked_ref), dim=1)
             cond = pack(cond, patch_size=patch_size)
             kwargs["cond"] = torch.cat([cond, cond, torch.zeros_like(cond)], dim=0)
