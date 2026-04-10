@@ -1,8 +1,44 @@
 import base64
 import os
+import re
 from mimetypes import guess_type
 
 from openai import OpenAI
+
+MINIMAX_BASE_URL = os.environ.get("MINIMAX_BASE_URL", "https://api.minimax.io/v1")
+
+MINIMAX_MODELS = [
+    "MiniMax-M2.7",
+    "MiniMax-M2.7-highspeed",
+]
+
+
+def _get_client(model: str) -> OpenAI:
+    """Return an OpenAI-compatible client configured for the given model."""
+    if model.startswith("MiniMax"):
+        api_key = os.environ.get("MINIMAX_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "MINIMAX_API_KEY environment variable is not set. "
+                "Please set it to use MiniMax models."
+            )
+        return OpenAI(api_key=api_key, base_url=MINIMAX_BASE_URL)
+    return OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+
+def has_minimax_key() -> bool:
+    """Check whether the MiniMax API key is configured."""
+    return bool(os.environ.get("MINIMAX_API_KEY"))
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove chain-of-thought <think>...</think> blocks from model output."""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+
+def _extra_tokens(model: str) -> int:
+    """Extra token budget for MiniMax chain-of-thought <think> blocks."""
+    return 500 if model.startswith("MiniMax") else 0
 
 sys_prompt_t2v = """You are part of a team of bots that creates videos. The workflow is that you first create a caption of the video, and then the assistant bot will generate the video based on the caption. You work with an assistant bot that will draw anything you say.
 
@@ -72,12 +108,31 @@ def image_to_url(image_path):
     return f"data:{mime_type};base64,{base64_encoded_data}"
 
 
-def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_path: str = None):
+def refine_prompt(
+    prompt: str,
+    retry_times: int = 3,
+    type: str = "t2v",
+    image_path: str = None,
+    model: str = None,
+):
     """
-    Refine a prompt to a format that can be used by the model for inference
-    """
+    Refine a prompt to a format that can be used by the model for inference.
 
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    Args:
+        prompt: The input prompt text.
+        retry_times: Number of retry attempts on failure.
+        type: Prompt type - "t2v" (text-to-video), "t2i" (text-to-image),
+              "i2v" (image-to-video), or "motion_score".
+        image_path: Path to reference image (required when type="i2v").
+        model: LLM model to use for refinement. Defaults to the PROMPT_MODEL
+               environment variable, or "gpt-4o" if unset. Use MiniMax models
+               (e.g. "MiniMax-M2.7") together with MINIMAX_API_KEY.
+    """
+    if model is None:
+        model = os.environ.get("PROMPT_MODEL", "gpt-4o")
+
+    client = _get_client(model)
+    extra = _extra_tokens(model)
 
     text = prompt.strip()
     response = None
@@ -115,11 +170,11 @@ def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_pa
                         "content": f'Create an imaginative video descriptive caption or modify an earlier caption in ENGLISH for the user input: " {text} "',
                     },
                 ],
-                model="gpt-4o",  # glm-4-plus and gpt-4o have be tested
+                model=model,  # glm-4-plus, gpt-4o, and MiniMax-M2.7 have been tested
                 temperature=0.01,
                 top_p=0.7,
                 stream=False,
-                max_tokens=250,
+                max_tokens=250 + extra,
             )
         elif type == "t2i":
             response = client.chat.completions.create(
@@ -146,15 +201,15 @@ def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_pa
                         "content": f'Create an imaginative image descriptive caption or modify an earlier caption in ENGLISH for the user input: " {text} "',
                     },
                 ],
-                model="gpt-4o",  # glm-4-plus and gpt-4o have be tested
+                model=model,  # glm-4-plus, gpt-4o, and MiniMax-M2.7 have been tested
                 temperature=0.01,
                 top_p=0.7,
                 stream=False,
-                max_tokens=250,
+                max_tokens=250 + extra,
             )
         elif type == "i2v":
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model=model,
                 messages=[
                     {"role": "system", "content": f"{sys_prompt_i2v}"},
                     {
@@ -200,7 +255,7 @@ def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_pa
                 temperature=0.01,
                 top_p=0.7,
                 stream=False,
-                max_tokens=250,
+                max_tokens=250 + extra,
             )
         elif type == "motion_score":
             response = client.chat.completions.create(
@@ -211,24 +266,43 @@ def refine_prompt(prompt: str, retry_times: int = 3, type: str = "t2v", image_pa
                         "content": f"{text}",
                     },
                 ],
-                model="gpt-4o",  # glm-4-plus and gpt-4o have be tested
+                model=model,  # glm-4-plus, gpt-4o, and MiniMax-M2.7 have been tested
                 temperature=0.01,
                 top_p=0.7,
                 stream=False,
-                max_tokens=100,
+                max_tokens=100 + extra,
             )
         if response is None:
             continue
         if response.choices:
-            return response.choices[0].message.content
+            return _strip_think_tags(response.choices[0].message.content)
     return prompt
 
 
-def refine_prompts(prompts: list[str], retry_times: int = 3, type: str = "t2v", image_paths: list[str] = None):
+def refine_prompts(
+    prompts: list[str],
+    retry_times: int = 3,
+    type: str = "t2v",
+    image_paths: list[str] = None,
+    model: str = None,
+):
     if image_paths is None:
         image_paths = [None] * len(prompts)
     refined_prompts = []
     for prompt, image_path in zip(prompts, image_paths):
-        refined_prompt = refine_prompt(prompt, retry_times=retry_times, type=type, image_path=image_path)
+        refined_prompt = refine_prompt(
+            prompt, retry_times=retry_times, type=type, image_path=image_path, model=model
+        )
         refined_prompts.append(refined_prompt)
     return refined_prompts
+
+
+def refine_prompts_by_minimax(
+    prompts: list[str],
+    retry_times: int = 3,
+    type: str = "t2v",
+    image_paths: list[str] = None,
+    model: str = "MiniMax-M2.7",
+):
+    """Refine prompts using the MiniMax API (requires MINIMAX_API_KEY)."""
+    return refine_prompts(prompts, retry_times=retry_times, type=type, image_paths=image_paths, model=model)
