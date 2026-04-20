@@ -9,7 +9,7 @@ try:
     from flash_attn_interface import flash_attn_func as flash_attn_func_v3
 
     SUPPORT_FA3 = True
-except:
+except Exception:
     SUPPORT_FA3 = False
 
 

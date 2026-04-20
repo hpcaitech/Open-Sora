@@ -23,7 +23,7 @@ try:
     import dask.dataframe as dd
 
     SUPPORT_DASK = True
-except:
+except Exception:
     SUPPORT_DASK = False
 
 VID_EXTENSIONS = (".mp4", ".avi", ".mov", ".mkv")

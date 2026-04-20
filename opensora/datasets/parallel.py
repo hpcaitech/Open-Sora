@@ -71,7 +71,7 @@ class WrapWorkFunctionForPipe:
 
             return results
 
-        except:
+        except Exception:
             master_workers_queue.put((worker_index, WorkerStatus.Error, None))
             raise
 
