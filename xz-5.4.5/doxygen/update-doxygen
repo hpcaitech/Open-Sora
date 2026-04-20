@@ -1,0 +1,111 @@
+#!/bin/sh
+#
+#############################################################################
+#
+# Updates the Doxygen generated documentation files in the source tree.
+# If the doxygen command is not installed, it will exit with an error.
+# This script can generate Doxygen documentation for all source files or for
+# just liblzma API header files.
+#
+# It is recommended to use this script to update the Doxygen-generated HTML
+# files since this will include the package version in the output and,
+# in case of liblzma API docs, strip JavaScript files from the output.
+#
+#############################################################################
+#
+# Authors: Jia Tan
+#          Lasse Collin
+#
+# This file has been put into the public domain.
+# You can do whatever you want with this file.
+#
+#############################################################################
+
+set -e
+
+if type doxygen > /dev/null 2>&1; then
+	:
+else
+	echo "doxygen/update-doxygen: 'doxygen' command not found." >&2
+	echo "doxygen/update-doxygen: Skipping Doxygen docs generation." >&2
+	exit 1
+fi
+
+if test ! -f Doxyfile; then
+	cd `dirname "$0"` || exit 1
+	if test ! -f Doxyfile; then
+		echo "doxygen/update-doxygen: Cannot find Doxyfile" >&2
+		exit 1
+	fi
+fi
+
+# Get the package version so that it can be included in the generated docs.
+PACKAGE_VERSION=`cd .. && sh build-aux/version.sh` || exit 1
+
+# If no arguments are specified, default to generating liblzma API header
+# documentation only.
+case $1 in
+	'' | api)
+		# Remove old documentation before re-generating the new.
+		rm -rf ../doc/api
+
+		# Generate the HTML documentation by preparing the Doxyfile
+		# in stdin and piping the result to the doxygen command.
+		# With Doxygen, the last assignment of a value to a tag will
+		# override any earlier assignment. So, we can use this
+		# feature to override the tags that need to change between
+		# "api" and "internal" modes.
+		(
+			cat Doxyfile
+			echo "PROJECT_NUMBER         = $PACKAGE_VERSION"
+		) | doxygen -
+
+		# As of Doxygen 1.8.0 - 1.9.6 and the Doxyfile options we use,
+		# the output is good without any JavaScript. Unfortunately
+		# Doxygen doesn't have an option to disable JavaScript usage
+		# completely so we strip it away with the hack below.
+		#
+		# Omitting the JavaScript code avoids some license hassle
+		# as jquery.js is fairly big, it contains more than jQuery
+		# itself, and doesn't include the actual license text (it
+		# only refers to the MIT license by name).
+		echo "Stripping JavaScript from Doxygen output..."
+		for F in ../doc/api/*.html
+		do
+			sed 's/<script [^>]*><\/script>//g
+				s/onclick="[^"]*"//g' \
+				"$F" > ../doc/api/tmp
+			mv -f ../doc/api/tmp "$F"
+		done
+		rm -f ../doc/api/*.js
+		;;
+
+	internal)
+		# The docs from internal aren't for distribution so
+		# the JavaScript files aren't an issue here.
+		rm -rf ../doc/internal
+		(
+			cat Doxyfile
+			echo "PROJECT_NUMBER         = $PACKAGE_VERSION"
+			echo 'PROJECT_NAME           = "XZ Utils"'
+			echo 'STRIP_FROM_PATH        = ../src'
+			echo 'INPUT                  = ../src'
+			echo 'HTML_OUTPUT            = internal'
+			echo 'EXTRACT_PRIVATE        = YES'
+			echo 'EXTRACT_STATIC         = YES'
+			echo 'EXTRACT_LOCAL_CLASSES  = YES'
+			echo 'SEARCHENGINE           = YES'
+		) | doxygen -
+		;;
+
+	*)
+		echo "doxygen/update-doxygen: Error: mode argument '$1'" \
+			"is not supported." >&2
+		echo "doxygen/update-doxygen: Supported modes:" >&2
+		echo "doxygen/update-doxygen: - 'api' (default):" \
+			"liblzma API docs into doc/api" >&2
+		echo "doxygen/update-doxygen: - 'internal':"\
+			"internal docs into doc/internal" >&2
+		exit 1
+		;;
+esac

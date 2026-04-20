@@ -1,0 +1,16 @@
+numpy==1.26.4
+torch==2.2.2
+torchvision==0.17.2
+colossalai>=0.4.4
+mmengine>=0.10.3
+ftfy>=6.2.0
+accelerate>=0.29.2
+av==13.1.0
+pandas>=2.0.3
+pandarallel>=1.6.5
+openai>=1.52.2
+wandb>=0.17.0
+tensorboard>=2.14.0
+pre-commit>=3.5.0
+omegaconf>=2.3.0
+pyarrow

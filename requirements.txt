@@ -1,11 +1,11 @@
-torch==2.4.0
-torchvision==0.19.0
+torch==2.2.2
+torch==2.2.2
 colossalai>=0.4.4
 mmengine>=0.10.3
 ftfy>=6.2.0 # for t5
 accelerate>=0.29.2 # for t5
 av==13.1.0 # for video loading
-liger-kernel==0.5.2
+#liger-kernel==0.5.2
 pandas>=2.0.3
 pandarallel>=1.6.5
 openai>=1.52.2
