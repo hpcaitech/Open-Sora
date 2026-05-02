@@ -125,7 +125,7 @@ def main():
                 )
 
             # == save samples ==
-            if is_main_process() and save_dir is not None:
+            if save_dir is not None:
                 for idx, x_orig in enumerate(x):
                     fname = os.path.splitext(os.path.basename(path[idx]))[0]
                     save_path_orig = os.path.join(save_dir_orig, f"{fname}_orig")
