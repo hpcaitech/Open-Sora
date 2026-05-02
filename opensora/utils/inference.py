@@ -16,6 +16,7 @@ from opensora.utils.prompt_refine import refine_prompts
 class SamplingMethod(Enum):
     I2V = "i2v"  # for open sora video generation
     DISTILLED = "distill"  # for flux image generation
+    I2VINFERENCESCALING = "i2v_inference_scaling" # for open sora video generation with inference scaling
 
 
 def create_tmp_csv(save_dir: str, prompt: str, ref: str = None, create=True) -> str:
