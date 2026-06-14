@@ -76,7 +76,7 @@ def download_url(input_path):
     base_name = os.path.basename(input_path)
     output_path = os.path.join(output_dir, base_name)
     img_data = requests.get(input_path).content
-    with open(output_path, "wb", encoding="utf-8") as handler:
+    with open(output_path, "wb") as handler:
         handler.write(img_data)
     print(f"URL {input_path} downloaded to {output_path}")
     return output_path
@@ -266,7 +266,7 @@ def rand_size_crop_arr(pil_image, image_size):
 
     # get random start pos
     h_start = random.randint(0, max(len(arr) - height, 0))
-    w_start = random.randint(0, max(len(arr[0]) - height, 0))
+    w_start = random.randint(0, max(len(arr[0]) - width, 0))
 
     # crop
     return Image.fromarray(arr[h_start : h_start + height, w_start : w_start + width])
@@ -356,7 +356,7 @@ def rescale_image_by_path(path: str, height: int, width: int):
             raise ValueError("The image is invalid or empty.")
 
         # resize image
-        resize_transform = transforms.Resize((width, height))
+        resize_transform = transforms.Resize((height, width))
         resized_image = resize_transform(image)
 
         # save resized image back to the original path
@@ -384,7 +384,7 @@ def rescale_video_by_path(path: str, height: int, width: int):
             raise ValueError("The video is invalid or empty.")
 
         # Resize video frames using a performant method
-        resize_transform = transforms.Compose([transforms.Resize((width, height))])
+        resize_transform = transforms.Compose([transforms.Resize((height, width))])
         resized_video = torch.stack([resize_transform(frame) for frame in video])
 
         # Save resized video back to the original path
