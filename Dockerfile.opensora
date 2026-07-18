@@ -1,0 +1,37 @@
+# Use official Python runtime as base image
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
+
+WORKDIR /workspace
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    curl \
+    wget \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN pip3 install --upgrade pip setuptools wheel
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip3 install -r requirements.txt --no-cache-dir
+
+# Install Open-Sora
+COPY . .
+RUN pip3 install -e . --no-cache-dir
+
+# Create output directory
+RUN mkdir -p outputs
+
+# Set environment variables
+ENV CUDA_VISIBLE_DEVICES=0
+ENV PYTHONUNBUFFERED=1
+
+# Default command
+CMD ["bash"]
