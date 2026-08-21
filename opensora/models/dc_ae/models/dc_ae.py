@@ -471,7 +471,7 @@ class Decoder(nn.Module):
                     out_channels=width if cfg.upsample_match_channel else cfg.width_list[stage_id + 1],
                     shortcut=cfg.upsample_shortcut,
                     is_video=cfg.is_video,
-                    temporal_upsample=cfg.temporal_upsample[stage_id] if cfg.temporal_upsample != [] else False,
+                    temporal_upsample=cfg.temporal_upsample[stage_id] if cfg.temporal_upsample else False,
                 )
                 stage.append(upsample_block)
 
