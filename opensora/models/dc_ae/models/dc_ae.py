@@ -413,7 +413,7 @@ class Encoder(nn.Module):
                     out_channels=cfg.width_list[stage_id + 1] if cfg.downsample_match_channel else width,
                     shortcut=cfg.downsample_shortcut,
                     is_video=cfg.is_video,
-                    temporal_downsample=cfg.temporal_downsample[stage_id] if cfg.temporal_downsample != [] else False,
+                    temporal_downsample=cfg.temporal_downsample[stage_id] if cfg.temporal_downsample else False,
                 )
                 stage.append(downsample_block)
             self.stages.append(OpSequential(stage))
