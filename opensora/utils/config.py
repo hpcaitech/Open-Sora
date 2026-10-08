@@ -72,19 +72,24 @@ def merge_args(cfg: Config, args: argparse.Namespace) -> Config:
         k_split = k.split(".")
         target = cfg
         for key in k_split[:-1]:
-            assert key in cfg, f"Key {key} not found in config"
+            assert key in target, f"Key {key} not found in config"
             target = target[key]
+        key = k_split[-1]
         if v.lower() == "none":
             v = None
-        elif k in target:
-            v_type = type(target[k])
-            if v_type == bool:
+        elif key in target:
+            v_type = type(target[key])
+            if (
+                v_type is bool
+                or target[key] is None
+                or isinstance(target[key], (list, tuple, dict))
+            ):
                 v = auto_convert(v)
             else:
-                v = type(target[k])(v)
+                v = v_type(v)
         else:
             v = auto_convert(v)
-        target[k_split[-1]] = v
+        target[key] = v
     return cfg
 
 
