@@ -48,7 +48,7 @@ With Open-Sora, our goal is to foster innovation, creativity, and inclusivity wi
 
 - **[2025.03.12]** 🔥 We released **Open-Sora 2.0** (11B). 🎬 11B model achieves [on-par performance](#evaluation) with 11B HunyuanVideo & 30B Step-Video on 📐VBench & 📊Human Preference. 🛠️ Fully open-source: checkpoints and training codes for training with only **$200K**. [[report]](https://arxiv.org/abs/2503.09642v1)
 - **[2025.02.20]** 🔥 We released **Open-Sora 1.3** (1B). With the upgraded VAE and Transformer architecture, the quality of our generated videos has been greatly improved 🚀. [[checkpoints]](#open-sora-13-model-weights) [[report]](/docs/report_04.md) [[demo]](https://huggingface.co/spaces/hpcai-tech/open-sora)
-- **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/main/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
+- **[2024.12.23]** The development cost of video generation models has saved by 50%! Open-source solutions are now available with H200 GPU vouchers. [[blog]](https://company.hpc-ai.com/blog/the-development-cost-of-video-generation-models-has-saved-by-50-open-source-solutions-are-now-available-with-h200-gpu-vouchers) [[code]](https://github.com/hpcaitech/Open-Sora/blob/70ca63f30bd02b817b730c4e901c2bdd7b1f08cc/scripts/train.py) [[vouchers]](https://colossalai.org/zh-Hans/docs/get_started/bonus/)
 - **[2024.06.17]** We released **Open-Sora 1.2**, which includes **3D-VAE**, **rectified flow**, and **score condition**. The video quality is greatly improved. [[checkpoints]](#open-sora-12-model-weights) [[report]](/docs/report_03.md) [[arxiv]](https://arxiv.org/abs/2412.20404)
 - **[2024.04.25]** 🤗 We released the [Gradio demo for Open-Sora](https://huggingface.co/spaces/hpcai-tech/open-sora) on Hugging Face Spaces.
 - **[2024.04.25]** We released **Open-Sora 1.1**, which supports **2s~15s, 144p to 720p, any aspect ratio** text-to-image, **text-to-video, image-to-video, video-to-video, infinite time** generation. In addition, a full video processing pipeline is released. [[checkpoints]](#open-sora-11-model-weights) [[report]](/docs/report_02.md)
@@ -343,7 +343,7 @@ Here we only list a few of the projects. For other works and datasets, please re
 }
 
 @article{opensora2,
-    title={Open-Sora 2.0: Training a Commercial-Level Video Generation Model in $200k}, 
+    title={Open-Sora 2.0: Training a Commercial-Level Video Generation Model in $200k},
     author={Xiangyu Peng and Zangwei Zheng and Chenhui Shen and Tom Young and Xinying Guo and Binluo Wang and Hang Xu and Hongxin Liu and Mingyan Jiang and Wenjun Li and Yuhui Wang and Anbang Ye and Gang Ren and Qianran Ma and Wanying Liang and Xiang Lian and Xiwen Wu and Yuting Zhong and Zhuangyan Li and Chaoyu Gong and Guojun Lei and Leijun Cheng and Limin Zhang and Minghao Li and Ruijie Zhang and Silan Hu and Shijie Huang and Xiaokang Wang and Yuanheng Zhao and Yuqi Wang and Ziang Wei and Yang You},
     year={2025},
     journal={arXiv preprint arXiv:2503.09642},
